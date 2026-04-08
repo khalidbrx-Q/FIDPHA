@@ -100,7 +100,7 @@ def setup_profile(request):
         profile.token_created_at = timezone.now()
         profile.save()
 
-        verify_url = f"https://khalidbrx.pythonanywhere.com/portal/verify-email/{token}/"
+        verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
         try:
             send_mail(
                 "FIDPHA — Verify your email",
@@ -149,7 +149,7 @@ def portal_profile(request):
             from allauth.socialaccount.models import SocialAccount
             SocialAccount.objects.filter(user=request.user).delete()
 
-            verify_url = f"https://khalidbrx.pythonanywhere.com/portal/verify-email/{token}/"
+            verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
             try:
                 send_mail(
                     "FIDPHA — Verify your new email",
