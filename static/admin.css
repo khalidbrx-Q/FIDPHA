@@ -1,0 +1,78 @@
+/* Fix invisible password fields in Unfold dark mode */
+input[type="password"] {
+    background-color: transparent !important;
+    color: inherit !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+}
+
+input[type="password"]:focus {
+    border-color: #1b679b !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(27, 103, 155, 0.3) !important;
+}
+
+/* hide inline instance title */
+#profile-group .form-group h3 {
+    display: none !important;
+}
+
+
+/* Fix invisible password fields */
+[type="password"],
+[type="password"]:focus,
+[type="password"]:hover {
+    background-color: rgb(30 41 59) !important;
+    color: white !important;
+    border: 1px solid rgb(71 85 105) !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    width: 100% !important;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+
+/* Dark mode password fields */
+[data-theme="dark"] [type="password"],
+[data-theme="dark"] [type="password"]:focus,
+[data-theme="dark"] [type="password"]:hover {
+    background-color: rgb(30 41 59) !important;
+    color: white !important;
+    border: 1px solid rgb(71 85 105) !important;
+}
+
+/* Light mode password fields */
+[data-theme="light"] [type="password"],
+[data-theme="light"] [type="password"]:focus,
+[data-theme="light"] [type="password"]:hover {
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    border: 1px solid #cccccc !important;
+}
+
+
+
+/* Scrollable contracts inline */
+#contract-group .formset-wrapper {
+    max-height: 350px;
+    overflow-y: auto;
+    border-radius: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+}
+
+#contract-group .formset-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+#contract-group .formset-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#contract-group .formset-wrapper::-webkit-scrollbar-thumb {
+    background-color: #334155;
+    border-radius: 6px;
+}

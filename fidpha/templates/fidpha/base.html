@@ -1,0 +1,83 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIDPHA Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'fidpha/css/portal.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">
+                <span class="material-icons-round">local_pharmacy</span>
+            </div>
+            <div>
+                <div class="sidebar-brand-text">FIDPHA</div>
+                <div class="sidebar-brand-sub">Pharmacy Portal</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+    <div class="nav-section-title">Menu</div>
+    <a href="/portal/dashboard/" class="nav-item {% block nav_dashboard %}{% endblock %}">
+        <span class="material-icons-round">dashboard</span>
+        Dashboard
+    </a>
+    <a href="/portal/profile/" class="nav-item {% block nav_profile %}{% endblock %}">
+        <span class="material-icons-round">person</span>
+        Profile
+    </a>
+</nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ request.user.username|first|upper }}
+                </div>
+                <div>
+                    <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    <div class="user-role">{{ request.user.profile.account.name }}</div>
+                </div>
+            </div>
+            <form method="POST" action="/portal/logout/">
+    {% csrf_token %}
+    <button type="submit" class="logout-btn">
+        <span class="material-icons-round" style="font-size:16px;">logout</span>
+        Log Out
+    </button>
+</form>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <div>
+                <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+                <div class="topbar-breadcrumb">FIDPHA › <span>{% block page_breadcrumb %}Dashboard{% endblock %}</span></div>
+            </div>
+            <button onclick="toggleTheme()" id="theme-toggle" class="theme-toggle-btn">
+                <span class="material-icons-round" id="theme-icon" style="font-size: 18px;">light_mode</span>
+                <span id="theme-label">Light</span>
+            </button>
+        </div>
+
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script src="{% static 'fidpha/js/portal.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>

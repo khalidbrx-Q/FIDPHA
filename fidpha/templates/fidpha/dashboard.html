@@ -1,0 +1,208 @@
+{% extends "fidpha/base.html" %}
+
+{% block nav_dashboard %}active{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_breadcrumb %}Dashboard{% endblock %}
+
+{% block content %}
+
+{% if not email_verified %}
+<div style="
+    background-color: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+">
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="material-icons-round" style="color: #f59e0b; font-size: 20px;">warning</span>
+        <span style="font-size: 0.88rem; color: #f59e0b; font-weight: 500;">
+            Your email is not verified. Verify it to unlock Google login and password recovery.
+        </span>
+    </div>
+    <a href="/portal/setup-profile/" style="
+        background-color: #f59e0b;
+        color: #000000;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    ">
+        <span class="material-icons-round" style="font-size: 16px;">verified</span>
+        Verify now
+    </a>
+</div>
+{% endif %}
+
+{% if messages %}
+    <div style="margin-bottom: 20px;">
+        {% for message in messages %}
+            <div style="
+                padding: 12px 16px;
+                border-radius: 8px;
+                font-size: 0.88rem;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background-color: {% if 'success' in message.tags %}rgba(34,197,94,0.15){% else %}rgba(239,68,68,0.15){% endif %};
+                color: {% if 'success' in message.tags %}#22c55e{% else %}#ef4444{% endif %};
+                border: 1px solid {% if 'success' in message.tags %}rgba(34,197,94,0.3){% else %}rgba(239,68,68,0.3){% endif %};
+            ">
+                <span class="material-icons-round" style="font-size:18px;">
+                    {% if 'success' in message.tags %}check_circle{% else %}error_outline{% endif %}
+                </span>
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+    <!-- STAT CARDS -->
+    <div class="grid-3" style="margin-bottom: 20px;">
+        <div class="stat-card">
+            <div class="stat-label">Pharmacy</div>
+            <div class="stat-value">{{ account.name }}</div>
+            <div class="stat-sub">{{ account.city }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Active Contracts</div>
+            <div class="stat-value">{{ active_contracts|length }}</div>
+            <div class="stat-sub">Total: {{ contracts|length }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Portal Access</div>
+            <div class="stat-value">
+                {% if account.pharmacy_portal %}
+                    <span class="badge badge-success">Enabled</span>
+                {% else %}
+                    <span class="badge badge-danger">Disabled</span>
+                {% endif %}
+            </div>
+            <div class="stat-sub">Account status: {{ account.status }}</div>
+        </div>
+    </div>
+
+    <!-- PHARMACY INFO -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-icon">
+                <span class="material-icons-round">store</span>
+            </div>
+            <div class="card-title">Pharmacy Information</div>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Code</span>
+            <span class="info-value">{{ account.code }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Name</span>
+            <span class="info-value">{{ account.name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">City</span>
+            <span class="info-value">{{ account.city }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Location</span>
+            <span class="info-value">{{ account.location }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Phone</span>
+            <span class="info-value">{{ account.phone }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Email</span>
+            <span class="info-value">{{ account.email }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-value">
+                {% if account.status == "active" %}
+                    <span class="badge badge-success">Active</span>
+                {% else %}
+                    <span class="badge badge-danger">Inactive</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- CONTRACTS -->
+    {% for contract in contracts %}
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-icon">
+                <span class="material-icons-round">description</span>
+            </div>
+            <div class="card-title">{{ contract.title }}</div>
+            <div style="margin-left: auto;">
+                {% if contract.status == "active" %}
+                    <span class="badge badge-success">Active</span>
+                {% else %}
+                    <span class="badge badge-danger">Inactive</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 16px;">
+            <div class="info-row">
+                <span class="info-label">Start Date</span>
+                <span class="info-value">{{ contract.start_date|date:"d M Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">End Date</span>
+                <span class="info-value">{{ contract.end_date|date:"d M Y" }}</span>
+            </div>
+        </div>
+
+        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+            {{ contract.designation }}
+        </div>
+
+        {% if contract.contract_product_set.all %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product Code</th>
+                    <th>Product Name</th>
+                    <th>External Designation</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cp in contract.contract_product_set.all %}
+                <tr>
+                    <td>{{ cp.product.code }}</td>
+                    <td>{{ cp.product.designation }}</td>
+                    <td>{{ cp.external_designation }}</td>
+                    <td>
+                        {% if cp.product.status == "active" %}
+                            <span class="badge badge-success">Active</span>
+                        {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">No products linked to this contract.</p>
+        {% endif %}
+    </div>
+    {% empty %}
+        <div class="card">
+            <p style="color: var(--text-secondary); text-align: center;">No contracts found for this pharmacy.</p>
+        </div>
+    {% endfor %}
+
+{% endblock %}
