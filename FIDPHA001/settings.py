@@ -6,9 +6,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-84==t^=mjl&51p8p)x)w%+=j=vd4=548f4q!c2snwih0a%qsnj"
 
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', 'khalidbrx.pythonanywhere.com']
 
 INSTALLED_APPS = [
     "unfold",
@@ -196,12 +196,6 @@ UNFOLD = {
                         "permission": lambda request: request.user.has_perm("fidpha.view_product"),
                         "badge": "fidpha.utils.products_badge",
                     },
-                    # {
-                    #     "title": "Contract Products",
-                    #     "icon": "link",
-                    #     "link": reverse_lazy("admin:fidpha_contract_product_changelist"),
-                    #     "permission": lambda request: request.user.has_perm("fidpha.view_contract_product"),
-                    # },
                 ],
             },
             {
