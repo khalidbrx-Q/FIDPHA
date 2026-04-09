@@ -799,6 +799,10 @@ FIDPHA001/                          ← Project root
 ---
 ---
 
+[English](#english) | [Français](#français)
+
+---
+
 <a name="français"></a>
 
 # FIDPHA — Système de Gestion des Pharmacies
