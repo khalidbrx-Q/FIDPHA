@@ -12,6 +12,8 @@ import secrets
 from django.utils import timezone
 from django.core.mail import send_mail
 
+from django.conf import settings
+
 
 def custom_login(request):
     if request.user.is_authenticated:
@@ -247,40 +249,35 @@ def verify_pending(request):
     except:
         return redirect("/portal/login/")
 
-    # if already verified redirect to dashboard
     if profile.email_verified:
         return redirect("/portal/dashboard/")
 
-    # if user has no email
     if not request.user.email:
-        # if coming from verify now button just show the page cleanly
-        if request.GET.get("from") == "button":
-            return render(request, "fidpha/verify_pending.html", {"no_email": True})
-        # otherwise show error and redirect to setup profile
-        messages.error(request, "Please add an email address first.")
-        return redirect("/portal/setup-profile/")
+        return render(request, "fidpha/verify_pending.html", {"no_email": True})
 
-    # if user has email but no token yet — generate and send
-    if not profile.verification_token:
-        token = secrets.token_urlsafe(32)
-        profile.verification_token = token
-        profile.token_created_at = timezone.now()
-        profile.save()
+    # always generate a fresh token and resend
+    token = secrets.token_urlsafe(32)
+    profile.verification_token = token
+    profile.token_created_at = timezone.now()
+    profile.save()
 
-        verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
-        try:
-            send_mail(
-                "FIDPHA — Verify your email",
-                f"Click the link to verify your email: {verify_url}",
-                settings.DEFAULT_FROM_EMAIL,
-                [request.user.email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            messages.error(request, f"Failed to send email: {str(e)}")
-            return redirect("/portal/dashboard/")
+    verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
+    try:
+        send_mail(
+            "FIDPHA — Verify your email",
+            f"Click the link to verify your email: {verify_url}",
+            settings.DEFAULT_FROM_EMAIL,
+            [request.user.email],
+            fail_silently=False,
+        )
+    except Exception as e:
+        messages.error(request, f"Failed to send email: {str(e)}")
+        return redirect("/portal/dashboard/")
 
     return render(request, "fidpha/verify_pending.html", {"no_email": False})
+
+
+
 
 def verify_email(request, token):
     try:
