@@ -75,16 +75,32 @@
             </div>
 
             <div style="margin-bottom: 16px;">
-                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">
+                <label style="font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; margin-bottom: 6px; font-weight: 500; gap: 6px;">
                     Email
                     {% if profile.email_verified %}
-                        <span style="background-color: rgba(34,197,94,0.15); color: #22c55e; font-size: 0.72rem; padding: 2px 8px; border-radius: 20px; margin-left: 6px;">✓ Verified</span>
+                        <span style="background-color: rgba(34,197,94,0.15); color: #22c55e; font-size: 0.72rem; padding: 2px 8px; border-radius: 20px;">✓ Verified</span>
                     {% else %}
-                        <span style="background-color: rgba(245,158,11,0.15); color: #f59e0b; font-size: 0.72rem; padding: 2px 8px; border-radius: 20px; margin-left: 6px;">⚠ Not verified</span>
+                        <span style="background-color: rgba(245,158,11,0.15); color: #f59e0b; font-size: 0.72rem; padding: 2px 8px; border-radius: 20px;">⚠ Not verified</span>
+                        <a href="/portal/verify-pending/?from=button" style="
+                            background-color: rgba(245,158,11,0.15);
+                            color: #f59e0b;
+                            font-size: 0.72rem;
+                            padding: 2px 10px;
+                            border-radius: 20px;
+                            text-decoration: none;
+                            font-weight: 600;
+                            border: 1px solid rgba(245,158,11,0.3);
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 4px;
+                        ">
+                            <span class="material-icons-round" style="font-size: 12px;">mail</span>
+                            Verify now
+                        </a>
                     {% endif %}
                 </label>
                 <input type="email" name="email" value="{{ request.user.email }}"
-                    placeholder="Enter your email" required
+    placeholder="Enter your email"
                     style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
                 {% if not profile.email_verified %}
                     <p style="font-size: 0.75rem; color: #f59e0b; margin-top: 4px;">Email not verified. Changing it will send a new verification link.</p>
@@ -123,62 +139,62 @@
         </div>
 
         <form method="POST" action="/portal/profile/password/">
-    {% csrf_token %}
+            {% csrf_token %}
 
-    <div style="margin-bottom: 16px;">
-        <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">Current Password</label>
-        <input type="password" name="current_password"
-            placeholder="Enter your current password"
-            required
-            style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
-    </div>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">Current Password</label>
+                <input type="password" name="current_password"
+                    placeholder="Enter your current password"
+                    required
+                    style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
+            </div>
 
-    <div style="margin-bottom: 16px;">
-        <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">New Password</label>
-        <input type="password" name="password" id="profile_password"
-            placeholder="Enter new password"
-            required
-            style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
-    </div>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">New Password</label>
+                <input type="password" name="password" id="profile_password"
+                    placeholder="Enter new password"
+                    required
+                    style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
+            </div>
 
-    <div style="margin-top: 8px; margin-bottom: 16px;">
-        <div style="height: 4px; background-color: var(--card-border); border-radius: 4px; overflow: hidden; margin-bottom: 6px;">
-            <div id="profile-strength-bar" style="height: 100%; width: 0%; border-radius: 4px; transition: all 0.3s;"></div>
-        </div>
-        <div id="profile-strength-text" style="font-size: 0.75rem; margin-bottom: 6px; color: var(--text-secondary);"></div>
-        <div id="profile-req-length"  style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least 8 characters</div>
-        <div id="profile-req-upper"   style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least one uppercase letter</div>
-        <div id="profile-req-number"  style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least one number</div>
-        <div id="profile-req-special" style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least one special character</div>
-    </div>
+            <div style="margin-top: 8px; margin-bottom: 16px;">
+                <div style="height: 4px; background-color: var(--card-border); border-radius: 4px; overflow: hidden; margin-bottom: 6px;">
+                    <div id="profile-strength-bar" style="height: 100%; width: 0%; border-radius: 4px; transition: all 0.3s;"></div>
+                </div>
+                <div id="profile-strength-text" style="font-size: 0.75rem; margin-bottom: 6px; color: var(--text-secondary);"></div>
+                <div id="profile-req-length"  style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least 8 characters</div>
+                <div id="profile-req-upper"   style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least one uppercase letter</div>
+                <div id="profile-req-number"  style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least one number</div>
+                <div id="profile-req-special" style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least one special character</div>
+            </div>
 
-    <div style="margin-bottom: 16px;">
-        <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">Confirm New Password</label>
-        <input type="password" name="confirm_password" id="profile_confirm_password"
-            placeholder="Confirm new password"
-            required
-            style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
-        <div id="profile-match-text" style="font-size: 0.75rem; margin-top: 4px;"></div>
-    </div>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">Confirm New Password</label>
+                <input type="password" name="confirm_password" id="profile_confirm_password"
+                    placeholder="Confirm new password"
+                    required
+                    style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
+                <div id="profile-match-text" style="font-size: 0.75rem; margin-top: 4px;"></div>
+            </div>
 
-    <button type="submit" style="
-        padding: 10px 20px;
-        background-color: #000000;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        transition: background-color 0.2s;
-    ">
-        <span class="material-icons-round" style="font-size: 18px;">lock_reset</span>
-        Update Password
-    </button>
-</form>
+            <button type="submit" style="
+                padding: 10px 20px;
+                background-color: #000000;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: background-color 0.2s;
+            ">
+                <span class="material-icons-round" style="font-size: 18px;">lock_reset</span>
+                Update Password
+            </button>
+        </form>
 
         <!-- Account Info -->
         <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--card-border);">
@@ -207,66 +223,66 @@
 
 <script>
     const pwd = document.getElementById("profile_password");
-const confirmPwd = document.getElementById("profile_confirm_password");
-const bar = document.getElementById("profile-strength-bar");
-const text = document.getElementById("profile-strength-text");
-const matchText = document.getElementById("profile-match-text");
+    const confirmPwd = document.getElementById("profile_confirm_password");
+    const bar = document.getElementById("profile-strength-bar");
+    const text = document.getElementById("profile-strength-text");
+    const matchText = document.getElementById("profile-match-text");
 
-function updateReq(id, met) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.color = met ? "#22c55e" : "var(--text-secondary)";
-    el.textContent = (met ? "✓" : "✗") + el.textContent.substring(1);
-}
-
-function checkMatch() {
-    if (!confirmPwd || confirmPwd.value.length === 0) {
-        matchText.textContent = "";
-        return;
+    function updateReq(id, met) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.color = met ? "#22c55e" : "var(--text-secondary)";
+        el.textContent = (met ? "✓" : "✗") + el.textContent.substring(1);
     }
-    if (pwd.value === confirmPwd.value) {
-        matchText.style.color = "#22c55e";
-        matchText.textContent = "✓ Passwords match";
-    } else {
-        matchText.style.color = "#ef4444";
-        matchText.textContent = "✗ Passwords don't match";
-    }
-}
 
-if (pwd) {
-    pwd.addEventListener("input", function () {
-        const p = pwd.value;
-        const hasLength  = p.length >= 8;
-        const hasUpper   = /[A-Z]/.test(p);
-        const hasNumber  = /[0-9]/.test(p);
-        const hasSpecial = /[!@#$%^&*()_+\-=\[\]{}|;':",./<>?]/.test(p);
-
-        updateReq("profile-req-length",  hasLength);
-        updateReq("profile-req-upper",   hasUpper);
-        updateReq("profile-req-number",  hasNumber);
-        updateReq("profile-req-special", hasSpecial);
-
-        const score = [hasLength, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
-        const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e"];
-        const labels = ["Weak", "Fair", "Good", "Strong"];
-        const widths = ["25%", "50%", "75%", "100%"];
-
-        if (p.length === 0) {
-            bar.style.width = "0%";
-            text.textContent = "";
-        } else {
-            bar.style.backgroundColor = colors[score - 1];
-            bar.style.width = widths[score - 1];
-            text.style.color = colors[score - 1];
-            text.textContent = labels[score - 1];
+    function checkMatch() {
+        if (!confirmPwd || confirmPwd.value.length === 0) {
+            matchText.textContent = "";
+            return;
         }
-        checkMatch();
-    });
-}
+        if (pwd.value === confirmPwd.value) {
+            matchText.style.color = "#22c55e";
+            matchText.textContent = "✓ Passwords match";
+        } else {
+            matchText.style.color = "#ef4444";
+            matchText.textContent = "✗ Passwords don't match";
+        }
+    }
 
-if (confirmPwd) {
-    confirmPwd.addEventListener("input", checkMatch);
-}
+    if (pwd) {
+        pwd.addEventListener("input", function () {
+            const p = pwd.value;
+            const hasLength  = p.length >= 8;
+            const hasUpper   = /[A-Z]/.test(p);
+            const hasNumber  = /[0-9]/.test(p);
+            const hasSpecial = /[!@#$%^&*()_+\-=\[\]{}|;':",./<>?]/.test(p);
+
+            updateReq("profile-req-length",  hasLength);
+            updateReq("profile-req-upper",   hasUpper);
+            updateReq("profile-req-number",  hasNumber);
+            updateReq("profile-req-special", hasSpecial);
+
+            const score = [hasLength, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+            const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e"];
+            const labels = ["Weak", "Fair", "Good", "Strong"];
+            const widths = ["25%", "50%", "75%", "100%"];
+
+            if (p.length === 0) {
+                bar.style.width = "0%";
+                text.textContent = "";
+            } else {
+                bar.style.backgroundColor = colors[score - 1];
+                bar.style.width = widths[score - 1];
+                text.style.color = colors[score - 1];
+                text.textContent = labels[score - 1];
+            }
+            checkMatch();
+        });
+    }
+
+    if (confirmPwd) {
+        confirmPwd.addEventListener("input", checkMatch);
+    }
 </script>
 
 {% endblock %}

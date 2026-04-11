@@ -230,6 +230,8 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
 
     readonly_fields = ["email_verification_status"]
 
+
+
     def email_verification_status(self, obj):
         try:
             if obj.profile.email_verified:

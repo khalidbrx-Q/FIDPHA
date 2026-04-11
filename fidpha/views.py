@@ -75,48 +75,57 @@ def setup_profile(request):
     except:
         return redirect("/portal/login/")
 
-    if profile.email_verified:
-        return redirect("/portal/dashboard/")
-
     if request.method == "POST":
-        email = request.POST.get("email")
-        first_name = request.POST.get("first_name", "")
-        last_name = request.POST.get("last_name", "")
-        new_password = request.POST.get("password")
+        email = request.POST.get("email", "").strip()
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
+        password = request.POST.get("password", "").strip()
 
-        if User.objects.filter(email=email).exclude(pk=request.user.pk).exists():
-            messages.error(request, "This email is already used by another account.")
-            return render(request, "fidpha/setup_profile.html")
-
-        request.user.email = email
+        # update name
         request.user.first_name = first_name
         request.user.last_name = last_name
-        if new_password:
-            request.user.set_password(new_password)
-        request.user.save()
 
-        token = secrets.token_urlsafe(32)
-        profile.verification_token = token
-        profile.token_created_at = timezone.now()
-        profile.save()
+        if email:
+            # check email not already used
+            if User.objects.filter(email=email).exclude(pk=request.user.pk).exists():
+                messages.error(request, "This email is already used by another account.")
+                return redirect("/portal/setup-profile/")
 
-        verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
-        try:
-            send_mail(
-                "FIDPHA — Verify your email",
-                f"Click the link to verify your email: {verify_url}",
-                "your_gmail@gmail.com",
-                [email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            messages.error(request, f"Failed to send email: {str(e)}")
-            return render(request, "fidpha/setup_profile.html")
+            # send verification email
+            token = secrets.token_urlsafe(32)
+            profile.verification_token = token
+            profile.token_created_at = timezone.now()
+            profile.save()
 
-        messages.success(request, "Verification email sent! Please check your inbox.")
-        return redirect("/portal/verify-pending/")
+            verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
+            try:
+                send_mail(
+                    "FIDPHA — Verify your email",
+                    f"Click the link to verify your email: {verify_url}",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=False,
+                )
+                request.user.email = email
+                request.user.save()
+                messages.success(request, "Verification email sent!")
+                return redirect("/portal/verify-pending/")
+            except Exception as e:
+                messages.error(request, f"Failed to send email: {str(e)}")
+                return redirect("/portal/setup-profile/")
+
+        if password:
+            request.user.set_password(password)
+            request.user.save()
+            login(request, request.user, backend='django.contrib.auth.backends.ModelBackend')
+        else:
+            request.user.save()
+
+        return redirect("/portal/dashboard/")
 
     return render(request, "fidpha/setup_profile.html")
+
+
 
 @login_required(login_url="/portal/login/")
 def portal_profile(request):
@@ -129,52 +138,57 @@ def portal_profile(request):
         return redirect("/portal/login/")
 
     if request.method == "POST":
-        email = request.POST.get("email")
+        email = request.POST.get("email", "").strip()
         first_name = request.POST.get("first_name", "")
         last_name = request.POST.get("last_name", "")
 
-        if User.objects.filter(email=email).exclude(pk=request.user.pk).exists():
-            messages.error(request, "This email is already used by another account.")
-            return redirect("/portal/profile/")
-
-        if email != request.user.email:
-            # reset verification
-            profile.email_verified = False
-            token = secrets.token_urlsafe(32)
-            profile.verification_token = token
-            profile.token_created_at = timezone.now()
-            profile.save()
-
-            # disconnect all social accounts so Google login won't work until verified
-            from allauth.socialaccount.models import SocialAccount
-            SocialAccount.objects.filter(user=request.user).delete()
-
-            verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
-            try:
-                send_mail(
-                    "FIDPHA — Verify your new email",
-                    f"Click the link to verify your new email: {verify_url}",
-                    "your_gmail@gmail.com",
-                    [email],
-                    fail_silently=False,
-                )
-                messages.success(request, "Verification email sent to your new address!")
-            except Exception as e:
-                messages.error(request, f"Failed to send email: {str(e)}")
+        # only validate and process email if one was provided
+        if email:
+            if User.objects.filter(email=email).exclude(pk=request.user.pk).exists():
+                messages.error(request, "This email is already used by another account.")
                 return redirect("/portal/profile/")
-        else:
-            messages.success(request, "Profile updated successfully!")
 
-        request.user.email = email
+            if email != request.user.email:
+                profile.email_verified = False
+                token = secrets.token_urlsafe(32)
+                profile.verification_token = token
+                profile.token_created_at = timezone.now()
+                profile.save()
+
+                from allauth.socialaccount.models import SocialAccount
+                SocialAccount.objects.filter(user=request.user).delete()
+
+                verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
+                try:
+                    send_mail(
+                        "FIDPHA — Verify your new email",
+                        f"Click the link to verify your new email: {verify_url}",
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                        fail_silently=False,
+                    )
+                    messages.success(request, "Verification email sent to your new address!")
+                except Exception as e:
+                    messages.error(request, f"Failed to send email: {str(e)}")
+                    return redirect("/portal/profile/")
+
+            request.user.email = email
+
         request.user.first_name = first_name
         request.user.last_name = last_name
         request.user.save()
+
+        if not email:
+            messages.success(request, "Profile updated successfully!")
 
         return redirect("/portal/profile/")
 
     return render(request, "fidpha/profile.html", {
         "profile": profile,
     })
+
+
+
 
 @login_required(login_url="/portal/login/")
 def portal_profile_password(request):
@@ -227,8 +241,46 @@ def portal_profile_password(request):
 def verify_pending(request):
     if request.user.is_staff:
         return redirect("/admin/")
-    return render(request, "fidpha/verify_pending.html")
 
+    try:
+        profile = request.user.profile
+    except:
+        return redirect("/portal/login/")
+
+    # if already verified redirect to dashboard
+    if profile.email_verified:
+        return redirect("/portal/dashboard/")
+
+    # if user has no email
+    if not request.user.email:
+        # if coming from verify now button just show the page cleanly
+        if request.GET.get("from") == "button":
+            return render(request, "fidpha/verify_pending.html", {"no_email": True})
+        # otherwise show error and redirect to setup profile
+        messages.error(request, "Please add an email address first.")
+        return redirect("/portal/setup-profile/")
+
+    # if user has email but no token yet — generate and send
+    if not profile.verification_token:
+        token = secrets.token_urlsafe(32)
+        profile.verification_token = token
+        profile.token_created_at = timezone.now()
+        profile.save()
+
+        verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
+        try:
+            send_mail(
+                "FIDPHA — Verify your email",
+                f"Click the link to verify your email: {verify_url}",
+                settings.DEFAULT_FROM_EMAIL,
+                [request.user.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            messages.error(request, f"Failed to send email: {str(e)}")
+            return redirect("/portal/dashboard/")
+
+    return render(request, "fidpha/verify_pending.html", {"no_email": False})
 
 def verify_email(request, token):
     try:

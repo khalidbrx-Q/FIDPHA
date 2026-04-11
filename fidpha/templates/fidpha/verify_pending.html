@@ -17,21 +17,48 @@
                 <span class="material-icons-round">local_pharmacy</span>
             </div>
             <div class="login-brand-title">FIDPHA</div>
-            <div class="login-brand-sub">Check your email</div>
+            <div class="login-brand-sub">
+                {% if no_email %}Add your email{% else %}Check your email{% endif %}
+            </div>
         </div>
 
         <div class="login-card" style="text-align: center;">
-            <div style="width: 52px; height: 52px; background-color: rgba(34,197,94,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
-                <span class="material-icons-round" style="color: #22c55e; font-size: 26px;">mark_email_read</span>
-            </div>
-            <p style="font-size: 0.95rem; font-weight: 600; color: #f1f5f9; margin-bottom: 8px;">Verification email sent!</p>
-            <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;">
-                We've sent a verification link to your email. Click the link to verify and access your dashboard.
-            </p>
-            <p style="font-size: 0.82rem; color: #475569;">
-                Didn't receive it?
-                <a href="/portal/setup-profile/" style="color: #1b679b; text-decoration: none;">Resend email</a>
-            </p>
+            {% if no_email %}
+                <div style="width: 52px; height: 52px; background-color: rgba(245,158,11,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                    <span class="material-icons-round" style="color: #f59e0b; font-size: 26px;">mail</span>
+                </div>
+                <p style="font-size: 0.95rem; font-weight: 600; color: #f1f5f9; margin-bottom: 8px;">No email address found</p>
+                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;">
+                    You haven't added an email address yet. Please go to your profile and add one to receive a verification link.
+                </p>
+                <a href="/portal/profile/" style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 10px 20px;
+                    background-color: #f59e0b;
+                    color: white;
+                    border-radius: 8px;
+                    text-decoration: none;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                ">
+                    <span class="material-icons-round" style="font-size: 18px;">person</span>
+                    Go to Profile
+                </a>
+            {% else %}
+                <div style="width: 52px; height: 52px; background-color: rgba(34,197,94,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                    <span class="material-icons-round" style="color: #22c55e; font-size: 26px;">mark_email_read</span>
+                </div>
+                <p style="font-size: 0.95rem; font-weight: 600; color: #f1f5f9; margin-bottom: 8px;">Verification email sent!</p>
+                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;">
+                    We've sent a verification link to your email. Click the link to verify and access your dashboard.
+                </p>
+                <p style="font-size: 0.82rem; color: #475569;">
+                    Didn't receive it?
+                    <a href="/portal/verify-pending/" style="color: #1b679b; text-decoration: none;">Resend email</a>
+                </p>
+            {% endif %}
         </div>
 
         <div class="login-footer">
