@@ -25,16 +25,20 @@
         </div>
 
         <nav class="sidebar-nav">
-    <div class="nav-section-title">Menu</div>
-    <a href="/portal/dashboard/" class="nav-item {% block nav_dashboard %}{% endblock %}">
-        <span class="material-icons-round">dashboard</span>
-        Dashboard
-    </a>
-    <a href="/portal/profile/" class="nav-item {% block nav_profile %}{% endblock %}">
-        <span class="material-icons-round">person</span>
-        Profile
-    </a>
-</nav>
+            <div class="nav-section-title">Menu</div>
+            <a href="/portal/dashboard/" class="nav-item {% block nav_dashboard %}{% endblock %}">
+                <span class="material-icons-round">dashboard</span>
+                Dashboard
+            </a>
+            <a href="/portal/contracts/" class="nav-item {% block nav_contracts %}{% endblock %}">
+                <span class="material-icons-round">description</span>
+                Contracts
+            </a>
+            <a href="/portal/profile/" class="nav-item {% block nav_profile %}{% endblock %}">
+                <span class="material-icons-round">person</span>
+                Profile
+            </a>
+        </nav>
 
         <div class="sidebar-footer">
             <div class="user-info">
@@ -47,12 +51,12 @@
                 </div>
             </div>
             <form method="POST" action="/portal/logout/">
-    {% csrf_token %}
-    <button type="submit" class="logout-btn">
-        <span class="material-icons-round" style="font-size:16px;">logout</span>
-        Log Out
-    </button>
-</form>
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">
+                    <span class="material-icons-round" style="font-size:16px;">logout</span>
+                    Log Out
+                </button>
+            </form>
         </div>
     </aside>
 

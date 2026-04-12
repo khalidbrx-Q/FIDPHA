@@ -1,0 +1,312 @@
+{% extends "fidpha/base.html" %}
+
+{% block nav_contracts %}active{% endblock %}
+{% block page_title %}Contracts{% endblock %}
+{% block page_breadcrumb %}Contracts{% endblock %}
+
+{% block content %}
+
+<!-- ACTIVE CONTRACT -->
+{% for contract in active_contracts %}
+<div style="margin-bottom: 24px;">
+    <div style="font-size: 0.78rem; color: #22c55e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+        <span class="material-icons-round" style="font-size: 14px;">verified</span>
+        Active Contract
+    </div>
+    <div class="card" style="border: 1px solid rgba(34,197,94,0.3);">
+
+        <!-- HEADER -->
+        <div class="card-header" onclick="toggleContract('active-{{ contract.pk }}')" style="cursor: pointer;">
+            <div class="card-header-icon" style="background-color: rgba(34,197,94,0.15);">
+                <span class="material-icons-round" style="color: #22c55e;">description</span>
+            </div>
+            <div style="flex: 1;">
+                <div class="card-title">{{ contract.title }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                    {{ contract.start_date|date:"d M Y" }} → {{ contract.end_date|date:"d M Y" }}
+                    &nbsp;·&nbsp;
+                    {{ contract.start_date|timesince:contract.end_date }}
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="background-color: rgba(27,103,155,0.15); color: #1b679b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">
+                    {{ contract.contract_product_set.count }} product{{ contract.contract_product_set.count|pluralize }}
+                </span>
+                <span class="badge badge-success">Active</span>
+                <span class="material-icons-round" id="icon-active-{{ contract.pk }}" style="color: #22c55e; font-size: 20px; transition: transform 0.3s;">expand_more</span>
+            </div>
+        </div>
+
+        <!-- BODY -->
+        <div id="contract-active-{{ contract.pk }}" style="display: none; padding-top: 12px;">
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+                {{ contract.designation }}
+            </div>
+
+            {% if contract.contract_product_set.all %}
+            <!-- PRODUCT SEARCH -->
+            <div style="position: relative; margin-bottom: 10px;">
+                <span class="material-icons-round" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;">search</span>
+                <input type="text" id="product-search-active-{{ contract.pk }}" placeholder="Search products..."
+                    onkeyup="filterProducts('active-{{ contract.pk }}')"
+                    style="width: 100%; padding: 8px 14px 8px 36px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.85rem; color: var(--text-primary); box-sizing: border-box;">
+            </div>
+
+            <!-- SCROLLABLE TABLE -->
+            <div style="max-height: 300px; overflow-y: auto; border-radius: 8px; scrollbar-width: thin; scrollbar-color: #334155 transparent;">
+                <table class="table">
+                    <thead style="position: sticky; top: 0; z-index: 1; background-color: var(--card-bg);">
+                        <tr>
+                            <th>Product Code</th>
+                            <th>Product Name</th>
+                            <th>External Designation</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="product-tbody-active-{{ contract.pk }}">
+                        {% for cp in contract.contract_product_set.all %}
+                        <tr class="product-row-active-{{ contract.pk }}"
+                            data-code="{{ cp.product.code|lower }}"
+                            data-name="{{ cp.product.designation|lower }}"
+                            data-ext="{{ cp.external_designation|lower }}">
+                            <td>{{ cp.product.code }}</td>
+                            <td>{{ cp.product.designation }}</td>
+                            <td>{{ cp.external_designation }}</td>
+                            <td>
+                                {% if cp.product.status == "active" %}
+                                    <span class="badge badge-success">Active</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p style="color: var(--text-secondary); font-size: 0.85rem;">No products linked to this contract.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% empty %}
+    <div class="card" style="margin-bottom: 24px; border: 1px solid rgba(34,197,94,0.2);">
+        <p style="color: var(--text-secondary); text-align: center;">No active contract found for this pharmacy.</p>
+    </div>
+{% endfor %}
+
+<!-- INACTIVE CONTRACTS -->
+{% if inactive_contracts %}
+<div style="font-size: 0.78rem; color: #ef4444; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+    <span class="material-icons-round" style="font-size: 14px;">cancel</span>
+    Inactive Contracts
+</div>
+
+<!-- SEARCH & FILTER BAR -->
+<div class="card" style="margin-bottom: 16px;">
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+
+        <div style="flex: 1; min-width: 200px;">
+            <label style="font-size: 0.78rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">Search</label>
+            <div style="position: relative;">
+                <span class="material-icons-round" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;">search</span>
+                <input type="text" id="search-input" placeholder="Search by contract title..."
+                    style="width: 100%; padding: 9px 14px 9px 36px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.88rem; color: var(--text-primary); box-sizing: border-box;">
+            </div>
+        </div>
+
+        <div style="min-width: 160px;">
+    <label style="font-size: 0.78rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">From Date</label>
+    <input type="date" id="date-from"
+        style="width: 100%; padding: 9px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.88rem; color: var(--text-primary); box-sizing: border-box;">
+</div>
+
+<div style="min-width: 160px;">
+    <label style="font-size: 0.78rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">To Date</label>
+    <input type="date" id="date-to"
+        style="width: 100%; padding: 9px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.88rem; color: var(--text-primary); box-sizing: border-box;">
+</div>
+
+        <div>
+            <label style="font-size: 0.78rem; color: transparent; display: block; margin-bottom: 6px;">Reset</label>
+            <button onclick="resetFilters()" style="
+                padding: 9px 16px;
+                background-color: transparent;
+                border: 1px solid var(--card-border);
+                border-radius: 8px;
+                font-size: 0.88rem;
+                color: var(--text-secondary);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            ">
+                <span class="material-icons-round" style="font-size: 16px;">refresh</span>
+                Reset
+            </button>
+        </div>
+    </div>
+    <div style="margin-top: 12px; font-size: 0.78rem; color: var(--text-secondary);">
+        Showing <span id="results-count">{{ inactive_contracts|length }}</span> contract{{ inactive_contracts|length|pluralize }}
+    </div>
+</div>
+
+<!-- INACTIVE CONTRACTS LIST — scrollable container -->
+<div style="max-height: 600px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #334155 transparent; padding-right: 4px;">
+
+    <div id="no-results" style="display: none;">
+        <div class="card">
+            <p style="color: var(--text-secondary); text-align: center;">No contracts match your search.</p>
+        </div>
+    </div>
+
+    {% for contract in inactive_contracts %}
+    <div class="card contract-card"
+        data-title="{{ contract.title|lower }}"
+        data-start="{{ contract.start_date|date:'Y-m-d' }}"
+        data-end="{{ contract.end_date|date:'Y-m-d' }}"
+        style="margin-bottom: 12px;">
+
+        <div class="card-header" onclick="toggleContract('{{ contract.pk }}')" style="cursor: pointer;">
+            <div class="card-header-icon">
+                <span class="material-icons-round">description</span>
+            </div>
+            <div style="flex: 1;">
+                <div class="card-title">{{ contract.title }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                    {{ contract.start_date|date:"d M Y" }} → {{ contract.end_date|date:"d M Y" }}
+                    &nbsp;·&nbsp;
+                    {{ contract.start_date|timesince:contract.end_date }}
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="background-color: rgba(27,103,155,0.15); color: #1b679b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">
+                    {{ contract.contract_product_set.count }} product{{ contract.contract_product_set.count|pluralize }}
+                </span>
+                <span class="badge badge-danger">Inactive</span>
+                <span class="material-icons-round" id="icon-{{ contract.pk }}" style="color: var(--text-secondary); font-size: 20px; transition: transform 0.3s;">expand_more</span>
+            </div>
+        </div>
+
+        <div id="contract-{{ contract.pk }}" style="display: none; padding-top: 12px;">
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+                {{ contract.designation }}
+            </div>
+
+            {% if contract.contract_product_set.all %}
+            <div style="position: relative; margin-bottom: 10px;">
+                <span class="material-icons-round" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;">search</span>
+                <input type="text" id="product-search-{{ contract.pk }}" placeholder="Search products..."
+                    onkeyup="filterProducts('{{ contract.pk }}')"
+                    style="width: 100%; padding: 8px 14px 8px 36px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.85rem; color: var(--text-primary); box-sizing: border-box;">
+            </div>
+            <div style="max-height: 300px; overflow-y: auto; border-radius: 8px; scrollbar-width: thin; scrollbar-color: #334155 transparent;">
+                <table class="table">
+                    <thead style="position: sticky; top: 0; z-index: 1; background-color: var(--card-bg);">
+                        <tr>
+                            <th>Product Code</th>
+                            <th>Product Name</th>
+                            <th>External Designation</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cp in contract.contract_product_set.all %}
+                        <tr class="product-row-{{ contract.pk }}"
+                            data-code="{{ cp.product.code|lower }}"
+                            data-name="{{ cp.product.designation|lower }}"
+                            data-ext="{{ cp.external_designation|lower }}">
+                            <td>{{ cp.product.code }}</td>
+                            <td>{{ cp.product.designation }}</td>
+                            <td>{{ cp.external_designation }}</td>
+                            <td>
+                                {% if cp.product.status == "active" %}
+                                    <span class="badge badge-success">Active</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p style="color: var(--text-secondary); font-size: 0.85rem;">No products linked to this contract.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+{% endif %}
+
+<script>
+    function toggleContract(id) {
+        const body = document.getElementById("contract-" + id);
+        const icon = document.getElementById("icon-" + id);
+        if (!body) return;
+        if (body.style.display === "none") {
+            body.style.display = "block";
+            icon.style.transform = "rotate(180deg)";
+        } else {
+            body.style.display = "none";
+            icon.style.transform = "rotate(0deg)";
+        }
+    }
+
+    function filterProducts(contractId) {
+        const search = document.getElementById("product-search-" + contractId)?.value.toLowerCase() || "";
+        const rows = document.querySelectorAll(".product-row-" + contractId);
+        rows.forEach(row => {
+            const code = row.dataset.code;
+            const name = row.dataset.name;
+            const ext = row.dataset.ext;
+            row.style.display = (code.includes(search) || name.includes(search) || ext.includes(search)) ? "" : "none";
+        });
+    }
+
+    function applyFilters() {
+        const search = document.getElementById("search-input")?.value.toLowerCase().trim() || "";
+        const dateFrom = document.getElementById("date-from")?.value || "";
+        const dateTo = document.getElementById("date-to")?.value || "";
+        const cards = document.querySelectorAll(".contract-card");
+
+        let visible = 0;
+        cards.forEach(card => {
+            const title = card.dataset.title;
+            const cardStart = card.dataset.start;
+            const cardEnd = card.dataset.end;
+
+            const matchesSearch = !search || title.includes(search);
+            const matchesFrom = !dateFrom || cardStart >= dateFrom;
+            const matchesTo = !dateTo || cardEnd <= dateTo;
+
+            if (matchesSearch && matchesFrom && matchesTo) {
+                card.style.display = "block";
+                visible++;
+            } else {
+                card.style.display = "none";
+            }
+        });
+
+        document.getElementById("results-count").textContent = visible;
+        document.getElementById("no-results").style.display = visible === 0 ? "block" : "none";
+    }
+
+    function resetFilters() {
+        document.getElementById("search-input").value = "";
+        document.getElementById("date-from").value = "";
+        document.getElementById("date-to").value = "";
+        applyFilters();
+    }
+
+    if (document.getElementById("search-input")) {
+        document.getElementById("search-input").addEventListener("input", applyFilters);
+        document.getElementById("date-from").addEventListener("change", applyFilters);
+        document.getElementById("date-to").addEventListener("change", applyFilters);
+    }
+</script>
+
+{% endblock %}

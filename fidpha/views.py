@@ -306,23 +306,51 @@ def portal_dashboard(request):
 
     try:
         profile = request.user.profile
-        account = profile.account
     except:
         return redirect("/portal/login/")
 
-    welcome = request.session.pop("welcome_message", None)
-    if welcome:
-        messages.success(request, welcome)
-
-    contracts = account.contracts.all().prefetch_related("contract_product_set__product")
+    account = profile.account
+    contracts = account.contracts.all().order_by("-start_date")
     active_contracts = contracts.filter(status="active")
+
+    # calculate remaining days for active contract
+    from django.utils import timezone
+    active_contract_days_remaining = None
+    if active_contracts.exists():
+        active_contract = active_contracts.first()
+        delta = active_contract.end_date - timezone.now()
+        active_contract_days_remaining = delta.days
 
     return render(request, "fidpha/dashboard.html", {
         "account": account,
         "contracts": contracts,
         "active_contracts": active_contracts,
         "email_verified": profile.email_verified,
+        "active_contract_days_remaining": active_contract_days_remaining,
     })
+
+
+@login_required(login_url="/portal/login/")
+def portal_contracts(request):
+    if request.user.is_staff:
+        return redirect("/admin/")
+
+    try:
+        profile = request.user.profile
+    except:
+        return redirect("/portal/login/")
+
+    all_contracts = profile.account.contracts.all().order_by("-start_date")
+    active_contracts = all_contracts.filter(status="active")
+    inactive_contracts = all_contracts.filter(status="inactive")
+
+    return render(request, "fidpha/contracts.html", {
+        "active_contracts": active_contracts,
+        "inactive_contracts": inactive_contracts,
+        "profile": profile,
+    })
+
+
 
 
 # -----------------------

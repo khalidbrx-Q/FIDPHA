@@ -18,7 +18,6 @@ input[type="password"]:focus {
     display: none !important;
 }
 
-
 /* Fix invisible password fields */
 [type="password"],
 [type="password"]:focus,
@@ -33,7 +32,6 @@ input[type="password"]:focus {
     opacity: 1 !important;
     visibility: visible !important;
 }
-
 
 /* Dark mode password fields */
 [data-theme="dark"] [type="password"],
@@ -52,8 +50,6 @@ input[type="password"]:focus {
     color: #333333 !important;
     border: 1px solid #cccccc !important;
 }
-
-
 
 /* Scrollable contracts inline */
 #contract-group .formset-wrapper {
@@ -75,4 +71,14 @@ input[type="password"]:focus {
 #contract-group .formset-wrapper::-webkit-scrollbar-thumb {
     background-color: #334155;
     border-radius: 6px;
+}
+
+/* Scrollable contract products inline */
+#contract_product_set-group .formset-wrapper {
+    max-height: 450px;
+}
+
+/* Hide filters button on products page */
+.app-fidpha.model-product [data-controller="filters"] {
+    display: none !important;
 }

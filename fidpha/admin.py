@@ -5,8 +5,110 @@ from django.forms import BaseInlineFormSet
 from django.core.exceptions import ValidationError
 from django import forms
 from django.utils.html import format_html
+from django.http import JsonResponse
 from unfold.admin import ModelAdmin, TabularInline, StackedInline
 from .models import Account, UserProfile, Product, Contract, Contract_Product
+
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+def available_products_api(request, contract_id):
+    if not request.user.is_staff:
+        return JsonResponse({"error": "Forbidden"}, status=403)
+    try:
+        contract = Contract.objects.get(pk=contract_id)
+        already_linked = Contract_Product.objects.filter(
+            contract=contract
+        ).values_list("product_id", flat=True)
+        products = Product.objects.filter(
+            status="active"
+        ).exclude(id__in=already_linked).order_by("designation")
+        return JsonResponse({
+            "products": [
+                {"id": p.pk, "code": p.code, "designation": p.designation}
+                for p in products
+            ]
+        })
+    except Contract.DoesNotExist:
+        return JsonResponse({"error": "Not found"}, status=404)
+
+
+def add_contract_product_api(request, contract_id):
+    if not request.user.is_staff:
+        return JsonResponse({"error": "Forbidden"}, status=403)
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    try:
+        data = json.loads(request.body)
+        product_id = data.get("product_id")
+        external_designation = data.get("external_designation", "").strip()
+
+        if not product_id or not external_designation:
+            return JsonResponse({"error": "Missing fields"}, status=400)
+
+        contract = Contract.objects.get(pk=contract_id)
+        product = Product.objects.get(pk=product_id, status="active")
+
+        if Contract_Product.objects.filter(contract=contract, product=product).exists():
+            return JsonResponse({"error": "Product already linked"}, status=400)
+
+        Contract_Product.objects.create(
+            contract=contract,
+            product=product,
+            external_designation=external_designation
+        )
+        return JsonResponse({"success": True})
+    except Contract.DoesNotExist:
+        return JsonResponse({"error": "Contract not found"}, status=404)
+    except Product.DoesNotExist:
+        return JsonResponse({"error": "Product not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+
+# -----------------------
+# Product Toggle API
+# -----------------------
+def product_toggle_api(request, product_id):
+    if not request.user.is_staff:
+        return JsonResponse({"error": "Forbidden"}, status=403)
+
+    try:
+        product = Product.objects.get(pk=product_id)
+    except Product.DoesNotExist:
+        return JsonResponse({"error": "Not found"}, status=404)
+
+    new_status = request.GET.get("status")
+
+    if new_status == "inactive":
+        active_contracts = Contract.objects.filter(
+            contract_product__product=product,
+            status="active"
+        ).select_related("account")
+
+        if active_contracts.exists():
+            contracts_data = []
+            for c in active_contracts:
+                contracts_data.append({
+                    "id": c.pk,
+                    "title": c.title,
+                    "account": c.account.name,
+                    "start_date": c.start_date.strftime("%d %b %Y"),
+                    "end_date": c.end_date.strftime("%d %b %Y"),
+                    "url": f"/admin/fidpha/contract/{c.pk}/change/"
+                })
+            return JsonResponse({
+                "blocked": True,
+                "product": product.designation,
+                "contracts": contracts_data
+            })
+
+    # safe to toggle
+    product.status = new_status
+    product.save()
+    return JsonResponse({"blocked": False, "new_status": new_status})
 
 
 # -----------------------
@@ -162,6 +264,12 @@ class ContractAccountInline(TabularInline):
     verbose_name_plural = "Contracts"
     fields = ["contract_link", "contract_status", "start_date", "end_date", "product_count"]
     readonly_fields = ["contract_link", "contract_status", "start_date", "end_date", "product_count"]
+    can_delete = False
+    show_change_link = False
+    ordering = ["-start_date"]
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
     def product_count(self, obj):
         count = obj.contract_product_set.count()
@@ -169,14 +277,7 @@ class ContractAccountInline(TabularInline):
             '<span style="background-color: rgba(27,103,155,0.15); color: #1b679b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">{} product{}</span>',
             count, "s" if count != 1 else ""
         )
-
     product_count.short_description = "Products"
-    can_delete = False
-    show_change_link = False
-    ordering = ["-start_date"]
-
-    def has_add_permission(self, request, obj=None):
-        return False
 
     def contract_link(self, obj):
         return format_html(
@@ -196,10 +297,12 @@ class ContractAccountInline(TabularInline):
             )
     contract_status.short_description = "Status"
 
+
 class ContractProductInline(TabularInline):
     model = Contract_Product
-    extra = 1
-    classes = ["collapse"]
+    extra = 0  # change from 1 to 0 to remove empty row
+    verbose_name = "Product"
+    verbose_name_plural = "Products"
     autocomplete_fields = ["product"]
 
 
@@ -230,8 +333,6 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
 
     readonly_fields = ["email_verification_status"]
 
-
-
     def email_verification_status(self, obj):
         try:
             if obj.profile.email_verified:
@@ -259,6 +360,41 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
                 already_linked = already_linked.exclude(account_id=account_id)
             queryset = queryset.exclude(id__in=already_linked).exclude(is_staff=True)
         return queryset, use_distinct
+
+    def delete_model(self, request, obj):
+        try:
+            from allauth.socialaccount.models import SocialAccount
+            SocialAccount.objects.filter(user=obj).delete()
+        except:
+            pass
+        try:
+            from allauth.account.models import EmailAddress
+            EmailAddress.objects.filter(user=obj).delete()
+        except:
+            pass
+        try:
+            obj.profile.delete()
+        except:
+            pass
+        obj.delete()
+
+    def delete_queryset(self, request, queryset):
+        from allauth.socialaccount.models import SocialAccount
+        from allauth.account.models import EmailAddress
+        for user in queryset:
+            try:
+                SocialAccount.objects.filter(user=user).delete()
+            except:
+                pass
+            try:
+                EmailAddress.objects.filter(user=user).delete()
+            except:
+                pass
+            try:
+                user.profile.delete()
+            except:
+                pass
+            user.delete()
 
 
 # -----------------------
@@ -293,17 +429,87 @@ class AccountAdmin(ModelAdmin):
     def user_count(self, obj):
         return obj.users.count()
 
+
 # -----------------------
 # Product Admin
 # -----------------------
 @admin.register(Product)
 class ProductAdmin(ModelAdmin):
-    list_display = ["code", "designation", "status"]
+    class Media:
+        js = ["admin/product_toggle.js", "admin/product_list.js"]
+
+    list_display = ["code", "designation", "status_toggle", "active_contracts_count"]
     list_filter = ["status"]
-    list_editable = ["status"]
     search_fields = ["code", "designation"]
     ordering = ["designation"]
     list_per_page = 20
+    actions = ["activate_products", "deactivate_products"]
+
+    @admin.action(description="✓ Activate selected products")
+    def activate_products(self, request, queryset):
+        count = queryset.update(status="active")
+        self.message_user(request, f"{count} product(s) activated successfully.")
+
+    @admin.action(description="✗ Deactivate selected products")
+    def deactivate_products(self, request, queryset):
+        blocked = []
+        deactivated = 0
+        for product in queryset:
+            active_contracts = Contract.objects.filter(
+                contract_product__product=product,
+                status="active"
+            )
+            if active_contracts.exists():
+                contract_titles = ", ".join(active_contracts.values_list("title", flat=True))
+                blocked.append(f"{product.designation} ({contract_titles})")
+            else:
+                product.status = "inactive"
+                product.save()
+                deactivated += 1
+
+        if deactivated:
+            self.message_user(request, f"{deactivated} product(s) deactivated successfully.")
+        if blocked:
+            self.message_user(
+                request,
+                f"Skipped — linked to active contracts: {' | '.join(blocked)}",
+                level="warning"
+            )
+
+    @admin.display(description="Active Contracts")
+    def active_contracts_count(self, obj):
+        count = Contract.objects.filter(
+            contract_product__product=obj,
+            status="active"
+        ).count()
+        if count == 0:
+            return format_html(
+                '<span style="background-color: rgba(34,197,94,0.15); color: #22c55e; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">0</span>'
+            )
+        else:
+            return format_html(
+                '<span style="background-color: rgba(239,68,68,0.15); color: #ef4444; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">{}</span>',
+                count
+            )
+
+    def status_toggle(self, obj):
+        if obj.status == "active":
+            return format_html(
+                '<button type="button" '
+                'onclick="toggleProductStatus({}, \'inactive\')" '
+                'style="background-color: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">'
+                '✓ Active</button>',
+                obj.pk
+            )
+        else:
+            return format_html(
+                '<button type="button" '
+                'onclick="toggleProductStatus({}, \'active\')" '
+                'style="background-color: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; cursor: pointer;">'
+                '✗ Inactive</button>',
+                obj.pk
+            )
+    status_toggle.short_description = "Status"
 
     def get_search_results(self, request, queryset, search_term):
         queryset, use_distinct = super().get_search_results(request, queryset, search_term)
@@ -319,11 +525,39 @@ class ProductAdmin(ModelAdmin):
                 ).values_list("product_id", flat=True)
                 queryset = queryset.exclude(id__in=already_linked)
         return queryset, use_distinct
+
+    @admin.action(description="🗑 Delete selected products")
+    def delete_products(self, request, queryset):
+        blocked = []
+        deleted = 0
+        for product in queryset:
+            active_contracts = Contract.objects.filter(
+                contract_product__product=product,
+                status="active"
+            )
+            if active_contracts.exists():
+                contract_titles = ", ".join(active_contracts.values_list("title", flat=True))
+                blocked.append(f"{product.designation} ({contract_titles})")
+            else:
+                product.delete()
+                deleted += 1
+
+        if deleted:
+            self.message_user(request, f"{deleted} product(s) deleted successfully.")
+        if blocked:
+            self.message_user(
+                request,
+                f"Cannot delete — linked to active contracts: {' | '.join(blocked)}",
+                level="warning"
+            )
 # -----------------------
 # Contract Admin
 # -----------------------
 @admin.register(Contract)
 class ContractAdmin(ModelAdmin):
+    class Media:
+        js = ["admin/contract_form.js"]
+
     inlines = [ContractProductInline]
     list_display = ["title", "account", "get_account_city", "start_date", "end_date", "status", "product_count"]
     list_filter = ["status", "account"]
@@ -343,7 +577,7 @@ class ContractAdmin(ModelAdmin):
     def product_count(self, obj):
         count = obj.contract_product_set.count()
         return format_html(
-            '<span style="background-color: rgba(27,103,155,0.15); color: #1b679b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">{} product{}</span>',
+            '<span style="background-color: rgba(27,103,155,0.15); color: #1b679b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600; white-space: nowrap;">{} product{}</span>',
             count, "s" if count != 1 else ""
         )
 
@@ -406,6 +640,8 @@ class ContractAdmin(ModelAdmin):
     @admin.display(description="City")
     def get_account_city(self, obj):
         return obj.account.city
+
+
 # -----------------------
 # Contract_Product Admin
 # -----------------------

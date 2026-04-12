@@ -67,110 +67,136 @@
     </div>
 {% endif %}
 
-    <!-- STAT CARDS -->
-    <div class="grid-3" style="margin-bottom: 20px;">
-        <div class="stat-card">
-            <div class="stat-label">Pharmacy</div>
-            <div class="stat-value">{{ account.name }}</div>
-            <div class="stat-sub">{{ account.city }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Active Contracts</div>
-            <div class="stat-value">{{ active_contracts|length }}</div>
-            <div class="stat-sub">Total: {{ contracts|length }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Portal Access</div>
-            <div class="stat-value">
-                {% if account.pharmacy_portal %}
-                    <span class="badge badge-success">Enabled</span>
-                {% else %}
-                    <span class="badge badge-danger">Disabled</span>
-                {% endif %}
-            </div>
-            <div class="stat-sub">Account status: {{ account.status }}</div>
-        </div>
+<!-- STAT CARDS -->
+<div class="grid-2" style="margin-bottom: 20px;">
+    <div class="stat-card">
+        <div class="stat-label">Pharmacy</div>
+        <div class="stat-value">{{ account.name }}</div>
+        <div class="stat-sub">{{ account.city }}</div>
     </div>
-
-    <!-- PHARMACY INFO -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-header-icon">
-                <span class="material-icons-round">store</span>
-            </div>
-            <div class="card-title">Pharmacy Information</div>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Code</span>
-            <span class="info-value">{{ account.code }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Name</span>
-            <span class="info-value">{{ account.name }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">City</span>
-            <span class="info-value">{{ account.city }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Location</span>
-            <span class="info-value">{{ account.location }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Phone</span>
-            <span class="info-value">{{ account.phone }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Email</span>
-            <span class="info-value">{{ account.email }}</span>
-        </div>
-        <div class="info-row">
-            <span class="info-label">Status</span>
-            <span class="info-value">
-                {% if account.status == "active" %}
-                    <span class="badge badge-success">Active</span>
-                {% else %}
-                    <span class="badge badge-danger">Inactive</span>
-                {% endif %}
-            </span>
-        </div>
+    <div class="stat-card">
+        <div class="stat-label">Points</div>
+        <div class="stat-value">0</div>
+        <div class="stat-sub">Based on active contract products</div>
     </div>
+</div>
 
-    <!-- CONTRACTS -->
-    {% for contract in contracts %}
-    <div class="card">
-        <div class="card-header">
-            <div class="card-header-icon">
-                <span class="material-icons-round">description</span>
-            </div>
-            <div class="card-title">{{ contract.title }}</div>
-            <div style="margin-left: auto;">
-                {% if contract.status == "active" %}
-                    <span class="badge badge-success">Active</span>
-                {% else %}
-                    <span class="badge badge-danger">Inactive</span>
-                {% endif %}
-            </div>
+<!-- PHARMACY INFO -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-icon">
+            <span class="material-icons-round">store</span>
         </div>
+        <div class="card-title">Pharmacy Information</div>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Code</span>
+        <span class="info-value">{{ account.code }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Name</span>
+        <span class="info-value">{{ account.name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">City</span>
+        <span class="info-value">{{ account.city }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Location</span>
+        <span class="info-value">{{ account.location }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Phone</span>
+        <span class="info-value">{{ account.phone }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Email</span>
+        <span class="info-value">{{ account.email }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="info-value">
+            {% if account.status == "active" %}
+                <span class="badge badge-success">Active</span>
+            {% else %}
+                <span class="badge badge-danger">Inactive</span>
+            {% endif %}
+        </span>
+    </div>
+</div>
 
-        <div class="grid-2" style="margin-bottom: 16px;">
-            <div class="info-row">
-                <span class="info-label">Start Date</span>
-                <span class="info-value">{{ contract.start_date|date:"d M Y" }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">End Date</span>
-                <span class="info-value">{{ contract.end_date|date:"d M Y" }}</span>
-            </div>
-        </div>
+<!-- ACTIVE CONTRACT ONLY -->
+{% for contract in active_contracts %}
+<div class="card">
+    <div class="card-header">
+    <div class="card-header-icon" style="background-color: rgba(34,197,94,0.15);">
+        <span class="material-icons-round" style="color: #22c55e;">description</span>
+    </div>
+    <div class="card-title">{{ contract.title }}</div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+        <span style="background-color: rgba(27,103,155,0.15); color: #1b679b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">
+            {{ contract.contract_product_set.count }} product{{ contract.contract_product_set.count|pluralize }}
+        </span>
+        <span style="background-color: rgba(34,197,94,0.15); color: #22c55e; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+            <span class="material-icons-round" style="font-size: 13px;">verified</span>
+            Active Contract
+        </span>
+    </div>
+</div>
 
-        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+<!-- DATES inline with duration and time remaining -->
+<div style="display: flex; align-items: center; gap: 16px; margin: 12px 0; padding-bottom: 12px; border-bottom: 1px solid var(--card-border); font-size: 0.85rem; color: var(--text-secondary); flex-wrap: wrap;">
+    <span><span style="font-weight: 500; color: var(--text-primary);">Start Date</span> &nbsp; {{ contract.start_date|date:"d M Y" }}</span>
+    <span style="color: var(--card-border);">|</span>
+    <span><span style="font-weight: 500; color: var(--text-primary);">End Date</span> &nbsp; {{ contract.end_date|date:"d M Y" }}</span>
+    <span style="color: var(--card-border);">|</span>
+    <span><span style="font-weight: 500; color: var(--text-primary);">Duration</span> &nbsp; {{ contract.start_date|timesince:contract.end_date }}</span>
+    <span style="color: var(--card-border);">|</span>
+    <span>
+    <span style="font-weight: 500; color: var(--text-primary);">Time Remaining</span> &nbsp;
+    {% if active_contract_days_remaining is not None %}
+        {% if active_contract_days_remaining <= 7 %}
+            <span style="color: #ef4444; font-weight: 600;">{{ contract.end_date|timeuntil }} ⚠</span>
+        {% elif active_contract_days_remaining <= 15 %}
+            <span style="color: #f59e0b; font-weight: 600;">{{ contract.end_date|timeuntil }} ⚠</span>
+        {% else %}
+            <span style="color: #22c55e; font-weight: 600;">{{ contract.end_date|timeuntil }}</span>
+        {% endif %}
+    {% endif %}
+</span>
+</div>
+
+    <!-- DESCRIPTION with read more -->
+    <div style="margin-top: 12px; margin-bottom: 12px;">
+        <span id="desc-short-{{ contract.pk }}" style="font-size: 0.85rem; color: var(--text-secondary);">
+            {{ contract.designation|truncatechars:100 }}
+        </span>
+        <span id="desc-full-{{ contract.pk }}" style="font-size: 0.85rem; color: var(--text-secondary); display: none;">
             {{ contract.designation }}
-        </div>
+        </span>
+        {% if contract.designation|length > 100 %}
+            <a href="#" onclick="toggleDesc('{{ contract.pk }}'); return false;"
+                id="desc-btn-{{ contract.pk }}"
+                style="font-size: 0.78rem; color: #1b679b; font-weight: 600; margin-left: 4px; text-decoration: none;">
+                Read more
+            </a>
+        {% endif %}
+    </div>
 
-        {% if contract.contract_product_set.all %}
-        <table class="table">
-            <thead>
+    {% if contract.contract_product_set.all %}
+
+    <!-- PRODUCT SEARCH -->
+    <div style="position: relative; margin-bottom: 10px;">
+        <span class="material-icons-round" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;">search</span>
+        <input type="text" id="product-search-{{ contract.pk }}" placeholder="Search products..."
+            onkeyup="filterProducts({{ contract.pk }})"
+            style="width: 100%; padding: 8px 14px 8px 36px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.85rem; color: var(--text-primary); box-sizing: border-box;">
+    </div>
+
+    <!-- SCROLLABLE TABLE -->
+    <div style="max-height: 300px; overflow-y: auto; border-radius: 8px; scrollbar-width: thin; scrollbar-color: #334155 transparent;">
+        <table class="table" id="product-table-{{ contract.pk }}">
+            <thead style="position: sticky; top: 0; z-index: 1; background-color: var(--card-bg);">
                 <tr>
                     <th>Product Code</th>
                     <th>Product Name</th>
@@ -178,9 +204,12 @@
                     <th>Status</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="product-tbody-{{ contract.pk }}">
                 {% for cp in contract.contract_product_set.all %}
-                <tr>
+                <tr class="product-row-{{ contract.pk }}"
+                    data-code="{{ cp.product.code|lower }}"
+                    data-name="{{ cp.product.designation|lower }}"
+                    data-ext="{{ cp.external_designation|lower }}">
                     <td>{{ cp.product.code }}</td>
                     <td>{{ cp.product.designation }}</td>
                     <td>{{ cp.external_designation }}</td>
@@ -195,14 +224,64 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% else %}
-            <p style="color: var(--text-secondary); font-size: 0.85rem;">No products linked to this contract.</p>
-        {% endif %}
     </div>
-    {% empty %}
-        <div class="card">
-            <p style="color: var(--text-secondary); text-align: center;">No contracts found for this pharmacy.</p>
-        </div>
-    {% endfor %}
+
+    {% else %}
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">No products linked to this contract.</p>
+    {% endif %}
+
+    <!-- LINK TO CONTRACTS PAGE -->
+    <div style="margin-top: 16px; text-align: right;">
+        <a href="/portal/contracts/" style="
+            font-size: 0.82rem;
+            color: #1b679b;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        ">
+            View all contracts
+            <span class="material-icons-round" style="font-size: 16px;">arrow_forward</span>
+        </a>
+    </div>
+</div>
+{% empty %}
+    <div class="card">
+        <p style="color: var(--text-secondary); text-align: center;">No active contract found for this pharmacy.</p>
+    </div>
+{% endfor %}
+
+<script>
+    function toggleDesc(id) {
+        const short = document.getElementById("desc-short-" + id);
+        const full = document.getElementById("desc-full-" + id);
+        const btn = document.getElementById("desc-btn-" + id);
+        if (full.style.display === "none") {
+            short.style.display = "none";
+            full.style.display = "inline";
+            btn.textContent = "Read less";
+        } else {
+            short.style.display = "inline";
+            full.style.display = "none";
+            btn.textContent = "Read more";
+        }
+    }
+
+    function filterProducts(contractId) {
+        const search = document.getElementById("product-search-" + contractId).value.toLowerCase();
+        const rows = document.querySelectorAll(".product-row-" + contractId);
+        rows.forEach(row => {
+            const code = row.dataset.code;
+            const name = row.dataset.name;
+            const ext = row.dataset.ext;
+            if (code.includes(search) || name.includes(search) || ext.includes(search)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    }
+</script>
 
 {% endblock %}
