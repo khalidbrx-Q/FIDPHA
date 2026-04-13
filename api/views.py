@@ -1,17 +1,13 @@
 from django.utils import timezone
-from rest_framework.views import APIView
+from rest_framework.views import APIView, exception_handler
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated
 from fidpha.models import Account, Contract
-
-from rest_framework.views import exception_handler
-from django.utils import timezone
 
 
 def custom_exception_handler(exc, context):
     timestamp = timezone.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated
 
     if isinstance(exc, (AuthenticationFailed, NotAuthenticated)):
         return Response({
@@ -19,11 +15,12 @@ def custom_exception_handler(exc, context):
             "timestamp": timestamp,
             "error": {
                 "code": "INVALID_TOKEN",
-                "message": "Token manquant ou invalide"
+                "message": "Missing or invalid token"
             }
         }, status=401)
 
     return exception_handler(exc, context)
+
 
 class ActiveContractView(APIView):
 
@@ -37,7 +34,7 @@ class ActiveContractView(APIView):
                 "timestamp": timestamp,
                 "error": {
                     "code": "MISSING_PARAMETER",
-                    "message": "Le paramètre account_code est manquant"
+                    "message": "The account_code parameter is missing"
                 }
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -49,7 +46,7 @@ class ActiveContractView(APIView):
                 "timestamp": timestamp,
                 "error": {
                     "code": "ACCOUNT_NOT_FOUND",
-                    "message": f"Aucun compte trouvé avec le code {account_code}"
+                    "message": f"No account found with code {account_code}"
                 }
             }, status=status.HTTP_404_NOT_FOUND)
 
@@ -61,16 +58,16 @@ class ActiveContractView(APIView):
                 "timestamp": timestamp,
                 "error": {
                     "code": "CONTRACT_NOT_FOUND",
-                    "message": f"Aucun contrat actif trouvé pour le compte {account_code}"
+                    "message": f"No active contract found for account {account_code}"
                 }
             }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
+        except Exception:
             return Response({
                 "status": "error",
                 "timestamp": timestamp,
                 "error": {
                     "code": "SERVER_ERROR",
-                    "message": "Une erreur interne s'est produite"
+                    "message": "An internal server error occurred"
                 }
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
