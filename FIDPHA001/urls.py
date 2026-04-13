@@ -35,4 +35,7 @@ urlpatterns = [
     path("portal/", include("fidpha.urls")),
     path("auth/", include("allauth.urls")),
     path("", lambda request: redirect("/portal/login/")),
+
+
+    path("api/v1/", include("api.urls")),
 ]

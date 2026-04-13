@@ -26,6 +26,10 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
+
+
+    "rest_framework",
+    "api",
 ]
 
 MIDDLEWARE = [
@@ -199,6 +203,19 @@ UNFOLD = {
                 ],
             },
             {
+                "title": "API",
+                "icon": "api",
+                "permission": lambda request: request.user.is_superuser,
+                "items": [
+                    {
+                        "title": "API Tokens",
+                        "icon": "key",
+                        "link": reverse_lazy("admin:api_apitoken_changelist"),
+                        "permission": lambda request: request.user.is_superuser,
+                    },
+                ],
+            },
+            {
                 "title": "Sites",
                 "icon": "language",
                 "permission": lambda request: request.user.is_superuser,
@@ -239,3 +256,36 @@ UNFOLD = {
         ],
     },
 }
+
+
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "api.authentication.APITokenAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "api.permissions.HasAPIToken",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",
+        "user": "1000/hour",
+    },
+    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
+    "DEFAULT_VERSION": "v1",
+    "ALLOWED_VERSIONS": ["v1"],
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+
+    "EXCEPTION_HANDLER": "api.views.custom_exception_handler",
+}
+
+
+if DEBUG:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] += [
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    ]
