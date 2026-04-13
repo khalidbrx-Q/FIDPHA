@@ -550,7 +550,198 @@ urlpatterns = [
 
 ---
 
-## 8. API comming soon
+## 8. API
+
+### 8.1 Overview
+
+FIDPHA exposes a REST API built with Django REST Framework. It uses custom token-based authentication — tokens are standalone (not linked to any user) and are managed by the super admin.
+
+### 8.2 Authentication
+
+All API requests must include a valid token in the `Authorization` header:
+Authorization: Token YOUR_TOKEN_HERE
+
+Tokens are created and managed in the admin panel under **API → API Tokens**.
+
+### 8.3 Setup
+
+**Step 1 — Install Django REST Framework:**
+```bash
+pip install djangorestframework
+```
+
+**Step 2 — Create the API app:**
+```bash
+python manage.py startapp api
+```
+
+**Step 3 — Add to INSTALLED_APPS in settings.py:**
+```python
+INSTALLED_APPS = [
+    ...
+    "rest_framework",
+    "api",
+]
+```
+
+**Step 4 — Create the following files inside the `api` app:**
+
+| File | Purpose |
+|------|---------|
+| `api/models.py` | APIToken model |
+| `api/authentication.py` | Custom token authentication class |
+| `api/permissions.py` | Custom permission class |
+| `api/views.py` | API views and custom exception handler |
+| `api/urls.py` | API URL routes |
+| `api/admin.py` | Admin configuration for token management |
+
+**Step 5 — Run migrations:**
+```bash
+python manage.py makemigrations api
+python manage.py migrate
+```
+
+**Step 6 — Add API URLs in main urls.py:**
+```python
+path("api/v1/", include("api.urls")),
+```
+
+### 8.4 Token Management
+
+| Feature | Description |
+|---------|-------------|
+| Create token | Super admin creates a token with a name/description |
+| Copy token | Copy button available in admin list and detail page |
+| Revoke token | Set `is_active = False` to revoke access |
+| Usage tracking | `last_used_at` and `usage_count` updated on every request |
+
+### 8.5 Endpoints
+
+#### GET /api/v1/contract/active/
+
+Returns the active contract for a given pharmacy.
+
+**Query Parameters:**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| account_code | Yes | The pharmacy account code (e.g. `PH-XXXXX`) |
+
+**Request Example:**
+```bash
+curl -H "Authorization: Token YOUR_TOKEN_HERE" \
+     "https://khalidbrx.pythonanywhere.com/api/v1/contract/active/?account_code=PH-XXXXX"
+```
+
+**Success Response (200 OK):**
+```json
+{
+    "status": "success",
+    "timestamp": "2026-04-13T14:30:00Z",
+    "contract": {
+        "id": 1,
+        "pharmacy": "PHARMACY SAADA",
+        "account_code": "PH-XXXXX",
+        "start_date": "2026-04-07",
+        "end_date": "2026-05-07",
+        "products": [
+            {
+                "product_id": 1,
+                "internal_code": "PROD001",
+                "external_designation": "DOLI1000"
+            }
+        ]
+    }
+}
+```
+
+**Error Responses:**
+
+| HTTP Code | Error Code | Description |
+|-----------|------------|-------------|
+| 400 | MISSING_PARAMETER | account_code parameter is missing |
+| 401 | INVALID_TOKEN | Token is missing or invalid |
+| 404 | ACCOUNT_NOT_FOUND | No account found with given code |
+| 404 | CONTRACT_NOT_FOUND | No active contract found for account |
+| 500 | SERVER_ERROR | Internal server error |
+
+**Error Response Example:**
+```json
+{
+    "status": "error",
+    "timestamp": "2026-04-13T14:30:00Z",
+    "error": {
+        "code": "CONTRACT_NOT_FOUND",
+        "message": "No active contract found for account PH-XXXXX"
+    }
+}
+```
+
+### 8.6 Python Usage Example
+
+```python
+import requests
+
+API_BASE_URL = "https://khalidbrx.pythonanywhere.com/api/v1"
+API_TOKEN = "YOUR_TOKEN_HERE"
+ACCOUNT_CODE = "PH-XXXXX"
+
+headers = {
+    "Authorization": f"Token {API_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+def get_active_contract(account_code):
+    url = f"{API_BASE_URL}/contract/active/"
+    params = {"account_code": account_code}
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        return response.json()
+    except Exception as e:
+        return e
+
+if __name__ == "__main__":
+    print(get_active_contract(ACCOUNT_CODE))
+```
+
+### 8.7 Settings
+
+```python
+INSTALLED_APPS += [
+    "rest_framework",
+    "api",
+]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "api.authentication.APITokenAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "api.permissions.HasAPIToken",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",
+        "user": "1000/hour",
+    },
+    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
+    "DEFAULT_VERSION": "v1",
+    "ALLOWED_VERSIONS": ["v1"],
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+    "EXCEPTION_HANDLER": "api.views.custom_exception_handler",
+}
+
+if DEBUG:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] += [
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    ]
+```
+
 
 ---
 
@@ -1208,7 +1399,197 @@ urlpatterns = [
 
 ---
 
-## 8. API - comming soon
+## 8. API
+
+### 8.1 Aperçu
+
+FIDPHA expose une API REST construite avec Django REST Framework. Elle utilise une authentification par token personnalisée — les tokens sont indépendants (non liés à un utilisateur) et gérés par le super administrateur.
+
+### 8.2 Authentification
+
+Toutes les requêtes API doivent inclure un token valide dans l'en-tête `Authorization` :
+Authorization: Token VOTRE_TOKEN_ICI
+
+Les tokens sont créés et gérés dans le panneau d'administration sous **API → API Tokens**.
+
+### 8.3 Installation
+
+**Étape 1 — Installer Django REST Framework :**
+```bash
+pip install djangorestframework
+```
+
+**Étape 2 — Créer l'application API :**
+```bash
+python manage.py startapp api
+```
+
+**Étape 3 — Ajouter à INSTALLED_APPS dans settings.py :**
+```python
+INSTALLED_APPS = [
+    ...
+    "rest_framework",
+    "api",
+]
+```
+
+**Étape 4 — Créer les fichiers suivants dans l'application `api` :**
+
+| Fichier | Rôle |
+|---------|------|
+| `api/models.py` | Modèle APIToken |
+| `api/authentication.py` | Classe d'authentification par token personnalisée |
+| `api/permissions.py` | Classe de permission personnalisée |
+| `api/views.py` | Vues API et gestionnaire d'exceptions personnalisé |
+| `api/urls.py` | Routes URL de l'API |
+| `api/admin.py` | Configuration admin pour la gestion des tokens |
+
+**Étape 5 — Lancer les migrations :**
+```bash
+python manage.py makemigrations api
+python manage.py migrate
+```
+
+**Étape 6 — Ajouter les URLs API dans le urls.py principal :**
+```python
+path("api/v1/", include("api.urls")),
+```
+
+### 8.4 Gestion des Tokens
+
+| Fonctionnalité | Description |
+|----------------|-------------|
+| Créer un token | Le super admin crée un token avec un nom/description |
+| Copier le token | Bouton de copie disponible dans la liste et la page de détail |
+| Révoquer le token | Définir `is_active = False` pour révoquer l'accès |
+| Suivi d'utilisation | `last_used_at` et `usage_count` mis à jour à chaque requête |
+
+### 8.5 Endpoints
+
+#### GET /api/v1/contract/active/
+
+Retourne le contrat actif pour une pharmacie donnée.
+
+**Paramètres de requête :**
+
+| Paramètre | Requis | Description |
+|-----------|--------|-------------|
+| account_code | Oui | Le code du compte pharmacie (ex. `PH-XXXXX`) |
+
+**Exemple de requête :**
+```bash
+curl -H "Authorization: Token VOTRE_TOKEN_ICI" \
+     "https://khalidbrx.pythonanywhere.com/api/v1/contract/active/?account_code=PH-XXXXX"
+```
+
+**Réponse succès (200 OK) :**
+```json
+{
+    "status": "success",
+    "timestamp": "2026-04-13T14:30:00Z",
+    "contract": {
+        "id": 1,
+        "pharmacy": "PHARMACY SAADA",
+        "account_code": "PH-XXXXX",
+        "start_date": "2026-04-07",
+        "end_date": "2026-05-07",
+        "products": [
+            {
+                "product_id": 1,
+                "internal_code": "PROD001",
+                "external_designation": "DOLI1000"
+            }
+        ]
+    }
+}
+```
+
+**Réponses d'erreur :**
+
+| Code HTTP | Code Erreur | Description |
+|-----------|-------------|-------------|
+| 400 | MISSING_PARAMETER | Paramètre account_code manquant |
+| 401 | INVALID_TOKEN | Token manquant ou invalide |
+| 404 | ACCOUNT_NOT_FOUND | Aucun compte trouvé avec ce code |
+| 404 | CONTRACT_NOT_FOUND | Aucun contrat actif trouvé pour ce compte |
+| 500 | SERVER_ERROR | Erreur interne du serveur |
+
+**Exemple de réponse d'erreur :**
+```json
+{
+    "status": "error",
+    "timestamp": "2026-04-13T14:30:00Z",
+    "error": {
+        "code": "CONTRACT_NOT_FOUND",
+        "message": "No active contract found for account PH-XXXXX"
+    }
+}
+```
+
+### 8.6 Exemple d'Utilisation Python
+
+```python
+import requests
+
+API_BASE_URL = "https://khalidbrx.pythonanywhere.com/api/v1"
+API_TOKEN = "VOTRE_TOKEN_ICI"
+ACCOUNT_CODE = "PH-XXXXX"
+
+headers = {
+    "Authorization": f"Token {API_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+def get_active_contract(account_code):
+    url = f"{API_BASE_URL}/contract/active/"
+    params = {"account_code": account_code}
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        return response.json()
+    except Exception as e:
+        return e
+
+if __name__ == "__main__":
+    print(get_active_contract(ACCOUNT_CODE))
+```
+
+### 8.7 Configuration
+
+```python
+INSTALLED_APPS += [
+    "rest_framework",
+    "api",
+]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "api.authentication.APITokenAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "api.permissions.HasAPIToken",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",
+        "user": "1000/hour",
+    },
+    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
+    "DEFAULT_VERSION": "v1",
+    "ALLOWED_VERSIONS": ["v1"],
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+    "EXCEPTION_HANDLER": "api.views.custom_exception_handler",
+}
+
+if DEBUG:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] += [
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    ]
+```
 
 ---
 
