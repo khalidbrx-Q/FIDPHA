@@ -2,9 +2,11 @@ __pycache__/
 *.py[cod]
 *.pyo
 .venv/
+.claude/
 db.sqlite3
 staticfiles/
 *.log
 .idea/
 .env
 robot_test.py
+test_log.txt

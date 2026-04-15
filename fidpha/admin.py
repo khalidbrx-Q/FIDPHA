@@ -1,3 +1,20 @@
+"""
+fidpha/admin.py
+---------------
+Django admin registration for the fidpha app.
+
+This file is responsible only for configuring the admin panel UI:
+model registration, inline classes, display columns, search, filters,
+and form customisation. It uses the django-unfold theme throughout.
+
+Admin-specific AJAX helper endpoints (product toggle, available products,
+add contract product) have been moved to fidpha/admin_api.py to keep
+this file focused on admin panel configuration only.
+
+Author: FIDPHA Dev Team
+Last updated: April 2026
+"""
+
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -5,110 +22,8 @@ from django.forms import BaseInlineFormSet
 from django.core.exceptions import ValidationError
 from django import forms
 from django.utils.html import format_html
-from django.http import JsonResponse
 from unfold.admin import ModelAdmin, TabularInline, StackedInline
 from .models import Account, UserProfile, Product, Contract, Contract_Product
-
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
-import json
-
-def available_products_api(request, contract_id):
-    if not request.user.is_staff:
-        return JsonResponse({"error": "Forbidden"}, status=403)
-    try:
-        contract = Contract.objects.get(pk=contract_id)
-        already_linked = Contract_Product.objects.filter(
-            contract=contract
-        ).values_list("product_id", flat=True)
-        products = Product.objects.filter(
-            status="active"
-        ).exclude(id__in=already_linked).order_by("designation")
-        return JsonResponse({
-            "products": [
-                {"id": p.pk, "code": p.code, "designation": p.designation}
-                for p in products
-            ]
-        })
-    except Contract.DoesNotExist:
-        return JsonResponse({"error": "Not found"}, status=404)
-
-
-def add_contract_product_api(request, contract_id):
-    if not request.user.is_staff:
-        return JsonResponse({"error": "Forbidden"}, status=403)
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-    try:
-        data = json.loads(request.body)
-        product_id = data.get("product_id")
-        external_designation = data.get("external_designation", "").strip()
-
-        if not product_id or not external_designation:
-            return JsonResponse({"error": "Missing fields"}, status=400)
-
-        contract = Contract.objects.get(pk=contract_id)
-        product = Product.objects.get(pk=product_id, status="active")
-
-        if Contract_Product.objects.filter(contract=contract, product=product).exists():
-            return JsonResponse({"error": "Product already linked"}, status=400)
-
-        Contract_Product.objects.create(
-            contract=contract,
-            product=product,
-            external_designation=external_designation
-        )
-        return JsonResponse({"success": True})
-    except Contract.DoesNotExist:
-        return JsonResponse({"error": "Contract not found"}, status=404)
-    except Product.DoesNotExist:
-        return JsonResponse({"error": "Product not found"}, status=404)
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
-
-
-
-# -----------------------
-# Product Toggle API
-# -----------------------
-def product_toggle_api(request, product_id):
-    if not request.user.is_staff:
-        return JsonResponse({"error": "Forbidden"}, status=403)
-
-    try:
-        product = Product.objects.get(pk=product_id)
-    except Product.DoesNotExist:
-        return JsonResponse({"error": "Not found"}, status=404)
-
-    new_status = request.GET.get("status")
-
-    if new_status == "inactive":
-        active_contracts = Contract.objects.filter(
-            contract_product__product=product,
-            status="active"
-        ).select_related("account")
-
-        if active_contracts.exists():
-            contracts_data = []
-            for c in active_contracts:
-                contracts_data.append({
-                    "id": c.pk,
-                    "title": c.title,
-                    "account": c.account.name,
-                    "start_date": c.start_date.strftime("%d %b %Y"),
-                    "end_date": c.end_date.strftime("%d %b %Y"),
-                    "url": f"/admin/fidpha/contract/{c.pk}/change/"
-                })
-            return JsonResponse({
-                "blocked": True,
-                "product": product.designation,
-                "contracts": contracts_data
-            })
-
-    # safe to toggle
-    product.status = new_status
-    product.save()
-    return JsonResponse({"blocked": False, "new_status": new_status})
 
 
 # -----------------------

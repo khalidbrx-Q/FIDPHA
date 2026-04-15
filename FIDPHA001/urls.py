@@ -5,8 +5,13 @@ from django.shortcuts import redirect, render
 from django.contrib import messages
 from fidpha import views as fidpha_views
 from fidpha.views import CustomPasswordResetView, CustomPasswordResetConfirmView
-from fidpha.admin import product_toggle_api
-from fidpha.admin import available_products_api, add_contract_product_api
+# These admin AJAX helpers live in admin_api.py, not admin.py —
+# admin.py is reserved for admin panel registration only.
+from fidpha.admin_api import (
+    product_toggle_api,
+    available_products_api,
+    add_contract_product_api,
+)
 
 def handler403(request, exception=None):
     return redirect("/admin/")

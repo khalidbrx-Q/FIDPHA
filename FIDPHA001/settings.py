@@ -289,3 +289,12 @@ if DEBUG:
     REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] += [
         "rest_framework.renderers.BrowsableAPIRenderer",
     ]
+
+
+# ---------------------------------------------------------------------------
+# Test runner
+# Uses a custom runner that appends a log entry to test_log.txt after
+# every test run. The log file is excluded from version control (.gitignore).
+# ---------------------------------------------------------------------------
+
+TEST_RUNNER = "FIDPHA001.test_runner.LoggingTestRunner"
