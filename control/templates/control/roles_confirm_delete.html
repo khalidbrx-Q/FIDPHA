@@ -1,0 +1,54 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Delete Role{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:roles_list' %}" style="color: var(--text-secondary); text-decoration: none;">Roles</a>
+    › Delete
+{% endblock %}
+{% block nav_roles %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Delete Role</div>
+        <div class="page-header-sub">This action cannot be undone</div>
+    </div>
+    <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span>
+        Back
+    </a>
+</div>
+
+<div class="card" style="max-width: 520px;">
+    <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 20px;">
+        <span class="material-icons-round" style="font-size: 36px; color: #ef4444; flex-shrink: 0; margin-top: 2px;">warning</span>
+        <div>
+            <div style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
+                Delete "{{ role.name }}"?
+            </div>
+            {% if user_count %}
+            <div style="font-size: 0.87rem; color: #ef4444; margin-bottom: 8px;">
+                <strong>{{ user_count }} user{{ user_count|pluralize }}</strong> currently assigned to this role will lose its permissions.
+            </div>
+            {% endif %}
+            <div style="font-size: 0.87rem; color: var(--text-secondary);">
+                The role and all its permission assignments will be permanently removed.
+                User accounts themselves will not be deleted.
+            </div>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-danger">
+                <span class="material-icons-round">delete</span>
+                Yes, delete role
+            </button>
+            <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

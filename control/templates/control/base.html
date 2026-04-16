@@ -1,0 +1,608 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIDPHA Control Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <!-- Reuse the same portal CSS — identical theme and component styles -->
+    <link rel="stylesheet" href="{% static 'fidpha/css/portal.css' %}">
+    <style>
+        /* ---- NAV SECTION LABEL ---- */
+        .nav-section-title {
+            margin-top: 12px;
+        }
+        .nav-section-title:first-child {
+            margin-top: 0;
+        }
+
+        /* ---- COMING SOON NAV ITEMS ---- */
+        .nav-item-disabled {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            color: var(--card-border);
+            font-size: 0.88rem;
+            font-weight: 500;
+            margin-bottom: 2px;
+            cursor: not-allowed;
+            user-select: none;
+        }
+        .nav-item-disabled .material-icons-round {
+            font-size: 18px;
+        }
+        .nav-item-disabled .nav-badge {
+            margin-left: auto;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background-color: var(--card-border);
+            color: var(--sidebar-bg);
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        /* ---- ALERT MESSAGES ---- */
+        .alert {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            border: 1px solid;
+        }
+        .alert-success {
+            background-color: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+        .alert-error {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+        .alert-warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.3);
+            color: #f59e0b;
+        }
+
+        /* ---- ACTION BUTTONS ---- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn .material-icons-round { font-size: 16px; }
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+        .btn-primary:hover { background-color: var(--accent-hover); }
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--card-border);
+        }
+        .btn-secondary:hover {
+            background-color: var(--sidebar-hover);
+            color: var(--text-primary);
+        }
+        .btn-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .btn-danger:hover {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        /* ---- PAGE HEADER ---- */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .page-header-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .page-header-sub {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        /* ---- FORM STYLES ---- */
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 9px 12px;
+            background-color: var(--content-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.88rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .form-input option {
+            background-color: var(--card-bg);
+        }
+        .form-help {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .form-error {
+            font-size: 0.78rem;
+            color: #ef4444;
+            margin-top: 4px;
+        }
+        .form-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        /* ---- TABLE ACTIONS ---- */
+        .table-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .action-btn .material-icons-round { font-size: 15px; }
+        .action-btn:hover {
+            background-color: var(--sidebar-hover);
+            color: var(--text-primary);
+        }
+        .action-btn.action-delete:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        /* ---- SEARCH BAR ---- */
+        .search-bar {
+            position: relative;
+            flex: 1;
+        }
+        .search-bar .material-icons-round {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 18px;
+        }
+        .search-bar input {
+            width: 100%;
+            padding: 8px 14px 8px 36px;
+            background-color: var(--content-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+        }
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* ---- TOOLBAR (search + actions row) ---- */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* ---- TOPBAR RIGHT ---- */
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ---- USER DROPDOWN ---- */
+        .user-dropdown {
+            position: relative;
+        }
+        .user-avatar-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .topbar-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+        .user-avatar-btn:hover .topbar-avatar {
+            opacity: 0.85;
+        }
+        .user-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            min-width: 220px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            z-index: 200;
+            padding: 6px;
+        }
+        .user-dropdown-menu.open {
+            display: block;
+        }
+        .dropdown-user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 10px 12px;
+        }
+        .dropdown-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            color: white;
+            font-size: 0.88rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .dropdown-user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .dropdown-user-role {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--card-border);
+            margin: 4px 0;
+        }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 7px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.15s, color 0.15s;
+            text-align: left;
+        }
+        .dropdown-item .material-icons-round { font-size: 17px; }
+        .dropdown-item:hover {
+            background-color: var(--sidebar-hover);
+            color: var(--text-primary);
+        }
+        .dropdown-item-danger { color: #ef4444; }
+        .dropdown-item-danger:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        /* ---- PAGINATION ---- */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .page-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            text-decoration: none;
+            color: var(--text-secondary);
+            border: 1px solid var(--card-border);
+            background: transparent;
+            transition: all 0.2s;
+        }
+        .page-btn:hover, .page-btn.active {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+        .page-info {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-left: 8px;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- ================================================================ -->
+    <!-- SIDEBAR                                                           -->
+    <!-- ================================================================ -->
+    <aside class="sidebar">
+
+        <!-- Brand -->
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">
+                <span class="material-icons-round">admin_panel_settings</span>
+            </div>
+            <div>
+                <div class="sidebar-brand-text">FIDPHA</div>
+                <div class="sidebar-brand-sub">Control Panel</div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="sidebar-nav" style="overflow-y: auto; flex: 1; min-height: 0;">
+
+            <!-- Overview -->
+            <div class="nav-section-title">Overview</div>
+            <a href="{% url 'control:dashboard' %}"
+               class="nav-item {% block nav_dashboard %}{% endblock %}">
+                <span class="material-icons-round">dashboard</span>
+                Dashboard
+            </a>
+
+            <!-- Authentication -->
+            <div class="nav-section-title">Authentication</div>
+            <a href="{% url 'control:roles_list' %}"
+               class="nav-item {% block nav_roles %}{% endblock %}">
+                <span class="material-icons-round">badge</span>
+                Roles
+            </a>
+            <a href="{% url 'control:users_list' %}"
+               class="nav-item {% block nav_users %}{% endblock %}">
+                <span class="material-icons-round">person</span>
+                Users
+            </a>
+
+            <!-- FIDPHA -->
+            <div class="nav-section-title">FIDPHA</div>
+            <a href="{% url 'control:accounts_list' %}"
+               class="nav-item {% block nav_accounts %}{% endblock %}">
+                <span class="material-icons-round">store</span>
+                Accounts
+            </a>
+            <a href="{% url 'control:contracts_list' %}"
+               class="nav-item {% block nav_contracts %}{% endblock %}">
+                <span class="material-icons-round">description</span>
+                Contracts
+            </a>
+            <a href="{% url 'control:products_list' %}"
+               class="nav-item {% block nav_products %}{% endblock %}">
+                <span class="material-icons-round">medication</span>
+                Products
+            </a>
+
+            <!-- API -->
+            <div class="nav-section-title">API</div>
+            <a href="{% url 'control:tokens_list' %}"
+               class="nav-item {% block nav_tokens %}{% endblock %}">
+                <span class="material-icons-round">key</span>
+                API Tokens
+            </a>
+
+            <!-- Sites — redirect to Django admin -->
+            <div class="nav-section-title">Sites</div>
+            <a href="/admin/sites/site/" target="_blank"
+               class="nav-item"
+               title="Managed in Django admin">
+                <span class="material-icons-round">language</span>
+                Sites
+                <span class="material-icons-round" style="font-size:13px; margin-left:auto; color: var(--text-secondary);">open_in_new</span>
+            </a>
+
+            <!-- Social Accounts — redirect to Django admin -->
+            <div class="nav-section-title">Social Accounts</div>
+            <a href="/admin/socialaccount/socialaccount/" target="_blank"
+               class="nav-item"
+               title="Managed in Django admin">
+                <span class="material-icons-round">manage_accounts</span>
+                Social Accounts
+                <span class="material-icons-round" style="font-size:13px; margin-left:auto; color: var(--text-secondary);">open_in_new</span>
+            </a>
+            <a href="/admin/socialaccount/socialapp/" target="_blank"
+               class="nav-item"
+               title="Managed in Django admin">
+                <span class="material-icons-round">apps</span>
+                Social Applications
+                <span class="material-icons-round" style="font-size:13px; margin-left:auto; color: var(--text-secondary);">open_in_new</span>
+            </a>
+            <a href="/admin/socialaccount/socialtoken/" target="_blank"
+               class="nav-item"
+               title="Managed in Django admin">
+                <span class="material-icons-round">token</span>
+                Social Tokens
+                <span class="material-icons-round" style="font-size:13px; margin-left:auto; color: var(--text-secondary);">open_in_new</span>
+            </a>
+
+        </nav>
+
+
+    </aside>
+
+    <!-- ================================================================ -->
+    <!-- MAIN                                                              -->
+    <!-- ================================================================ -->
+    <div class="main">
+
+        <!-- Topbar -->
+        <div class="topbar">
+            <div>
+                <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+                <div class="topbar-breadcrumb">
+                    Control Panel › <span>{% block page_breadcrumb %}Dashboard{% endblock %}</span>
+                </div>
+            </div>
+
+            <!-- Topbar right: theme toggle + user dropdown -->
+            <div class="topbar-right">
+
+                <!-- User avatar dropdown -->
+                <div class="user-dropdown" id="userDropdown">
+                    <button class="user-avatar-btn" onclick="toggleUserDropdown()" aria-expanded="false" aria-haspopup="true">
+                        <div class="topbar-avatar">{{ request.user.username|first|upper }}</div>
+                    </button>
+                    <div class="user-dropdown-menu" id="userDropdownMenu" role="menu">
+                        <!-- User info -->
+                        <div class="dropdown-user-info">
+                            <div class="dropdown-avatar">{{ request.user.username|first|upper }}</div>
+                            <div>
+                                <div class="dropdown-user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                                <div class="dropdown-user-role">{% if request.user.is_superuser %}Superuser{% else %}Staff{% endif %}</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <!-- Theme toggle -->
+                        <button class="dropdown-item" onclick="toggleTheme(); return false;">
+                            <span class="material-icons-round">contrast</span>
+                            <span id="dropdown-theme-label">Toggle Theme</span>
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <!-- Logout -->
+                        <a href="/admin/logout/" class="dropdown-item dropdown-item-danger">
+                            <span class="material-icons-round">logout</span>
+                            Log Out
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Page content -->
+        <div class="content">
+
+            <!-- Global messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if 'success' in message.tags %}alert-success{% elif 'warning' in message.tags %}alert-warning{% else %}alert-error{% endif %}">
+                        <span class="material-icons-round" style="font-size: 18px;">
+                            {% if 'success' in message.tags %}check_circle
+                            {% elif 'warning' in message.tags %}warning
+                            {% else %}error_outline{% endif %}
+                        </span>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Reuse the same portal.js — same localStorage key so theme is shared -->
+    <script src="{% static 'fidpha/js/portal.js' %}"></script>
+
+    <script>
+        // ---- User dropdown ----
+        function toggleUserDropdown() {
+            const menu = document.getElementById('userDropdownMenu');
+            const btn  = document.querySelector('.user-avatar-btn');
+            const open = menu.classList.toggle('open');
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            const dropdown = document.getElementById('userDropdown');
+            if (dropdown && !dropdown.contains(e.target)) {
+                document.getElementById('userDropdownMenu').classList.remove('open');
+                document.querySelector('.user-avatar-btn').setAttribute('aria-expanded', 'false');
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>

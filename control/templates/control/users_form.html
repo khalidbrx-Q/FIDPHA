@@ -1,0 +1,487 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}{{ page_action }} User{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:users_list' %}" style="color:var(--text-secondary);text-decoration:none;">Users</a>
+    › {{ page_action }}
+{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">{{ page_action }} User</div>
+        <div class="page-header-sub">
+            {% if page_action == "Edit" %}Editing "{{ user_obj.username }}"{% else %}Add a new user to the system{% endif %}
+        </div>
+    </div>
+    <a href="{% url 'control:users_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span>
+        Back
+    </a>
+</div>
+
+<form method="post" id="userForm" data-action="{{ page_action|lower }}" novalidate>
+    {% csrf_token %}
+
+    <!-- ================================================================ -->
+    <!-- STEP 1 — User Type                                                -->
+    <!-- ================================================================ -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">User Type</div>
+        <div class="type-cards">
+
+            <label class="type-card" id="card-superuser">
+                <input type="radio" name="user_type" value="superuser"
+                       {% if selected_type == 'superuser' %}checked{% endif %}
+                       onchange="onTypeChange('superuser')">
+                <span class="material-icons-round type-card-icon" style="color:#a855f7;">shield</span>
+                <div class="type-card-title">Superuser</div>
+                <div class="type-card-sub">Full access to everything — no permission setup needed</div>
+            </label>
+
+            <label class="type-card" id="card-staff">
+                <input type="radio" name="user_type" value="staff"
+                       {% if selected_type == 'staff' %}checked{% endif %}
+                       onchange="onTypeChange('staff')">
+                <span class="material-icons-round type-card-icon" style="color:#0ea5e9;">badge</span>
+                <div class="type-card-title">Staff</div>
+                <div class="type-card-sub">Admin user with a specific role and its permissions</div>
+            </label>
+
+            <label class="type-card" id="card-portal">
+                <input type="radio" name="user_type" value="portal"
+                       {% if selected_type == 'portal' or not selected_type %}checked{% endif %}
+                       onchange="onTypeChange('portal')">
+                <span class="material-icons-round type-card-icon" style="color:#22c55e;">store</span>
+                <div class="type-card-title">Portal User</div>
+                <div class="type-card-sub">Pharmacy client — linked to an account</div>
+            </label>
+
+        </div>
+        {% if form.user_type.errors %}
+            {% for error in form.user_type.errors %}<div class="form-error" style="margin-top:8px;">{{ error }}</div>{% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- STEP 2 — Basic Info                                               -->
+    <!-- ================================================================ -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">Basic Information</div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Username *</label>
+                {{ form.username }}
+                {% for error in form.username.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">
+                    Email
+                    {% if page_action == "Edit" and utype == "portal" %}
+                        {% if profile and profile.email_verified %}
+                            <span class="verify-badge verify-yes"><span class="material-icons-round" style="font-size:12px;">verified</span> Verified</span>
+                        {% else %}
+                            <span class="verify-badge verify-no"><span class="material-icons-round" style="font-size:12px;">cancel</span> Not verified</span>
+                        {% endif %}
+                    {% endif %}
+                </label>
+                {{ form.email }}
+                {% for error in form.email.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">First Name</label>
+                {{ form.first_name }}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Last Name</label>
+                {{ form.last_name }}
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top:16px; margin-bottom:0;">
+            <label class="toggle-label">
+                <div class="toggle-switch">
+                    {{ form.is_active }}
+                    <span class="toggle-slider"></span>
+                </div>
+                <div>
+                    <div style="font-size:0.87rem; font-weight:600; color:var(--text-primary);">Active</div>
+                    <div style="font-size:0.78rem; color:var(--text-secondary);">Inactive users cannot log in</div>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- STEP 3 — Password                                                 -->
+    <!-- ================================================================ -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">Password</div>
+
+        {% if page_action == "Edit" %}
+        <div class="pw-current-indicator">
+            <span class="material-icons-round" style="font-size:15px; color:var(--text-secondary);">lock</span>
+            <span style="color:var(--text-secondary); font-size:0.82rem;">Current password:</span>
+            <span style="letter-spacing:3px; font-family:monospace; color:var(--text-primary); font-size:0.9rem;">••••••••</span>
+            <span style="color:var(--text-secondary); font-size:0.78rem; margin-left:4px;">— leave fields blank to keep unchanged</span>
+        </div>
+        {% endif %}
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Password {% if page_action == "Create" %}*{% endif %}</label>
+                {{ form.password1 }}
+                {% for error in form.password1.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Confirm Password {% if page_action == "Create" %}*{% endif %}</label>
+                {{ form.password2 }}
+                {% for error in form.password2.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- STEP 4a — Role (Staff only)                                       -->
+    <!-- ================================================================ -->
+    <div class="card" style="margin-bottom:16px;" id="section-role">
+        <div class="section-label">Role Assignment</div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Role</label>
+
+            <div class="custom-select" id="cs-role">
+                <input type="hidden" name="role" value="{{ selected_role_pk }}">
+                <button type="button" class="cs-trigger" onclick="csToggle('cs-role')">
+                    <span class="cs-display">
+                        {% if selected_role_pk %}
+                            {% for role in roles %}{% if role.pk == selected_role_pk %}{{ role.name }}{% endif %}{% endfor %}
+                        {% else %}— No role assigned —{% endif %}
+                    </span>
+                    <span class="material-icons-round cs-arrow">expand_more</span>
+                </button>
+                <div class="cs-panel">
+                    <div class="cs-search-wrap">
+                        <span class="material-icons-round">search</span>
+                        <input type="text" class="cs-search-input" placeholder="Search roles…"
+                               oninput="csFilter('cs-role', this.value)" autocomplete="off">
+                    </div>
+                    <div class="cs-list">
+                        <div class="cs-item {% if not selected_role_pk %}cs-selected{% endif %}"
+                             data-value="" onclick="csSelect('cs-role', '', '— No role assigned —')">
+                            — No role assigned —
+                        </div>
+                        {% for role in roles %}
+                        <div class="cs-item {% if role.pk == selected_role_pk %}cs-selected{% endif %}"
+                             data-value="{{ role.pk }}"
+                             onclick="csSelect('cs-role', '{{ role.pk }}', '{{ role.name|escapejs }}')">
+                            {{ role.name }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% for error in form.role.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+            <div class="form-help">
+                The role defines all permissions for this staff user. ·
+                <a href="{% url 'control:roles_create' %}" target="_blank" style="color:var(--accent);">
+                    Can't find the right role? Create a new one →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- STEP 4b — Account (Portal only)                                   -->
+    <!-- ================================================================ -->
+    <div class="card" style="margin-bottom:16px;" id="section-account">
+        <div class="section-label">Account Assignment</div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Pharmacy Account *</label>
+
+            <div class="custom-select" id="cs-account">
+                <input type="hidden" name="account" value="{{ selected_account_pk }}">
+                <button type="button" class="cs-trigger" onclick="csToggle('cs-account')">
+                    <span class="cs-display">
+                        {% if selected_account_pk %}
+                            {% for acc in accounts %}{% if acc.pk == selected_account_pk %}{{ acc.name }}{% endif %}{% endfor %}
+                        {% else %}— Select account —{% endif %}
+                    </span>
+                    <span class="material-icons-round cs-arrow">expand_more</span>
+                </button>
+                <div class="cs-panel">
+                    <div class="cs-search-wrap">
+                        <span class="material-icons-round">search</span>
+                        <input type="text" class="cs-search-input" placeholder="Search accounts…"
+                               oninput="csFilter('cs-account', this.value)" autocomplete="off">
+                    </div>
+                    <div class="cs-list">
+                        <div class="cs-item {% if not selected_account_pk %}cs-selected{% endif %}"
+                             data-value="" onclick="csSelect('cs-account', '', '— Select account —')">
+                            — Select account —
+                        </div>
+                        {% for acc in accounts %}
+                        <div class="cs-item {% if acc.pk == selected_account_pk %}cs-selected{% endif %}"
+                             data-value="{{ acc.pk }}"
+                             onclick="csSelect('cs-account', '{{ acc.pk }}', '{{ acc.name|escapejs }}')">
+                            {{ acc.name }}
+                            {% if acc.city %}<span style="font-size:0.75rem;color:var(--text-secondary);margin-left:6px;">{{ acc.city }}</span>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% for error in form.account.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+        </div>
+    </div>
+
+    <!-- Form actions -->
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span class="material-icons-round" id="submitIcon">save</span>
+            <span id="submitLabel">{{ page_action }} User</span>
+        </button>
+        <a href="{% url 'control:users_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+
+</form>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .section-label {
+        font-size:0.75rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:14px;
+    }
+
+    /* ---- Type cards ---- */
+    .type-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .type-card {
+        position:relative; display:flex; flex-direction:column; align-items:center;
+        gap:8px; padding:20px 16px; border:2px solid var(--card-border);
+        border-radius:10px; cursor:pointer; text-align:center;
+        transition:border-color 0.2s, background-color 0.2s;
+    }
+    .type-card input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
+    .type-card:hover { border-color:var(--accent); background-color:var(--sidebar-hover); }
+    .type-card:has(input:checked) { border-color:var(--accent); background-color:rgba(14,165,233,0.05); }
+    .type-card-icon { font-size:28px; }
+    .type-card-title { font-size:0.9rem; font-weight:700; color:var(--text-primary); }
+    .type-card-sub { font-size:0.78rem; color:var(--text-secondary); line-height:1.4; }
+
+    /* ---- Toggle switch ---- */
+    .toggle-label { display:flex; align-items:center; gap:12px; cursor:pointer; }
+    .toggle-switch { position:relative; flex-shrink:0; }
+    .toggle-switch input[type="checkbox"] { opacity:0; width:0; height:0; position:absolute; }
+    .toggle-slider {
+        display:block; width:40px; height:22px; border-radius:11px;
+        background-color:var(--card-border); cursor:pointer; transition:background-color 0.2s;
+    }
+    .toggle-slider::before {
+        content:""; position:absolute; width:16px; height:16px;
+        border-radius:50%; background:white; top:3px; left:3px; transition:transform 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background-color:var(--accent); }
+    .toggle-switch input:checked + .toggle-slider::before { transform:translateX(18px); }
+
+    /* ---- Password current indicator ---- */
+    .pw-current-indicator {
+        display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+        padding:9px 14px; margin-bottom:14px;
+        background:var(--sidebar-hover); border:1px solid var(--card-border); border-radius:8px;
+    }
+
+    /* ---- Email verification badge ---- */
+    .verify-badge {
+        display:inline-flex; align-items:center; gap:3px; font-size:0.7rem; font-weight:600;
+        padding:2px 7px; border-radius:10px; margin-left:8px;
+        vertical-align:middle; text-transform:none; letter-spacing:0;
+    }
+    .verify-yes { background:rgba(34,197,94,0.1); color:#22c55e; }
+    .verify-no  { background:rgba(239,68,68,0.1); color:#ef4444; }
+
+    /* ---- Searchable custom select ---- */
+    .custom-select { position:relative; }
+    .cs-trigger {
+        width:100%; display:flex; align-items:center; justify-content:space-between;
+        padding:9px 12px; border:1px solid var(--card-border); border-radius:8px;
+        background:var(--content-bg); color:var(--text-primary); font-size:0.87rem;
+        cursor:pointer; text-align:left; font-family:'Inter',sans-serif;
+        transition:border-color 0.15s;
+    }
+    .cs-trigger:hover, .cs-trigger:focus { border-color:var(--accent); outline:none; }
+    .cs-trigger.cs-error { border-color:#ef4444; }
+    .cs-display { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cs-arrow { font-size:18px; color:var(--text-secondary); transition:transform 0.2s; flex-shrink:0; }
+    .custom-select.open .cs-arrow { transform:rotate(180deg); }
+    .cs-panel {
+        position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:200;
+        background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px;
+        box-shadow:0 8px 24px rgba(0,0,0,0.18); overflow:hidden; display:none;
+    }
+    .custom-select.open .cs-panel { display:block; }
+    .cs-search-wrap {
+        display:flex; align-items:center; gap:8px; padding:8px 12px;
+        border-bottom:1px solid var(--card-border);
+    }
+    .cs-search-wrap .material-icons-round { font-size:16px; color:var(--text-secondary); flex-shrink:0; }
+    .cs-search-input {
+        flex:1; border:none; background:transparent; font-size:0.85rem;
+        color:var(--text-primary); outline:none; font-family:'Inter',sans-serif;
+    }
+    .cs-list { max-height:220px; overflow-y:auto; }
+    .cs-item { padding:9px 14px; font-size:0.85rem; color:var(--text-primary); cursor:pointer; transition:background-color 0.12s; }
+    .cs-item:hover { background-color:var(--sidebar-hover); }
+    .cs-item.cs-selected { color:var(--accent); font-weight:600; background-color:rgba(14,165,233,0.06); }
+    .cs-item.cs-hidden { display:none; }
+
+    /* ---- JS validation errors ---- */
+    .form-error-js {
+        font-size:0.78rem; color:#ef4444; margin-top:5px;
+        display:flex; align-items:center; gap:4px;
+    }
+    .form-error-js::before { content:"●"; font-size:0.5rem; }
+    input.input-error { border-color:#ef4444 !important; }
+
+    /* ---- Submit spinner ---- */
+    @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+    .spin-anim { display:inline-block; animation:spin 0.8s linear infinite; }
+
+    @media (max-width:640px) { .type-cards { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+const isCreate = document.getElementById('userForm').dataset.action === 'create';
+
+// ---- Type card visibility ----
+function onTypeChange(type) {
+    document.getElementById('section-role').style.display    = type === 'staff'  ? '' : 'none';
+    document.getElementById('section-account').style.display = type === 'portal' ? '' : 'none';
+}
+
+// ---- Searchable custom select ----
+function csToggle(id) {
+    const el = document.getElementById(id);
+    const isOpen = el.classList.contains('open');
+    document.querySelectorAll('.custom-select.open').forEach(s => s.classList.remove('open'));
+    if (!isOpen) {
+        el.classList.add('open');
+        const inp = el.querySelector('.cs-search-input');
+        if (inp) { inp.value = ''; csFilter(id, ''); inp.focus(); }
+    }
+}
+function csFilter(id, q) {
+    const query = q.toLowerCase().trim();
+    document.querySelectorAll('#' + id + ' .cs-item').forEach(item => {
+        item.classList.toggle('cs-hidden', !!query && !item.textContent.toLowerCase().includes(query));
+    });
+}
+function csSelect(id, value, label) {
+    const el = document.getElementById(id);
+    el.querySelector('input[type="hidden"]').value = value;
+    el.querySelector('.cs-display').textContent = label;
+    el.querySelectorAll('.cs-item').forEach(i => i.classList.toggle('cs-selected', i.dataset.value === String(value)));
+    el.classList.remove('open');
+    el.querySelector('.cs-trigger').classList.remove('cs-error');
+    el.parentNode.querySelectorAll('.form-error-js').forEach(e => e.remove());
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.custom-select')) {
+        document.querySelectorAll('.custom-select.open').forEach(s => s.classList.remove('open'));
+    }
+});
+
+// ---- Client-side validation ----
+function clientValidate(userType) {
+    let valid = true;
+    document.querySelectorAll('.form-error-js').forEach(e => e.remove());
+    document.querySelectorAll('.input-error').forEach(e => e.classList.remove('input-error'));
+    document.querySelectorAll('.cs-error').forEach(e => e.classList.remove('cs-error'));
+
+    // Username — always required
+    const usernameInput = document.querySelector('[name="username"]');
+    if (usernameInput && !usernameInput.value.trim()) {
+        addInputError(usernameInput, 'Username is required.');
+        valid = false;
+    }
+
+    // Password — required only on create
+    const pw1 = document.querySelector('[name="password1"]');
+    if (isCreate && pw1 && !pw1.value.trim()) {
+        addInputError(pw1, 'Password is required.');
+        valid = false;
+    }
+
+    // Account — required for portal
+    if (userType === 'portal') {
+        const accountVal = document.querySelector('#cs-account input[type="hidden"]')?.value;
+        if (!accountVal) {
+            document.querySelector('#cs-account .cs-trigger').classList.add('cs-error');
+            addAfterError(document.getElementById('cs-account'), 'Please select an account.');
+            valid = false;
+        }
+    }
+
+    if (!valid) {
+        const first = document.querySelector('.form-error-js');
+        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return valid;
+}
+
+function addInputError(input, msg) {
+    input.classList.add('input-error');
+    const err = document.createElement('div');
+    err.className = 'form-error-js';
+    err.textContent = msg;
+    input.parentNode.appendChild(err);
+    input.addEventListener('input', function() {
+        this.classList.remove('input-error');
+        this.parentNode.querySelectorAll('.form-error-js').forEach(e => e.remove());
+    }, { once: true });
+}
+function addAfterError(el, msg) {
+    const err = document.createElement('div');
+    err.className = 'form-error-js';
+    err.textContent = msg;
+    el.after(err);
+}
+
+// ---- Form submit ----
+document.getElementById('userForm').addEventListener('submit', function(e) {
+    const userType = document.querySelector('input[name="user_type"]:checked')?.value;
+    if (!clientValidate(userType)) { e.preventDefault(); return; }
+    lockSubmit();
+});
+
+function lockSubmit() {
+    const btn  = document.getElementById('submitBtn');
+    const icon = document.getElementById('submitIcon');
+    const lbl  = document.getElementById('submitLabel');
+    if (btn.dataset.locked) return;
+    btn.dataset.locked = '1';
+    btn.disabled = true;
+    if (icon) { icon.className = 'material-icons-round spin-anim'; icon.textContent = 'refresh'; }
+    if (lbl) lbl.textContent = 'Saving…';
+}
+
+// ---- Init ----
+document.addEventListener('DOMContentLoaded', function () {
+    const checked = document.querySelector('input[name="user_type"]:checked');
+    if (checked) onTypeChange(checked.value);
+    else {
+        const p = document.querySelector('input[name="user_type"][value="portal"]');
+        if (p) { p.checked = true; onTypeChange('portal'); }
+    }
+});
+</script>
+{% endblock %}

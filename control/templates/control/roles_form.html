@@ -1,0 +1,378 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}{{ page_action }} Role{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:roles_list' %}" style="color: var(--text-secondary); text-decoration: none;">Roles</a>
+    › {{ page_action }}
+{% endblock %}
+{% block nav_roles %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">{{ page_action }} Role</div>
+        <div class="page-header-sub">
+            {% if page_action == "Edit" %}Editing "{{ role.name }}"{% else %}Define a new permission preset{% endif %}
+        </div>
+    </div>
+    <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span>
+        Back
+    </a>
+</div>
+
+<form method="post" id="roleForm">
+    {% csrf_token %}
+
+    <!-- Role name -->
+    <div class="card" style="margin-bottom: 16px;">
+        <div class="section-label">Role Details</div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="{{ form.name.id_for_label }}">Role Name</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                {% for error in form.name.errors %}
+                    <div class="form-error">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+            <div class="form-help">A short descriptive name, e.g. "Accounts Manager" or "Read-only Staff".</div>
+        </div>
+    </div>
+
+    <!-- Permissions -->
+    <div class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div class="section-label" style="margin-bottom: 0;">Permissions</div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="selectAll()" style="padding: 5px 12px; font-size: 0.8rem;">
+                    <span class="material-icons-round" style="font-size: 14px;">select_all</span>
+                    Select all
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="clearAll()" style="padding: 5px 12px; font-size: 0.8rem;">
+                    <span class="material-icons-round" style="font-size: 14px;">deselect</span>
+                    Clear all
+                </button>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="search-bar" style="margin-bottom: 16px;">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="permSearch" placeholder="Search permissions…" oninput="filterPerms(this.value)">
+        </div>
+
+        <!-- Grouped checkboxes -->
+        <div id="permGroups">
+            {% for app in grouped_permissions %}
+            <div class="perm-app-group" data-app="{{ app.app_label }}">
+                <div class="perm-app-header collapsed" onclick="toggleApp(this)">
+                    <span class="material-icons-round perm-chevron">expand_more</span>
+                    <span class="perm-app-label">{{ app.app_friendly }}</span>
+                    <span class="perm-app-count"></span>
+                </div>
+                <div class="perm-app-body hidden">
+                    {% for model_group in app.models %}
+                    <div class="perm-model-group" data-model="{{ model_group.model }}">
+                        <div class="perm-model-header">
+                            <label class="perm-model-select-all">
+                                <input type="checkbox" class="model-select-all" data-model="{{ app.app_label }}.{{ model_group.model }}" onchange="toggleModel(this)">
+                                <span class="perm-model-name">{{ model_group.model_friendly }}</span>
+                            </label>
+                        </div>
+                        <div class="perm-model-perms">
+                            {% for perm in model_group.permissions %}
+                            <label class="perm-checkbox-label" data-search="{{ perm.codename }} {{ perm.name|lower }}">
+                                <input type="checkbox"
+                                       name="permissions"
+                                       value="{{ perm.pk }}"
+                                       class="perm-checkbox perm-model-{{ app.app_label }}.{{ model_group.model }}"
+                                       data-codename="{{ perm.codename }}"
+                                       data-modelkey="{{ app.app_label }}.{{ model_group.model }}"
+                                       onchange="updateModelSelectAll('{{ app.app_label }}.{{ model_group.model }}')"
+                                       {% if perm in form.instance.permissions.all %}checked{% endif %}>
+                                <span class="perm-name">{{ perm.name }}</span>
+                                <span class="perm-codename">{{ perm.codename }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div id="noPermResults" style="display:none; text-align:center; padding: 24px; color: var(--text-secondary); font-size: 0.85rem;">
+            No permissions match your search.
+        </div>
+    </div>
+
+    <!-- Form actions -->
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+            <span class="material-icons-round">save</span>
+            {{ page_action }} Role
+        </button>
+        <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+
+</form>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+        margin-bottom: 14px;
+    }
+
+    /* App group */
+    .perm-app-group { margin-bottom: 6px; border: 1px solid var(--card-border); border-radius: 8px; overflow: hidden; }
+    .perm-app-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        background-color: var(--content-bg);
+        cursor: pointer;
+        user-select: none;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        transition: background-color 0.15s;
+    }
+    .perm-app-header:hover { background-color: var(--sidebar-hover); }
+    .perm-chevron { font-size: 18px; transition: transform 0.2s; }
+    .perm-app-header.collapsed .perm-chevron { transform: rotate(-90deg); }
+    .perm-app-count {
+        margin-left: auto;
+        font-size: 0.72rem;
+        color: var(--accent);
+        font-weight: 600;
+    }
+    .perm-app-body { padding: 6px 10px 10px; }
+    .perm-app-body.hidden { display: none; }
+
+    /* Model group */
+    .perm-model-group { margin-bottom: 4px; }
+    .perm-model-header { padding: 6px 4px 4px; }
+    .perm-model-select-all {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    .perm-model-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.82rem;
+        text-transform: capitalize;
+    }
+    .perm-model-perms {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 2px;
+        padding-left: 16px;
+    }
+
+    /* Individual permission */
+    .perm-checkbox-label {
+        display: flex;
+        align-items: baseline;
+        gap: 7px;
+        padding: 5px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.12s;
+        font-size: 0.82rem;
+    }
+    .perm-checkbox-label:hover { background-color: var(--sidebar-hover); }
+    .perm-checkbox-label input[type="checkbox"] { flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+    .perm-name { color: var(--text-secondary); }
+    .perm-codename {
+        margin-left: auto;
+        font-size: 0.72rem;
+        color: var(--card-border);
+        font-family: monospace;
+        white-space: nowrap;
+    }
+    .perm-checkbox-label.hidden { display: none; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    // ---- Permission dependency enforcement ----
+    // Tracks view permission IDs that were auto-checked (not manually checked).
+    // This lets us safely un-auto-check view when the triggering perm is removed.
+    const autoChecked = new Set();
+
+    function getViewCb(modelKey, codename) {
+        const base = codename.replace(/^(add|change|delete)_/, '');
+        const viewCode = 'view_' + base;
+        return document.querySelector(
+            `.perm-checkbox[data-modelkey="${CSS.escape(modelKey)}"][data-codename="${viewCode}"]`
+        );
+    }
+
+    function anyWriteChecked(modelKey, base) {
+        return ['add_', 'change_', 'delete_'].some(prefix => {
+            const cb = document.querySelector(
+                `.perm-checkbox[data-modelkey="${CSS.escape(modelKey)}"][data-codename="${prefix}${base}"]`
+            );
+            return cb && cb.checked;
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        const cb = e.target;
+        if (!cb.classList.contains('perm-checkbox')) return;
+
+        const codename  = cb.dataset.codename;
+        const modelKey  = cb.dataset.modelkey;
+        if (!codename || !modelKey) return;
+
+        if (cb.checked) {
+            if (/^(add|change|delete)_/.test(codename)) {
+                // Auto-check the corresponding view permission if not already checked
+                const viewCb = getViewCb(modelKey, codename);
+                if (viewCb && !viewCb.checked) {
+                    viewCb.checked = true;
+                    autoChecked.add(viewCb.value);
+                    updateModelSelectAll(modelKey);
+                    updateAppCount(viewCb.closest('.perm-app-group'));
+                }
+            } else if (/^view_/.test(codename)) {
+                // User manually checked view → it's no longer "auto", it's intentional
+                autoChecked.delete(cb.value);
+            }
+        } else {
+            if (/^(add|change|delete)_/.test(codename)) {
+                // Unchecking a write perm: un-auto-check view if nothing else needs it
+                const viewCb = getViewCb(modelKey, codename);
+                if (viewCb && viewCb.checked && autoChecked.has(viewCb.value)) {
+                    const base = codename.replace(/^(add|change|delete)_/, '');
+                    if (!anyWriteChecked(modelKey, base)) {
+                        viewCb.checked = false;
+                        autoChecked.delete(viewCb.value);
+                        updateModelSelectAll(modelKey);
+                        updateAppCount(viewCb.closest('.perm-app-group'));
+                    }
+                }
+            } else if (/^view_/.test(codename)) {
+                // Manually unchecking view → cascade-uncheck all write perms
+                const base = codename.replace(/^view_/, '');
+                ['add_', 'change_', 'delete_'].forEach(prefix => {
+                    const depCb = document.querySelector(
+                        `.perm-checkbox[data-modelkey="${CSS.escape(modelKey)}"][data-codename="${prefix}${base}"]`
+                    );
+                    if (depCb && depCb.checked) depCb.checked = false;
+                });
+                autoChecked.delete(cb.value);
+                updateModelSelectAll(modelKey);
+                updateAppCount(cb.closest('.perm-app-group'));
+            }
+        }
+    });
+
+    // ---- Collapse / expand app group ----
+    function toggleApp(header) {
+        header.classList.toggle('collapsed');
+        header.nextElementSibling.classList.toggle('hidden');
+    }
+
+    // ---- Select / deselect all in a model ----
+    function toggleModel(masterCb) {
+        const model = masterCb.dataset.model;
+        document.querySelectorAll('.perm-model-' + CSS.escape(model)).forEach(cb => {
+            cb.checked = masterCb.checked;
+        });
+        updateAppCount(masterCb.closest('.perm-app-group'));
+    }
+
+    function updateModelSelectAll(model) {
+        const boxes = document.querySelectorAll('.perm-model-' + CSS.escape(model));
+        const master = document.querySelector('.model-select-all[data-model="' + model + '"]');
+        if (!master) return;
+        const checked = [...boxes].filter(b => b.checked).length;
+        master.checked = checked === boxes.length;
+        master.indeterminate = checked > 0 && checked < boxes.length;
+        updateAppCount(master.closest('.perm-app-group'));
+    }
+
+    function updateAppCount(appGroup) {
+        if (!appGroup) return;
+        const total   = appGroup.querySelectorAll('.perm-checkbox:not(.hidden)').length;
+        const checked = appGroup.querySelectorAll('.perm-checkbox:checked').length;
+        const counter = appGroup.querySelector('.perm-app-count');
+        if (counter) counter.textContent = checked ? checked + ' / ' + total + ' selected' : '';
+    }
+
+    // ---- Select all / Clear all ----
+    function selectAll() {
+        document.querySelectorAll('.perm-checkbox:not(.hidden)').forEach(cb => cb.checked = true);
+        document.querySelectorAll('.model-select-all').forEach(cb => { cb.checked = true; cb.indeterminate = false; });
+        document.querySelectorAll('.perm-app-group').forEach(g => updateAppCount(g));
+    }
+    function clearAll() {
+        document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.model-select-all').forEach(cb => { cb.checked = false; cb.indeterminate = false; });
+        document.querySelectorAll('.perm-app-group').forEach(g => updateAppCount(g));
+    }
+
+    // ---- Search / filter ----
+    function filterPerms(query) {
+        const q = query.toLowerCase().trim();
+        let anyVisible = false;
+
+        document.querySelectorAll('.perm-checkbox-label').forEach(label => {
+            const text = label.dataset.search || '';
+            const match = !q || text.includes(q);
+            label.classList.toggle('hidden', !match);
+            if (match) anyVisible = true;
+        });
+
+        // Hide model groups with no visible perms
+        document.querySelectorAll('.perm-model-group').forEach(group => {
+            const visible = group.querySelectorAll('.perm-checkbox-label:not(.hidden)').length;
+            group.style.display = visible ? '' : 'none';
+        });
+
+        // Hide app groups with no visible model groups
+        document.querySelectorAll('.perm-app-group').forEach(group => {
+            const visible = group.querySelectorAll('.perm-model-group:not([style*="none"])').length;
+            group.style.display = visible ? '' : 'none';
+        });
+
+        document.getElementById('noPermResults').style.display = anyVisible ? 'none' : 'block';
+    }
+
+    // ---- Init: update counters, model select-alls, and auto-expand groups with checked perms ----
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.model-select-all').forEach(master => {
+            updateModelSelectAll(master.dataset.model);
+        });
+        // Auto-expand any app group that already has checked permissions (edit mode)
+        document.querySelectorAll('.perm-app-group').forEach(group => {
+            const hasChecked = group.querySelector('.perm-checkbox:checked');
+            if (hasChecked) {
+                const header = group.querySelector('.perm-app-header');
+                const body   = group.querySelector('.perm-app-body');
+                header.classList.remove('collapsed');
+                body.classList.remove('hidden');
+            }
+        });
+    });
+</script>
+{% endblock %}

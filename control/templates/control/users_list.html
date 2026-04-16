@@ -1,0 +1,446 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Users{% endblock %}
+{% block page_breadcrumb %}Users{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Users</div>
+        <div class="page-header-sub">
+            {{ admin_users|length }} admin user{{ admin_users|length|pluralize }} ·
+            {{ portal_users|length }} portal user{{ portal_users|length|pluralize }}
+        </div>
+    </div>
+    <a href="{% url 'control:users_create' %}" class="btn btn-primary">
+        <span class="material-icons-round">person_add</span>
+        New User
+    </a>
+</div>
+
+<!-- ================================================================ -->
+<!-- BLOCK 1 — Admin Users                                             -->
+<!-- ================================================================ -->
+<div class="section-header">
+    <span class="material-icons-round" style="color:#a855f7;">shield</span>
+    Admin Users
+    <span class="section-count" id="admin-count"></span>
+</div>
+
+<div class="toolbar" style="flex-direction:column; align-items:stretch; gap:10px;">
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <div class="search-bar" style="flex:1; min-width:200px;">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="admin-search" placeholder="Search by username, name or email…"
+                   oninput="filterAdmin()" autocomplete="off">
+        </div>
+    </div>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+        <!-- Type filter -->
+        <div style="display:flex; gap:6px; align-items:center;">
+            <span class="filter-group-label">Type:</span>
+            <div class="filter-pills" id="admin-type-pills">
+                <button class="filter-pill active" data-filter-group="admin-type" data-value="all" onclick="setAdminType('all',this)">All</button>
+                <button class="filter-pill" data-filter-group="admin-type" data-value="superuser" onclick="setAdminType('superuser',this)">
+                    <span class="material-icons-round" style="font-size:13px;">shield</span> Superuser
+                </button>
+                <button class="filter-pill" data-filter-group="admin-type" data-value="staff" onclick="setAdminType('staff',this)">
+                    <span class="material-icons-round" style="font-size:13px;">badge</span> Staff
+                </button>
+            </div>
+            <button class="reset-btn" id="reset-admin-type" onclick="resetAdminType()" title="Reset type filter">✕</button>
+        </div>
+        <!-- Status filter -->
+        <div style="display:flex; gap:6px; align-items:center;">
+            <span class="filter-group-label">Status:</span>
+            <div class="filter-pills">
+                <button class="filter-pill active" data-filter-group="admin-status" data-value="all" onclick="setAdminStatus('all',this)">All</button>
+                <button class="filter-pill" data-filter-group="admin-status" data-value="active" onclick="setAdminStatus('active',this)">Active</button>
+                <button class="filter-pill" data-filter-group="admin-status" data-value="inactive" onclick="setAdminStatus('inactive',this)">Inactive</button>
+            </div>
+            <button class="reset-btn" id="reset-admin-status" onclick="resetAdminStatus()" title="Reset status filter">✕</button>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:28px;">
+    {% if admin_users %}
+    <table class="data-table" id="admin-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Type</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th style="width:100px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in admin_users %}
+            <tr class="clickable-row"
+                data-href="{% url 'control:users_detail' u.pk %}"
+                data-search="{{ u.username|lower }} {{ u.get_full_name|lower }} {{ u.email|lower }}"
+                data-type="{% if u.is_superuser %}superuser{% else %}staff{% endif %}"
+                data-active="{{ u.is_active|yesno:'active,inactive' }}">
+                <td>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div class="user-initial {% if u.is_superuser %}user-initial-super{% endif %}">{{ u.username|first|upper }}</div>
+                        <div>
+                            <div class="user-link">{{ u.username }}</div>
+                            {% if u.get_full_name %}<div class="user-sub">{{ u.get_full_name }}</div>{% endif %}
+                            <div class="user-sub">{{ u.email }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    {% if u.is_superuser %}
+                        <span class="type-badge type-superuser"><span class="material-icons-round" style="font-size:13px;">shield</span> Superuser</span>
+                    {% else %}
+                        <span class="type-badge type-staff"><span class="material-icons-round" style="font-size:13px;">badge</span> Staff</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if u.is_superuser %}<span class="dim">All permissions</span>
+                    {% else %}
+                        {% with role=u.groups.first %}
+                            {% if role %}<span style="font-size:0.82rem;color:var(--text-primary);">{{ role.name }}</span>
+                            {% else %}<span class="dim">No role</span>{% endif %}
+                        {% endwith %}
+                    {% endif %}
+                </td>
+                <td>{% if u.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
+                <td class="dim">{{ u.date_joined|date:"d M Y" }}</td>
+                <td onclick="event.stopPropagation();">
+                    <div class="table-actions">
+                        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="action-btn" title="Clone user"><span class="material-icons-round">content_copy</span></a>
+                        <a href="{% url 'control:users_edit' u.pk %}" class="action-btn" title="Edit"><span class="material-icons-round">edit</span></a>
+                        <a href="{% url 'control:users_delete' u.pk %}" class="action-btn action-delete" title="Delete"><span class="material-icons-round">delete</span></a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div id="admin-empty" style="display:none;text-align:center;padding:32px;color:var(--text-secondary);font-size:0.87rem;">No admin users match your filter.</div>
+    {% else %}
+    <div style="text-align:center;padding:40px 24px;">
+        <span class="material-icons-round" style="font-size:36px;color:var(--text-secondary);display:block;margin-bottom:10px;">manage_accounts</span>
+        <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">No admin users yet</div>
+        <a href="{% url 'control:users_create' %}" class="btn btn-primary" style="display:inline-flex;margin-top:12px;"><span class="material-icons-round">person_add</span> New User</a>
+    </div>
+    {% endif %}
+</div>
+
+
+<!-- ================================================================ -->
+<!-- BLOCK 2 — Portal Users                                            -->
+<!-- ================================================================ -->
+<div class="section-header">
+    <span class="material-icons-round" style="color:#22c55e;">store</span>
+    Portal Users
+    <span class="section-count" id="portal-count"></span>
+</div>
+
+<div class="toolbar" style="flex-direction:column; align-items:stretch; gap:10px;">
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <div class="search-bar" style="flex:1; min-width:200px;">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="portal-search" placeholder="Search by username, name, email or account…"
+                   oninput="filterPortal()" autocomplete="off">
+        </div>
+    </div>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+        <!-- City text-search filter -->
+        <div style="display:flex; gap:6px; align-items:center;">
+            <span class="filter-group-label">City:</span>
+            <div class="search-bar" style="min-width:160px;">
+                <span class="material-icons-round">search</span>
+                <input type="text" id="portal-city-search" placeholder="Filter by city…"
+                       oninput="filterPortal()" autocomplete="off" style="font-size:0.82rem;">
+            </div>
+            <button class="reset-btn" id="reset-portal-city" onclick="resetPortalCity()" title="Clear city filter">✕</button>
+        </div>
+        <!-- Status filter -->
+        <div style="display:flex; gap:6px; align-items:center;">
+            <span class="filter-group-label">Status:</span>
+            <div class="filter-pills">
+                <button class="filter-pill active" data-filter-group="portal-status" data-value="all" onclick="setPortalStatus('all',this)">All</button>
+                <button class="filter-pill" data-filter-group="portal-status" data-value="active" onclick="setPortalStatus('active',this)">Active</button>
+                <button class="filter-pill" data-filter-group="portal-status" data-value="inactive" onclick="setPortalStatus('inactive',this)">Inactive</button>
+            </div>
+            <button class="reset-btn" id="reset-portal-status" onclick="resetPortalStatus()" title="Reset status filter">✕</button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    {% if portal_users %}
+    <table class="data-table" id="portal-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Account</th>
+                <th>City</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th style="width:100px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in portal_users %}
+            <tr class="clickable-row"
+                data-href="{% url 'control:users_detail' u.pk %}"
+                data-search="{{ u.username|lower }} {{ u.get_full_name|lower }} {{ u.email|lower }} {% if u.profile.account %}{{ u.profile.account.name|lower }}{% endif %}"
+                data-active="{{ u.is_active|yesno:'active,inactive' }}"
+                data-city="{% if u.profile.account %}{{ u.profile.account.city|lower }}{% endif %}">
+                <td>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <div class="user-initial user-initial-portal">{{ u.username|first|upper }}</div>
+                        <div>
+                            <div class="user-link">{{ u.username }}</div>
+                            {% if u.get_full_name %}<div class="user-sub">{{ u.get_full_name }}</div>{% endif %}
+                            <div class="user-sub">{{ u.email }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    {% if u.profile.account %}
+                        <a href="{% url 'control:accounts_detail' u.profile.account.pk %}"
+                           class="account-link" onclick="event.stopPropagation();">
+                            {{ u.profile.account.name }}
+                        </a>
+                    {% else %}<span class="dim">No account</span>{% endif %}
+                </td>
+                <td class="dim">{% if u.profile.account %}{{ u.profile.account.city }}{% else %}—{% endif %}</td>
+                <td>
+                    {% if u.profile.email_verified %}
+                        <span class="badge badge-active">Verified</span>
+                    {% else %}
+                        <span class="badge badge-inactive">Not verified</span>
+                    {% endif %}
+                </td>
+                <td>{% if u.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
+                <td class="dim">{{ u.date_joined|date:"d M Y" }}</td>
+                <td onclick="event.stopPropagation();">
+                    <div class="table-actions">
+                        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="action-btn" title="Clone user"><span class="material-icons-round">content_copy</span></a>
+                        <a href="{% url 'control:users_edit' u.pk %}" class="action-btn" title="Edit"><span class="material-icons-round">edit</span></a>
+                        <a href="{% url 'control:users_delete' u.pk %}" class="action-btn action-delete" title="Delete"><span class="material-icons-round">delete</span></a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div id="portal-empty" style="display:none;text-align:center;padding:32px;color:var(--text-secondary);font-size:0.87rem;">No portal users match your filter.</div>
+    {% else %}
+    <div style="text-align:center;padding:40px 24px;">
+        <span class="material-icons-round" style="font-size:36px;color:var(--text-secondary);display:block;margin-bottom:10px;">store</span>
+        <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">No portal users yet</div>
+        <a href="{% url 'control:users_create' %}" class="btn btn-primary" style="display:inline-flex;margin-top:12px;"><span class="material-icons-round">person_add</span> New User</a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .section-header {
+        display:flex; align-items:center; gap:8px;
+        font-size:0.85rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:var(--text-primary); margin-bottom:12px;
+    }
+    .section-count { font-size:0.78rem; font-weight:400; color:var(--text-secondary); text-transform:none; letter-spacing:0; }
+    .filter-group-label { font-size:0.78rem; font-weight:600; color:var(--text-secondary); white-space:nowrap; }
+
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th {
+        text-align:left; font-size:0.75rem; font-weight:600; color:var(--text-secondary);
+        text-transform:uppercase; letter-spacing:0.4px; padding:10px 12px;
+        border-bottom:1px solid var(--card-border);
+    }
+    .data-table td { padding:11px 12px; font-size:0.87rem; color:var(--text-secondary); border-bottom:1px solid var(--card-border); vertical-align:middle; }
+    .data-table tbody tr:last-child td { border-bottom:none; }
+    .data-table tbody tr.clickable-row { cursor:pointer; transition:background-color 0.12s; }
+    .data-table tbody tr.clickable-row:hover td { background-color:rgba(14,165,233,0.07); }
+    .data-table tbody tr.row-hidden { display:none; }
+
+    .user-initial {
+        width:34px; height:34px; border-radius:50%;
+        background:linear-gradient(135deg,var(--accent),#6366f1);
+        color:white; font-size:0.82rem; font-weight:700;
+        display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .user-initial-super  { background:linear-gradient(135deg,#a855f7,#7c3aed); }
+    .user-initial-portal { background:linear-gradient(135deg,#22c55e,#16a34a); }
+
+    .user-link { font-weight:600; color:var(--text-primary); font-size:0.87rem; }
+    .user-sub  { font-size:0.78rem; color:var(--text-secondary); }
+    .dim       { color:var(--text-secondary); font-size:0.82rem; }
+
+    .account-link { font-size:0.82rem; font-weight:600; color:var(--accent); text-decoration:none; }
+    .account-link:hover { text-decoration:underline; }
+
+    .type-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+    .type-superuser { background:rgba(168,85,247,0.1); color:#a855f7; }
+    .type-staff     { background:rgba(14,165,233,0.1);  color:#0ea5e9; }
+
+    .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+    .badge-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .badge-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
+
+    .filter-pills { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .filter-pill {
+        display:inline-flex; align-items:center; gap:4px;
+        padding:5px 12px; border-radius:20px; font-size:0.8rem; font-weight:500;
+        color:var(--text-secondary); border:1px solid var(--card-border);
+        background:none; cursor:pointer; transition:all 0.15s; font-family:'Inter',sans-serif;
+    }
+    .filter-pill:hover { border-color:var(--accent); color:var(--accent); }
+    .filter-pill.active { background:var(--accent); border-color:var(--accent); color:white; }
+
+    .reset-btn {
+        display:none; align-items:center; justify-content:center;
+        width:22px; height:22px; border-radius:50%; border:none;
+        background:var(--card-border); color:var(--text-secondary);
+        font-size:0.7rem; cursor:pointer; transition:all 0.15s; flex-shrink:0;
+        font-family:'Inter',sans-serif; line-height:1;
+    }
+    .reset-btn:hover { background:#ef4444; color:white; }
+    .reset-btn.visible { display:inline-flex; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    // ---- Independent filter state ----
+    const state = {
+        adminType:    'all',
+        adminStatus:  'all',
+        portalStatus: 'all',
+    };
+
+    function setAdminType(value, btn) {
+        state.adminType = value;
+        activatePill(btn, 'admin-type');
+        document.getElementById('reset-admin-type').classList.toggle('visible', value !== 'all');
+        filterAdmin();
+    }
+    function resetAdminType() {
+        state.adminType = 'all';
+        document.querySelectorAll('[data-filter-group="admin-type"]').forEach((p,i) => p.classList.toggle('active', i===0));
+        document.getElementById('reset-admin-type').classList.remove('visible');
+        filterAdmin();
+    }
+
+    function setAdminStatus(value, btn) {
+        state.adminStatus = value;
+        activatePill(btn, 'admin-status');
+        document.getElementById('reset-admin-status').classList.toggle('visible', value !== 'all');
+        filterAdmin();
+    }
+    function resetAdminStatus() {
+        state.adminStatus = 'all';
+        document.querySelectorAll('[data-filter-group="admin-status"]').forEach((p,i) => p.classList.toggle('active', i===0));
+        document.getElementById('reset-admin-status').classList.remove('visible');
+        filterAdmin();
+    }
+
+    function setPortalStatus(value, btn) {
+        state.portalStatus = value;
+        activatePill(btn, 'portal-status');
+        document.getElementById('reset-portal-status').classList.toggle('visible', value !== 'all');
+        filterPortal();
+    }
+    function resetPortalStatus() {
+        state.portalStatus = 'all';
+        document.querySelectorAll('[data-filter-group="portal-status"]').forEach((p,i) => p.classList.toggle('active', i===0));
+        document.getElementById('reset-portal-status').classList.remove('visible');
+        filterPortal();
+    }
+
+    function resetPortalCity() {
+        document.getElementById('portal-city-search').value = '';
+        document.getElementById('reset-portal-city').classList.remove('visible');
+        filterPortal();
+    }
+
+    function activatePill(btn, group) {
+        document.querySelectorAll('[data-filter-group="' + group + '"]').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function filterAdmin() {
+        const q      = (document.getElementById('admin-search').value || '').toLowerCase().trim();
+        const type   = state.adminType;
+        const status = state.adminStatus;
+        const rows   = document.querySelectorAll('#admin-table tbody tr');
+        let visible  = 0;
+
+        rows.forEach(row => {
+            const matchSearch = !q || (row.dataset.search || '').includes(q);
+            const matchType   = type   === 'all' || row.dataset.type   === type;
+            const matchStatus = status === 'all' || row.dataset.active  === status;
+            const show = matchSearch && matchType && matchStatus;
+            row.classList.toggle('row-hidden', !show);
+            if (show) visible++;
+        });
+
+        const empty = document.getElementById('admin-empty');
+        if (empty) empty.style.display = (visible === 0 && rows.length > 0) ? 'block' : 'none';
+        updateCount('admin', visible, rows.length);
+    }
+
+    function filterPortal() {
+        const q      = (document.getElementById('portal-search').value || '').toLowerCase().trim();
+        const cityQ  = (document.getElementById('portal-city-search').value || '').toLowerCase().trim();
+        const status = state.portalStatus;
+        const rows   = document.querySelectorAll('#portal-table tbody tr');
+        let visible  = 0;
+
+        // Show/hide city reset button
+        document.getElementById('reset-portal-city').classList.toggle('visible', !!cityQ);
+
+        rows.forEach(row => {
+            const matchSearch = !q     || (row.dataset.search || '').includes(q);
+            const matchCity   = !cityQ || (row.dataset.city   || '').includes(cityQ);
+            const matchStatus = status === 'all' || row.dataset.active === status;
+            const show = matchSearch && matchCity && matchStatus;
+            row.classList.toggle('row-hidden', !show);
+            if (show) visible++;
+        });
+
+        const empty = document.getElementById('portal-empty');
+        if (empty) empty.style.display = (visible === 0 && rows.length > 0) ? 'block' : 'none';
+        updateCount('portal', visible, rows.length);
+    }
+
+    function updateCount(section, visible, total) {
+        const el = document.getElementById(section + '-count');
+        if (!el) return;
+        el.textContent = visible === total ? '(' + total + ')' : '(' + visible + ' of ' + total + ')';
+    }
+
+    // ---- Clickable rows ----
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.clickable-row').forEach(row => {
+            row.addEventListener('click', function () {
+                if (this.dataset.href) window.location = this.dataset.href;
+            });
+        });
+
+        // Init counts
+        ['admin', 'portal'].forEach(s => {
+            const rows = document.querySelectorAll('#' + s + '-table tbody tr');
+            updateCount(s, rows.length, rows.length);
+        });
+    });
+</script>
+{% endblock %}

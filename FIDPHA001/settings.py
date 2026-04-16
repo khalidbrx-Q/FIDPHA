@@ -30,6 +30,7 @@ INSTALLED_APPS = [
 
     "rest_framework",
     "api",
+    "control.apps.ControlConfig",
 ]
 
 MIDDLEWARE = [

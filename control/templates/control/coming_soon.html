@@ -1,0 +1,20 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Coming Soon{% endblock %}
+{% block page_breadcrumb %}Coming Soon{% endblock %}
+
+{% block content %}
+<div class="card" style="text-align: center; padding: 60px 24px;">
+    <span class="material-icons-round" style="font-size: 48px; color: var(--text-secondary); margin-bottom: 16px; display: block;">construction</span>
+    <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+        This section is being built
+    </div>
+    <div style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 24px;">
+        It will be available in the next part of the control panel rollout.
+    </div>
+    <a href="{% url 'control:dashboard' %}" class="btn btn-primary" style="display: inline-flex;">
+        <span class="material-icons-round">arrow_back</span>
+        Back to Dashboard
+    </a>
+</div>
+{% endblock %}

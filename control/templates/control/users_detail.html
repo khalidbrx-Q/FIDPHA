@@ -1,0 +1,183 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}{{ u.username }}{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:users_list' %}" style="color:var(--text-secondary);text-decoration:none;">Users</a>
+    › {{ u.username }}
+{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div style="display:flex; align-items:center; gap:14px;">
+        <div class="detail-avatar">{{ u.username|first|upper }}</div>
+        <div>
+            <div class="page-header-title">
+                {{ u.get_full_name|default:u.username }}
+                {% if u.is_superuser %}
+                    <span class="type-badge type-superuser"><span class="material-icons-round" style="font-size:13px;">shield</span> Superuser</span>
+                {% elif u.is_staff %}
+                    <span class="type-badge type-staff"><span class="material-icons-round" style="font-size:13px;">badge</span> Staff</span>
+                {% else %}
+                    <span class="type-badge type-portal"><span class="material-icons-round" style="font-size:13px;">store</span> Portal</span>
+                {% endif %}
+                {% if u.is_active %}
+                    <span class="badge badge-active">Active</span>
+                {% else %}
+                    <span class="badge badge-inactive">Inactive</span>
+                {% endif %}
+            </div>
+            <div class="page-header-sub">{{ u.email }} · Joined {{ u.date_joined|date:"d M Y" }}</div>
+        </div>
+    </div>
+    <div style="display:flex; gap:8px;">
+        <a href="{% url 'control:users_list' %}" class="btn btn-secondary">
+            <span class="material-icons-round">arrow_back</span> Back
+        </a>
+        <a href="{% url 'control:users_edit' u.pk %}" class="btn btn-primary">
+            <span class="material-icons-round">edit</span> Edit
+        </a>
+        <a href="{% url 'control:users_delete' u.pk %}" class="btn btn-danger">
+            <span class="material-icons-round">delete</span> Delete
+        </a>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+    <!-- Left: basic info -->
+    <div class="card">
+        <div class="section-label">Account Information</div>
+        <div class="info-row"><span class="info-key">Username</span><span class="info-val">{{ u.username }}</span></div>
+        <div class="info-row"><span class="info-key">Full name</span><span class="info-val">{{ u.get_full_name|default:"—" }}</span></div>
+        <div class="info-row"><span class="info-key">Email</span><span class="info-val">{{ u.email|default:"—" }}</span></div>
+        <div class="info-row"><span class="info-key">Date joined</span><span class="info-val">{{ u.date_joined|date:"d M Y, H:i" }}</span></div>
+        <div class="info-row"><span class="info-key">Last login</span><span class="info-val">{{ u.last_login|date:"d M Y, H:i"|default:"Never" }}</span></div>
+        <div class="info-row" style="border-bottom:none;">
+            <span class="info-key">Status</span>
+            <span class="info-val">
+                {% if u.is_active %}<span class="badge badge-active">Active</span>
+                {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- Right: type-specific info -->
+    <div class="card">
+        {% if utype == "superuser" %}
+            <div class="section-label">Superuser</div>
+            <div style="display:flex; flex-direction:column; align-items:center; padding:24px; text-align:center;">
+                <span class="material-icons-round" style="font-size:40px; color:#a855f7; margin-bottom:10px;">shield</span>
+                <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;">Full system access</div>
+                <div style="font-size:0.82rem; color:var(--text-secondary);">Superusers have all permissions automatically — no role needed.</div>
+            </div>
+
+        {% elif utype == "staff" %}
+            <div class="section-label">Role & Permissions</div>
+            {% with role=u.groups.first %}
+            {% if role %}
+                <div class="info-row"><span class="info-key">Role</span><span class="info-val" style="font-weight:600;">{{ role.name }}</span></div>
+                <div style="margin-top:12px;">
+                    <div style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-secondary); margin-bottom:8px;">Permissions from this role</div>
+                    <div class="perm-tags">
+                        {% for perm in role.permissions.all %}
+                            <span class="perm-tag">{{ perm.name }}</span>
+                        {% empty %}
+                            <span style="font-size:0.82rem; color:var(--text-secondary);">No permissions in this role.</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div style="text-align:center; padding:24px; color:var(--text-secondary);">
+                    <span class="material-icons-round" style="font-size:36px; display:block; margin-bottom:8px;">badge</span>
+                    <div style="font-size:0.85rem;">No role assigned — this user has no permissions.</div>
+                    <a href="{% url 'control:users_edit' u.pk %}" style="font-size:0.82rem; color:var(--accent);">Assign a role</a>
+                </div>
+            {% endif %}
+            {% endwith %}
+
+        {% else %}
+            <div class="section-label">Portal Account</div>
+            {% if profile %}
+                <div class="info-row">
+                    <span class="info-key">Account</span>
+                    <a href="{% url 'control:accounts_detail' profile.account.pk %}" class="info-account-link">{{ profile.account.name }}</a>
+                </div>
+                <div class="info-row"><span class="info-key">Account code</span><span class="info-val">{{ profile.account.code }}</span></div>
+                <div class="info-row"><span class="info-key">City</span><span class="info-val">{{ profile.account.city }}</span></div>
+                <div class="info-row" style="border-bottom:none;">
+                    <span class="info-key">Email verified</span>
+                    <span class="info-val">
+                        {% if profile.email_verified %}
+                            <span class="badge badge-active">Verified</span>
+                        {% else %}
+                            <span class="badge badge-inactive">Not verified</span>
+                        {% endif %}
+                    </span>
+                </div>
+            {% else %}
+                <div style="text-align:center; padding:24px; color:var(--text-secondary);">
+                    <span class="material-icons-round" style="font-size:36px; display:block; margin-bottom:8px;">store_off</span>
+                    <div style="font-size:0.85rem;">No account linked.</div>
+                    <a href="{% url 'control:users_edit' u.pk %}" style="font-size:0.82rem; color:var(--accent);">Link an account</a>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .detail-avatar {
+        width:52px; height:52px; border-radius:50%;
+        background:linear-gradient(135deg, var(--accent), #6366f1);
+        color:white; font-size:1.2rem; font-weight:700;
+        display:flex; align-items:center; justify-content:center;
+        flex-shrink:0;
+    }
+    .section-label {
+        font-size:0.75rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:14px;
+    }
+    .info-row {
+        display:flex; align-items:center; justify-content:space-between;
+        padding:9px 0; border-bottom:1px solid var(--card-border);
+        font-size:0.85rem;
+    }
+    .info-key { color:var(--text-secondary); }
+    .info-val { color:var(--text-primary); text-align:right; }
+
+    .type-badge {
+        display:inline-flex; align-items:center; gap:4px;
+        padding:3px 8px; border-radius:20px;
+        font-size:0.75rem; font-weight:600; margin-left:6px;
+    }
+    .type-superuser { background:rgba(168,85,247,0.1); color:#a855f7; }
+    .type-staff     { background:rgba(14,165,233,0.1); color:#0ea5e9; }
+    .type-portal    { background:rgba(34,197,94,0.1);  color:#22c55e; }
+
+    .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; margin-left:4px; }
+    .badge-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .badge-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
+
+    .perm-tags { display:flex; flex-wrap:wrap; gap:5px; }
+    .perm-tag {
+        font-size:0.72rem; padding:3px 8px; border-radius:6px;
+        background:var(--sidebar-hover); color:var(--text-secondary);
+        border:1px solid var(--card-border);
+    }
+    .info-account-link {
+        font-weight:600; color:var(--accent); text-decoration:none; text-align:right;
+    }
+    .info-account-link:hover { text-decoration:underline; }
+
+    @media (max-width: 700px) {
+        div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+    }
+</style>
+{% endblock %}
