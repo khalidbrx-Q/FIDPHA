@@ -1,6 +1,7 @@
 
 import secrets
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class APIToken(models.Model):
@@ -8,6 +9,12 @@ class APIToken(models.Model):
     token = models.CharField(max_length=64, unique=True, editable=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        User, null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        editable=False,
+    )
     last_used_at = models.DateTimeField(null=True, blank=True)
     usage_count = models.PositiveIntegerField(default=0)
 

@@ -21,7 +21,7 @@ from django.db.models import Count, Q
 from fidpha.models import Account, Contract, Product, UserProfile
 from api.models import APIToken
 from .decorators import staff_required
-from .forms import RoleForm, UserForm
+from .forms import RoleForm, UserForm, AccountForm
 
 
 @staff_required
@@ -168,8 +168,32 @@ def roles_list(request):
 
 
 @staff_required
+def roles_detail(request, pk: int):
+    """Read-only detail view for a role."""
+    role = get_object_or_404(
+        Group.objects.prefetch_related("permissions__content_type", "user_set"),
+        pk=pk,
+    )
+    # Group permissions by app label for display
+    perm_groups: dict[str, list] = {}
+    for perm in role.permissions.all():
+        label = _APP_FRIENDLY.get(perm.content_type.app_label,
+                                  perm.content_type.app_label.title())
+        perm_groups.setdefault(label, []).append(perm)
+    perm_groups_sorted = sorted(perm_groups.items())
+
+    return render(request, "control/roles_detail.html", {
+        "role": role,
+        "perm_groups": perm_groups_sorted,
+        "assigned_users": role.user_set.order_by("username"),
+    })
+
+
+@staff_required
 def roles_create(request):
-    """Create a new role."""
+    """Create a new role. Supports ?clone=pk to pre-fill from an existing role."""
+    clone_perm_ids = set()
+
     if request.method == "POST":
         form = RoleForm(request.POST)
         if form.is_valid():
@@ -178,11 +202,20 @@ def roles_create(request):
             return redirect("control:roles_list")
     else:
         form = RoleForm()
+        clone_pk = request.GET.get("clone")
+        if clone_pk:
+            try:
+                src = Group.objects.prefetch_related("permissions").get(pk=clone_pk)
+                form.fields["name"].initial = f"Copy of {src.name}"
+                clone_perm_ids = set(src.permissions.values_list("pk", flat=True))
+            except Group.DoesNotExist:
+                pass
 
     return render(request, "control/roles_form.html", {
         "form": form,
         "grouped_permissions": _grouped_permissions(),
         "page_action": "Create",
+        "clone_perm_ids": clone_perm_ids,
     })
 
 
@@ -196,15 +229,29 @@ def roles_edit(request, pk: int):
         if form.is_valid():
             form.save()
             messages.success(request, f"Role \"{role.name}\" updated successfully.")
-            return redirect("control:roles_list")
-    else:
-        form = RoleForm(instance=role)
+            return redirect("control:roles_detail", pk=role.pk)
+        # PRG: store errors in session and redirect back to GET so that
+        # a page reload doesn't trigger the "resubmit?" browser dialog.
+        request.session["_role_edit_err"] = {
+            "name":           list(form.errors.get("name", [])),
+            "submitted_name": request.POST.get("name", ""),
+        }
+        return redirect(request.path)
+
+    # Pick up any validation errors stored by the previous POST
+    stored = request.session.pop("_role_edit_err", None)
+    form = RoleForm(instance=role)
+    if stored and stored.get("submitted_name") is not None:
+        # Override the form's initial so the input shows what the user typed
+        form.initial["name"] = stored["submitted_name"]
+    name_errors = stored["name"] if stored else []
 
     return render(request, "control/roles_form.html", {
         "form": form,
         "role": role,
         "grouped_permissions": _grouped_permissions(),
         "page_action": "Edit",
+        "name_errors": name_errors,
     })
 
 
@@ -270,7 +317,7 @@ def users_create(request):
     if request.method == "POST":
         form = UserForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save(actor=request.user)
             messages.success(request, f"User \"{user.username}\" created successfully.")
             return redirect("control:users_detail", pk=user.pk)
 
@@ -282,6 +329,20 @@ def users_create(request):
         selected_type = "portal"
         selected_role_pk = ""
         selected_account_pk = ""
+
+        # Pre-fill from ?account=pk&type=portal (e.g. launched from account edit page)
+        preset_account = request.GET.get("account")
+        preset_type    = request.GET.get("type")
+        if preset_account and not request.GET.get("clone"):
+            try:
+                acc = Account.objects.get(pk=preset_account)
+                selected_account_pk = acc.pk
+                form.fields["account"].initial = acc.pk
+            except Account.DoesNotExist:
+                pass
+        if preset_type in ("portal", "staff", "superuser") and not request.GET.get("clone"):
+            selected_type = preset_type
+            form.fields["user_type"].initial = preset_type
 
         # Clone: pre-fill from existing user
         clone_pk = request.GET.get("clone")
@@ -361,7 +422,7 @@ def users_edit(request, pk: int):
     if request.method == "POST":
         form = UserForm(request.POST, instance=user)
         if form.is_valid():
-            form.save()
+            form.save(actor=request.user)
             messages.success(request, f"User \"{user.username}\" updated successfully.")
             return redirect("control:users_detail", pk=user.pk)
 
@@ -389,6 +450,164 @@ def users_edit(request, pk: int):
         "selected_type":      selected_type,
         "selected_role_pk":   selected_role_pk,
         "selected_account_pk": selected_account_pk,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Accounts
+# ---------------------------------------------------------------------------
+
+@staff_required
+def accounts_list(request):
+    """List all accounts with annotated contract and user counts."""
+    accounts = (
+        Account.objects
+        .annotate(
+            contract_count=Count("contracts", distinct=True),
+            user_count=Count("users", distinct=True),
+        )
+        .order_by("name")
+    )
+    return render(request, "control/accounts_list.html", {"accounts": accounts})
+
+
+@staff_required
+def accounts_create(request):
+    """Create a new account. Supports ?clone=pk to pre-fill from an existing account."""
+    if request.method == "POST":
+        form = AccountForm(request.POST)
+        if form.is_valid():
+            account = form.save(commit=False)
+            account.created_by = request.user
+            account.save()
+            messages.success(request, f'Account "{account.name}" created successfully.')
+            return redirect("control:accounts_detail", pk=account.pk)
+        # PRG: store submitted data so a page reload won't re-POST
+        request.session["_account_create_form"] = {
+            k: v for k, v in request.POST.items() if k != "csrfmiddlewaretoken"
+        }
+        return redirect(request.path)
+
+    stored = request.session.pop("_account_create_form", None)
+    if stored:
+        form = AccountForm(stored)
+        form.is_valid()
+    else:
+        form = AccountForm()
+        clone_pk = request.GET.get("clone")
+        if clone_pk:
+            try:
+                src = Account.objects.get(pk=clone_pk)
+                form.initial = {
+                    "name":            f"Copy of {src.name}",
+                    "city":            src.city,
+                    "location":        src.location,
+                    "phone":           src.phone,
+                    "email":           src.email,
+                    "pharmacy_portal": src.pharmacy_portal,
+                    "status":          src.status,
+                }
+            except Account.DoesNotExist:
+                pass
+
+    return render(request, "control/accounts_form.html", {
+        "form":        form,
+        "page_action": "Create",
+    })
+
+
+@staff_required
+def accounts_detail(request, pk: int):
+    """Read-only detail view for an account."""
+    account = get_object_or_404(
+        Account.objects.prefetch_related("contracts", "users__user"),
+        pk=pk,
+    )
+    active_contract    = (account.contracts
+                          .filter(status="active")
+                          .annotate(product_count=Count("products", distinct=True))
+                          .first())
+    inactive_contracts = (account.contracts
+                          .filter(status="inactive")
+                          .annotate(product_count=Count("products", distinct=True))
+                          .order_by("-end_date"))
+    contract_count     = account.contracts.count()
+
+    return render(request, "control/accounts_detail.html", {
+        "account":            account,
+        "active_contract":    active_contract,
+        "inactive_contracts": inactive_contracts,
+        "contract_count":     contract_count,
+        "portal_users":       account.users.select_related("user").order_by("user__username"),
+    })
+
+
+@staff_required
+def accounts_edit(request, pk: int):
+    """Edit an existing account."""
+    account = get_object_or_404(Account, pk=pk)
+
+    if request.method == "POST":
+        form = AccountForm(request.POST, instance=account)
+        if form.is_valid():
+            account = form.save(commit=False)
+            account.modified_by = request.user
+            account.save()
+            messages.success(request, f'Account "{account.name}" updated successfully.')
+            return redirect("control:accounts_detail", pk=account.pk)
+        request.session["_account_edit_form"] = {
+            k: v for k, v in request.POST.items() if k != "csrfmiddlewaretoken"
+        }
+        return redirect(request.path)
+
+    stored = request.session.pop("_account_edit_form", None)
+    if stored:
+        form = AccountForm(stored, instance=account)
+        form.is_valid()
+    else:
+        form = AccountForm(instance=account)
+
+    active_contract    = (account.contracts
+                          .filter(status="active")
+                          .annotate(product_count=Count("products", distinct=True))
+                          .first())
+    inactive_contracts = (account.contracts
+                          .exclude(status="active")
+                          .annotate(product_count=Count("products", distinct=True))
+                          .order_by("-end_date"))
+    contract_count     = account.contracts.count()
+    portal_users       = account.users.select_related("user").order_by("user__username")
+
+    return render(request, "control/accounts_form.html", {
+        "form":               form,
+        "account":            account,
+        "page_action":        "Edit",
+        "active_contract":    active_contract,
+        "inactive_contracts": inactive_contracts,
+        "contract_count":     contract_count,
+        "portal_users":       portal_users,
+    })
+
+
+@staff_required
+def accounts_delete(request, pk: int):
+    """Delete an account after confirmation."""
+    account = get_object_or_404(Account, pk=pk)
+    contract_count        = account.contracts.count()
+    active_contract_count = account.contracts.filter(status="active").count()
+    user_count            = account.users.count()
+
+    if request.method == "POST":
+        name = account.name
+        account.delete()
+        messages.success(request, f'Account "{name}" deleted.')
+        return redirect("control:accounts_list")
+
+    return render(request, "control/accounts_confirm_delete.html", {
+        "account":              account,
+        "contract_count":       contract_count,
+        "active_contract_count": active_contract_count,
+        "user_count":           user_count,
     })
 
 

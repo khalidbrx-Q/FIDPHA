@@ -19,6 +19,48 @@ from django.contrib.auth.password_validation import validate_password
 from fidpha.models import Account, UserProfile
 
 
+# ---------------------------------------------------------------------------
+# Accounts
+# ---------------------------------------------------------------------------
+
+class AccountForm(forms.ModelForm):
+    """
+    Form for creating and editing pharmacy accounts.
+
+    Uses ModelForm so Django's _post_clean() automatically calls the model's
+    clean() method — which enforces the "cannot deactivate with active
+    contracts" business rule — and surfaces it as a non-field error.
+    """
+
+    class Meta:
+        model  = Account
+        fields = ['code', 'name', 'city', 'location', 'phone',
+                  'email', 'pharmacy_portal', 'status']
+        widgets = {
+            'location': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for fname in ['code', 'name', 'city', 'phone', 'email']:
+            self.fields[fname].widget.attrs.update({'class': 'form-input', 'autocomplete': 'off'})
+        self.fields['location'].widget.attrs.update({'class': 'form-input'})
+        self.fields['status'].widget.attrs.update({'class': 'form-input'})
+
+    def clean_code(self):
+        code = (self.cleaned_data.get('code') or '').strip()
+        qs = Account.objects.filter(code=code)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('An account with this code already exists.')
+        return code
+
+
+# ---------------------------------------------------------------------------
+# Roles
+# ---------------------------------------------------------------------------
+
 class RoleForm(forms.ModelForm):
     """
     Form for creating and editing Roles (Django Groups).
@@ -182,10 +224,12 @@ class UserForm(forms.Form):
 
     # ---- Persistence ----
 
-    def save(self) -> User:
+    def save(self, actor=None) -> User:
         """
         Persist the user, their type flags, groups, and UserProfile.
 
+        Pass actor=request.user from the view so traceability fields on
+        UserProfile are stamped at creation / update time.
         Returns the saved User instance.
         """
         data      = self.cleaned_data
@@ -219,10 +263,22 @@ class UserForm(forms.Form):
 
         # Create / update UserProfile for portal users; remove for others
         if user_type == "portal":
-            profile, created = UserProfile.objects.get_or_create(user=user)
-            profile.account = data["account"]
-            # email_verified is managed by the portal flow — never overwrite it here
-            profile.save()
+            # Use update_or_create so the account is set atomically on first INSERT.
+            # get_or_create(user=user) without defaults would try to INSERT a row
+            # with only user set, hitting the NOT NULL constraint on account_id.
+            defaults = {"account": data["account"]}
+            if actor:
+                # On edit, always stamp modified_by; on create, also stamp created_by.
+                existing = UserProfile.objects.filter(user=user).exists()
+                if existing:
+                    defaults["modified_by"] = actor
+                else:
+                    defaults["created_by"] = actor
+            profile, _ = UserProfile.objects.update_or_create(
+                user=user,
+                defaults=defaults,
+            )
+            # email_verified is managed by the portal flow — update_or_create never touches it
         else:
             UserProfile.objects.filter(user=user).delete()
 

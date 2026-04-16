@@ -35,6 +35,9 @@
         <a href="{% url 'control:users_list' %}" class="btn btn-secondary">
             <span class="material-icons-round">arrow_back</span> Back
         </a>
+        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="btn btn-secondary">
+            <span class="material-icons-round">content_copy</span> Clone
+        </a>
         <a href="{% url 'control:users_edit' u.pk %}" class="btn btn-primary">
             <span class="material-icons-round">edit</span> Edit
         </a>

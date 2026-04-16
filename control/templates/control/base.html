@@ -252,11 +252,65 @@
             flex-wrap: wrap;
         }
 
+        /* ---- TOPBAR LEFT ---- */
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+        .topbar-titles { min-width: 0; }
+        .topbar-titles .topbar-title    { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .topbar-titles .topbar-breadcrumb { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* ---- HAMBURGER BUTTON — hidden on desktop ---- */
+        .hamburger-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .hamburger-btn:hover { background-color: var(--sidebar-hover); color: var(--text-primary); }
+        .hamburger-btn .material-icons-round { font-size: 20px; }
+
         /* ---- TOPBAR RIGHT ---- */
         .topbar-right {
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* ================================================================ */
+        /* MOBILE — max-width: 768px                                         */
+        /* ================================================================ */
+        @media (max-width: 768px) {
+
+            /* Show hamburger */
+            .hamburger-btn { display: flex; }
+
+            /* Reduce padding */
+            .content { padding: 14px; }
+            .topbar  { padding: 10px 14px; }
+
+            /* Page header: stack title above buttons, buttons wrap */
+            .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .page-header > div:last-child { flex-wrap: wrap; }
+
+            /* Cards: allow horizontal scroll (for tables) */
+            .card { overflow-x: auto; }
+
+            /* Form actions: allow buttons to wrap */
+            .form-actions { flex-wrap: wrap; }
         }
 
         /* ---- USER DROPDOWN ---- */
@@ -408,7 +462,8 @@
     <!-- ================================================================ -->
     <!-- SIDEBAR                                                           -->
     <!-- ================================================================ -->
-    <aside class="sidebar">
+    <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="closeSidebar()"></div>
+    <aside class="sidebar" id="sidebar">
 
         <!-- Brand -->
         <div class="sidebar-brand">
@@ -517,10 +572,15 @@
 
         <!-- Topbar -->
         <div class="topbar">
-            <div>
-                <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
-                <div class="topbar-breadcrumb">
-                    Control Panel › <span>{% block page_breadcrumb %}Dashboard{% endblock %}</span>
+            <div class="topbar-left">
+                <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open navigation">
+                    <span class="material-icons-round">menu</span>
+                </button>
+                <div class="topbar-titles">
+                    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+                    <div class="topbar-breadcrumb">
+                        Control Panel › <span>{% block page_breadcrumb %}Dashboard{% endblock %}</span>
+                    </div>
                 </div>
             </div>
 
@@ -584,6 +644,22 @@
     <script src="{% static 'fidpha/js/portal.js' %}"></script>
 
     <script>
+        // ---- Sidebar (mobile) ----
+        function openSidebar() {
+            document.getElementById('sidebar').classList.add('sidebar-open');
+            document.getElementById('sidebarBackdrop').classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('sidebar-open');
+            document.getElementById('sidebarBackdrop').classList.remove('visible');
+            document.body.style.overflow = '';
+        }
+        // Close sidebar on nav item click (page will reload anyway, but feels snappier)
+        document.querySelectorAll('.sidebar .nav-item').forEach(function(link) {
+            link.addEventListener('click', closeSidebar);
+        });
+
         // ---- User dropdown ----
         function toggleUserDropdown() {
             const menu = document.getElementById('userDropdownMenu');

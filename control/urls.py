@@ -45,15 +45,16 @@ urlpatterns = [
     # Roles — Part 2
     path("roles/", views.roles_list, name="roles_list"),
     path("roles/new/", views.roles_create, name="roles_create"),
+    path("roles/<int:pk>/", views.roles_detail, name="roles_detail"),
     path("roles/<int:pk>/edit/", views.roles_edit, name="roles_edit"),
     path("roles/<int:pk>/delete/", views.roles_delete, name="roles_delete"),
 
-    # Accounts — Part 3
-    path("accounts/", coming_soon, name="accounts_list"),
-    path("accounts/new/", coming_soon, name="accounts_create"),
-    path("accounts/<int:pk>/", coming_soon, name="accounts_detail"),
-    path("accounts/<int:pk>/edit/", coming_soon, name="accounts_edit"),
-    path("accounts/<int:pk>/delete/", coming_soon, name="accounts_delete"),
+    # Accounts
+    path("accounts/", views.accounts_list, name="accounts_list"),
+    path("accounts/new/", views.accounts_create, name="accounts_create"),
+    path("accounts/<int:pk>/", views.accounts_detail, name="accounts_detail"),
+    path("accounts/<int:pk>/edit/", views.accounts_edit, name="accounts_edit"),
+    path("accounts/<int:pk>/delete/", views.accounts_delete, name="accounts_delete"),
 
     # Contracts — Part 3
     path("contracts/", coming_soon, name="contracts_list"),

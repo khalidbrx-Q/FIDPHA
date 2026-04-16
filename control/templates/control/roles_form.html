@@ -3,6 +3,9 @@
 {% block page_title %}{{ page_action }} Role{% endblock %}
 {% block page_breadcrumb %}
     <a href="{% url 'control:roles_list' %}" style="color: var(--text-secondary); text-decoration: none;">Roles</a>
+    {% if page_action == "Edit" %}
+    › <a href="{% url 'control:roles_detail' role.pk %}" style="color: var(--text-secondary); text-decoration: none;">{{ role.name }}</a>
+    {% endif %}
     › {{ page_action }}
 {% endblock %}
 {% block nav_roles %}active{% endblock %}
@@ -16,10 +19,15 @@
             {% if page_action == "Edit" %}Editing "{{ role.name }}"{% else %}Define a new permission preset{% endif %}
         </div>
     </div>
-    <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span>
-        Back
+    {% if page_action == "Edit" %}
+    <a href="{% url 'control:roles_detail' role.pk %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
     </a>
+    {% else %}
+    <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+    {% endif %}
 </div>
 
 <form method="post" id="roleForm">
@@ -35,7 +43,12 @@
                 {% for error in form.name.errors %}
                     <div class="form-error">{{ error }}</div>
                 {% endfor %}
+            {% else %}
+                {% for error in name_errors %}
+                    <div class="form-error">{{ error }}</div>
+                {% endfor %}
             {% endif %}
+            <div id="nameErrorInline" class="form-error" style="display:none;"></div>
             <div class="form-help">A short descriptive name, e.g. "Accounts Manager" or "Read-only Staff".</div>
         </div>
     </div>
@@ -90,7 +103,7 @@
                                        data-codename="{{ perm.codename }}"
                                        data-modelkey="{{ app.app_label }}.{{ model_group.model }}"
                                        onchange="updateModelSelectAll('{{ app.app_label }}.{{ model_group.model }}')"
-                                       {% if perm in form.instance.permissions.all %}checked{% endif %}>
+                                       {% if perm in form.instance.permissions.all or perm.pk in clone_perm_ids %}checked{% endif %}>
                                 <span class="perm-name">{{ perm.name }}</span>
                                 <span class="perm-codename">{{ perm.codename }}</span>
                             </label>
@@ -110,14 +123,36 @@
 
     <!-- Form actions -->
     <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
-            <span class="material-icons-round">save</span>
+        <button type="submit" id="submitBtn" class="btn btn-primary">
+            <span class="material-icons-round" id="submitIcon">save</span>
             {{ page_action }} Role
         </button>
         <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">Cancel</a>
     </div>
 
 </form>
+
+<script>
+    document.getElementById('roleForm').addEventListener('submit', function (e) {
+        const nameInput = document.getElementById('{{ form.name.id_for_label }}');
+        const errEl     = document.getElementById('nameErrorInline');
+
+        if (!nameInput.value.trim()) {
+            e.preventDefault();
+            errEl.textContent = 'This field is required.';
+            errEl.style.display = 'block';
+            nameInput.focus();
+            return;
+        }
+
+        errEl.style.display = 'none';
+        // Lock the button — form is already submitting at this point
+        const btn  = document.getElementById('submitBtn');
+        const icon = document.getElementById('submitIcon');
+        btn.disabled = true;
+        icon.textContent = 'hourglass_empty';
+    });
+</script>
 
 {% endblock %}
 
@@ -180,7 +215,7 @@
     }
     .perm-model-perms {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 2px;
         padding-left: 16px;
     }

@@ -60,6 +60,7 @@ class AccountAdminForm(forms.ModelForm):
 # -----------------------
 class UserProfileInline(StackedInline):
     model = UserProfile
+    fk_name = "user"
     can_delete = False
     verbose_name = "Account"
     verbose_name_plural = "Account"
@@ -164,6 +165,7 @@ class UserProfileAccountFormSet(BaseInlineFormSet):
 
 class UserProfileAccountInline(TabularInline):
     model = UserProfile
+    fk_name = "account"
     extra = 1
     verbose_name = "Available User"
     verbose_name_plural = "Available Users"

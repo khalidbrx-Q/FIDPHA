@@ -399,8 +399,20 @@ body {
 }
 
 /* ---- RESPONSIVE ---- */
+.sidebar { transition: transform 0.25s ease; }
+
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+}
+.sidebar-backdrop.visible { display: block; }
+
 @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); }
+    .sidebar.sidebar-open { transform: translateX(0); }
     .main { margin-left: 0; }
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
 }

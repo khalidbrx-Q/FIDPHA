@@ -1,0 +1,487 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}{{ page_action }} Account{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:accounts_list' %}" style="color:var(--text-secondary);text-decoration:none;">Accounts</a>
+    {% if page_action == "Edit" %}
+    › <a href="{% url 'control:accounts_detail' account.pk %}" style="color:var(--text-secondary);text-decoration:none;">{{ account.name }}</a>
+    {% endif %}
+    › {{ page_action }}
+{% endblock %}
+{% block nav_accounts %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">{{ page_action }} Account</div>
+        <div class="page-header-sub">
+            {% if page_action == "Edit" %}Editing "{{ account.name }}"{% else %}Add a new pharmacy account{% endif %}
+        </div>
+    </div>
+    {% if page_action == "Edit" %}
+    <a href="{% url 'control:accounts_detail' account.pk %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+    {% else %}
+    <a href="{% url 'control:accounts_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+    {% endif %}
+</div>
+
+{% if form.non_field_errors %}
+<div style="margin-bottom:16px;">
+    {% for error in form.non_field_errors %}
+    <div class="alert alert-error">
+        <span class="material-icons-round" style="font-size:18px;">error_outline</span>
+        {{ error }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" id="accountForm" novalidate>
+    {% csrf_token %}
+
+    <!-- Account Details -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">Account Details</div>
+
+        <div class="form-grid-2" style="margin-bottom:16px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Code *</label>
+                {{ form.code }}
+                {% for e in form.code.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+                <div class="form-help">Unique identifier, e.g. "PH-001"</div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Name *</label>
+                {{ form.name }}
+                {% for e in form.name.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="form-grid-2" style="margin-bottom:16px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">City *</label>
+                {{ form.city }}
+                {% for e in form.city.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Phone</label>
+                {{ form.phone }}
+                {% for e in form.phone.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+            <label class="form-label">Email</label>
+            {{ form.email }}
+            {% for e in form.email.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Location / Address</label>
+            {{ form.location }}
+            {% for e in form.location.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">Settings</div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+            <label class="form-label">Status</label>
+            {{ form.status }}
+            {% for e in form.status.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            <div class="form-help">Inactive accounts cannot be linked to new contracts.</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="toggle-label">
+                <div class="toggle-switch">
+                    {{ form.pharmacy_portal }}
+                    <span class="toggle-slider"></span>
+                </div>
+                <div>
+                    <div style="font-size:0.87rem; font-weight:600; color:var(--text-primary);">Pharmacy Portal Access</div>
+                    <div style="font-size:0.78rem; color:var(--text-secondary);">Allow this account's users to log in to the portal</div>
+                </div>
+            </label>
+            {% for e in form.pharmacy_portal.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        </div>
+    </div>
+
+    <div class="form-actions" style="margin-bottom:{% if page_action == 'Edit' %}24px{% else %}0{% endif %};">
+        <button type="submit" id="submitBtn" class="btn btn-primary">
+            <span class="material-icons-round" id="submitIcon">save</span>
+            <span id="submitLabel">{{ page_action }} Account</span>
+        </button>
+        {% if page_action == "Edit" %}
+        <a href="{% url 'control:accounts_detail' account.pk %}" class="btn btn-secondary">Cancel</a>
+        {% else %}
+        <a href="{% url 'control:accounts_list' %}" class="btn btn-secondary">Cancel</a>
+        {% endif %}
+    </div>
+</form>
+
+{% if page_action == "Edit" %}
+
+<!-- ================================================================ -->
+<!-- CONTRACTS (read-only)                                             -->
+<!-- ================================================================ -->
+<div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div class="section-label" style="margin-bottom:0;">
+            Contracts <span class="count-chip">{{ contract_count }}</span>
+        </div>
+        <a href="{% url 'control:contracts_create' %}?account={{ account.pk }}" class="btn btn-secondary" style="padding:5px 12px; font-size:0.8rem;">
+            <span class="material-icons-round" style="font-size:15px;">add</span> New Contract
+        </a>
+    </div>
+
+    {% if active_contract %}
+    <div class="active-contract-block">
+        <div class="active-contract-header">
+            <span class="material-icons-round" style="font-size:13px; color:#22c55e;">circle</span>
+            Active Contract
+        </div>
+        <div class="contract-row"
+             data-href="{% url 'control:contracts_detail' active_contract.pk %}"
+             onclick="rowNav(this)">
+            <div class="contract-row-info">
+                <div class="contract-row-title">{{ active_contract.title }}</div>
+                <div class="contract-row-meta">
+                    <span class="material-icons-round meta-icon">calendar_today</span>
+                    {{ active_contract.start_date|date:"d M Y" }} → {{ active_contract.end_date|date:"d M Y" }}
+                    <span class="meta-sep">·</span>
+                    <span class="material-icons-round meta-icon">medication</span>
+                    {{ active_contract.product_count }} product{{ active_contract.product_count|pluralize }}
+                </div>
+            </div>
+            <span class="badge badge-active">Active</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if inactive_contracts %}
+    <div class="{% if active_contract %}inactive-section{% endif %}">
+        {% if active_contract %}
+        <div class="inactive-section-header">Inactive Contracts</div>
+        {% endif %}
+
+        <div class="search-bar" style="margin-bottom:10px;">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="contractSearch" placeholder="Search contracts…"
+                   oninput="filterContracts()" autocomplete="off">
+        </div>
+
+        <div id="contractsList" class="scroll-list">
+            {% for c in inactive_contracts %}
+            <div class="contract-row"
+                 data-href="{% url 'control:contracts_detail' c.pk %}"
+                 data-title="{{ c.title|lower }}"
+                 onclick="rowNav(this)">
+                <div class="contract-row-info">
+                    <div class="contract-row-title">{{ c.title }}</div>
+                    <div class="contract-row-meta">
+                        <span class="material-icons-round meta-icon">calendar_today</span>
+                        {{ c.start_date|date:"d M Y" }} → {{ c.end_date|date:"d M Y" }}
+                        <span class="meta-sep">·</span>
+                        <span class="material-icons-round meta-icon">medication</span>
+                        {{ c.product_count }} product{{ c.product_count|pluralize }}
+                    </div>
+                </div>
+                <span class="badge badge-inactive">Inactive</span>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="noContractResults" style="display:none; text-align:center; padding:14px; color:var(--text-secondary); font-size:0.83rem;">
+            No contracts match your search.
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not active_contract and not inactive_contracts %}
+    <div style="text-align:center; padding:24px 0; color:var(--text-secondary); font-size:0.83rem;">
+        <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px; color:var(--card-border);">description_off</span>
+        No contracts yet. Create one from the <a href="{% url 'control:contracts_create' %}" style="color:var(--accent);">contracts page</a>.
+    </div>
+    {% endif %}
+</div>
+
+<!-- ================================================================ -->
+<!-- PORTAL USERS (read-only)                                          -->
+<!-- ================================================================ -->
+<div class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div class="section-label" style="margin-bottom:0;">
+            Portal Users <span class="count-chip">{{ portal_users|length }}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            {% if portal_users %}
+            <div style="display:flex; gap:4px;">
+                <button type="button" class="filter-pill active" onclick="setUserFilter('all',this)">All</button>
+                <button type="button" class="filter-pill" onclick="setUserFilter('active',this)">Active</button>
+                <button type="button" class="filter-pill" onclick="setUserFilter('inactive',this)">Inactive</button>
+            </div>
+            {% endif %}
+            <a href="{% url 'control:users_create' %}?account={{ account.pk }}&type=portal" class="btn btn-secondary" style="padding:5px 12px; font-size:0.8rem;">
+                <span class="material-icons-round" style="font-size:15px;">person_add</span> New User
+            </a>
+        </div>
+    </div>
+
+    {% if portal_users %}
+    <div class="search-bar" style="margin-bottom:10px;">
+        <span class="material-icons-round">search</span>
+        <input type="text" id="userSearch" placeholder="Search users…"
+               oninput="filterUsers()" autocomplete="off">
+    </div>
+
+    <div id="usersList" class="scroll-list">
+        {% for p in portal_users %}
+        <div class="user-row"
+             data-href="{% url 'control:users_detail' p.user.pk %}"
+             data-search="{{ p.user.username|lower }} {{ p.user.get_full_name|lower }} {{ p.user.email|lower }}"
+             data-active="{% if p.user.is_active %}active{% else %}inactive{% endif %}"
+             onclick="rowNav(this)">
+            <div class="user-row-avatar">{{ p.user.username|first|upper }}</div>
+            <div class="user-row-info">
+                <div class="user-row-name">{{ p.user.username }}
+                    {% if p.user.get_full_name %}
+                        <span class="user-fullname">{{ p.user.get_full_name }}</span>
+                    {% endif %}
+                </div>
+                <div class="user-row-meta">
+                    {% if p.user.email %}
+                        <span class="material-icons-round meta-icon">mail</span>{{ p.user.email }}
+                        <span class="meta-sep">·</span>
+                    {% endif %}
+                    {% if p.email_verified %}
+                        <span class="verified-yes"><span class="material-icons-round meta-icon">verified</span>Verified</span>
+                    {% else %}
+                        <span class="verified-no"><span class="material-icons-round meta-icon">cancel</span>Not verified</span>
+                    {% endif %}
+                    {% if p.user.last_login %}
+                        <span class="meta-sep">·</span>
+                        <span class="material-icons-round meta-icon">login</span>{{ p.user.last_login|date:"d M Y" }}
+                    {% endif %}
+                </div>
+            </div>
+            {% if p.user.is_active %}
+                <span class="badge badge-active">Active</span>
+            {% else %}
+                <span class="badge badge-inactive">Inactive</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <div id="noUserResults" style="display:none; text-align:center; padding:14px; color:var(--text-secondary); font-size:0.83rem;">
+        No users match your search.
+    </div>
+
+    {% else %}
+    <div style="text-align:center; padding:24px 0; color:var(--text-secondary); font-size:0.83rem;">
+        <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px; color:var(--card-border);">person_off</span>
+        No portal users linked to this account.
+        <div style="margin-top:6px;">Assign users from the <a href="{% url 'control:users_create' %}" style="color:var(--accent);">user creation page</a>.</div>
+    </div>
+    {% endif %}
+</div>
+
+{% endif %}{# end Edit-only section #}
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .section-label {
+        font-size:0.75rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:14px;
+        display:flex; align-items:center; gap:8px;
+    }
+    .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+    /* Toggle switch */
+    .toggle-label  { display:flex; align-items:center; gap:12px; cursor:pointer; }
+    .toggle-switch { position:relative; flex-shrink:0; }
+    .toggle-switch input[type="checkbox"] { opacity:0; width:0; height:0; position:absolute; }
+    .toggle-slider {
+        display:block; width:40px; height:22px; border-radius:11px;
+        background-color:var(--card-border); cursor:pointer; transition:background-color 0.2s;
+    }
+    .toggle-slider::before {
+        content:""; position:absolute; width:16px; height:16px;
+        border-radius:50%; background:white; top:3px; left:3px; transition:transform 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background-color:var(--accent); }
+    .toggle-switch input:checked + .toggle-slider::before { transform:translateX(18px); }
+
+    @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+    .spin-anim { display:inline-block; animation:spin 0.8s linear infinite; }
+
+    @media (max-width:640px) { .form-grid-2 { grid-template-columns:1fr; } }
+
+    /* ---- Shared with detail page ---- */
+    .count-chip {
+        background:var(--sidebar-hover); color:var(--text-secondary);
+        border:1px solid var(--card-border);
+        font-size:0.7rem; padding:1px 7px; border-radius:10px; font-weight:600; letter-spacing:0;
+    }
+    .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; white-space:nowrap; }
+    .badge-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .badge-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
+
+    .scroll-list { max-height:380px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--card-border) transparent; }
+    .scroll-list::-webkit-scrollbar { width:5px; }
+    .scroll-list::-webkit-scrollbar-thumb { background-color:var(--card-border); border-radius:3px; }
+
+    .active-contract-block {
+        background:rgba(34,197,94,0.05); border:1px solid rgba(34,197,94,0.25);
+        border-radius:8px; padding:10px 14px; margin-bottom:16px;
+    }
+    .active-contract-header {
+        display:flex; align-items:center; gap:5px;
+        font-size:0.7rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:#22c55e; margin-bottom:8px;
+    }
+    .inactive-section { margin-top:4px; }
+    .inactive-section-header {
+        font-size:0.72rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.4px; color:var(--text-secondary);
+        padding:12px 0 10px; border-top:1px solid var(--card-border); margin-bottom:10px;
+    }
+
+    .contract-row {
+        display:flex; align-items:center; gap:12px;
+        padding:9px 6px; border-bottom:1px solid var(--card-border);
+        cursor:pointer; border-radius:4px; transition:background-color 0.12s;
+    }
+    .contract-row:last-child { border-bottom:none; }
+    .contract-row:hover { background-color:rgba(14,165,233,0.05); }
+    .active-contract-block .contract-row { border-bottom:none; padding:0; }
+    .active-contract-block .contract-row:hover { background:transparent; }
+    .contract-row-info { flex:1; min-width:0; }
+    .contract-row-title { font-size:0.85rem; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .user-row {
+        display:flex; align-items:center; gap:10px;
+        padding:9px 6px; border-bottom:1px solid var(--card-border);
+        cursor:pointer; border-radius:4px; transition:background-color 0.12s;
+    }
+    .user-row:last-child { border-bottom:none; }
+    .user-row:hover { background-color:rgba(14,165,233,0.05); }
+    .user-row-avatar {
+        width:34px; height:34px; border-radius:50%; flex-shrink:0;
+        background:linear-gradient(135deg, var(--accent), #6366f1);
+        color:white; font-size:0.82rem; font-weight:700;
+        display:flex; align-items:center; justify-content:center;
+    }
+    .user-row-info { flex:1; min-width:0; }
+    .user-row-name { font-size:0.85rem; font-weight:600; color:var(--text-primary); display:flex; align-items:center; gap:6px; }
+    .user-fullname { font-weight:400; color:var(--text-secondary); font-size:0.82rem; }
+
+    .contract-row-meta, .user-row-meta {
+        display:flex; align-items:center; flex-wrap:wrap; gap:4px;
+        font-size:0.75rem; color:var(--text-secondary); margin-top:2px;
+    }
+    .meta-icon { font-size:13px !important; }
+    .meta-sep  { opacity:0.4; }
+    .verified-yes { color:#22c55e; display:inline-flex; align-items:center; gap:2px; }
+    .verified-no  { color:#ef4444; display:inline-flex; align-items:center; gap:2px; }
+
+    .filter-pill {
+        padding:3px 11px; border-radius:20px; font-size:0.75rem; font-weight:600;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
+    }
+    .filter-pill:hover  { border-color:var(--accent); color:var(--accent); }
+    .filter-pill.active { background:var(--accent); border-color:var(--accent); color:white; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    /* ---- Form submit: client-side validation + lock ---- */
+    document.getElementById('accountForm').addEventListener('submit', function(e) {
+        document.querySelectorAll('.form-error-js').forEach(el => el.remove());
+        document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+
+        let valid = true;
+        function requireField(input, msg) {
+            if (!input || !input.value.trim()) {
+                if (input) input.classList.add('input-error');
+                const err = document.createElement('div');
+                err.className = 'form-error form-error-js';
+                err.textContent = msg;
+                if (input) input.parentNode.appendChild(err);
+                valid = false;
+            }
+        }
+        requireField(document.querySelector('[name="code"]'), 'Code is required.');
+        requireField(document.querySelector('[name="name"]'), 'Name is required.');
+        requireField(document.querySelector('[name="city"]'), 'City is required.');
+
+        if (!valid) {
+            e.preventDefault();
+            document.querySelector('.form-error-js').scrollIntoView({ behavior:'smooth', block:'center' });
+            return;
+        }
+        const btn  = document.getElementById('submitBtn');
+        const icon = document.getElementById('submitIcon');
+        const lbl  = document.getElementById('submitLabel');
+        if (btn.dataset.locked) return;
+        btn.dataset.locked = '1';
+        btn.disabled = true;
+        icon.className = 'material-icons-round spin-anim';
+        icon.textContent = 'refresh';
+        lbl.textContent = 'Saving…';
+    });
+
+    /* ---- Read-only contracts search (edit page only) ---- */
+    function rowNav(row) { window.location = row.dataset.href; }
+
+    function filterContracts() {
+        const q = (document.getElementById('contractSearch')?.value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#contractsList .contract-row');
+        let visible = 0;
+        rows.forEach(row => {
+            const show = !q || (row.dataset.title || '').includes(q);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const noRes = document.getElementById('noContractResults');
+        if (noRes) noRes.style.display = (q && visible === 0) ? 'block' : 'none';
+    }
+
+    /* ---- Read-only users search + filter (edit page only) ---- */
+    let activeUserFilter = 'all';
+
+    function setUserFilter(value, btn) {
+        activeUserFilter = value;
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterUsers();
+    }
+
+    function filterUsers() {
+        const q = (document.getElementById('userSearch')?.value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#usersList .user-row');
+        let visible = 0;
+        rows.forEach(row => {
+            const matchSearch = !q || (row.dataset.search || '').includes(q);
+            const matchFilter = activeUserFilter === 'all' || row.dataset.active === activeUserFilter;
+            const show = matchSearch && matchFilter;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const noRes = document.getElementById('noUserResults');
+        if (noRes) noRes.style.display = (visible === 0 && (q || activeUserFilter !== 'all')) ? 'block' : 'none';
+    }
+</script>
+{% endblock %}

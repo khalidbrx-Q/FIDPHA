@@ -1,0 +1,236 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Accounts{% endblock %}
+{% block page_breadcrumb %}Accounts{% endblock %}
+{% block nav_accounts %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Accounts</div>
+        <div class="page-header-sub">{{ accounts|length }} pharmacy account{{ accounts|length|pluralize }}</div>
+    </div>
+    <a href="{% url 'control:accounts_create' %}" class="btn btn-primary">
+        <span class="material-icons-round">add</span> New Account
+    </a>
+</div>
+
+<!-- Toolbar -->
+<div style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
+    <!-- Row 1: search inputs -->
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <div class="search-bar" style="flex:1; min-width:180px; max-width:360px;">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="accSearch" placeholder="Search by name or code…"
+                   oninput="applyFilters()" autocomplete="off">
+        </div>
+        <div class="search-bar" style="flex:1; min-width:150px; max-width:240px;">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="accCity" placeholder="Filter by city…"
+                   oninput="applyFilters()" autocomplete="off">
+        </div>
+    </div>
+    <!-- Row 2: pill filters + count + reset -->
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+        <div style="display:flex; gap:6px; align-items:center;">
+            <span class="filter-group-label">Status:</span>
+            <div class="filter-pills">
+                <button class="filter-pill active" onclick="setFilter('status','all',this)">All</button>
+                <button class="filter-pill" onclick="setFilter('status','active',this)">Active</button>
+                <button class="filter-pill" onclick="setFilter('status','inactive',this)">Inactive</button>
+            </div>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <span class="filter-group-label">Portal:</span>
+            <div class="filter-pills">
+                <button class="filter-pill active" onclick="setFilter('portal','all',this)">All</button>
+                <button class="filter-pill" onclick="setFilter('portal','yes',this)">Has Portal</button>
+                <button class="filter-pill" onclick="setFilter('portal','no',this)">No Portal</button>
+            </div>
+        </div>
+        <span id="accCount" style="font-size:0.82rem; color:var(--text-secondary);"></span>
+        <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear filters</button>
+    </div>
+</div>
+
+<div class="card">
+    {% if accounts %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>City</th>
+                <th>Status</th>
+                <th>Portal</th>
+                <th>Contracts</th>
+                <th>Users</th>
+                <th style="width:108px;"></th>
+            </tr>
+        </thead>
+        <tbody id="accTableBody">
+            {% for acc in accounts %}
+            <tr class="clickable-row"
+                data-href="{% url 'control:accounts_detail' acc.pk %}"
+                onclick="rowNav(this)"
+                data-search="{{ acc.name|lower }} {{ acc.code|lower }}"
+                data-city="{{ acc.city|lower }}"
+                data-status="{{ acc.status }}"
+                data-portal="{% if acc.pharmacy_portal %}yes{% else %}no{% endif %}">
+                <td><span class="code-chip">{{ acc.code }}</span></td>
+                <td style="font-weight:600; color:var(--text-primary);">{{ acc.name }}</td>
+                <td>{{ acc.city }}</td>
+                <td>
+                    {% if acc.status == "active" %}
+                        <span class="badge badge-active">Active</span>
+                    {% else %}
+                        <span class="badge badge-inactive">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if acc.pharmacy_portal %}
+                        <span class="material-icons-round portal-yes" title="Has portal access">check_circle</span>
+                    {% else %}
+                        <span class="material-icons-round portal-no" title="No portal access">cancel</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if acc.contract_count %}
+                        <span class="badge badge-neutral">{{ acc.contract_count }}</span>
+                    {% else %}
+                        <span class="dim-dash">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if acc.user_count %}
+                        <span class="badge badge-active">{{ acc.user_count }}</span>
+                    {% else %}
+                        <span class="dim-dash">—</span>
+                    {% endif %}
+                </td>
+                <td onclick="event.stopPropagation()">
+                    <div class="table-actions">
+                        <a href="{% url 'control:accounts_create' %}?clone={{ acc.pk }}" class="action-btn" title="Clone">
+                            <span class="material-icons-round">content_copy</span>
+                        </a>
+                        <a href="{% url 'control:accounts_edit' acc.pk %}" class="action-btn" title="Edit">
+                            <span class="material-icons-round">edit</span>
+                        </a>
+                        <a href="{% url 'control:accounts_delete' acc.pk %}" class="action-btn action-delete" title="Delete">
+                            <span class="material-icons-round">delete</span>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div id="noAccResults" style="display:none; text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem;">
+        No accounts match your filters.
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:48px 24px;">
+        <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">store_off</span>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No accounts yet</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Add a pharmacy account to get started.</div>
+        <a href="{% url 'control:accounts_create' %}" class="btn btn-primary" style="display:inline-flex;">
+            <span class="material-icons-round">add</span> New Account
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th {
+        text-align:left; font-size:0.75rem; font-weight:600;
+        color:var(--text-secondary); text-transform:uppercase;
+        letter-spacing:0.4px; padding:10px 12px;
+        border-bottom:1px solid var(--card-border);
+    }
+    .data-table td { padding:11px 12px; font-size:0.87rem; color:var(--text-secondary); border-bottom:1px solid var(--card-border); }
+    .data-table tbody tr:last-child td { border-bottom:none; }
+    .data-table tbody tr.clickable-row { cursor:pointer; }
+    .data-table tbody tr:hover td { background-color:rgba(14,165,233,0.07); }
+
+    .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+    .badge-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .badge-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
+    .badge-neutral  { background:var(--sidebar-hover); color:var(--text-secondary); }
+
+    .code-chip { font-family:monospace; font-size:0.8rem; color:var(--text-secondary); }
+    .dim-dash  { color:var(--text-secondary); font-size:0.82rem; }
+    .portal-yes { color:#22c55e; font-size:18px; }
+    .portal-no  { color:var(--card-border); font-size:18px; }
+
+    .filter-group-label { font-size:0.78rem; font-weight:600; color:var(--text-secondary); white-space:nowrap; }
+    .filter-pills { display:flex; gap:4px; flex-wrap:wrap; }
+    .filter-pill {
+        padding:4px 12px; border-radius:20px; font-size:0.78rem; font-weight:600;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif;
+        transition:all 0.15s;
+    }
+    .filter-pill:hover { border-color:var(--accent); color:var(--accent); }
+    .filter-pill.active { background:var(--accent); border-color:var(--accent); color:white; }
+    .reset-btn {
+        padding:4px 12px; border-radius:20px; font-size:0.78rem; font-weight:600;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
+    }
+    .reset-btn:hover { border-color:#ef4444; color:#ef4444; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    let fStatus = 'all', fPortal = 'all';
+
+    function rowNav(row) { window.location = row.dataset.href; }
+
+    function setFilter(type, value, btn) {
+        const group = btn.closest('.filter-pills');
+        group.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (type === 'status') fStatus = value;
+        else                   fPortal = value;
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const q      = document.getElementById('accSearch').value.toLowerCase().trim();
+        const cityQ  = document.getElementById('accCity').value.toLowerCase().trim();
+        const rows   = document.querySelectorAll('#accTableBody tr');
+        let visible  = 0;
+
+        rows.forEach(row => {
+            const show = (!q     || (row.dataset.search || '').includes(q))
+                      && (!cityQ || (row.dataset.city   || '').includes(cityQ))
+                      && (fStatus === 'all' || row.dataset.status === fStatus)
+                      && (fPortal === 'all' || row.dataset.portal === fPortal);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        const isFiltered = q || cityQ || fStatus !== 'all' || fPortal !== 'all';
+        document.getElementById('noAccResults').style.display = (isFiltered && visible === 0) ? 'block' : 'none';
+        document.getElementById('accCount').textContent       = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : '';
+        document.getElementById('resetBtn').style.display     = isFiltered ? 'inline-block' : 'none';
+    }
+
+    function resetAll() {
+        document.getElementById('accSearch').value = '';
+        document.getElementById('accCity').value   = '';
+        fStatus = 'all'; fPortal = 'all';
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.filter-pills').forEach(g => g.querySelector('.filter-pill').classList.add('active'));
+        applyFilters();
+    }
+</script>
+{% endblock %}

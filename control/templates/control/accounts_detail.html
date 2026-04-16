@@ -1,0 +1,405 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}{{ account.name }}{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:accounts_list' %}" style="color:var(--text-secondary);text-decoration:none;">Accounts</a>
+    › {{ account.name }}
+{% endblock %}
+{% block nav_accounts %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div style="display:flex; align-items:center; gap:14px;">
+        <div class="acc-avatar">
+            <span class="material-icons-round" style="font-size:22px;">store</span>
+        </div>
+        <div>
+            <div class="page-header-title">
+                {{ account.name }}
+                {% if account.status == "active" %}
+                    <span class="status-badge status-active">Active</span>
+                {% else %}
+                    <span class="status-badge status-inactive">Inactive</span>
+                {% endif %}
+                {% if account.pharmacy_portal %}
+                    <span class="status-badge status-portal">Portal</span>
+                {% endif %}
+            </div>
+            <div class="page-header-sub">{{ account.code }} · {{ account.city }}</div>
+        </div>
+    </div>
+    <div style="display:flex; gap:8px;">
+        <a href="{% url 'control:accounts_list' %}" class="btn btn-secondary">
+            <span class="material-icons-round">arrow_back</span> Back
+        </a>
+        <a href="{% url 'control:accounts_create' %}?clone={{ account.pk }}" class="btn btn-secondary">
+            <span class="material-icons-round">content_copy</span> Clone
+        </a>
+        <a href="{% url 'control:accounts_edit' account.pk %}" class="btn btn-primary">
+            <span class="material-icons-round">edit</span> Edit
+        </a>
+        <a href="{% url 'control:accounts_delete' account.pk %}" class="btn btn-danger">
+            <span class="material-icons-round">delete</span> Delete
+        </a>
+    </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- ACCOUNT INFO                                                       -->
+<!-- ================================================================ -->
+<div class="card">
+    <div class="section-label">Account Information</div>
+    <div class="info-row"><span class="info-key">Code</span><span class="info-val code-chip">{{ account.code }}</span></div>
+    <div class="info-row"><span class="info-key">Name</span><span class="info-val">{{ account.name }}</span></div>
+    <div class="info-row"><span class="info-key">City</span><span class="info-val">{{ account.city }}</span></div>
+    <div class="info-row"><span class="info-key">Phone</span><span class="info-val">{{ account.phone|default:"—" }}</span></div>
+    <div class="info-row"><span class="info-key">Email</span><span class="info-val">{{ account.email|default:"—" }}</span></div>
+    <div class="info-row">
+        <span class="info-key">Location</span>
+        <span class="info-val" style="white-space:pre-line; text-align:right;">{{ account.location|default:"—" }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-key">Status</span>
+        <span class="info-val">
+            {% if account.status == "active" %}<span class="badge badge-active">Active</span>
+            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+        </span>
+    </div>
+    <div class="info-row" style="border-bottom:none;">
+        <span class="info-key">Portal Access</span>
+        <span class="info-val">
+            {% if account.pharmacy_portal %}<span class="badge badge-active">Enabled</span>
+            {% else %}<span class="badge badge-inactive">Disabled</span>{% endif %}
+        </span>
+    </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- CONTRACTS                                                          -->
+<!-- ================================================================ -->
+<div class="card">
+    <div class="section-label">
+        Contracts <span class="count-chip">{{ contract_count }}</span>
+    </div>
+
+    {% if active_contract %}
+    <div class="active-contract-block">
+        <div class="active-contract-header">
+            <span class="material-icons-round" style="font-size:13px; color:#22c55e;">circle</span>
+            Active Contract
+        </div>
+        <div class="contract-row"
+             data-href="{% url 'control:contracts_detail' active_contract.pk %}"
+             onclick="rowNav(this)">
+            <div class="contract-row-info">
+                <div class="contract-row-title">{{ active_contract.title }}</div>
+                <div class="contract-row-meta">
+                    <span class="material-icons-round meta-icon">calendar_today</span>
+                    {{ active_contract.start_date|date:"d M Y" }} → {{ active_contract.end_date|date:"d M Y" }}
+                    <span class="meta-sep">·</span>
+                    <span class="material-icons-round meta-icon">medication</span>
+                    {{ active_contract.product_count }} product{{ active_contract.product_count|pluralize }}
+                </div>
+            </div>
+            <span class="badge badge-active">Active</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if inactive_contracts %}
+    <div class="{% if active_contract %}inactive-section{% endif %}">
+        {% if active_contract %}
+        <div class="inactive-section-header">Inactive Contracts</div>
+        {% endif %}
+
+        <div class="search-bar" style="margin-bottom:10px;">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="contractSearch" placeholder="Search inactive contracts…"
+                   oninput="filterContracts()" autocomplete="off">
+        </div>
+
+        <div id="contractsList" class="scroll-list">
+            {% for c in inactive_contracts %}
+            <div class="contract-row"
+                 data-href="{% url 'control:contracts_detail' c.pk %}"
+                 data-title="{{ c.title|lower }}"
+                 onclick="rowNav(this)">
+                <div class="contract-row-info">
+                    <div class="contract-row-title">{{ c.title }}</div>
+                    <div class="contract-row-meta">
+                        <span class="material-icons-round meta-icon">calendar_today</span>
+                        {{ c.start_date|date:"d M Y" }} → {{ c.end_date|date:"d M Y" }}
+                        <span class="meta-sep">·</span>
+                        <span class="material-icons-round meta-icon">medication</span>
+                        {{ c.product_count }} product{{ c.product_count|pluralize }}
+                    </div>
+                </div>
+                <span class="badge badge-inactive">Inactive</span>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="noContractResults" style="display:none; text-align:center; padding:14px; color:var(--text-secondary); font-size:0.83rem;">
+            No inactive contracts match your search.
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not active_contract and not inactive_contracts %}
+    <div style="text-align:center; padding:24px 0; color:var(--text-secondary); font-size:0.83rem;">
+        <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px; color:var(--card-border);">description_off</span>
+        No contracts linked to this account.
+    </div>
+    {% endif %}
+</div>
+
+<!-- ================================================================ -->
+<!-- PORTAL USERS                                                       -->
+<!-- ================================================================ -->
+<div class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div class="section-label" style="margin-bottom:0;">
+            Portal Users <span class="count-chip">{{ portal_users|length }}</span>
+        </div>
+        {% if portal_users %}
+        <div style="display:flex; gap:4px;">
+            <button class="filter-pill active" onclick="setUserFilter('all',this)">All</button>
+            <button class="filter-pill" onclick="setUserFilter('active',this)">Active</button>
+            <button class="filter-pill" onclick="setUserFilter('inactive',this)">Inactive</button>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if portal_users %}
+    <div class="search-bar" style="margin-bottom:10px;">
+        <span class="material-icons-round">search</span>
+        <input type="text" id="userSearch" placeholder="Search users…"
+               oninput="filterUsers()" autocomplete="off">
+    </div>
+
+    <div id="usersList" class="scroll-list">
+        {% for p in portal_users %}
+        <div class="user-row"
+             data-href="{% url 'control:users_detail' p.user.pk %}"
+             data-search="{{ p.user.username|lower }} {{ p.user.get_full_name|lower }} {{ p.user.email|lower }}"
+             data-active="{% if p.user.is_active %}active{% else %}inactive{% endif %}"
+             onclick="rowNav(this)">
+            <div class="user-row-avatar">{{ p.user.username|first|upper }}</div>
+            <div class="user-row-info">
+                <div class="user-row-name">{{ p.user.username }}
+                    {% if p.user.get_full_name %}
+                        <span class="user-fullname">{{ p.user.get_full_name }}</span>
+                    {% endif %}
+                </div>
+                <div class="user-row-meta">
+                    {% if p.user.email %}
+                        <span class="material-icons-round meta-icon">mail</span>{{ p.user.email }}
+                        <span class="meta-sep">·</span>
+                    {% endif %}
+                    {% if p.email_verified %}
+                        <span class="verified-yes"><span class="material-icons-round meta-icon">verified</span>Verified</span>
+                    {% else %}
+                        <span class="verified-no"><span class="material-icons-round meta-icon">cancel</span>Not verified</span>
+                    {% endif %}
+                    {% if p.user.last_login %}
+                        <span class="meta-sep">·</span>
+                        <span class="material-icons-round meta-icon">login</span>{{ p.user.last_login|date:"d M Y" }}
+                    {% endif %}
+                </div>
+            </div>
+            {% if p.user.is_active %}
+                <span class="badge badge-active">Active</span>
+            {% else %}
+                <span class="badge badge-inactive">Inactive</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <div id="noUserResults" style="display:none; text-align:center; padding:14px; color:var(--text-secondary); font-size:0.83rem;">
+        No users match your search.
+    </div>
+
+    {% else %}
+    <div style="text-align:center; padding:24px 0; color:var(--text-secondary); font-size:0.83rem;">
+        <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px; color:var(--card-border);">person_off</span>
+        No portal users linked to this account.
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .acc-avatar {
+        width:48px; height:48px; border-radius:50%; flex-shrink:0;
+        background:linear-gradient(135deg, #0ea5e9, #6366f1);
+        color:white; display:flex; align-items:center; justify-content:center;
+    }
+    .section-label {
+        font-size:0.75rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:var(--text-secondary);
+        margin-bottom:14px; display:flex; align-items:center; gap:8px;
+    }
+    .count-chip {
+        background:var(--sidebar-hover); color:var(--text-secondary);
+        border:1px solid var(--card-border);
+        font-size:0.7rem; padding:1px 7px; border-radius:10px; font-weight:600; letter-spacing:0;
+    }
+
+    /* ---- Info rows ---- */
+    .info-row {
+        display:flex; align-items:flex-start; justify-content:space-between;
+        padding:9px 0; border-bottom:1px solid var(--card-border);
+        font-size:0.85rem; gap:24px;
+    }
+    .info-key  { color:var(--text-secondary); flex-shrink:0; min-width:100px; }
+    .info-val  { color:var(--text-primary); text-align:right; }
+    .code-chip { font-family:monospace; font-size:0.82rem; }
+
+    .status-badge {
+        display:inline-flex; align-items:center;
+        padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; margin-left:6px;
+    }
+    .status-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .status-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
+    .status-portal   { background:rgba(14,165,233,0.1); color:#0ea5e9; }
+
+    .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; white-space:nowrap; }
+    .badge-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .badge-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
+
+    /* ---- Scrollable list container ---- */
+    .scroll-list {
+        max-height: 380px;
+        overflow-y: auto;
+        /* subtle scrollbar styling */
+        scrollbar-width: thin;
+        scrollbar-color: var(--card-border) transparent;
+    }
+    .scroll-list::-webkit-scrollbar { width: 5px; }
+    .scroll-list::-webkit-scrollbar-track { background: transparent; }
+    .scroll-list::-webkit-scrollbar-thumb { background-color: var(--card-border); border-radius: 3px; }
+
+    /* ---- Active contract block ---- */
+    .active-contract-block {
+        background:rgba(34,197,94,0.05);
+        border:1px solid rgba(34,197,94,0.25);
+        border-radius:8px; padding:10px 14px; margin-bottom:16px;
+    }
+    .active-contract-header {
+        display:flex; align-items:center; gap:5px;
+        font-size:0.7rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:#22c55e; margin-bottom:8px;
+    }
+
+    /* ---- Inactive section separator ---- */
+    .inactive-section { margin-top:4px; }
+    .inactive-section-header {
+        font-size:0.72rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.4px; color:var(--text-secondary);
+        padding:12px 0 10px; border-top:1px solid var(--card-border);
+        margin-bottom:10px;
+    }
+
+    /* ---- Contract rows ---- */
+    .contract-row {
+        display:flex; align-items:center; gap:12px;
+        padding:9px 6px; border-bottom:1px solid var(--card-border);
+        cursor:pointer; border-radius:4px; transition:background-color 0.12s;
+    }
+    .contract-row:last-child { border-bottom:none; }
+    .contract-row:hover { background-color:rgba(14,165,233,0.05); }
+    .active-contract-block .contract-row { border-bottom:none; padding:0; cursor:pointer; }
+    .active-contract-block .contract-row:hover { background:transparent; }
+    .contract-row-info { flex:1; min-width:0; }
+    .contract-row-title { font-size:0.85rem; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* ---- User rows ---- */
+    .user-row {
+        display:flex; align-items:center; gap:10px;
+        padding:9px 6px; border-bottom:1px solid var(--card-border);
+        cursor:pointer; border-radius:4px; transition:background-color 0.12s;
+    }
+    .user-row:last-child { border-bottom:none; }
+    .user-row:hover { background-color:rgba(14,165,233,0.05); }
+    .user-row-avatar {
+        width:34px; height:34px; border-radius:50%; flex-shrink:0;
+        background:linear-gradient(135deg, var(--accent), #6366f1);
+        color:white; font-size:0.82rem; font-weight:700;
+        display:flex; align-items:center; justify-content:center;
+    }
+    .user-row-info { flex:1; min-width:0; }
+    .user-row-name {
+        font-size:0.85rem; font-weight:600; color:var(--text-primary);
+        display:flex; align-items:center; gap:6px;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .user-fullname { font-weight:400; color:var(--text-secondary); font-size:0.82rem; }
+
+    /* ---- Shared meta line (contracts + users) ---- */
+    .contract-row-meta,
+    .user-row-meta {
+        display:flex; align-items:center; flex-wrap:wrap; gap:4px;
+        font-size:0.75rem; color:var(--text-secondary); margin-top:2px;
+    }
+    .meta-icon { font-size:13px !important; }
+    .meta-sep  { opacity:0.4; }
+    .verified-yes { color:#22c55e; display:inline-flex; align-items:center; gap:2px; }
+    .verified-no  { color:#ef4444; display:inline-flex; align-items:center; gap:2px; }
+
+    /* ---- Filter pills ---- */
+    .filter-pill {
+        padding:3px 11px; border-radius:20px; font-size:0.75rem; font-weight:600;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
+    }
+    .filter-pill:hover  { border-color:var(--accent); color:var(--accent); }
+    .filter-pill.active { background:var(--accent); border-color:var(--accent); color:white; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    function rowNav(row) { window.location = row.dataset.href; }
+
+    function filterContracts() {
+        const q    = (document.getElementById('contractSearch')?.value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#contractsList .contract-row');
+        let visible = 0;
+        rows.forEach(row => {
+            const show = !q || (row.dataset.title || '').includes(q);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const noRes = document.getElementById('noContractResults');
+        if (noRes) noRes.style.display = (q && visible === 0) ? 'block' : 'none';
+    }
+
+    let activeUserFilter = 'all';
+
+    function setUserFilter(value, btn) {
+        activeUserFilter = value;
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterUsers();
+    }
+
+    function filterUsers() {
+        const q    = (document.getElementById('userSearch')?.value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#usersList .user-row');
+        let visible = 0;
+        rows.forEach(row => {
+            const matchSearch = !q || (row.dataset.search || '').includes(q);
+            const matchFilter = activeUserFilter === 'all' || row.dataset.active === activeUserFilter;
+            const show = matchSearch && matchFilter;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const noRes = document.getElementById('noUserResults');
+        if (noRes) noRes.style.display = (visible === 0 && (q || activeUserFilter !== 'all')) ? 'block' : 'none';
+    }
+</script>
+{% endblock %}

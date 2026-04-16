@@ -4,10 +4,40 @@ from django.contrib.auth.models import User
 
 
 # -----------------------
+# 0. Traceable Mixin
+# -----------------------
+
+class TraceableMixin(models.Model):
+    """
+    Abstract mixin that adds created_by/at and modified_by/at to any model.
+    Set created_by / modified_by in views before saving; Django handles the
+    timestamps automatically via auto_now_add / auto_now.
+    Both FK fields are nullable so existing rows (pre-migration) stay valid.
+    """
+    created_by = models.ForeignKey(
+        User, null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        editable=False,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_by = models.ForeignKey(
+        User, null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        editable=False,
+    )
+    modified_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+# -----------------------
 # 1. Account (Pharmacie)
 # -----------------------
 
-class Account(models.Model):
+class Account(TraceableMixin, models.Model):
     STATUS_CHOICES = [
         ("active", "Active"),
         ("inactive", "Inactive"),
@@ -43,7 +73,7 @@ class Account(models.Model):
 # 2. UserProfile
 # -----------------------
 
-class UserProfile(models.Model):
+class UserProfile(TraceableMixin, models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="users")
     email_verified = models.BooleanField(default=False)
@@ -60,7 +90,7 @@ class UserProfile(models.Model):
 # 3. Product
 # -----------------------
 
-class Product(models.Model):
+class Product(TraceableMixin, models.Model):
     STATUS_CHOICES = [
         ("active", "Active"),
         ("inactive", "Inactive"),
@@ -94,7 +124,7 @@ class Product(models.Model):
 # 4. Contract
 # -----------------------
 
-class Contract(models.Model):
+class Contract(TraceableMixin, models.Model):
     STATUS_CHOICES = [
         ("active", "Active"),
         ("inactive", "Inactive"),
