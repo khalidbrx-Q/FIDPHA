@@ -313,13 +313,23 @@ def portal_dashboard(request):
     contracts = account.contracts.all().order_by("-start_date")
     active_contracts = contracts.filter(status="active")
 
-    # calculate remaining days for active contract
     from django.utils import timezone
+    from fidpha.models import Contract_Product
+    from sales.models import Sale
+    from django.db.models import Sum
+
     active_contract_days_remaining = None
+    total_points = 0
+
     if active_contracts.exists():
         active_contract = active_contracts.first()
         delta = active_contract.end_date - timezone.now()
         active_contract_days_remaining = delta.days
+
+    for contract in contracts:
+        for cp in Contract_Product.objects.filter(contract=contract):
+            sold = Sale.objects.filter(contract_product=cp).aggregate(t=Sum("quantity"))["t"] or 0
+            total_points += _calculate_points(sold, cp.points_per_unit, cp.target_quantity)
 
     return render(request, "fidpha/dashboard.html", {
         "account": account,
@@ -327,6 +337,7 @@ def portal_dashboard(request):
         "active_contracts": active_contracts,
         "email_verified": profile.email_verified,
         "active_contract_days_remaining": active_contract_days_remaining,
+        "total_points": total_points,
     })
 
 
