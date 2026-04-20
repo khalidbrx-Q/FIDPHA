@@ -1,0 +1,353 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}{{ contract.title }}{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:contracts_list' %}" style="color:var(--text-secondary);text-decoration:none;">Contracts</a>
+    › {{ contract.title }}
+{% endblock %}
+{% block nav_contracts %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div style="display:flex; align-items:center; gap:14px;">
+        <div class="ct-avatar">
+            <span class="material-icons-round" style="font-size:22px;">description</span>
+        </div>
+        <div>
+            <div class="page-header-title">
+                {{ contract.title }}
+                {% if contract.status == "active" %}
+                    <span class="status-badge status-active">Active</span>
+                {% else %}
+                    <span class="status-badge status-inactive">Inactive</span>
+                {% endif %}
+            </div>
+            <div class="page-header-sub">
+                <a href="{% url 'control:accounts_detail' contract.account.pk %}"
+                   style="color:var(--accent); text-decoration:none;">{{ contract.account.name }}</a>
+                · {{ contract.account.city }}
+                · {{ contract.start_date|date:"d M Y" }} → {{ contract.end_date|date:"d M Y" }}
+            </div>
+        </div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a href="{% url 'control:contracts_list' %}" class="btn btn-secondary">
+            <span class="material-icons-round">arrow_back</span> Back
+        </a>
+        <a href="{% url 'control:contracts_create' %}?clone={{ contract.pk }}" class="btn btn-secondary">
+            <span class="material-icons-round">content_copy</span> Clone
+        </a>
+        <a href="{% url 'control:contracts_edit' contract.pk %}" class="btn btn-primary">
+            <span class="material-icons-round">edit</span> Edit
+        </a>
+        <a href="{% url 'control:contracts_delete' contract.pk %}" class="btn btn-danger">
+            <span class="material-icons-round">delete</span> Delete
+        </a>
+    </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- CONTRACT INFO                                                      -->
+<!-- ================================================================ -->
+<div class="card">
+    <div class="section-label">Contract Information</div>
+    <div class="info-row"><span class="info-key">Title</span><span class="info-val">{{ contract.title }}</span></div>
+    <div class="info-row">
+        <span class="info-key">Account</span>
+        <span class="info-val">
+            <a href="{% url 'control:accounts_detail' contract.account.pk %}"
+               style="color:var(--accent); text-decoration:none;">
+                {{ contract.account.name }}
+            </a>
+            <span style="color:var(--text-secondary); font-size:0.8rem; margin-left:6px;">
+                ({{ contract.account.code }}) · {{ contract.account.city }}
+            </span>
+        </span>
+    </div>
+    <div class="info-row">
+        <span class="info-key">Period</span>
+        <span class="info-val" style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;">
+            <span>{{ contract.start_date|date:"d M Y, H:i" }} → {{ contract.end_date|date:"d M Y, H:i" }}</span>
+            {% if duration %}
+            <span style="font-size:0.78rem; color:var(--text-secondary);">
+                <span class="material-icons-round" style="font-size:12px; vertical-align:middle;">timelapse</span>
+                {{ duration }}
+            </span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="info-row">
+        <span class="info-key">Status</span>
+        <span class="info-val">
+            {% if contract.status == "active" %}<span class="badge badge-active">Active</span>
+            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+        </span>
+    </div>
+    <div class="info-row" style="border-bottom:none; align-items:flex-start;">
+        <span class="info-key" style="padding-top:2px;">Description</span>
+        <span class="info-val" style="white-space:pre-line; text-align:right;">{{ contract.designation|default:"—" }}</span>
+    </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- SALES SYNC                                                         -->
+<!-- ================================================================ -->
+<div class="card">
+    <div class="section-label">Sales Sync</div>
+    <div class="info-row">
+        <span class="info-key">Sales Recorded</span>
+        <span class="info-val">
+            {% if sale_count %}
+                <span class="badge badge-active">{{ sale_count }} sale{{ sale_count|pluralize }}</span>
+            {% else %}
+                <span class="dim-dash">None yet</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="info-row">
+        <span class="info-key">Last Sale Date</span>
+        <span class="info-val">
+            {% if contract.last_sale_datetime %}
+                {{ contract.last_sale_datetime|date:"d M Y, H:i" }}
+            {% else %}
+                <span class="dim-dash">—</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="info-row" style="border-bottom:none;">
+        <span class="info-key">Last Sync</span>
+        <span class="info-val">
+            {% if contract.last_sync_at %}
+                <span style="color:#22c55e;">{{ contract.last_sync_at|date:"d M Y, H:i" }}</span>
+            {% else %}
+                <span class="dim-dash">Never synced</span>
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PRODUCTS                                                           -->
+<!-- ================================================================ -->
+<div class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div class="section-label" style="margin-bottom:0;">
+            Products <span class="count-chip">{{ contract_products|length }}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            {% if contract_products %}
+            <div style="display:flex; gap:4px;">
+                <button class="filter-pill active" onclick="setProdFilter('all',this)">All</button>
+                <button class="filter-pill" onclick="setProdFilter('active',this)">Active</button>
+                <button class="filter-pill" onclick="setProdFilter('inactive',this)">Inactive</button>
+            </div>
+            {% endif %}
+            <a href="{% url 'control:contracts_edit' contract.pk %}" class="btn btn-secondary" style="padding:5px 12px; font-size:0.8rem;">
+                <span class="material-icons-round" style="font-size:15px;">edit</span> Manage
+            </a>
+        </div>
+    </div>
+
+    {% if contract_products %}
+    <div class="search-bar" style="margin-bottom:10px;">
+        <span class="material-icons-round">search</span>
+        <input type="text" id="prodSearch" placeholder="Search products…"
+               oninput="filterProducts()" autocomplete="off">
+    </div>
+
+    <div class="prod-scroll">
+        <table class="data-table" id="prodTable">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Internal Code</th>
+                    <th>External Designation</th>
+                    <th style="text-align:center;">Pts/unit</th>
+                    <th style="text-align:center;">Target qty</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="prodTableBody">
+                {% for cp in contract_products %}
+                <tr data-search="{{ cp.product.designation|lower }} {{ cp.product.code|lower }} {{ cp.external_designation|lower }}"
+                    data-prod-status="{{ cp.product.status }}">
+                    <td style="font-weight:600; color:var(--text-primary);">{{ cp.product.designation }}</td>
+                    <td><span class="code-chip">{{ cp.product.code }}</span></td>
+                    <td><span class="ext-chip">{{ cp.external_designation }}</span></td>
+                    <td style="text-align:center;">
+                        <span class="pts-chip">{{ cp.points_per_unit }}</span>
+                    </td>
+                    <td style="text-align:center; color:var(--text-secondary);">
+                        {% if cp.target_quantity %}{{ cp.target_quantity }}{% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% if cp.product.status == "active" %}
+                            <span class="badge badge-active">Active</span>
+                        {% else %}
+                            <span class="badge badge-inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="noProdResults" style="display:none; text-align:center; padding:14px; color:var(--text-secondary); font-size:0.83rem;">
+        No products match your search.
+    </div>
+
+    {% else %}
+    <div style="text-align:center; padding:24px 0; color:var(--text-secondary); font-size:0.83rem;">
+        <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px; color:var(--card-border);">medication_liquid</span>
+        No products linked to this contract.
+        <div style="margin-top:6px;">
+            <a href="{% url 'control:contracts_edit' contract.pk %}" style="color:var(--accent);">Edit the contract</a> to add products.
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ================================================================ -->
+<!-- TRACEABILITY                                                       -->
+<!-- ================================================================ -->
+<div class="card">
+    <div class="section-label">Traceability</div>
+    <div class="info-row">
+        <span class="info-key">Created</span>
+        <span class="info-val">
+            {{ contract.created_at|date:"d M Y, H:i" }}
+            {% if contract.created_by %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ contract.created_by.get_full_name|default:contract.created_by.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="info-row" style="border-bottom:none;">
+        <span class="info-key">Last Modified</span>
+        <span class="info-val">
+            {{ contract.modified_at|date:"d M Y, H:i" }}
+            {% if contract.modified_by %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ contract.modified_by.get_full_name|default:contract.modified_by.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .ct-avatar {
+        width:48px; height:48px; border-radius:50%; flex-shrink:0;
+        background:linear-gradient(135deg, #f59e0b, #ef4444);
+        color:white; display:flex; align-items:center; justify-content:center;
+    }
+    .section-label {
+        font-size:0.75rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:var(--text-secondary);
+        margin-bottom:14px; display:flex; align-items:center; gap:8px;
+    }
+    .count-chip {
+        background:var(--sidebar-hover); color:var(--text-secondary);
+        border:1px solid var(--card-border);
+        font-size:0.7rem; padding:1px 7px; border-radius:10px; font-weight:600; letter-spacing:0;
+    }
+    .info-row {
+        display:flex; align-items:flex-start; justify-content:space-between;
+        padding:9px 0; border-bottom:1px solid var(--card-border);
+        font-size:0.85rem; gap:24px;
+    }
+    .info-key  { color:var(--text-secondary); flex-shrink:0; min-width:120px; }
+    .info-val  { color:var(--text-primary); text-align:right; }
+
+    .status-badge {
+        display:inline-flex; align-items:center;
+        padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; margin-left:6px;
+    }
+    .status-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .status-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
+
+    .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; white-space:nowrap; }
+    .badge-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .badge-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
+
+    .code-chip { font-family:monospace; font-size:0.8rem; color:var(--text-secondary); }
+    .ext-chip  {
+        font-family:monospace; font-size:0.8rem;
+        background:rgba(14,165,233,0.08); color:var(--accent);
+        padding:2px 7px; border-radius:4px; border:1px solid rgba(14,165,233,0.2);
+    }
+    .dim-dash  { color:var(--text-secondary); font-size:0.82rem; }
+    .pts-chip  {
+        display:inline-flex; align-items:center; justify-content:center;
+        min-width:28px; padding:2px 8px; border-radius:20px; font-size:0.78rem; font-weight:700;
+        background:rgba(168,85,247,0.1); color:#a855f7; border:1px solid rgba(168,85,247,0.2);
+    }
+
+    /* Scrollable products table */
+    .prod-scroll {
+        max-height: 400px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--card-border) transparent;
+    }
+    .prod-scroll::-webkit-scrollbar { width: 5px; }
+    .prod-scroll::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table thead th {
+        position: sticky; top: 0; z-index: 1;
+        background: var(--card-bg);
+        text-align:left; font-size:0.75rem; font-weight:600;
+        color:var(--text-secondary); text-transform:uppercase;
+        letter-spacing:0.4px; padding:10px 12px;
+        border-bottom:1px solid var(--card-border);
+    }
+    .data-table td { padding:10px 12px; font-size:0.87rem; color:var(--text-secondary); border-bottom:1px solid var(--card-border); }
+    .data-table tbody tr:last-child td { border-bottom:none; }
+
+    /* Status filter pills */
+    .filter-pill {
+        padding:3px 11px; border-radius:20px; font-size:0.75rem; font-weight:600;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
+    }
+    .filter-pill:hover  { border-color:var(--accent); color:var(--accent); }
+    .filter-pill.active { background:var(--accent); border-color:var(--accent); color:white; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    let activeProdFilter = 'all';
+
+    function setProdFilter(value, btn) {
+        activeProdFilter = value;
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterProducts();
+    }
+
+    function filterProducts() {
+        const q     = (document.getElementById('prodSearch')?.value || '').toLowerCase().trim();
+        const rows  = document.querySelectorAll('#prodTableBody tr');
+        let visible = 0;
+        rows.forEach(row => {
+            const matchSearch = !q || (row.dataset.search || '').includes(q);
+            const matchFilter = activeProdFilter === 'all' || row.dataset.prodStatus === activeProdFilter;
+            const show = matchSearch && matchFilter;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const noRes = document.getElementById('noProdResults');
+        const isFiltered = q || activeProdFilter !== 'all';
+        if (noRes) noRes.style.display = (isFiltered && visible === 0) ? 'block' : 'none';
+    }
+</script>
+{% endblock %}

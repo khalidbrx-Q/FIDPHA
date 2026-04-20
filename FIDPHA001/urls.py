@@ -14,7 +14,7 @@ from fidpha.admin_api import (
 )
 
 def handler403(request, exception=None):
-    return redirect("/admin/")
+    return redirect("/control/")
 
 handler403 = handler403
 
@@ -27,7 +27,7 @@ urlpatterns = [
     path("admin/login/", RedirectView.as_view(url="/portal/login/")),
     path("admin/logout/", fidpha_views.custom_logout),
     path("admin/welcome/", fidpha_views.admin_welcome),
-    path("admin/", admin.site.urls),
+    # path("admin/", admin.site.urls),  # disabled — replaced by /control/
 
     path("api/contract/<int:contract_id>/available-products/", available_products_api, name="available_products_api"),
     path("api/contract/<int:contract_id>/add-product/", add_contract_product_api, name="add_contract_product_api"),

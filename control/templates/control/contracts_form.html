@@ -1,0 +1,865 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}{{ page_action }} Contract{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:contracts_list' %}" style="color:var(--text-secondary);text-decoration:none;">Contracts</a>
+    {% if page_action == "Edit" %}
+    › <a href="{% url 'control:contracts_detail' contract.pk %}" style="color:var(--text-secondary);text-decoration:none;">{{ contract.title }}</a>
+    {% endif %}
+    › {{ page_action }}
+{% endblock %}
+{% block nav_contracts %}active{% endblock %}
+
+{% block content %}
+
+<!-- Unlink confirmation modal -->
+<div id="unlinkModal" class="modal-backdrop" style="display:none;" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+            <span class="material-icons-round" style="font-size:28px; color:#f59e0b;">link_off</span>
+            <div>
+                <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">Unlink this product?</div>
+                <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:3px;" id="unlinkProductName"></div>
+            </div>
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">
+            The product will be removed from this contract. Existing sale records are not affected.
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-danger" onclick="confirmUnlink()">
+                <span class="material-icons-round">link_off</span> Yes, unlink
+            </button>
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">{{ page_action }} Contract</div>
+        <div class="page-header-sub">
+            {% if page_action == "Edit" %}Editing "{{ contract.title }}"{% else %}Create a new pharmacy contract{% endif %}
+        </div>
+    </div>
+    {% if page_action == "Edit" %}
+    <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+    {% else %}
+    <a href="{% url 'control:contracts_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+    {% endif %}
+</div>
+
+{% if form.non_field_errors %}
+<div style="margin-bottom:16px;">
+    {% for error in form.non_field_errors %}
+    <div class="alert alert-error">
+        <span class="material-icons-round" style="font-size:18px;">error_outline</span>
+        {{ error }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if formset.non_form_errors %}
+<div style="margin-bottom:16px;">
+    {% for error in formset.non_form_errors %}
+    <div class="alert alert-error">
+        <span class="material-icons-round" style="font-size:18px;">error_outline</span>
+        {{ error }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" id="contractForm" novalidate>
+    {% csrf_token %}
+
+    <!-- ── Contract Details ───────────────────────────────────────── -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">Contract Details</div>
+
+        <div class="form-group">
+            <label class="form-label">Title *</label>
+            {{ form.title }}
+            {% for e in form.title.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Account *</label>
+            {{ form.account }}
+            {% for e in form.account.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            <div class="form-help">Only one active contract is allowed per account.</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Description</label>
+            {{ form.designation }}
+            {% for e in form.designation.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        </div>
+    </div>
+
+    <!-- ── Contract Period ────────────────────────────────────────── -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">Contract Period</div>
+
+        <div class="form-grid-2" style="margin-bottom:16px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Start Date *</label>
+                {{ form.start_date }}
+                {% for e in form.start_date.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">End Date *</label>
+                {{ form.end_date }}
+                {% for e in form.end_date.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Status</label>
+            {{ form.status }}
+            {% for e in form.status.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        </div>
+    </div>
+
+    <!-- ── Products ───────────────────────────────────────────────── -->
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">
+            Products
+            <span id="productsHint" style="font-size:0.73rem; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-secondary);">
+                — only active products not already linked to this contract are listed
+            </span>
+        </div>
+
+        {{ formset.management_form }}
+
+        <div id="product-rows" class="prod-rows-scroll">
+            {% for pf in formset %}
+            <div class="product-row" id="product-row-{{ forloop.counter0 }}"
+                 style="{% if pf.DELETE.value %}display:none;{% endif %}">
+                <div style="display:none;">{{ pf.id }}</div>
+                {% if pf.errors %}
+                <div style="margin-bottom:8px;">
+                    {% for field, errs in pf.errors.items %}{% for e in errs %}
+                    <div class="form-error">{{ e }}</div>
+                    {% endfor %}{% endfor %}
+                    {% for e in pf.non_field_errors %}
+                    <div class="form-error">{{ e }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="product-row-fields">
+                    <div class="form-group" style="margin:0; flex:2; min-width:0;">
+                        <label class="form-label">Product</label>
+                        {{ pf.product }}
+                    </div>
+                    <div class="form-group" style="margin:0; flex:1.5; min-width:0;">
+                        <label class="form-label">External Designation</label>
+                        {{ pf.external_designation }}
+                    </div>
+                    <div class="form-group" style="margin:0; flex:0 0 90px;">
+                        <label class="form-label" title="Points earned per unit sold">Pts/unit</label>
+                        {{ pf.points_per_unit }}
+                    </div>
+                    <div class="form-group" style="margin:0; flex:0 0 100px;">
+                        <label class="form-label" title="Target quantity for this contract (optional)">Target qty</label>
+                        {{ pf.target_quantity }}
+                    </div>
+                    <div class="delete-field" style="display:none;">{{ pf.DELETE }}</div>
+                    <button type="button" class="unlink-btn"
+                            onclick="askUnlink(this)"
+                            title="Unlink product">
+                        <span class="material-icons-round">link_off</span>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Hidden template row — cloned by JS for new product rows -->
+        {% with pf=formset.empty_form %}
+        <template id="product-row-template">
+            <div class="product-row" id="product-row-__prefix__">
+                <div style="display:none;">{{ pf.id }}</div>
+                <div class="product-row-fields">
+                    <div class="form-group" style="margin:0; flex:2; min-width:0;">
+                        <label class="form-label">Product</label>
+                        {{ pf.product }}
+                    </div>
+                    <div class="form-group" style="margin:0; flex:1.5; min-width:0;">
+                        <label class="form-label">External Designation</label>
+                        {{ pf.external_designation }}
+                    </div>
+                    <div class="form-group" style="margin:0; flex:0 0 90px;">
+                        <label class="form-label" title="Points earned per unit sold">Pts/unit</label>
+                        {{ pf.points_per_unit }}
+                    </div>
+                    <div class="form-group" style="margin:0; flex:0 0 100px;">
+                        <label class="form-label" title="Target quantity for this contract (optional)">Target qty</label>
+                        {{ pf.target_quantity }}
+                    </div>
+                    <div class="delete-field" style="display:none;">{{ pf.DELETE }}</div>
+                    <button type="button" class="unlink-btn"
+                            onclick="askUnlink(this)"
+                            title="Unlink product">
+                        <span class="material-icons-round">link_off</span>
+                    </button>
+                </div>
+            </div>
+        </template>
+        {% endwith %}
+
+        <button type="button" onclick="addProductRow()" class="btn btn-secondary" style="margin-top:14px;">
+            <span class="material-icons-round">add</span> Add Product
+        </button>
+    </div>
+
+    <!-- ── Submit ─────────────────────────────────────────────────── -->
+    <div class="form-actions">
+        <button type="submit" id="submitBtn" class="btn btn-primary">
+            <span class="material-icons-round" id="submitIcon">save</span>
+            <span id="submitLabel">{{ page_action }} Contract</span>
+        </button>
+        {% if page_action == "Edit" %}
+        <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-secondary">Cancel</a>
+        {% else %}
+        <a href="{% url 'control:contracts_list' %}" class="btn btn-secondary">Cancel</a>
+        {% endif %}
+    </div>
+
+</form>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .section-label {
+        font-size:0.75rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:14px;
+        display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    }
+    .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:640px) { .form-grid-2 { grid-template-columns:1fr; } }
+
+    /* Styled native select (account, status — not product) */
+    select.form-input {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 30px;
+        cursor: pointer;
+    }
+
+    /* ── Custom searchable product select ────────────────────────── */
+    .cs-wrap { position: relative; width: 100%; }
+    .cs-trigger {
+        display: flex; align-items: center; justify-content: space-between; gap: 6px;
+        padding: 7px 10px; cursor: pointer; width: 100%; box-sizing: border-box;
+        border: 1px solid var(--card-border); border-radius: 8px;
+        background: var(--content-bg); font-size: 0.875rem; font-family: 'Inter', sans-serif;
+        min-height: 36px; user-select: none; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .cs-trigger:hover { border-color: var(--accent); }
+    .cs-trigger.open  { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(14,165,233,0.15); }
+    .cs-val { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+    .cs-val.ph { color: var(--text-secondary); }
+    .cs-arrow { font-size: 18px; color: var(--text-secondary); flex-shrink: 0; transition: transform 0.2s; }
+    .cs-trigger.open .cs-arrow { transform: rotate(180deg); }
+
+    .cs-dropdown {
+        position: fixed; z-index: 9999; display: none; overflow: hidden;
+        background: var(--card-bg); border: 1px solid var(--card-border);
+        border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    }
+    .cs-dropdown.open { display: block; }
+    .cs-search {
+        display: flex; align-items: center; gap: 6px;
+        padding: 8px 10px; border-bottom: 1px solid var(--card-border);
+    }
+    .cs-search .material-icons-round { font-size: 16px; color: var(--text-secondary); flex-shrink: 0; }
+    .cs-search input {
+        border: none; background: transparent; outline: none; width: 100%;
+        font-size: 0.875rem; font-family: 'Inter', sans-serif; color: var(--text-primary);
+    }
+    .cs-search input::placeholder { color: var(--text-secondary); }
+    .cs-opts {
+        max-height: 210px; overflow-y: auto;
+        scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
+    }
+    .cs-opts::-webkit-scrollbar { width: 5px; }
+    .cs-opts::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+    .cs-opt {
+        padding: 8px 12px; font-size: 0.875rem; font-family: 'Inter', sans-serif;
+        color: var(--text-primary); cursor: pointer; transition: background 0.1s;
+    }
+    .cs-opt:hover, .cs-opt.focused { background: var(--sidebar-hover); }
+    .cs-opt.cs-sel { background: rgba(14,165,233,0.08); color: var(--accent); font-weight: 500; }
+    .cs-no-res { padding: 10px 12px; font-size: 0.84rem; color: var(--text-secondary); text-align: center; }
+
+    /* City filter pills (inside account dropdown) */
+    .cs-city-bar {
+        display: flex; flex-wrap: wrap; gap: 4px;
+        padding: 6px 10px; border-bottom: 1px solid var(--card-border);
+    }
+    .cs-city-pill {
+        padding: 2px 9px; border-radius: 20px; font-size: 0.73rem; font-weight: 600;
+        border: 1px solid var(--card-border); background: transparent;
+        color: var(--text-secondary); cursor: pointer; font-family: 'Inter', sans-serif;
+        transition: all 0.15s; white-space: nowrap;
+    }
+    .cs-city-pill:hover  { border-color: var(--accent); color: var(--accent); }
+    .cs-city-pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+    /* Inline account option (name · code · city on one line) */
+    .cs-opt-name { font-weight: 500; color: var(--text-primary); }
+    .cs-opt-meta { font-size: 0.78rem; color: var(--text-secondary); margin-left: 6px; }
+    .cs-opt.cs-sel .cs-opt-name { color: var(--accent); }
+    .cs-opt.cs-sel .cs-opt-meta { color: rgba(14,165,233,0.7); }
+
+    /* Scrollable product rows */
+    .prod-rows-scroll {
+        max-height: 460px;
+        overflow-y: auto;
+        padding-right: 4px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--card-border) transparent;
+    }
+    .prod-rows-scroll::-webkit-scrollbar { width: 5px; }
+    .prod-rows-scroll::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
+    /* Product rows — flat separator, no nested card border */
+    .product-row {
+        border: none;
+        border-bottom: 1px solid var(--card-border);
+        border-radius: 0;
+        padding: 10px 2px;
+        margin-bottom: 0;
+        background: transparent;
+        transition: background 0.15s;
+    }
+    .product-row:last-child { border-bottom: none; }
+    .product-row:hover { background: var(--sidebar-hover); }
+    .product-row-fields { display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; }
+
+    /* Unlink button */
+    .unlink-btn {
+        flex-shrink:0; width:34px; height:34px;
+        display:inline-flex; align-items:center; justify-content:center;
+        border-radius:6px; border:1px solid var(--card-border);
+        background:transparent; color:var(--text-secondary);
+        cursor:pointer; transition:all 0.15s; font-family:'Inter',sans-serif;
+        align-self:flex-end;
+    }
+    .unlink-btn .material-icons-round { font-size:16px; }
+    .unlink-btn:hover {
+        background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.4); color:#f59e0b;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+        position:fixed; inset:0; background:rgba(0,0,0,0.5);
+        display:flex; align-items:center; justify-content:center; z-index:1000;
+    }
+    .modal-box {
+        background:var(--card-bg); border:1px solid var(--card-border);
+        border-radius:12px; padding:24px; max-width:400px; width:90%;
+        box-shadow:0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+    .spin-anim { display:inline-block; animation:spin 0.8s linear infinite; }
+
+    /* Inactive product indicators */
+    .cs-inactive-badge {
+        display:inline-flex; align-items:center; padding:1px 6px;
+        background:rgba(239,68,68,0.12); color:#ef4444; border-radius:20px;
+        font-size:0.7rem; font-weight:700; margin-left:6px; vertical-align:middle;
+        font-family:'Inter',sans-serif; letter-spacing:0.2px;
+    }
+    .cs-opt .cs-inactive-badge { font-size:0.68rem; }
+    .cs-opt[style*="color: rgb(239"] { color:#ef4444 !important; }
+    .inactive-row-warning {
+        display:flex; align-items:center; gap:5px;
+        font-size:0.78rem; color:#ef4444; margin-top:6px;
+        padding:5px 10px; background:rgba(239,68,68,0.07);
+        border-radius:6px; border:1px solid rgba(239,68,68,0.2);
+    }
+    .inactive-row-warning .material-icons-round { font-size:14px; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    const CP_PREFIX   = "{{ cp_prefix }}";
+    const ALL_PRODUCTS = {{ products_json|safe }};
+    let pendingUnlinkBtn = null;
+
+    /* ── Custom searchable select ─────────────────────────────────── */
+    let openCS = null;
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function closeAllCS() {
+        if (!openCS) return;
+        openCS.dropdown.classList.remove('open');
+        openCS.trigger.classList.remove('open');
+        openCS = null;
+    }
+    document.addEventListener('click', closeAllCS);
+    window.addEventListener('scroll', () => { if (openCS) openCS.reposition(); }, true);
+
+    function initCS(sel, type) {
+        sel.dataset.cs = '1';
+        sel.style.display = 'none';
+
+        const isProduct = type === 'product';
+        const isAccount = type === 'account';
+        const hasSearch = type !== 'status';
+        const placeholder = isProduct ? 'Select a product…'
+                          : isAccount ? 'Select an account…'
+                          : 'Select status…';
+
+        // ── Wrapper + trigger ──
+        const wrap = document.createElement('div');
+        wrap.className = 'cs-wrap';
+        sel.parentNode.insertBefore(wrap, sel);
+        wrap.appendChild(sel);
+
+        const trigger = document.createElement('div');
+        trigger.className = 'cs-trigger';
+        trigger.innerHTML =
+            '<span class="cs-val ph"></span>' +
+            '<span class="material-icons-round cs-arrow">expand_more</span>';
+        wrap.insertBefore(trigger, sel);
+        const valEl = trigger.querySelector('.cs-val');
+
+        function syncTrigger() {
+            if (sel.value) {
+                const optEl = sel.options[sel.selectedIndex];
+                let label;
+                if (isAccount) {
+                    const name = optEl?.dataset?.name || optEl?.text || '';
+                    const code = optEl?.dataset?.code || '';
+                    const city = optEl?.dataset?.city || '';
+                    const meta = [code, city].filter(Boolean).join(' · ');
+                    label = meta ? `${name}  ·  ${meta}` : name;
+                } else {
+                    label = optEl?.text || '';
+                }
+                if (isProduct && optEl?.dataset?.inactive === '1') {
+                    valEl.innerHTML = escapeHtml(label) +
+                        ' <span class="cs-inactive-badge">Inactive</span>';
+                } else {
+                    valEl.textContent = label;
+                }
+                valEl.classList.remove('ph');
+            } else {
+                valEl.textContent = placeholder;
+                valEl.classList.add('ph');
+            }
+        }
+        sel._csSyncTrigger = syncTrigger;
+
+        // Mark options that Django rendered with '[Inactive]' suffix
+        if (isProduct) {
+            Array.from(sel.options).forEach(opt => {
+                if (opt.text.endsWith(' [Inactive]')) {
+                    opt.dataset.inactive = '1';
+                    opt.text = opt.text.slice(0, -' [Inactive]'.length);
+                }
+            });
+        }
+        syncTrigger();
+
+        // ── Dropdown shell ──
+        const dropdown = document.createElement('div');
+        dropdown.className = 'cs-dropdown';
+        let innerHtml = '';
+        if (hasSearch) {
+            const sph = isAccount ? 'Search accounts…' : 'Search products…';
+            innerHtml +=
+                '<div class="cs-search"><span class="material-icons-round">search</span>' +
+                `<input type="text" placeholder="${sph}" autocomplete="off"></div>`;
+        }
+        if (isAccount) innerHtml += '<div class="cs-city-bar"></div>';
+        innerHtml += '<div class="cs-opts"></div>';
+        dropdown.innerHTML = innerHtml;
+        document.body.appendChild(dropdown);
+        dropdown.addEventListener('click', e => e.stopPropagation());
+
+        const searchInput = hasSearch ? dropdown.querySelector('input') : null;
+        const optsList    = dropdown.querySelector('.cs-opts');
+        const cityBar     = isAccount ? dropdown.querySelector('.cs-city-bar') : null;
+
+        // ── City pills (account only) ──
+        let activeCityFilter = 'all';
+        if (cityBar) {
+            const citySet = new Set();
+            Array.from(sel.options).forEach(opt => {
+                if (opt.value && opt.dataset.city) citySet.add(opt.dataset.city);
+            });
+            const cities = Array.from(citySet).sort();
+            if (cities.length > 0) {
+                const makeP = (val, label) => {
+                    const p = document.createElement('button');
+                    p.type = 'button';
+                    p.className = 'cs-city-pill' + (val === 'all' ? ' active' : '');
+                    p.textContent = label;
+                    p.addEventListener('mousedown', e => {
+                        e.preventDefault();
+                        activeCityFilter = val;
+                        cityBar.querySelectorAll('.cs-city-pill').forEach(x => x.classList.remove('active'));
+                        p.classList.add('active');
+                        buildOpts(searchInput?.value || '');
+                    });
+                    return p;
+                };
+                cityBar.appendChild(makeP('all', 'All'));
+                cities.forEach(c => cityBar.appendChild(makeP(c, c)));
+            } else {
+                cityBar.style.display = 'none';
+            }
+        }
+
+        function reposition() {
+            const r  = trigger.getBoundingClientRect();
+            const dh = Math.min(dropdown.scrollHeight || 280, 280);
+            dropdown.style.width = r.width + 'px';
+            dropdown.style.left  = r.left  + 'px';
+            if (window.innerHeight - r.bottom < dh + 8 && r.top > dh) {
+                dropdown.style.top = (r.top - dh - 4) + 'px';
+            } else {
+                dropdown.style.top = (r.bottom + 2) + 'px';
+            }
+        }
+
+        function buildOpts(q) {
+            optsList.innerHTML = '';
+            const lq = (q || '').toLowerCase();
+            let n = 0;
+            Array.from(sel.options).forEach(opt => {
+                if (!opt.value) return;
+                // City filter
+                if (isAccount && activeCityFilter !== 'all' &&
+                    (opt.dataset.city || '') !== activeCityFilter) return;
+                // Text search
+                if (lq) {
+                    const haystack = isAccount
+                        ? `${opt.dataset.name || opt.text} ${opt.dataset.code || ''} ${opt.dataset.city || ''}`.toLowerCase()
+                        : opt.text.toLowerCase();
+                    if (!haystack.includes(lq)) return;
+                }
+                const d = document.createElement('div');
+                d.className = 'cs-opt' + (opt.value === sel.value ? ' cs-sel' : '');
+                if (isAccount) {
+                    const name = opt.dataset.name || opt.text;
+                    const meta = [opt.dataset.code, opt.dataset.city].filter(Boolean).join(' · ');
+                    d.innerHTML =
+                        `<span class="cs-opt-name">${escapeHtml(name)}</span>` +
+                        (meta ? `<span class="cs-opt-meta">${escapeHtml(meta)}</span>` : '');
+                } else if (isProduct && opt.dataset.inactive === '1') {
+                    d.innerHTML = escapeHtml(opt.text) +
+                        ' <span class="cs-inactive-badge">Inactive</span>';
+                    d.style.color = '#ef4444';
+                } else {
+                    d.textContent = opt.text;
+                }
+                d.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    if (isProduct) {
+                        const oldVal  = sel.value;
+                        const oldText = oldVal
+                            ? Array.from(sel.options).find(o => o.value === oldVal)?.text
+                            : null;
+                        sel.value = opt.value;
+                        syncTrigger();
+                        syncProductOptions(sel, opt.value, opt.text, oldVal, oldText);
+                        updateInactiveWarning(sel);
+                    } else {
+                        sel.value = opt.value;
+                        syncTrigger();
+                        sel.dispatchEvent(new Event('change'));
+                    }
+                    closeAllCS();
+                });
+                optsList.appendChild(d);
+                n++;
+            });
+            if (!n) {
+                const nr = document.createElement('div');
+                nr.className = 'cs-no-res';
+                nr.textContent = isAccount ? 'No accounts found.'
+                               : isProduct ? 'No products found.' : 'No options.';
+                optsList.appendChild(nr);
+            }
+        }
+
+        trigger.addEventListener('click', e => {
+            e.stopPropagation();
+            if (dropdown.classList.contains('open')) { closeAllCS(); return; }
+            closeAllCS();
+            buildOpts(searchInput?.value || '');
+            dropdown.classList.add('open');
+            trigger.classList.add('open');
+            reposition();
+            openCS = { trigger, dropdown, reposition };
+            if (searchInput) setTimeout(() => { searchInput.value = ''; buildOpts(''); searchInput.focus(); }, 10);
+        });
+        if (searchInput) searchInput.addEventListener('input', () => buildOpts(searchInput.value));
+    }
+
+    function initCustomSelect(scope) {
+        const root = scope || document;
+        root.querySelectorAll('select[name$="-product"]:not([data-cs])').forEach(sel => initCS(sel, 'product'));
+        const accSel = root.querySelector?.('select[name="account"]:not([data-cs])');
+        const stSel  = root.querySelector?.('select[name="status"]:not([data-cs])');
+        if (accSel) initCS(accSel, 'account');
+        if (stSel)  initCS(stSel,  'status');
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        initCustomSelect();
+        document.querySelector('select[name="status"]')
+            ?.addEventListener('change', () => refreshAllProductSelects());
+        // Set initial state of hint + warnings
+        refreshAllProductSelects();
+    });
+
+    /* helper: insert option alphabetically into a native select */
+    function insertOptAlpha(targetSel, value, text) {
+        if (!value || targetSel.querySelector(`option[value="${value}"]`)) return;
+        const opt = new Option(text, value);
+        const prod = ALL_PRODUCTS.find(p => String(p.id) === String(value));
+        if (prod && !prod.active) opt.dataset.inactive = '1';
+        for (let i = 1; i < targetSel.options.length; i++) {
+            if (targetSel.options[i].text.localeCompare(text) > 0) {
+                targetSel.insertBefore(opt, targetSel.options[i]);
+                return;
+            }
+        }
+        targetSel.appendChild(opt);
+    }
+
+    /* sync product options across all visible rows + template after a selection change */
+    function syncProductOptions(changedSel, newVal, newText, oldVal, oldText) {
+        const targets = [];
+        document.querySelectorAll('.product-row').forEach(r => {
+            if (r.style.display === 'none') return;
+            const s = r.querySelector('select[name$="-product"]');
+            if (s && s !== changedSel) targets.push(s);
+        });
+        const tmplSel = document.getElementById('product-row-template')
+            ?.content?.querySelector('select[name$="-product"]');
+        if (tmplSel) targets.push(tmplSel);
+
+        targets.forEach(s => {
+            if (newVal) s.querySelector(`option[value="${newVal}"]`)?.remove();
+            if (oldVal) insertOptAlpha(s, oldVal, oldText);
+        });
+    }
+
+    /* ── Unlink confirmation ──────────────────────────────────────── */
+    function askUnlink(btn) {
+        pendingUnlinkBtn = btn;
+        const row = btn.closest('.product-row');
+        const sel = row.querySelector('select[name$="-product"]');
+        const prodName = sel?.value
+            ? (sel.options[sel.selectedIndex]?.text || 'this product')
+            : 'this product';
+        document.getElementById('unlinkProductName').textContent = prodName;
+        document.getElementById('unlinkModal').style.display = 'flex';
+    }
+
+    function confirmUnlink() {
+        if (!pendingUnlinkBtn) return;
+        const btn = pendingUnlinkBtn;
+        closeModal();
+        const row = btn.closest('.product-row');
+        const sel = row.querySelector('select[name$="-product"]');
+
+        const freedValue = sel?.value;
+        const freedText  = sel?.options[sel.selectedIndex]?.text;
+
+        const cb = row.querySelector('input[name$="-DELETE"]');
+        if (cb) cb.checked = true;
+        row.style.display = 'none';
+
+        if (freedValue) {
+            /* add freed product to every other visible row's native select */
+            document.querySelectorAll('.product-row').forEach(otherRow => {
+                if (otherRow === row || otherRow.style.display === 'none') return;
+                const otherSel = otherRow.querySelector('select[name$="-product"]');
+                if (otherSel) insertOptAlpha(otherSel, freedValue, freedText);
+            });
+            /* also update the template so future "Add Product" rows include it */
+            const tmplSel = document.getElementById('product-row-template')
+                ?.content?.querySelector('select[name$="-product"]');
+            if (tmplSel) insertOptAlpha(tmplSel, freedValue, freedText);
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('unlinkModal').style.display = 'none';
+        pendingUnlinkBtn = null;
+    }
+
+    /* ── Add product row ──────────────────────────────────────────── */
+    function addProductRow() {
+        const tmpl     = document.getElementById('product-row-template');
+        const totalInp = document.getElementById(`id_${CP_PREFIX}-TOTAL_FORMS`);
+        const idx      = parseInt(totalInp.value);
+        const html     = tmpl.innerHTML.replace(/__prefix__/g, idx);
+        const scroll   = document.getElementById('product-rows');
+        scroll.insertAdjacentHTML('beforeend', html);
+        totalInp.value = idx + 1;
+        const newRow   = document.getElementById(`product-row-${idx}`);
+        if (newRow) initCustomSelect(newRow);
+        scroll.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Refresh options in the new row to match current contract status
+        if (newRow) {
+            const newSel = newRow.querySelector('select[name$="-product"]');
+            if (newSel) rebuildProductSelect(newSel);
+        }
+    }
+
+    /* ── Product status-aware filtering ─────────────────────────── */
+    function getContractStatus() {
+        return document.querySelector('select[name="status"]')?.value || 'active';
+    }
+
+    function getUsedIds() {
+        const ids = new Set();
+        document.querySelectorAll('.product-row').forEach(r => {
+            if (r.style.display !== 'none') {
+                const v = r.querySelector('select[name$="-product"]')?.value;
+                if (v) ids.add(String(v));
+            }
+        });
+        return ids;
+    }
+
+    function rebuildProductSelect(sel, usedIdsOverride) {
+        const status  = getContractStatus();
+        const usedIds = usedIdsOverride ?? getUsedIds();
+        const current = String(sel.value || '');
+
+        const available = ALL_PRODUCTS.filter(p => {
+            if (String(p.id) === current) return true;   // keep current selection
+            if (usedIds.has(String(p.id))) return false;  // used in another row
+            return status === 'active' ? p.active : true; // filter by status
+        });
+
+        const placeholder = sel.options[0]?.value === '' ? sel.options[0] : null;
+        sel.innerHTML = '';
+        if (placeholder) sel.appendChild(placeholder);
+
+        available.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.text  = p.label;
+            if (!p.active) opt.dataset.inactive = '1';
+            if (String(p.id) === current) opt.selected = true;
+            sel.appendChild(opt);
+        });
+
+        sel._csSyncTrigger?.();
+        updateInactiveWarning(sel);
+    }
+
+    function updateInactiveWarning(sel) {
+        const row = sel.closest('.product-row');
+        if (!row) return;
+        const existing = row.querySelector('.inactive-row-warning');
+        const opt = sel.options[sel.selectedIndex];
+        const isInactive = opt?.dataset?.inactive === '1';
+        const isActive   = getContractStatus() === 'active';
+
+        if (isInactive && isActive) {
+            if (!existing) {
+                const warn = document.createElement('div');
+                warn.className = 'inactive-row-warning';
+                warn.innerHTML =
+                    '<span class="material-icons-round">warning</span>' +
+                    ' This product is inactive — activating this contract will be blocked.';
+                row.appendChild(warn);
+            }
+        } else if (existing) {
+            existing.remove();
+        }
+    }
+
+    function refreshAllProductSelects() {
+        const status  = getContractStatus();
+        const usedIds = getUsedIds();
+
+        document.querySelectorAll('.product-row').forEach(r => {
+            if (r.style.display !== 'none') {
+                const s = r.querySelector('select[name$="-product"]');
+                if (s) rebuildProductSelect(s, usedIds);
+            }
+        });
+
+        // Rebuild template so new rows respect current status
+        const tmplSel = document.getElementById('product-row-template')
+            ?.content?.querySelector('select[name$="-product"]');
+        if (tmplSel) rebuildProductSelect(tmplSel, usedIds);
+
+        // Update hint text
+        const hint = document.getElementById('productsHint');
+        if (hint) {
+            hint.textContent = status === 'active'
+                ? '— only active products not already linked to this contract are listed'
+                : '— all products available; inactive ones are marked in red';
+        }
+    }
+
+    /* ── Form submit guard ────────────────────────────────────────── */
+    document.getElementById('contractForm').addEventListener('submit', function(e) {
+        document.querySelectorAll('.form-error-js').forEach(el => el.remove());
+        document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+
+        let valid = true;
+        function requireField(sel, msg) {
+            const inp = document.querySelector(sel);
+            if (!inp || !inp.value.trim()) {
+                if (inp) inp.classList.add('input-error');
+                const err = document.createElement('div');
+                err.className = 'form-error form-error-js';
+                err.textContent = msg;
+                if (inp) inp.parentNode.appendChild(err);
+                valid = false;
+            }
+        }
+        requireField('[name="title"]',      'Title is required.');
+        requireField('[name="account"]',    'Account is required.');
+        requireField('[name="start_date"]', 'Start date is required.');
+        requireField('[name="end_date"]',   'End date is required.');
+
+        if (!valid) {
+            e.preventDefault();
+            document.querySelector('.form-error-js').scrollIntoView({ behavior:'smooth', block:'center' });
+            return;
+        }
+        const btn  = document.getElementById('submitBtn');
+        const icon = document.getElementById('submitIcon');
+        const lbl  = document.getElementById('submitLabel');
+        if (btn.dataset.locked) return;
+        btn.dataset.locked = '1';
+        btn.disabled = true;
+        icon.className = 'material-icons-round spin-anim';
+        icon.textContent = 'refresh';
+        lbl.textContent = 'Saving…';
+    });
+</script>
+{% endblock %}

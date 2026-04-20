@@ -56,7 +56,7 @@ class Account(TraceableMixin, models.Model):
         db_table = "Account"
 
     def __str__(self):
-        return f"[{self.code}] {self.name} - {self.city}"
+        return self.name
 
     def clean(self):
         # Rule 3: cannot deactivate account if it has at least one active contract
@@ -149,8 +149,27 @@ class Contract(TraceableMixin, models.Model):
         related_name="contracts"
     )
 
+    # ── Sales sync tracking ──
+    last_sync_at        = models.DateTimeField(null=True, blank=True)
+    last_sale_datetime  = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         db_table = "Contract"
+
+    @property
+    def duration(self):
+        if not self.start_date or not self.end_date:
+            return ""
+        days = (self.end_date.date() - self.start_date.date()).days
+        if days <= 0:
+            return ""
+        years, rem = divmod(days, 365)
+        months, d  = divmod(rem, 30)
+        parts = []
+        if years:  parts.append(f"{years} year{'s' if years > 1 else ''}")
+        if months: parts.append(f"{months} month{'s' if months > 1 else ''}")
+        if d:      parts.append(f"{d} day{'s' if d > 1 else ''}")
+        return ", ".join(parts[:2])  # cap at 2 units for compactness
 
     def __str__(self):
         return self.title
@@ -177,6 +196,19 @@ class Contract(TraceableMixin, models.Model):
                     "Please deactivate it before creating a new one."
                 )
 
+        # Rule 6: cannot activate a contract if it has inactive products linked
+        if self.status == "active" and self.pk:
+            inactive_links = (
+                Contract_Product.objects
+                .filter(contract=self, product__status="inactive")
+                .select_related("product")
+            )
+            if inactive_links.exists():
+                names = ", ".join(cp.product.designation for cp in inactive_links)
+                raise ValidationError(
+                    f"Cannot activate this contract: the following linked products are inactive: {names}."
+                )
+
 
 # -----------------------
 # 5. Contract ↔ Product
@@ -186,10 +218,56 @@ class Contract_Product(models.Model):
     contract = models.ForeignKey(Contract, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     external_designation = models.CharField(max_length=255)
+    points_per_unit = models.PositiveIntegerField(default=1)
+    target_quantity = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         db_table = "Contract_Product"
-        unique_together = ("contract", "product")
+        unique_together = [
+            ("contract", "product"),
+            ("contract", "external_designation"),
+        ]
+
+    def clean(self):
+        # A contract cannot have two products sharing the same external designation.
+        # The unique_together constraint enforces this at DB level; this clean()
+        # surfaces it as a friendly ValidationError on forms and the admin.
+        if self.contract_id and self.external_designation:
+            qs = Contract_Product.objects.filter(
+                contract=self.contract,
+                external_designation=self.external_designation,
+            )
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            # Exclude rows being deleted in the same formset submission
+            skip_pks = getattr(self, '_skip_unique_pks', None)
+            if skip_pks:
+                qs = qs.exclude(pk__in=skip_pks)
+            if qs.exists():
+                raise ValidationError(
+                    "This external designation is already used by another product "
+                    "in this contract. Each product must have a unique external designation."
+                )
 
     def __str__(self):
         return f"{self.contract} - {self.product}"
+
+
+# -----------------------
+# 6. RoleProfile
+# -----------------------
+
+class RoleProfile(models.Model):
+    """Display metadata (icon) for a Django auth Group (Role)."""
+    group = models.OneToOneField(
+        'auth.Group',
+        on_delete=models.CASCADE,
+        related_name='profile',
+    )
+    icon = models.CharField(max_length=100, default='badge')
+
+    class Meta:
+        db_table = 'RoleProfile'
+
+    def __str__(self):
+        return self.group.name

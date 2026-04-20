@@ -131,6 +131,64 @@
 
 </div>
 
+{% if social_accounts %}
+<div class="card" style="margin-top:16px;">
+    <div class="section-label">Linked Social Accounts</div>
+    {% for sa in social_accounts %}
+    <div class="sa-row">
+        <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+            <span class="provider-chip provider-{{ sa.provider }}">
+                {% if sa.provider == "google" %}
+                    <span class="material-icons-round" style="font-size:15px;">g_mobiledata</span>
+                {% else %}
+                    <span class="material-icons-round" style="font-size:15px;">public</span>
+                {% endif %}
+                {{ sa.provider|title }}
+            </span>
+            <div style="min-width:0;">
+                <div style="font-size:0.83rem; color:var(--text-primary); font-weight:500;">
+                    {{ sa.extra_data.email|default:sa.uid }}
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-family:monospace;">
+                    UID: {{ sa.uid|truncatechars:32 }}
+                </div>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:16px; flex-shrink:0;">
+            {% for token in sa.socialtoken_set.all %}
+            <div style="font-size:0.78rem; color:var(--text-secondary); text-align:right;">
+                <div>Token via <strong style="color:var(--text-primary);">{{ token.app.name|default:token.app.provider|title }}</strong></div>
+                {% if token.expires_at %}
+                    {% now "U" as now_ts %}
+                    <div>
+                        Expires {{ token.expires_at|date:"d M Y" }}
+                        {% if token.expires_at|date:"U" > now_ts %}
+                            <span class="sa-badge sa-valid">Valid</span>
+                        {% else %}
+                            <span class="sa-badge sa-expired">Expired</span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div><span class="sa-badge sa-valid">No expiry</span></div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <div style="font-size:0.78rem; color:var(--text-secondary);">
+                Linked {{ sa.date_joined|date:"d M Y" }}
+            </div>
+            <form method="post" action="{% url 'control:social_account_unlink' sa.pk %}" onsubmit="return confirm('Unlink {{ sa.provider|title }} from {{ u.username }}?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" style="padding:5px 10px; font-size:0.78rem;">
+                    <span class="material-icons-round" style="font-size:14px;">link_off</span> Unlink
+                </button>
+            </form>
+        </div>
+    </div>
+    {% if not forloop.last %}<div style="height:1px; background:var(--card-border); margin:0;"></div>{% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
 {% endblock %}
 
 
@@ -179,8 +237,28 @@
     }
     .info-account-link:hover { text-decoration:underline; }
 
+    .sa-row {
+        display:flex; align-items:center; justify-content:space-between;
+        gap:16px; padding:12px 0; flex-wrap:wrap;
+    }
+    .provider-chip {
+        display:inline-flex; align-items:center; gap:4px;
+        padding:4px 10px; border-radius:20px; font-size:0.78rem; font-weight:600;
+        flex-shrink:0;
+    }
+    .provider-google { background:rgba(66,133,244,0.12); color:#4285f4; }
+    .provider-chip:not(.provider-google) { background:rgba(100,116,139,0.12); color:var(--text-secondary); }
+
+    .sa-badge {
+        display:inline-flex; align-items:center;
+        padding:2px 7px; border-radius:10px; font-size:0.72rem; font-weight:600; margin-left:4px;
+    }
+    .sa-valid   { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .sa-expired { background:rgba(239,68,68,0.1);  color:#ef4444; }
+
     @media (max-width: 700px) {
         div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+        .sa-row { flex-direction:column; align-items:flex-start; }
     }
 </style>
 {% endblock %}

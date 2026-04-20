@@ -1,0 +1,60 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Delete Token{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:tokens_list' %}" style="color:var(--text-secondary);text-decoration:none;">API Tokens</a>
+    › Delete
+{% endblock %}
+{% block nav_tokens %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Delete Token</div>
+        <div class="page-header-sub">This action cannot be undone.</div>
+    </div>
+    <a href="{% url 'control:tokens_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+</div>
+
+<div class="card">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:20px;">
+        <span class="material-icons-round" style="font-size:36px; color:#ef4444;">delete_forever</span>
+        <div>
+            <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">{{ token.name }}</div>
+            <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:3px;">
+                {{ token.masked_token }}
+                · Status:
+                {% if token.is_active %}<span style="color:#22c55e;">Active</span>
+                {% else %}<span style="color:#ef4444;">Revoked</span>{% endif %}
+                · {{ token.usage_count }} use{{ token.usage_count|pluralize }}
+            </div>
+        </div>
+    </div>
+
+    {% if token.is_active %}
+    <div class="alert alert-error" style="margin-bottom:16px;">
+        <span class="material-icons-round" style="font-size:18px;">warning</span>
+        This token is still <strong>active</strong>. Any pharmacy client using it will immediately lose API access.
+        Consider revoking it first if you want a softer cut-off.
+    </div>
+    {% endif %}
+
+    <p style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:24px;">
+        Are you sure you want to permanently delete token <strong style="color:var(--text-primary);">{{ token.name }}</strong>?
+    </p>
+
+    <div style="display:flex; gap:10px;">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <span class="material-icons-round">delete_forever</span> Yes, delete token
+            </button>
+        </form>
+        <a href="{% url 'control:tokens_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</div>
+
+{% endblock %}

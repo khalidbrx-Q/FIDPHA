@@ -33,11 +33,29 @@
 <form method="post" id="roleForm">
     {% csrf_token %}
 
-    <!-- Role name -->
+    <!-- Role name + icon -->
     <div class="card" style="margin-bottom: 16px;">
         <div class="section-label">Role Details</div>
+
+        <!-- Icon picker -->
+        <div class="form-group">
+            <label class="form-label">Icon</label>
+            <input type="hidden" name="role_icon" id="roleIconInput" value="{{ current_icon|default:'badge' }}">
+            <div class="icon-picker" id="iconPicker">
+                {% for icon_name, icon_label in role_icons %}
+                <div class="icon-tile{% if current_icon == icon_name %} selected{% endif %}"
+                     data-icon="{{ icon_name }}" onclick="selectIcon(this)" title="{{ icon_label }}">
+                    <span class="material-icons-round">{{ icon_name }}</span>
+                    <span class="icon-tile-label">{{ icon_label }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="form-help">Choose an icon that best represents this role.</div>
+        </div>
+
+        <!-- Name -->
         <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" for="{{ form.name.id_for_label }}">Role Name</label>
+            <label class="form-label" for="{{ form.name.id_for_label }}">Role Name *</label>
             {{ form.name }}
             {% if form.name.errors %}
                 {% for error in form.name.errors %}
@@ -133,6 +151,12 @@
 </form>
 
 <script>
+    function selectIcon(tile) {
+        document.querySelectorAll('.icon-tile').forEach(t => t.classList.remove('selected'));
+        tile.classList.add('selected');
+        document.getElementById('roleIconInput').value = tile.dataset.icon;
+    }
+
     document.getElementById('roleForm').addEventListener('submit', function (e) {
         const nameInput = document.getElementById('{{ form.name.id_for_label }}');
         const errEl     = document.getElementById('nameErrorInline');
@@ -167,6 +191,36 @@
         color: var(--text-secondary);
         margin-bottom: 14px;
     }
+
+    /* Icon picker */
+    .icon-picker {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 8px;
+        padding: 4px 0 8px;
+    }
+    .icon-tile {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 5px; padding: 10px 6px; border-radius: 8px; cursor: pointer;
+        border: 2px solid var(--card-border); background: transparent;
+        transition: all 0.15s; user-select: none;
+    }
+    .icon-tile:hover {
+        border-color: var(--accent); background: rgba(14,165,233,0.06);
+    }
+    .icon-tile.selected {
+        border-color: var(--accent); background: rgba(14,165,233,0.1);
+        box-shadow: 0 0 0 3px rgba(14,165,233,0.15);
+    }
+    .icon-tile .material-icons-round { font-size: 26px; color: var(--text-secondary); transition: color 0.15s; }
+    .icon-tile:hover .material-icons-round,
+    .icon-tile.selected .material-icons-round { color: var(--accent); }
+    .icon-tile-label {
+        font-size: 0.65rem; font-weight: 600; color: var(--text-secondary);
+        text-align: center; line-height: 1.2; white-space: nowrap; overflow: hidden;
+        text-overflow: ellipsis; width: 100%; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .icon-tile.selected .icon-tile-label { color: var(--accent); }
 
     /* App group */
     .perm-app-group { margin-bottom: 6px; border: 1px solid var(--card-border); border-radius: 8px; overflow: hidden; }

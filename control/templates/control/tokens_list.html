@@ -1,0 +1,323 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}API Tokens{% endblock %}
+{% block page_breadcrumb %}API Tokens{% endblock %}
+{% block nav_tokens %}active{% endblock %}
+
+{% block content %}
+
+<!-- Custom confirm modal -->
+<div id="confirmOverlay" class="modal-overlay" style="display:none;" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-icon-wrap" id="modalIconWrap">
+            <span class="material-icons-round" id="modalIcon" style="font-size:28px;">warning</span>
+        </div>
+        <div class="modal-title" id="modalTitle">Are you sure?</div>
+        <div class="modal-msg"   id="modalMsg"></div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn" id="modalConfirmBtn" onclick="modalSubmit()">Confirm</button>
+        </div>
+    </div>
+</div>
+<form id="modalForm" method="post" style="display:none;">{% csrf_token %}</form>
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">API Tokens</div>
+        <div class="page-header-sub">{{ tokens|length }} token{{ tokens|length|pluralize }}</div>
+    </div>
+    <a href="{% url 'control:tokens_create' %}" class="btn btn-primary">
+        <span class="material-icons-round">add</span> New Token
+    </a>
+</div>
+
+<!-- One-time token reveal banner -->
+{% if new_token_value %}
+<div class="token-reveal-banner" id="revealBanner">
+    <div style="display:flex; align-items:flex-start; gap:14px;">
+        <span class="material-icons-round" style="font-size:24px; color:#22c55e; flex-shrink:0; margin-top:2px;">key</span>
+        <div style="flex:1; min-width:0;">
+            <div style="font-size:0.9rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">
+                Token created — copy it now
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:10px;">
+                This is the only time the full token will be shown. Store it securely.
+            </div>
+            <div class="token-value-row">
+                <code id="fullToken">{{ new_token_value }}</code>
+                <button class="copy-btn" onclick="copyToken()" title="Copy token">
+                    <span class="material-icons-round" id="copyIcon">content_copy</span>
+                </button>
+            </div>
+        </div>
+        <button class="dismiss-btn" onclick="document.getElementById('revealBanner').remove()" title="Dismiss">
+            <span class="material-icons-round">close</span>
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<!-- Toolbar -->
+<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+    <div class="search-bar" style="flex:1; min-width:200px; max-width:380px;">
+        <span class="material-icons-round">search</span>
+        <input type="text" id="tokenSearch" placeholder="Search by name…"
+               oninput="applyFilters()" autocomplete="off">
+    </div>
+    <div style="display:flex; gap:6px; align-items:center;">
+        <span class="filter-group-label">Status:</span>
+        <div class="filter-pills">
+            <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
+            <button class="filter-pill" onclick="setFilter('active',this)">Active</button>
+            <button class="filter-pill" onclick="setFilter('revoked',this)">Revoked</button>
+        </div>
+    </div>
+    <span id="tokenCount" style="font-size:0.82rem; color:var(--text-secondary);"></span>
+</div>
+
+<div class="card" style="padding:0; overflow:hidden;">
+    {% if tokens %}
+    <div class="table-scroll-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Token</th>
+                    <th>Status</th>
+                    <th>Uses</th>
+                    <th>Last Used</th>
+                    <th>Created</th>
+                    <th style="width:112px;"></th>
+                </tr>
+            </thead>
+            <tbody id="tokenTableBody">
+                {% for t in tokens %}
+                <tr data-search="{{ t.name|lower }}"
+                    data-status="{% if t.is_active %}active{% else %}revoked{% endif %}"
+                    onclick="window.location='{% url 'control:tokens_detail' t.pk %}'"
+                    style="cursor:pointer;">
+                    <td style="font-weight:600; color:var(--text-primary);">{{ t.name }}</td>
+                    <td>
+                        <span class="masked-token">{{ t.masked_token }}</span>
+                    </td>
+                    <td>
+                        {% if t.is_active %}
+                            <span class="badge badge-active">Active</span>
+                        {% else %}
+                            <span class="badge badge-inactive">Revoked</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:0.82rem;">
+                        {% if t.usage_count %}
+                            {{ t.usage_count }}
+                        {% else %}
+                            <span class="dim-dash">0</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:0.82rem;">
+                        {% if t.last_used_at %}
+                            {{ t.last_used_at|date:"d M Y, H:i" }}
+                        {% else %}
+                            <span class="dim-dash">Never</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:0.82rem;">
+                        {{ t.created_at|date:"d M Y" }}
+                        {% if t.created_by %}
+                        <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:1px;">
+                            by {{ t.created_by.get_full_name|default:t.created_by.username }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td onclick="event.stopPropagation()">
+                        <div class="table-actions">
+                            {% if t.is_active %}
+                            <button type="button" class="action-btn action-warn" title="Revoke"
+                                    onclick="showConfirm({action:'{% url 'control:tokens_revoke' t.pk %}',title:'Revoke token?',msg:'<strong>{{ t.name|escapejs }}</strong> — the pharmacy using it will lose API access immediately.',btn:'Revoke',icon:'block',color:'#f59e0b'})">
+                                <span class="material-icons-round">block</span>
+                            </button>
+                            {% else %}
+                            <button type="button" class="action-btn action-reactivate" title="Reactivate"
+                                    onclick="showConfirm({action:'{% url 'control:tokens_reactivate' t.pk %}',title:'Reactivate token?',msg:'<strong>{{ t.name|escapejs }}</strong> will regain API access.',btn:'Reactivate',icon:'check_circle',color:'#22c55e'})">
+                                <span class="material-icons-round">check_circle</span>
+                            </button>
+                            {% endif %}
+                            <a href="{% url 'control:tokens_delete' t.pk %}" class="action-btn action-delete" title="Delete">
+                                <span class="material-icons-round">delete</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="noTokenResults" style="display:none; text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem;">
+        No tokens match your filters.
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:48px 24px;">
+        <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">key_off</span>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No API tokens yet</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Create a token to allow a pharmacy client to sync sales.</div>
+        <a href="{% url 'control:tokens_create' %}" class="btn btn-primary" style="display:inline-flex;">
+            <span class="material-icons-round">add</span> New Token
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* Modal */
+    .modal-overlay {
+        position:fixed; inset:0; background:rgba(0,0,0,0.5);
+        display:flex; align-items:center; justify-content:center;
+        z-index:9999; backdrop-filter:blur(2px);
+    }
+    .modal-box {
+        background:var(--card-bg); border:1px solid var(--card-border);
+        border-radius:16px; padding:28px 28px 24px; max-width:400px; width:90%;
+        text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-icon-wrap {
+        width:56px; height:56px; border-radius:50%; margin:0 auto 16px;
+        display:flex; align-items:center; justify-content:center;
+    }
+    .modal-title { font-size:1rem; font-weight:700; color:var(--text-primary); margin-bottom:10px; }
+    .modal-msg   { font-size:0.85rem; color:var(--text-secondary); margin-bottom:24px; line-height:1.6; }
+    .modal-actions { display:flex; gap:10px; justify-content:center; }
+
+    /* Reveal banner */
+    .token-reveal-banner {
+        background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.3);
+        border-radius: 10px; padding: 16px 18px; margin-bottom: 16px;
+    }
+    .token-value-row {
+        display: flex; align-items: center; gap: 8px;
+        background: var(--content-bg); border: 1px solid var(--card-border);
+        border-radius: 8px; padding: 8px 12px;
+    }
+    .token-value-row code {
+        flex: 1; font-family: monospace; font-size: 0.82rem;
+        color: var(--text-primary); word-break: break-all;
+    }
+    .copy-btn {
+        flex-shrink: 0; background: transparent; border: none; cursor: pointer;
+        color: var(--text-secondary); padding: 4px; border-radius: 4px; transition: color 0.15s;
+        display: flex; align-items: center;
+    }
+    .copy-btn:hover { color: var(--accent); }
+    .copy-btn .material-icons-round { font-size: 18px; }
+    .dismiss-btn {
+        flex-shrink: 0; background: transparent; border: none; cursor: pointer;
+        color: var(--text-secondary); padding: 4px; border-radius: 4px;
+        display: flex; align-items: center; transition: color 0.15s;
+    }
+    .dismiss-btn:hover { color: var(--text-primary); }
+    .dismiss-btn .material-icons-round { font-size: 18px; }
+
+    /* Table */
+    .table-scroll-wrapper {
+        max-height: 620px; overflow-y: auto;
+        scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
+    }
+    .table-scroll-wrapper::-webkit-scrollbar { width: 5px; }
+    .table-scroll-wrapper::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table thead th {
+        position: sticky; top: 0; z-index: 1; background: var(--card-bg);
+        text-align: left; font-size: 0.75rem; font-weight: 600;
+        color: var(--text-secondary); text-transform: uppercase;
+        letter-spacing: 0.4px; padding: 10px 12px;
+        border-bottom: 1px solid var(--card-border);
+    }
+    .data-table td { padding: 11px 12px; font-size: 0.87rem; color: var(--text-secondary); border-bottom: 1px solid var(--card-border); }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover td { background-color: rgba(14,165,233,0.05); }
+
+    .masked-token { font-family: monospace; font-size: 0.82rem; color: var(--text-secondary); letter-spacing: 1px; }
+    .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-active  { background: rgba(34,197,94,0.1);  color: #22c55e; }
+    .badge-inactive{ background: rgba(239,68,68,0.1);  color: #ef4444; }
+    .dim-dash { color: var(--text-secondary); font-size: 0.82rem; }
+
+    .action-warn { color: #f59e0b !important; border: none; background: transparent; cursor: pointer; padding: 0; }
+    .action-warn:hover { background: rgba(245,158,11,0.1) !important; border-radius: 6px; }
+    .action-reactivate { color: #22c55e !important; border: none; background: transparent; cursor: pointer; padding: 0; }
+    .action-reactivate:hover { background: rgba(34,197,94,0.1) !important; border-radius: 6px; }
+
+    .filter-group-label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+    .filter-pills { display: flex; gap: 4px; }
+    .filter-pill {
+        padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+        border: 1px solid var(--card-border); background: transparent;
+        color: var(--text-secondary); cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s;
+    }
+    .filter-pill:hover  { border-color: var(--accent); color: var(--accent); }
+    .filter-pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    let fStatus = 'all';
+
+    function setFilter(value, btn) {
+        fStatus = value;
+        btn.closest('.filter-pills').querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const q     = document.getElementById('tokenSearch').value.toLowerCase().trim();
+        const rows  = document.querySelectorAll('#tokenTableBody tr');
+        let visible = 0;
+        rows.forEach(row => {
+            const show = (!q || (row.dataset.search || '').includes(q))
+                      && (fStatus === 'all' || row.dataset.status === fStatus);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const isFiltered = q || fStatus !== 'all';
+        document.getElementById('noTokenResults').style.display = (isFiltered && visible === 0) ? 'block' : 'none';
+        document.getElementById('tokenCount').textContent = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : '';
+    }
+
+    function copyToken() {
+        const val = document.getElementById('fullToken')?.textContent || '';
+        navigator.clipboard.writeText(val).then(() => {
+            const icon = document.getElementById('copyIcon');
+            icon.textContent = 'check';
+            setTimeout(() => icon.textContent = 'content_copy', 2000);
+        });
+    }
+
+    // Modal
+    let _modalAction = '';
+    function showConfirm({ action, title, msg, btn, icon, color }) {
+        _modalAction = action;
+        document.getElementById('modalTitle').textContent   = title;
+        document.getElementById('modalMsg').innerHTML       = msg;
+        document.getElementById('modalIcon').textContent    = icon;
+        document.getElementById('modalIconWrap').style.background = color + '22';
+        document.getElementById('modalIcon').style.color   = color;
+        const confirmBtn = document.getElementById('modalConfirmBtn');
+        confirmBtn.textContent      = btn;
+        confirmBtn.style.background = color;
+        confirmBtn.style.border     = 'none';
+        confirmBtn.style.color      = '#fff';
+        document.getElementById('confirmOverlay').style.display = 'flex';
+    }
+    function closeModal()  { document.getElementById('confirmOverlay').style.display = 'none'; }
+    function modalSubmit() { const f = document.getElementById('modalForm'); f.action = _modalAction; f.submit(); }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+{% endblock %}

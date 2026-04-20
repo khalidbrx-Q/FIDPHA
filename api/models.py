@@ -2,6 +2,7 @@
 import secrets
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
 class APIToken(models.Model):
@@ -38,4 +39,14 @@ class APIToken(models.Model):
     @property
     def masked_token(self):
         return f"••••••••••••••••••••••••••••{self.token[-4:]}"
+
+
+class APITokenUsageLog(models.Model):
+    token     = models.ForeignKey(APIToken, on_delete=models.CASCADE, related_name="usage_logs")
+    called_at = models.DateTimeField(default=timezone.now, db_index=True)
+    endpoint  = models.CharField(max_length=255, blank=True, default="")
+
+    class Meta:
+        verbose_name = "Token Usage Log"
+        ordering = ["-called_at"]
 

@@ -56,18 +56,19 @@ urlpatterns = [
     path("accounts/<int:pk>/edit/", views.accounts_edit, name="accounts_edit"),
     path("accounts/<int:pk>/delete/", views.accounts_delete, name="accounts_delete"),
 
-    # Contracts — Part 3
-    path("contracts/", coming_soon, name="contracts_list"),
-    path("contracts/new/", coming_soon, name="contracts_create"),
-    path("contracts/<int:pk>/", coming_soon, name="contracts_detail"),
-    path("contracts/<int:pk>/edit/", coming_soon, name="contracts_edit"),
-    path("contracts/<int:pk>/delete/", coming_soon, name="contracts_delete"),
+    # Contracts
+    path("contracts/", views.contracts_list, name="contracts_list"),
+    path("contracts/new/", views.contracts_create, name="contracts_create"),
+    path("contracts/<int:pk>/", views.contracts_detail, name="contracts_detail"),
+    path("contracts/<int:pk>/edit/", views.contracts_edit, name="contracts_edit"),
+    path("contracts/<int:pk>/delete/", views.contracts_delete, name="contracts_delete"),
 
-    # Products — Part 4
-    path("products/", coming_soon, name="products_list"),
-    path("products/new/", coming_soon, name="products_create"),
-    path("products/<int:pk>/edit/", coming_soon, name="products_edit"),
-    path("products/<int:pk>/delete/", coming_soon, name="products_delete"),
+    # Products
+    path("products/", views.products_list, name="products_list"),
+    path("products/new/", views.products_create, name="products_create"),
+    path("products/<int:pk>/", views.products_detail, name="products_detail"),
+    path("products/<int:pk>/edit/", views.products_edit, name="products_edit"),
+    path("products/<int:pk>/delete/", views.products_delete, name="products_delete"),
 
     # Users — Part 3
     path("users/", views.users_list, name="users_list"),
@@ -76,8 +77,25 @@ urlpatterns = [
     path("users/<int:pk>/edit/", views.users_edit, name="users_edit"),
     path("users/<int:pk>/delete/", views.users_delete, name="users_delete"),
 
-    # API Tokens — Part 6
-    path("tokens/", coming_soon, name="tokens_list"),
-    path("tokens/new/", coming_soon, name="tokens_create"),
-    path("tokens/<int:pk>/delete/", coming_soon, name="tokens_delete"),
+    # API Tokens
+    path("tokens/", views.tokens_list, name="tokens_list"),
+    path("tokens/new/", views.tokens_create, name="tokens_create"),
+    path("tokens/<int:pk>/", views.tokens_detail, name="tokens_detail"),
+    path("tokens/<int:pk>/revoke/", views.tokens_revoke, name="tokens_revoke"),
+    path("tokens/<int:pk>/reactivate/", views.tokens_reactivate, name="tokens_reactivate"),
+    path("tokens/<int:pk>/delete/", views.tokens_delete, name="tokens_delete"),
+
+    # Configuration — Social Accounts
+    path("settings/social-accounts/", views.social_accounts_list, name="social_accounts_list"),
+    path("settings/social-accounts/<int:pk>/unlink/", views.social_account_unlink, name="social_account_unlink"),
+
+    # Configuration — Social Applications
+    path("settings/social-apps/", views.social_apps_list, name="social_apps_list"),
+    path("settings/social-apps/new/", views.social_apps_create, name="social_apps_create"),
+    path("settings/social-apps/<int:pk>/", views.social_apps_detail, name="social_apps_detail"),
+    path("settings/social-apps/<int:pk>/edit/", views.social_apps_edit, name="social_apps_edit"),
+    path("settings/social-apps/<int:pk>/delete/", views.social_apps_delete, name="social_apps_delete"),
+
+    # Configuration — Site
+    path("settings/site/", views.site_edit, name="site_edit"),
 ]

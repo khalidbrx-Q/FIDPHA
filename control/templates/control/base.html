@@ -526,38 +526,22 @@
                 API Tokens
             </a>
 
-            <!-- Sites — redirect to Django admin -->
-            <div class="nav-section-title">Sites</div>
-            <a href="/admin/sites/site/" target="_blank"
-               class="nav-item"
-               title="Managed in Django admin">
-                <span class="material-icons-round">language</span>
-                Sites
-                <span class="material-icons-round" style="font-size:13px; margin-left:auto; color: var(--text-secondary);">open_in_new</span>
-            </a>
-
-            <!-- Social Accounts — redirect to Django admin -->
-            <div class="nav-section-title">Social Accounts</div>
-            <a href="/admin/socialaccount/socialaccount/" target="_blank"
-               class="nav-item"
-               title="Managed in Django admin">
-                <span class="material-icons-round">manage_accounts</span>
-                Social Accounts
-                <span class="material-icons-round" style="font-size:13px; margin-left:auto; color: var(--text-secondary);">open_in_new</span>
-            </a>
-            <a href="/admin/socialaccount/socialapp/" target="_blank"
-               class="nav-item"
-               title="Managed in Django admin">
-                <span class="material-icons-round">apps</span>
+            <!-- Configuration -->
+            <div class="nav-section-title">Configuration</div>
+            <a href="{% url 'control:social_apps_list' %}"
+               class="nav-item {% block nav_social_apps %}{% endblock %}">
+                <span class="material-icons-round">public</span>
                 Social Applications
-                <span class="material-icons-round" style="font-size:13px; margin-left:auto; color: var(--text-secondary);">open_in_new</span>
             </a>
-            <a href="/admin/socialaccount/socialtoken/" target="_blank"
-               class="nav-item"
-               title="Managed in Django admin">
-                <span class="material-icons-round">token</span>
-                Social Tokens
-                <span class="material-icons-round" style="font-size:13px; margin-left:auto; color: var(--text-secondary);">open_in_new</span>
+            <a href="{% url 'control:social_accounts_list' %}"
+               class="nav-item {% block nav_social_accounts %}{% endblock %}">
+                <span class="material-icons-round">link</span>
+                Social Accounts
+            </a>
+            <a href="{% url 'control:site_edit' %}"
+               class="nav-item {% block nav_site %}{% endblock %}">
+                <span class="material-icons-round">language</span>
+                Site
             </a>
 
         </nav>

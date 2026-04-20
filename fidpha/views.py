@@ -18,7 +18,7 @@ from django.conf import settings
 def custom_login(request):
     if request.user.is_authenticated:
         if request.user.is_staff:
-            return redirect("/admin/")
+            return redirect("/control/")
         return redirect("/portal/dashboard/")
 
     if request.method == "POST":
@@ -40,7 +40,7 @@ def custom_login(request):
             login(request, user)
 
             if user.is_staff:
-                return redirect("/admin/")
+                return redirect("/control/")
             else:
                 return redirect("/portal/dashboard/")
         else:
@@ -64,13 +64,13 @@ def admin_welcome(request):
     welcome = request.session.pop("welcome_message", None)
     if welcome:
         messages.success(request, welcome)
-    return redirect("/admin/")
+    return redirect("/control/")
 
 
 @login_required(login_url="/portal/login/")
 def setup_profile(request):
     if request.user.is_staff:
-        return redirect("/admin/")
+        return redirect("/control/")
 
     try:
         profile = request.user.profile
@@ -132,7 +132,7 @@ def setup_profile(request):
 @login_required(login_url="/portal/login/")
 def portal_profile(request):
     if request.user.is_staff:
-        return redirect("/admin/")
+        return redirect("/control/")
 
     try:
         profile = request.user.profile
@@ -195,7 +195,7 @@ def portal_profile(request):
 @login_required(login_url="/portal/login/")
 def portal_profile_password(request):
     if request.user.is_staff:
-        return redirect("/admin/")
+        return redirect("/control/")
 
     if request.method == "POST":
         current_password = request.POST.get("current_password")
@@ -242,7 +242,7 @@ def portal_profile_password(request):
 @login_required(login_url="/portal/login/")
 def verify_pending(request):
     if request.user.is_staff:
-        return redirect("/admin/")
+        return redirect("/control/")
 
     try:
         profile = request.user.profile
@@ -302,7 +302,7 @@ def verify_email(request, token):
 @login_required(login_url="/portal/login/")
 def portal_dashboard(request):
     if request.user.is_staff:
-        return redirect("/admin/")
+        return redirect("/control/")
 
     try:
         profile = request.user.profile
@@ -333,7 +333,7 @@ def portal_dashboard(request):
 @login_required(login_url="/portal/login/")
 def portal_contracts(request):
     if request.user.is_staff:
-        return redirect("/admin/")
+        return redirect("/control/")
 
     try:
         profile = request.user.profile
@@ -351,6 +351,84 @@ def portal_contracts(request):
     })
 
 
+
+
+# -----------------------
+# Sales / Loyalty
+# -----------------------
+
+def _calculate_points(units_sold, points_per_unit, target_quantity):
+    """
+    Points rule — to be finalised.
+    Currently: simple linear (units × pts_per_unit, no threshold gate).
+    target_quantity is stored in the model but not used here yet.
+    """
+    return units_sold * points_per_unit
+
+
+@login_required(login_url="/portal/login/")
+def portal_sales(request):
+    if request.user.is_staff:
+        return redirect("/control/")
+
+    try:
+        profile = request.user.profile
+    except Exception:
+        return redirect("/portal/login/")
+
+    from fidpha.models import Contract_Product
+    from sales.models import Sale
+    from django.db.models import Sum
+
+    account = profile.account
+    active_contract = account.contracts.filter(status="active").first()
+
+    products_data = []
+    total_points  = 0
+    total_units   = 0
+    recent_sales  = []
+
+    def _build_products_data(contract):
+        data, pts, units = [], 0, 0
+        for cp in (Contract_Product.objects
+                   .filter(contract=contract)
+                   .select_related("product")
+                   .order_by("product__designation")):
+            sold     = (Sale.objects.filter(contract_product=cp)
+                        .aggregate(t=Sum("quantity"))["t"] or 0)
+            points = _calculate_points(sold, cp.points_per_unit, cp.target_quantity)
+            data.append({"cp": cp, "units_sold": sold, "points": points})
+            pts += points; units += sold
+        return data, pts, units
+
+    if active_contract:
+        products_data, total_points, total_units = _build_products_data(active_contract)
+        recent_sales = (
+            Sale.objects
+            .filter(contract_product__contract=active_contract)
+            .select_related("contract_product__product")
+            .order_by("-sale_datetime")[:100]
+        )
+
+    # Historical inactive contracts
+    past_contracts = []
+    for old in account.contracts.filter(status="inactive").order_by("-end_date"):
+        data, pts, units = _build_products_data(old)
+        past_contracts.append({
+            "contract":     old,
+            "products_data": data,
+            "total_points": pts,
+            "total_units":  units,
+        })
+
+    return render(request, "fidpha/sales.html", {
+        "active_contract": active_contract,
+        "products_data":   products_data,
+        "total_points":    total_points,
+        "total_units":     total_units,
+        "recent_sales":    recent_sales,
+        "past_contracts":  past_contracts,
+    })
 
 
 # -----------------------

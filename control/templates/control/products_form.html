@@ -1,0 +1,104 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}{{ page_action }} Product{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:products_list' %}" style="color:var(--text-secondary);text-decoration:none;">Products</a>
+    {% if cloned_from %}
+    › <a href="{% url 'control:products_detail' cloned_from.pk %}" style="color:var(--text-secondary);text-decoration:none;">{{ cloned_from.designation }}</a>
+    {% endif %}
+    › {{ page_action }}
+{% endblock %}
+{% block nav_products %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">{{ page_action }} Product</div>
+        <div class="page-header-sub">
+            {% if page_action == "Edit" %}Editing "{{ product.designation }}"{% else %}Add a new product to the catalogue{% endif %}
+        </div>
+    </div>
+    <a href="{% url 'control:products_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+</div>
+
+{% if form.non_field_errors %}
+<div style="margin-bottom:16px;">
+    {% for error in form.non_field_errors %}
+    <div class="alert alert-error">
+        <span class="material-icons-round" style="font-size:18px;">error_outline</span>
+        {{ error }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" id="productForm" novalidate>
+    {% csrf_token %}
+
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">Product Details</div>
+
+        <div class="form-grid-2">
+            <div class="form-group">
+                <label class="form-label">Code *</label>
+                {{ form.code }}
+                {% for e in form.code.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+                <div class="form-help">Unique internal identifier, e.g. DOLI1000.</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status *</label>
+                {{ form.status }}
+                {% for e in form.status.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Designation *</label>
+            {{ form.designation }}
+            {% for e in form.designation.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            <div class="form-help">Full product name as it appears in the system.</div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" id="submitBtn" class="btn btn-primary">
+            <span class="material-icons-round" id="submitIcon">save</span>
+            <span id="submitLabel">{{ page_action }} Product</span>
+        </button>
+        <a href="{% url 'control:products_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<script>
+    document.getElementById('productForm').addEventListener('submit', function(e) {
+        const btn  = document.getElementById('submitBtn');
+        if (btn.dataset.locked) return;
+        btn.dataset.locked = '1';
+        btn.disabled = true;
+        document.getElementById('submitIcon').textContent = 'hourglass_empty';
+        document.getElementById('submitLabel').textContent = 'Saving…';
+    });
+</script>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .section-label {
+        font-size:0.75rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:14px;
+    }
+    .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:640px) { .form-grid-2 { grid-template-columns:1fr; } }
+    select.form-input {
+        appearance: none; -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 10px center;
+        padding-right: 32px; border-radius: 8px !important; cursor: pointer;
+    }
+</style>
+{% endblock %}

@@ -12,7 +12,7 @@
 <div class="page-header">
     <div style="display:flex; align-items:center; gap:14px;">
         <div class="role-avatar">
-            <span class="material-icons-round" style="font-size:22px;">badge</span>
+            <span class="material-icons-round" style="font-size:22px;">{{ role.profile.icon|default:"badge" }}</span>
         </div>
         <div>
             <div class="page-header-title">{{ role.name }}</div>
@@ -38,63 +38,92 @@
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns:1fr 320px; gap:16px; align-items:start;">
-
-    <!-- Left: permissions -->
-    <div class="card">
-        <div class="section-label">Permissions</div>
-
-        {% if perm_groups %}
-            {% for app_label, perms in perm_groups %}
-            <div class="perm-section">
-                <div class="perm-section-header">{{ app_label }}</div>
-                <div class="perm-tag-grid">
-                    {% for perm in perms %}
-                    <span class="perm-tag" title="{{ perm.codename }}">{{ perm.name }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div style="text-align:center; padding:32px 16px; color:var(--text-secondary);">
-                <span class="material-icons-round" style="font-size:36px; display:block; margin-bottom:8px;">lock_open</span>
-                <div style="font-size:0.85rem;">No permissions assigned to this role.</div>
-                <a href="{% url 'control:roles_edit' role.pk %}" style="font-size:0.82rem; color:var(--accent);">Add permissions</a>
-            </div>
-        {% endif %}
+<!-- Assigned Users -->
+<div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div class="section-label" style="margin-bottom:0;">
+            Assigned Users <span class="count-chip">{{ assigned_users|length }}</span>
+        </div>
     </div>
 
-    <!-- Right: assigned users -->
-    <div class="card">
-        <div class="section-label">Assigned Users</div>
-
-        {% if assigned_users %}
-            {% for u in assigned_users %}
-            <div class="user-row">
-                <div class="user-row-avatar">{{ u.username|first|upper }}</div>
-                <div class="user-row-info">
-                    <a href="{% url 'control:users_detail' u.pk %}" class="user-row-name">{{ u.username }}</a>
-                    {% if u.get_full_name %}
-                        <div class="user-row-sub">{{ u.get_full_name }}</div>
-                    {% endif %}
-                </div>
-                {% if u.is_active %}
-                    <span class="badge badge-active">Active</span>
-                {% else %}
-                    <span class="badge badge-inactive">Inactive</span>
+    {% if assigned_users %}
+    <div class="search-bar" style="margin-bottom:10px;">
+        <span class="material-icons-round">search</span>
+        <input type="text" id="userSearch" placeholder="Search users…"
+               oninput="filterUsers()" autocomplete="off">
+    </div>
+    <div id="usersList" class="users-scroll">
+        {% for u in assigned_users %}
+        <div class="user-row"
+             data-search="{{ u.username|lower }} {{ u.get_full_name|lower }}">
+            <div class="user-row-avatar">{{ u.username|first|upper }}</div>
+            <div class="user-row-info">
+                <a href="{% url 'control:users_detail' u.pk %}" class="user-row-name">{{ u.username }}</a>
+                {% if u.get_full_name %}
+                    <div class="user-row-sub">{{ u.get_full_name }}</div>
                 {% endif %}
             </div>
-            {% endfor %}
-        {% else %}
-            <div style="text-align:center; padding:24px 16px; color:var(--text-secondary);">
-                <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px;">person_off</span>
-                <div style="font-size:0.82rem;">No users assigned to this role.</div>
-            </div>
-        {% endif %}
+            {% if u.is_active %}
+                <span class="badge badge-active">Active</span>
+            {% else %}
+                <span class="badge badge-inactive">Inactive</span>
+            {% endif %}
+        </div>
+        {% endfor %}
     </div>
-
+    <div id="noUserResults" style="display:none; text-align:center; padding:14px; color:var(--text-secondary); font-size:0.83rem;">
+        No users match your search.
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:24px 16px; color:var(--text-secondary);">
+        <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px;">person_off</span>
+        <div style="font-size:0.82rem;">No users assigned to this role.</div>
+    </div>
+    {% endif %}
 </div>
 
+<!-- Permissions -->
+<div class="card">
+    <div class="section-label">Permissions</div>
+
+    {% if perm_groups %}
+        {% for app_label, perms in perm_groups %}
+        <div class="perm-section">
+            <div class="perm-section-header">{{ app_label }}</div>
+            <div class="perm-tag-grid">
+                {% for perm in perms %}
+                <span class="perm-tag" title="{{ perm.codename }}">{{ perm.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="text-align:center; padding:32px 16px; color:var(--text-secondary);">
+            <span class="material-icons-round" style="font-size:36px; display:block; margin-bottom:8px;">lock_open</span>
+            <div style="font-size:0.85rem;">No permissions assigned to this role.</div>
+            <a href="{% url 'control:roles_edit' role.pk %}" style="font-size:0.82rem; color:var(--accent);">Add permissions</a>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    function filterUsers() {
+        const q     = (document.getElementById('userSearch')?.value || '').toLowerCase().trim();
+        const rows  = document.querySelectorAll('#usersList .user-row');
+        let visible = 0;
+        rows.forEach(row => {
+            const show = !q || (row.dataset.search || '').includes(q);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const noRes = document.getElementById('noUserResults');
+        if (noRes) noRes.style.display = (q && visible === 0) ? 'block' : 'none';
+    }
+</script>
 {% endblock %}
 
 
@@ -155,8 +184,16 @@
     .badge-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
     .badge-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
 
-    @media (max-width: 760px) {
-        div[style*="grid-template-columns:1fr 320px"] { grid-template-columns:1fr !important; }
+    .count-chip {
+        background:var(--sidebar-hover); color:var(--text-secondary);
+        border:1px solid var(--card-border);
+        font-size:0.7rem; padding:1px 7px; border-radius:10px; font-weight:600; letter-spacing:0;
     }
+    .users-scroll {
+        max-height: 340px; overflow-y: auto;
+        scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
+    }
+    .users-scroll::-webkit-scrollbar { width: 5px; }
+    .users-scroll::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
 </style>
 {% endblock %}

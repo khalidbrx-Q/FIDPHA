@@ -80,11 +80,18 @@ def get_account(account_code: str) -> Account:
             in the database.
     """
     try:
-        return Account.objects.get(code=account_code)
+        account = Account.objects.get(code=account_code)
     except Account.DoesNotExist:
         raise AccountNotFoundError(
             f"No account found with code '{account_code}'."
         )
+
+    if account.status != STATUS_ACTIVE:
+        raise AccountNotFoundError(
+            f"Account '{account_code}' is not active."
+        )
+
+    return account
 
 
 # ---------------------------------------------------------------------------
@@ -139,11 +146,12 @@ def get_contract_products(contract: Contract) -> list[dict]:
     """
     products = []
 
-    for contract_product in contract.contract_product_set.all():
+    for contract_product in contract.contract_product_set.select_related("product").all():
         products.append({
-            "product_id": contract_product.product.pk,
-            "internal_code": contract_product.product.code,
+            "product_id":           contract_product.product.pk,
+            "internal_code":        contract_product.product.code,
             "external_designation": contract_product.external_designation,
+            "designation":          contract_product.product.designation,
         })
 
     return products

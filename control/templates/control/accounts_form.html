@@ -159,6 +159,9 @@
                     <span class="meta-sep">·</span>
                     <span class="material-icons-round meta-icon">medication</span>
                     {{ active_contract.product_count }} product{{ active_contract.product_count|pluralize }}
+                    <span class="meta-sep">·</span>
+                    <span class="material-icons-round meta-icon">sync</span>
+                    {% if active_contract.last_sync_at %}{{ active_contract.last_sync_at|date:"d M Y" }}{% else %}<span style="opacity:0.5;">not synced</span>{% endif %}
                 </div>
             </div>
             <span class="badge badge-active">Active</span>
@@ -192,6 +195,9 @@
                         <span class="meta-sep">·</span>
                         <span class="material-icons-round meta-icon">medication</span>
                         {{ c.product_count }} product{{ c.product_count|pluralize }}
+                        <span class="meta-sep">·</span>
+                        <span class="material-icons-round meta-icon">sync</span>
+                        {% if c.last_sync_at %}{{ c.last_sync_at|date:"d M Y" }}{% else %}<span style="opacity:0.5;">not synced</span>{% endif %}
                     </div>
                 </div>
                 <span class="badge badge-inactive">Inactive</span>

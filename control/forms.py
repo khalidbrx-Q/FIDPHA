@@ -15,8 +15,16 @@ Last updated: April 2026
 from django import forms
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
+from django.contrib.sites.models import Site
+from django.forms import inlineformset_factory
+from django.forms.models import BaseInlineFormSet
 
-from fidpha.models import Account, UserProfile
+from allauth.socialaccount.models import SocialApp
+from allauth.socialaccount import providers as allauth_providers
+
+from fidpha.models import Account, Contract, Contract_Product, Product, UserProfile
+from api.models import APIToken
 
 
 # ---------------------------------------------------------------------------
@@ -55,6 +63,176 @@ class AccountForm(forms.ModelForm):
         if qs.exists():
             raise forms.ValidationError('An account with this code already exists.')
         return code
+
+
+# ---------------------------------------------------------------------------
+# Contracts
+# ---------------------------------------------------------------------------
+
+class AccountSelect(forms.Select):
+    """
+    Select widget that adds data-name, data-code, data-city HTML attributes to
+    each <option> so the JS custom dropdown can render rich two-line items and
+    a city-filter pill bar without extra API calls.
+    """
+    def create_option(self, name, value, label, selected, index, **kwargs):
+        option = super().create_option(name, value, label, selected, index, **kwargs)
+        try:
+            row = self._acc_data.get(int(str(value)))
+            if row:
+                option['attrs'].update(row)
+        except (TypeError, ValueError, AttributeError):
+            pass
+        return option
+
+
+class ContractForm(forms.ModelForm):
+    start_date = forms.DateTimeField(
+        widget=forms.DateTimeInput(
+            attrs={'type': 'datetime-local', 'class': 'form-input'},
+            format='%Y-%m-%dT%H:%M',
+        ),
+        input_formats=['%Y-%m-%dT%H:%M'],
+    )
+    end_date = forms.DateTimeField(
+        widget=forms.DateTimeInput(
+            attrs={'type': 'datetime-local', 'class': 'form-input'},
+            format='%Y-%m-%dT%H:%M',
+        ),
+        input_formats=['%Y-%m-%dT%H:%M'],
+    )
+
+    class Meta:
+        model  = Contract
+        fields = ['title', 'designation', 'account', 'start_date', 'end_date', 'status']
+        widgets = {
+            'designation': forms.Textarea(attrs={'rows': 3, 'class': 'form-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['title'].widget.attrs.update({'class': 'form-input', 'autocomplete': 'off'})
+        self.fields['status'].widget.attrs['class'] = 'form-input'
+
+        # Replace the account widget with AccountSelect so each <option> carries
+        # data-name / data-code / data-city for the JS city-filter dropdown.
+        acc_qs = Account.objects.order_by("name")
+        acc_widget = AccountSelect(attrs={'class': 'form-input'})
+        acc_widget._acc_data = {
+            a.pk: {'data-name': a.name, 'data-code': a.code, 'data-city': a.city}
+            for a in acc_qs
+        }
+        self.fields['account'].widget = acc_widget
+        self.fields['account'].queryset = acc_qs
+
+        # Pre-format datetimes for the datetime-local input
+        if self.instance and self.instance.pk:
+            if self.instance.start_date:
+                self.initial['start_date'] = self.instance.start_date.strftime('%Y-%m-%dT%H:%M')
+            if self.instance.end_date:
+                self.initial['end_date'] = self.instance.end_date.strftime('%Y-%m-%dT%H:%M')
+
+
+class ContractProductForm(forms.ModelForm):
+    class Meta:
+        model  = Contract_Product
+        fields = ['product', 'external_designation', 'points_per_unit', 'target_quantity']
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-input'}),
+            'external_designation': forms.TextInput(attrs={
+                'class': 'form-input',
+                'autocomplete': 'off',
+                'placeholder': 'e.g. DOLI1000',
+            }),
+            'points_per_unit': forms.NumberInput(attrs={
+                'class': 'form-input',
+                'min': '1',
+                'placeholder': '1',
+            }),
+            'target_quantity': forms.NumberInput(attrs={
+                'class': 'form-input',
+                'min': '0',
+                'placeholder': 'e.g. 100',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.available_products = kwargs.pop('available_products', None)
+        super().__init__(*args, **kwargs)
+        base_qs = (
+            self.available_products
+            if self.available_products is not None
+            else Product.objects.filter(status='active')
+        )
+        if self.instance and self.instance.pk:
+            # Existing row — always include the currently linked product so it
+            # renders correctly even if it has since been deactivated or re-linked.
+            qs = (
+                base_qs | Product.objects.filter(pk=self.instance.product_id)
+            ).distinct().order_by('designation')
+        else:
+            qs = base_qs.order_by('designation')
+
+        self.fields['product'].queryset = qs
+        self.fields['product'].label_from_instance = lambda obj: (
+            f"{obj.designation} [Inactive]" if obj.status == "inactive" else obj.designation
+        )
+
+    def validate_unique(self):
+        skip_pks = getattr(self.instance, '_skip_unique_pks', None)
+        if not skip_pks:
+            return super().validate_unique()
+        # Re-run unique_together checks manually, excluding rows being deleted
+        exclude = self._get_validation_exclusions()
+        unique_checks, _ = self.instance._get_unique_checks(exclude=exclude)
+        errors = {}
+        for model_class, unique_check in unique_checks:
+            lookup, ok = {}, True
+            for fn in unique_check:
+                val = getattr(self.instance, model_class._meta.get_field(fn).attname)
+                if val is None:
+                    ok = False
+                    break
+                lookup[fn] = val
+            if not ok or len(unique_check) != len(lookup):
+                continue
+            qs = model_class._default_manager.filter(**lookup).exclude(pk__in=skip_pks)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                errors.setdefault(NON_FIELD_ERRORS, []).append(
+                    self.instance.unique_error_message(model_class, unique_check)
+                )
+        if errors:
+            self._update_errors(ValidationError(errors))
+
+
+class ContractProductFormSetBase(BaseInlineFormSet):
+    def full_clean(self):
+        # Before validation runs, find which existing rows are being deleted and
+        # annotate new (extra) form instances so their uniqueness checks can skip them.
+        if self.is_bound:
+            freed_cp_pks = {
+                f.instance.pk
+                for f in self.initial_forms
+                if f.instance.pk and self.data.get(f'{f.prefix}-DELETE')
+            }
+            if freed_cp_pks:
+                for f in self.extra_forms:
+                    f.instance._skip_unique_pks = freed_cp_pks
+        super().full_clean()
+
+
+ContractProductFormSet = inlineformset_factory(
+    Contract,
+    Contract_Product,
+    form=ContractProductForm,
+    formset=ContractProductFormSetBase,
+    extra=1,
+    can_delete=True,
+    min_num=0,
+    validate_min=False,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -283,3 +461,95 @@ class UserForm(forms.Form):
             UserProfile.objects.filter(user=user).delete()
 
         return user
+
+
+# ---------------------------------------------------------------------------
+# Products
+# ---------------------------------------------------------------------------
+
+class ProductForm(forms.ModelForm):
+    class Meta:
+        model  = Product
+        fields = ['code', 'designation', 'status']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['code'].widget.attrs.update({'class': 'form-input', 'autocomplete': 'off'})
+        self.fields['designation'].widget.attrs.update({'class': 'form-input', 'autocomplete': 'off'})
+        self.fields['status'].widget.attrs.update({'class': 'form-input'})
+
+    def clean_code(self):
+        code = (self.cleaned_data.get('code') or '').strip()
+        qs = Product.objects.filter(code=code)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('A product with this code already exists.')
+        return code
+
+
+# ---------------------------------------------------------------------------
+# API Tokens
+# ---------------------------------------------------------------------------
+
+class TokenForm(forms.ModelForm):
+
+    class Meta:
+        model  = APIToken
+        fields = ['name']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].widget.attrs.update({
+            'class': 'form-input',
+            'autocomplete': 'off',
+            'placeholder': 'e.g. Pharmacy SAADA Sync Client',
+        })
+
+
+# ---------------------------------------------------------------------------
+# Configuration — Social Applications
+# ---------------------------------------------------------------------------
+
+class SocialAppForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        provider_choices = [("", "— Select provider —")] + [
+            (pid, pid.title())
+            for pid in sorted(allauth_providers.registry.provider_map.keys())
+        ]
+        self.fields["provider"].widget = forms.Select(choices=provider_choices, attrs={"class": "form-input"})
+        self.fields["name"].widget.attrs.update({"class": "form-input", "placeholder": "e.g. Google"})
+        self.fields["client_id"].widget.attrs.update({"class": "form-input", "placeholder": "OAuth Client ID"})
+        self.fields["secret"].widget.attrs.update({"class": "form-input", "placeholder": "OAuth Client Secret"})
+        self.fields["key"].widget.attrs.update({"class": "form-input", "placeholder": "Optional API key"})
+        self.fields["provider_id"].widget.attrs.update({"class": "form-input", "placeholder": "Optional (leave blank)"})
+        self.fields["sites"].widget.attrs.update({"class": "form-input", "size": "4"})
+        self.fields["sites"].queryset = Site.objects.all()
+        self.fields["secret"].required = False
+
+    class Meta:
+        model  = SocialApp
+        fields = ["provider", "name", "client_id", "secret", "key", "provider_id", "sites"]
+        labels = {
+            "provider_id": "Provider ID",
+            "client_id":   "Client ID",
+        }
+
+
+# ---------------------------------------------------------------------------
+# Configuration — Sites
+# ---------------------------------------------------------------------------
+
+class SiteForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["domain"].widget.attrs.update({"class": "form-input", "placeholder": "e.g. example.com"})
+        self.fields["name"].widget.attrs.update({"class": "form-input", "placeholder": "e.g. FIDPHA"})
+
+    class Meta:
+        model  = Site
+        fields = ["domain", "name"]
+        labels = {"name": "Display Name"}

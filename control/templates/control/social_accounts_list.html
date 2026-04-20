@@ -1,0 +1,143 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Social Accounts{% endblock %}
+{% block page_breadcrumb %}Configuration › Social Accounts{% endblock %}
+{% block nav_social_accounts %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Social Accounts</div>
+        <div class="page-header-sub">OAuth accounts linked to users via django-allauth</div>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="search-bar">
+        <span class="material-icons-round">search</span>
+        <input type="text" id="searchInput" placeholder="Filter by username, provider or email…" oninput="filterRows()">
+    </div>
+</div>
+
+<div class="card" style="padding:0;">
+    <table class="data-table" id="accountsTable">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Provider</th>
+                <th>UID</th>
+                <th>Email (OAuth)</th>
+                <th>Linked</th>
+                <th>Tokens</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sa in accounts %}
+            <tr class="data-row">
+                <td>
+                    <a href="{% url 'control:users_detail' sa.user.pk %}" class="user-link">
+                        <div class="mini-avatar">{{ sa.user.username|first|upper }}</div>
+                        <span>{{ sa.user.username }}</span>
+                    </a>
+                </td>
+                <td>
+                    <span class="provider-badge provider-{{ sa.provider }}">
+                        {% if sa.provider == "google" %}
+                            <span class="material-icons-round" style="font-size:14px;">g_mobiledata</span>
+                        {% else %}
+                            <span class="material-icons-round" style="font-size:14px;">public</span>
+                        {% endif %}
+                        {{ sa.provider|title }}
+                    </span>
+                </td>
+                <td>
+                    <span class="mono-text" title="{{ sa.uid }}">{{ sa.uid|truncatechars:24 }}</span>
+                </td>
+                <td class="text-secondary">
+                    {{ sa.extra_data.email|default:"—" }}
+                </td>
+                <td class="text-secondary" style="white-space:nowrap;">
+                    {{ sa.date_joined|date:"d M Y" }}
+                </td>
+                <td>
+                    {% with token_count=sa.socialtoken_set.count %}
+                    {% if token_count %}
+                        <span class="badge badge-active">{{ token_count }} token{{ token_count|pluralize }}</span>
+                    {% else %}
+                        <span class="text-secondary">—</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    <div class="table-actions">
+                        <a href="{% url 'control:users_detail' sa.user.pk %}" class="action-btn" title="View user">
+                            <span class="material-icons-round">person</span>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align:center; padding:48px; color:var(--text-secondary);">
+                    <span class="material-icons-round" style="font-size:36px; display:block; margin-bottom:10px; opacity:.4;">link_off</span>
+                    No social accounts linked yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function filterRows() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('#accountsTable .data-row').forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
+</script>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .data-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+    .data-table th {
+        padding:10px 16px; text-align:left; font-size:0.72rem; font-weight:700;
+        text-transform:uppercase; letter-spacing:0.4px; color:var(--text-secondary);
+        border-bottom:1px solid var(--card-border); white-space:nowrap;
+    }
+    .data-table td { padding:11px 16px; border-bottom:1px solid var(--card-border); vertical-align:middle; }
+    .data-table tr:last-child td { border-bottom:none; }
+    .data-table tbody tr:hover { background-color:var(--sidebar-hover); }
+
+    .user-link {
+        display:inline-flex; align-items:center; gap:8px;
+        text-decoration:none; color:var(--text-primary); font-weight:600;
+    }
+    .user-link:hover { color:var(--accent); }
+
+    .mini-avatar {
+        width:28px; height:28px; border-radius:50%; flex-shrink:0;
+        background:linear-gradient(135deg, var(--accent), #6366f1);
+        color:white; font-size:0.75rem; font-weight:700;
+        display:flex; align-items:center; justify-content:center;
+    }
+
+    .provider-badge {
+        display:inline-flex; align-items:center; gap:4px;
+        padding:3px 9px; border-radius:20px; font-size:0.78rem; font-weight:600;
+    }
+    .provider-google { background:rgba(66,133,244,0.12); color:#4285f4; }
+    .provider-badge:not(.provider-google) { background:rgba(100,116,139,0.12); color:var(--text-secondary); }
+
+    .mono-text { font-family:monospace; font-size:0.82rem; color:var(--text-secondary); }
+    .text-secondary { color:var(--text-secondary); }
+
+    .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+    .badge-active { background:rgba(34,197,94,0.1); color:#22c55e; }
+</style>
+{% endblock %}

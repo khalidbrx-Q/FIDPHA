@@ -1,0 +1,79 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}New API Token{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:tokens_list' %}" style="color:var(--text-secondary);text-decoration:none;">API Tokens</a>
+    › New Token
+{% endblock %}
+{% block nav_tokens %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">New API Token</div>
+        <div class="page-header-sub">The token value is generated automatically and shown once after creation.</div>
+    </div>
+    <a href="{% url 'control:tokens_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+</div>
+
+<form method="post" id="tokenForm">
+    {% csrf_token %}
+
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">Token Details</div>
+
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Name *</label>
+            {{ form.name }}
+            {% for e in form.name.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            <div class="form-help">
+                A clear label so you know which client uses this token — e.g. "Pharmacy SAADA" or "Oujda Clinic Sync".
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px; background:rgba(14,165,233,0.04); border-color:rgba(14,165,233,0.2);">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span class="material-icons-round" style="color:var(--accent); font-size:20px; flex-shrink:0; margin-top:1px;">info</span>
+            <div style="font-size:0.85rem; color:var(--text-secondary); line-height:1.6;">
+                <strong style="color:var(--text-primary);">The token is shown exactly once.</strong>
+                After you create it, copy and share it with the pharmacy client immediately.
+                If lost, you will need to delete this token and create a new one.
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" id="submitBtn" class="btn btn-primary">
+            <span class="material-icons-round" id="submitIcon">key</span>
+            <span id="submitLabel">Generate Token</span>
+        </button>
+        <a href="{% url 'control:tokens_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<script>
+    document.getElementById('tokenForm').addEventListener('submit', function() {
+        const btn = document.getElementById('submitBtn');
+        if (btn.dataset.locked) return;
+        btn.dataset.locked = '1';
+        btn.disabled = true;
+        document.getElementById('submitIcon').textContent = 'hourglass_empty';
+        document.getElementById('submitLabel').textContent = 'Generating…';
+    });
+</script>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .section-label {
+        font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 14px;
+    }
+</style>
+{% endblock %}

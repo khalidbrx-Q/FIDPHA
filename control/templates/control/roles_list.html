@@ -43,7 +43,14 @@
             <tr class="clickable-row" data-name="{{ role.name|lower }}"
                 data-href="{% url 'control:roles_detail' role.pk %}"
                 onclick="rowNav(this)">
-                <td style="font-weight:600; color:var(--text-primary);">{{ role.name }}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="role-icon-chip">
+                            <span class="material-icons-round">{{ role.profile.icon|default:"badge" }}</span>
+                        </div>
+                        <span style="font-weight:600; color:var(--text-primary);">{{ role.name }}</span>
+                    </div>
+                </td>
                 <td>
                     <span class="badge badge-neutral">{{ role.perm_count }} permission{{ role.perm_count|pluralize }}</span>
                 </td>
@@ -112,6 +119,12 @@
     .data-table tbody tr.clickable-row { cursor: pointer; }
     .data-table tbody tr:hover td { background-color: rgba(14,165,233,0.07); }
     .toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+    .role-icon-chip {
+        width:32px; height:32px; border-radius:8px; flex-shrink:0;
+        background:rgba(14,165,233,0.1); color:var(--accent);
+        display:flex; align-items:center; justify-content:center;
+    }
+    .role-icon-chip .material-icons-round { font-size:18px; }
 
     .badge {
         display: inline-flex;

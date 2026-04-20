@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-84==t^=mjl&51p8p)x)w%+=j=vd4=548f4q!c2snwih0a%qsnj"
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*', 'khalidbrx.pythonanywhere.com']
 
@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "api",
     "control.apps.ControlConfig",
+    "sales",
 ]
 
 MIDDLEWARE = [

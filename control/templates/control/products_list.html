@@ -1,0 +1,191 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Products{% endblock %}
+{% block page_breadcrumb %}Products{% endblock %}
+{% block nav_products %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Products</div>
+        <div class="page-header-sub">{{ products|length }} product{{ products|length|pluralize }}</div>
+    </div>
+    <a href="{% url 'control:products_create' %}" class="btn btn-primary">
+        <span class="material-icons-round">add</span> New Product
+    </a>
+</div>
+
+<!-- Toolbar -->
+<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+    <div class="search-bar" style="flex:1; min-width:200px; max-width:400px;">
+        <span class="material-icons-round">search</span>
+        <input type="text" id="prodSearch" placeholder="Search by code or designation…"
+               oninput="applyFilters()" autocomplete="off">
+    </div>
+    <div style="display:flex; gap:6px; align-items:center;">
+        <span class="filter-group-label">Status:</span>
+        <div class="filter-pills">
+            <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
+            <button class="filter-pill" onclick="setFilter('active',this)">Active</button>
+            <button class="filter-pill" onclick="setFilter('inactive',this)">Inactive</button>
+        </div>
+    </div>
+    <span id="prodCount" style="font-size:0.82rem; color:var(--text-secondary);"></span>
+    <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear</button>
+</div>
+
+<div class="card" style="padding:0; overflow:hidden;">
+    {% if products %}
+    <div class="table-scroll-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Designation</th>
+                    <th>Status</th>
+                    <th>Contracts</th>
+                    <th style="width:96px;"></th>
+                </tr>
+            </thead>
+            <tbody id="prodTableBody">
+                {% for p in products %}
+                <tr data-search="{{ p.code|lower }} {{ p.designation|lower }}"
+                    data-status="{{ p.status }}"
+                    onclick="window.location='{% url 'control:products_detail' p.pk %}'"
+                    style="cursor:pointer;">
+                    <td><span class="code-chip">{{ p.code }}</span></td>
+                    <td style="font-weight:600; color:var(--text-primary);">{{ p.designation }}</td>
+                    <td>
+                        {% if p.status == "active" %}
+                            <span class="badge badge-active">Active</span>
+                        {% else %}
+                            <span class="badge badge-inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.contract_count %}
+                            <span class="badge badge-neutral">{{ p.contract_count }} contract{{ p.contract_count|pluralize }}</span>
+                        {% else %}
+                            <span class="dim-dash">—</span>
+                        {% endif %}
+                    </td>
+                    <td onclick="event.stopPropagation()">
+                        <div class="table-actions">
+                            <a href="{% url 'control:products_create' %}?clone={{ p.pk }}" class="action-btn" title="Clone">
+                                <span class="material-icons-round">content_copy</span>
+                            </a>
+                            <a href="{% url 'control:products_edit' p.pk %}" class="action-btn" title="Edit">
+                                <span class="material-icons-round">edit</span>
+                            </a>
+                            <a href="{% url 'control:products_delete' p.pk %}" class="action-btn action-delete" title="Delete">
+                                <span class="material-icons-round">delete</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="noProdResults" style="display:none; text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem;">
+        No products match your filters.
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:48px 24px;">
+        <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">medication_liquid</span>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No products yet</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Add products to link them to pharmacy contracts.</div>
+        <a href="{% url 'control:products_create' %}" class="btn btn-primary" style="display:inline-flex;">
+            <span class="material-icons-round">add</span> New Product
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .table-scroll-wrapper {
+        max-height: 640px; overflow-y: auto;
+        scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
+    }
+    .table-scroll-wrapper::-webkit-scrollbar { width: 5px; }
+    .table-scroll-wrapper::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table thead th {
+        position:sticky; top:0; z-index:1; background:var(--card-bg);
+        text-align:left; font-size:0.75rem; font-weight:600;
+        color:var(--text-secondary); text-transform:uppercase;
+        letter-spacing:0.4px; padding:10px 12px;
+        border-bottom:1px solid var(--card-border);
+    }
+    .data-table td { padding:11px 12px; font-size:0.87rem; color:var(--text-secondary); border-bottom:1px solid var(--card-border); }
+    .data-table tbody tr:last-child td { border-bottom:none; }
+    .data-table tbody tr:hover td { background-color:rgba(14,165,233,0.07); }
+
+    .code-chip { font-family:monospace; font-size:0.82rem; color:var(--text-secondary); }
+    .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+    .badge-active  { background:rgba(34,197,94,0.1); color:#22c55e; }
+    .badge-inactive{ background:rgba(239,68,68,0.1); color:#ef4444; }
+    .badge-neutral { background:var(--sidebar-hover); color:var(--text-secondary); }
+    .dim-dash { color:var(--text-secondary); font-size:0.82rem; }
+
+    .filter-group-label { font-size:0.78rem; font-weight:600; color:var(--text-secondary); white-space:nowrap; }
+    .filter-pills { display:flex; gap:4px; }
+    .filter-pill {
+        padding:4px 12px; border-radius:20px; font-size:0.78rem; font-weight:600;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
+    }
+    .filter-pill:hover  { border-color:var(--accent); color:var(--accent); }
+    .filter-pill.active { background:var(--accent); border-color:var(--accent); color:white; }
+    .reset-btn {
+        padding:4px 12px; border-radius:20px; font-size:0.78rem; font-weight:600;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
+    }
+    .reset-btn:hover { border-color:#ef4444; color:#ef4444; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    let fStatus = 'all';
+
+    function setFilter(value, btn) {
+        fStatus = value;
+        btn.closest('.filter-pills').querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const q     = document.getElementById('prodSearch').value.toLowerCase().trim();
+        const rows  = document.querySelectorAll('#prodTableBody tr');
+        let visible = 0;
+        rows.forEach(row => {
+            const show = (!q || (row.dataset.search || '').includes(q))
+                      && (fStatus === 'all' || row.dataset.status === fStatus);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const isFiltered = q || fStatus !== 'all';
+        document.getElementById('noProdResults').style.display = (isFiltered && visible === 0) ? 'block' : 'none';
+        document.getElementById('prodCount').textContent = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : '';
+        document.getElementById('resetBtn').style.display = isFiltered ? 'inline-block' : 'none';
+    }
+
+    function resetAll() {
+        document.getElementById('prodSearch').value = '';
+        fStatus = 'all';
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        document.querySelector('.filter-pill').classList.add('active');
+        applyFilters();
+    }
+</script>
+{% endblock %}

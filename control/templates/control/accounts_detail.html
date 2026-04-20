@@ -100,6 +100,9 @@
                     <span class="meta-sep">·</span>
                     <span class="material-icons-round meta-icon">medication</span>
                     {{ active_contract.product_count }} product{{ active_contract.product_count|pluralize }}
+                    <span class="meta-sep">·</span>
+                    <span class="material-icons-round meta-icon">sync</span>
+                    {% if active_contract.last_sync_at %}{{ active_contract.last_sync_at|date:"d M Y" }}{% else %}<span style="opacity:0.5;">not synced</span>{% endif %}
                 </div>
             </div>
             <span class="badge badge-active">Active</span>
@@ -133,6 +136,9 @@
                         <span class="meta-sep">·</span>
                         <span class="material-icons-round meta-icon">medication</span>
                         {{ c.product_count }} product{{ c.product_count|pluralize }}
+                        <span class="meta-sep">·</span>
+                        <span class="material-icons-round meta-icon">sync</span>
+                        {% if c.last_sync_at %}{{ c.last_sync_at|date:"d M Y" }}{% else %}<span style="opacity:0.5;">not synced</span>{% endif %}
                     </div>
                 </div>
                 <span class="badge badge-inactive">Inactive</span>
@@ -197,13 +203,13 @@
                         <span class="meta-sep">·</span>
                     {% endif %}
                     {% if p.email_verified %}
-                        <span class="verified-yes"><span class="material-icons-round meta-icon">verified</span>Verified</span>
+                        <span class="verified-yes"><span class="material-icons-round meta-icon">verified</span>Email verified</span>
                     {% else %}
-                        <span class="verified-no"><span class="material-icons-round meta-icon">cancel</span>Not verified</span>
+                        <span class="verified-no"><span class="material-icons-round meta-icon">cancel</span>Email not verified</span>
                     {% endif %}
                     {% if p.user.last_login %}
                         <span class="meta-sep">·</span>
-                        <span class="material-icons-round meta-icon">login</span>{{ p.user.last_login|date:"d M Y" }}
+                        <span class="material-icons-round meta-icon">login</span>Last login {{ p.user.last_login|date:"d M Y" }}
                     {% endif %}
                 </div>
             </div>
@@ -225,6 +231,33 @@
         No portal users linked to this account.
     </div>
     {% endif %}
+</div>
+
+<!-- Traceability -->
+<div class="card" style="margin-top:16px;">
+    <div class="section-label">Traceability</div>
+    <div class="info-row">
+        <span class="info-key">Created</span>
+        <span class="info-val">
+            {{ account.created_at|date:"d M Y, H:i" }}
+            {% if account.created_by %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ account.created_by.get_full_name|default:account.created_by.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="info-row" style="border-bottom:none;">
+        <span class="info-key">Last Modified</span>
+        <span class="info-val">
+            {{ account.modified_at|date:"d M Y, H:i" }}
+            {% if account.modified_by %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ account.modified_by.get_full_name|default:account.modified_by.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
 </div>
 
 {% endblock %}

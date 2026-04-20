@@ -10,3 +10,13 @@ staticfiles/
 .env
 robot_test.py
 test_log.txt
+
+# Generated reports / diagrams
+sales_flow.html
+sales_flow.pdf
+sales_schema.html
+sales_schema.pdf
+test_coverage.html
+test_coverage.pdf
+test_coverage_internal.html
+test_coverage_internal.pdf

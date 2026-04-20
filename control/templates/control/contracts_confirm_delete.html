@@ -1,0 +1,88 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Delete Contract{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:contracts_list' %}" style="color:var(--text-secondary);text-decoration:none;">Contracts</a>
+    › <a href="{% url 'control:contracts_detail' contract.pk %}" style="color:var(--text-secondary);text-decoration:none;">{{ contract.title }}</a>
+    › Delete
+{% endblock %}
+{% block nav_contracts %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Delete Contract</div>
+        <div class="page-header-sub">This action cannot be undone</div>
+    </div>
+    <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+</div>
+
+<div class="card" style="max-width:560px;">
+    <div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:20px;">
+        <span class="material-icons-round" style="font-size:36px; color:{% if has_sales %}#ef4444{% else %}#f59e0b{% endif %}; flex-shrink:0; margin-top:2px;">
+            {% if has_sales %}block{% else %}warning{% endif %}
+        </span>
+        <div style="flex:1;">
+            <div style="font-size:1rem; font-weight:600; color:var(--text-primary); margin-bottom:10px;">
+                {% if has_sales %}
+                    Cannot delete "{{ contract.title }}"
+                {% else %}
+                    Delete "{{ contract.title }}"?
+                {% endif %}
+            </div>
+
+            {% if has_sales %}
+            <!-- Blocked: sales records exist -->
+            <div class="alert alert-error" style="margin-bottom:12px;">
+                <span class="material-icons-round" style="font-size:18px;">error_outline</span>
+                This contract has <strong>{{ sale_count }} sale record{{ sale_count|pluralize }}</strong> linked to it.
+                Deleting it would destroy pharmacy sales history, which is not allowed.
+            </div>
+            <div style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:4px;">
+                To delete this contract you must first remove all associated sales data.
+                Contact your database administrator if this is required.
+            </div>
+
+            {% else %}
+            <!-- Safe to delete -->
+            {% if product_count %}
+            <div style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:6px;">
+                · <strong>{{ product_count }} product link{{ product_count|pluralize }}</strong> will be permanently removed.
+            </div>
+            {% endif %}
+
+            {% if not product_count %}
+            <div style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:6px;">
+                This contract has no linked products or sales records.
+            </div>
+            {% endif %}
+
+            <div style="font-size:0.87rem; color:var(--text-secondary); margin-top:10px;">
+                The contract record will be permanently removed. This cannot be undone.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            {% if has_sales %}
+            <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-primary">
+                <span class="material-icons-round">arrow_back</span> Go back
+            </a>
+            {% else %}
+            <button type="submit" class="btn btn-danger">
+                <span class="material-icons-round">delete</span>
+                Yes, delete contract
+            </button>
+            <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-secondary">Cancel</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+{% endblock %}

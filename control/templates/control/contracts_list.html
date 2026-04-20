@@ -1,0 +1,254 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Contracts{% endblock %}
+{% block page_breadcrumb %}Contracts{% endblock %}
+{% block nav_contracts %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Contracts</div>
+        <div class="page-header-sub">{{ contracts|length }} contract{{ contracts|length|pluralize }}</div>
+    </div>
+    <a href="{% url 'control:contracts_create' %}" class="btn btn-primary">
+        <span class="material-icons-round">add</span> New Contract
+    </a>
+</div>
+
+<!-- Toolbar -->
+<div style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <div class="search-bar" style="flex:2; min-width:200px; max-width:380px;">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="ctSearch" placeholder="Search by title or account…"
+                   oninput="applyFilters()" autocomplete="off">
+        </div>
+        <div class="search-bar" style="flex:1; min-width:140px; max-width:220px;">
+            <span class="material-icons-round">location_on</span>
+            <input type="text" id="ctCity" placeholder="Filter by city…"
+                   oninput="applyFilters()" autocomplete="off">
+        </div>
+    </div>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+        <div style="display:flex; gap:6px; align-items:center;">
+            <span class="filter-group-label">Status:</span>
+            <div class="filter-pills">
+                <button class="filter-pill active" onclick="setFilter('status','all',this)">All</button>
+                <button class="filter-pill" onclick="setFilter('status','active',this)">Active</button>
+                <button class="filter-pill" onclick="setFilter('status','inactive',this)">Inactive</button>
+            </div>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <span class="filter-group-label">Synced:</span>
+            <div class="filter-pills">
+                <button class="filter-pill active" onclick="setFilter('synced','all',this)">All</button>
+                <button class="filter-pill" onclick="setFilter('synced','yes',this)">Synced</button>
+                <button class="filter-pill" onclick="setFilter('synced','no',this)">Never synced</button>
+            </div>
+        </div>
+        <span id="ctCount" style="font-size:0.82rem; color:var(--text-secondary);"></span>
+        <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear filters</button>
+    </div>
+</div>
+
+<div class="card" style="padding:0; overflow:hidden;">
+    {% if contracts %}
+    <div class="table-scroll-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Account · City</th>
+                    <th>Period</th>
+                    <th>Status</th>
+                    <th>Products</th>
+                    <th>Last Sync</th>
+                    <th style="width:108px;"></th>
+                </tr>
+            </thead>
+            <tbody id="ctTableBody">
+                {% for ct in contracts %}
+                <tr class="clickable-row"
+                    data-href="{% url 'control:contracts_detail' ct.pk %}"
+                    onclick="rowNav(this)"
+                    data-search="{{ ct.title|lower }} {{ ct.account.name|lower }} {{ ct.account.code|lower }}"
+                    data-city="{{ ct.account.city|lower }}"
+                    data-status="{{ ct.status }}"
+                    data-synced="{% if ct.last_sync_at %}yes{% else %}no{% endif %}">
+                    <td style="font-weight:600; color:var(--text-primary);">{{ ct.title }}</td>
+                    <td>
+                        <a href="{% url 'control:accounts_detail' ct.account.pk %}"
+                           onclick="event.stopPropagation()"
+                           style="color:var(--accent); text-decoration:none; font-weight:500;">
+                            {{ ct.account.name }}
+                        </a>
+                        <span class="city-tag">{{ ct.account.city }}</span>
+                    </td>
+                    <td style="white-space:nowrap; font-size:0.82rem;">
+                        {{ ct.start_date|date:"d M Y" }} → {{ ct.end_date|date:"d M Y" }}
+                        {% if ct.duration %}
+                        <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:2px; opacity:0.75;">
+                            {{ ct.duration }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if ct.status == "active" %}
+                            <span class="badge badge-active">Active</span>
+                        {% else %}
+                            <span class="badge badge-inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if ct.product_count %}
+                            <span class="badge badge-neutral">{{ ct.product_count }}</span>
+                        {% else %}
+                            <span class="dim-dash">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:0.82rem;">
+                        {% if ct.last_sync_at %}
+                            <span style="color:#22c55e;">{{ ct.last_sync_at|date:"d M Y H:i" }}</span>
+                        {% else %}
+                            <span class="dim-dash">Never</span>
+                        {% endif %}
+                    </td>
+                    <td onclick="event.stopPropagation()">
+                        <div class="table-actions">
+                            <a href="{% url 'control:contracts_create' %}?clone={{ ct.pk }}"
+                               class="action-btn" title="Clone">
+                                <span class="material-icons-round">content_copy</span>
+                            </a>
+                            <a href="{% url 'control:contracts_edit' ct.pk %}"
+                               class="action-btn" title="Edit">
+                                <span class="material-icons-round">edit</span>
+                            </a>
+                            <a href="{% url 'control:contracts_delete' ct.pk %}"
+                               class="action-btn action-delete" title="Delete">
+                                <span class="material-icons-round">delete</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="noCtResults" style="display:none; text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem;">
+        No contracts match your filters.
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:48px 24px;">
+        <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">description_off</span>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No contracts yet</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Create a contract to link products to a pharmacy account.</div>
+        <a href="{% url 'control:contracts_create' %}" class="btn btn-primary" style="display:inline-flex;">
+            <span class="material-icons-round">add</span> New Contract
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    /* Scrollable table container — toolbar stays fixed, only rows scroll */
+    .table-scroll-wrapper {
+        max-height: 620px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--card-border) transparent;
+    }
+    .table-scroll-wrapper::-webkit-scrollbar { width: 5px; }
+    .table-scroll-wrapper::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table thead th {
+        position: sticky; top: 0; z-index: 1;
+        background: var(--card-bg);
+        text-align:left; font-size:0.75rem; font-weight:600;
+        color:var(--text-secondary); text-transform:uppercase;
+        letter-spacing:0.4px; padding:10px 12px;
+        border-bottom:1px solid var(--card-border);
+    }
+    .data-table td { padding:11px 12px; font-size:0.87rem; color:var(--text-secondary); border-bottom:1px solid var(--card-border); }
+    .data-table tbody tr:last-child td { border-bottom:none; }
+    .data-table tbody tr.clickable-row { cursor:pointer; }
+    .data-table tbody tr:hover td { background-color:rgba(14,165,233,0.07); }
+
+    .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; }
+    .badge-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .badge-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
+    .badge-neutral  { background:var(--sidebar-hover); color:var(--text-secondary); }
+    .dim-dash       { color:var(--text-secondary); font-size:0.82rem; }
+    .city-tag {
+        display:inline-block; font-size:0.72rem; color:var(--text-secondary);
+        margin-left:6px; opacity:0.7;
+    }
+
+    .filter-group-label { font-size:0.78rem; font-weight:600; color:var(--text-secondary); white-space:nowrap; }
+    .filter-pills { display:flex; gap:4px; flex-wrap:wrap; }
+    .filter-pill {
+        padding:4px 12px; border-radius:20px; font-size:0.78rem; font-weight:600;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
+    }
+    .filter-pill:hover  { border-color:var(--accent); color:var(--accent); }
+    .filter-pill.active { background:var(--accent); border-color:var(--accent); color:white; }
+    .reset-btn {
+        padding:4px 12px; border-radius:20px; font-size:0.78rem; font-weight:600;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
+    }
+    .reset-btn:hover { border-color:#ef4444; color:#ef4444; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    let fStatus = 'all', fSynced = 'all';
+
+    function rowNav(row) { window.location = row.dataset.href; }
+
+    function setFilter(type, value, btn) {
+        const group = btn.closest('.filter-pills');
+        group.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (type === 'status') fStatus = value;
+        else                   fSynced = value;
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const q      = document.getElementById('ctSearch').value.toLowerCase().trim();
+        const cityQ  = document.getElementById('ctCity').value.toLowerCase().trim();
+        const rows   = document.querySelectorAll('#ctTableBody tr');
+        let visible  = 0;
+        rows.forEach(row => {
+            const show = (!q     || (row.dataset.search || '').includes(q))
+                      && (!cityQ || (row.dataset.city   || '').includes(cityQ))
+                      && (fStatus === 'all' || row.dataset.status === fStatus)
+                      && (fSynced === 'all' || row.dataset.synced === fSynced);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const isFiltered = q || cityQ || fStatus !== 'all' || fSynced !== 'all';
+        document.getElementById('noCtResults').style.display = (isFiltered && visible === 0) ? 'block' : 'none';
+        document.getElementById('ctCount').textContent       = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : '';
+        document.getElementById('resetBtn').style.display    = isFiltered ? 'inline-block' : 'none';
+    }
+
+    function resetAll() {
+        document.getElementById('ctSearch').value = '';
+        document.getElementById('ctCity').value   = '';
+        fStatus = 'all'; fSynced = 'all';
+        document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.filter-pills').forEach(g => g.querySelector('.filter-pill').classList.add('active'));
+        applyFilters();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,285 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}{{ product.designation }}{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:products_list' %}" style="color:var(--text-secondary);text-decoration:none;">Products</a>
+    › {{ product.designation }}
+{% endblock %}
+{% block nav_products %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div style="display:flex; align-items:center; gap:14px;">
+        <div class="prod-avatar">
+            <span class="material-icons-round" style="font-size:22px;">medication</span>
+        </div>
+        <div>
+            <div class="page-header-title">
+                {{ product.designation }}
+                {% if product.status == "active" %}
+                    <span class="status-badge status-active">Active</span>
+                {% else %}
+                    <span class="status-badge status-inactive">Inactive</span>
+                {% endif %}
+            </div>
+            <div class="page-header-sub">{{ product.code }}</div>
+        </div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a href="{% url 'control:products_list' %}" class="btn btn-secondary">
+            <span class="material-icons-round">arrow_back</span> Back
+        </a>
+        <a href="{% url 'control:products_create' %}?clone={{ product.pk }}" class="btn btn-secondary">
+            <span class="material-icons-round">content_copy</span> Clone
+        </a>
+        <a href="{% url 'control:products_edit' product.pk %}" class="btn btn-primary">
+            <span class="material-icons-round">edit</span> Edit
+        </a>
+        <a href="{% url 'control:products_delete' product.pk %}" class="btn btn-danger">
+            <span class="material-icons-round">delete</span> Delete
+        </a>
+    </div>
+</div>
+
+<!-- Product Info -->
+<div class="card" style="margin-bottom:16px;">
+    <div class="section-label">Product Information</div>
+    <div class="info-row">
+        <span class="info-key">Code</span>
+        <span class="info-val"><span style="font-family:monospace; font-size:0.88rem;">{{ product.code }}</span></span>
+    </div>
+    <div class="info-row">
+        <span class="info-key">Designation</span>
+        <span class="info-val" style="font-weight:600; color:var(--text-primary);">{{ product.designation }}</span>
+    </div>
+    <div class="info-row" style="border-bottom:none;">
+        <span class="info-key">Status</span>
+        <span class="info-val">
+            {% if product.status == "active" %}
+                <span class="badge badge-active">Active</span>
+            {% else %}
+                <span class="badge badge-inactive">Inactive</span>
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+<!-- Contracts using this product -->
+<div class="card" style="padding:0; overflow:hidden;">
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 16px 0; flex-wrap:wrap; gap:8px;">
+        <div class="section-label" style="margin-bottom:0;">Linked Contracts</div>
+        <span class="count-chip" id="cpCount">{{ contract_products|length }}</span>
+    </div>
+
+    {% if contract_products %}
+    <!-- Toolbar -->
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:12px 16px 0;">
+        <div class="search-bar" style="flex:1; min-width:180px; max-width:360px;">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="cpSearch"
+                   placeholder="Search contract, account, ext. designation…"
+                   oninput="applyFilters()" autocomplete="off">
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+            <span class="filter-group-label">Status:</span>
+            <div class="filter-pills">
+                <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
+                <button class="filter-pill" onclick="setFilter('active',this)">Active</button>
+                <button class="filter-pill" onclick="setFilter('inactive',this)">Inactive</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top:12px; max-height:480px; overflow-y:auto;
+                scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Contract</th>
+                    <th>Account</th>
+                    <th>Ext. Designation</th>
+                    <th>Period</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="cpTableBody">
+                {% for cp in contract_products %}
+                <tr onclick="window.location='{% url 'control:contracts_detail' cp.contract.pk %}'"
+                    style="cursor:pointer;"
+                    data-search="{{ cp.contract.title|lower }} {{ cp.contract.account.name|lower }} {{ cp.external_designation|lower }}"
+                    data-status="{{ cp.contract.status }}">
+                    <td>
+                        <div style="font-weight:600; color:var(--text-primary);">{{ cp.contract.title }}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight:500; color:var(--text-primary);">{{ cp.contract.account.name }}</div>
+                        <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:1px;">
+                            <span style="font-family:monospace;">{{ cp.contract.account.code }}</span> · {{ cp.contract.account.city }}
+                        </div>
+                    </td>
+                    <td style="font-size:0.85rem;">
+                        {% if cp.external_designation %}{{ cp.external_designation }}
+                        {% else %}<span style="color:var(--text-secondary);">—</span>{% endif %}
+                    </td>
+                    <td style="font-size:0.82rem;">
+                        {% if cp.contract.start_date %}
+                            {{ cp.contract.start_date|date:"d M Y" }}
+                            {% if cp.contract.end_date %} → {{ cp.contract.end_date|date:"d M Y" }}{% endif %}
+                            {% if cp.contract.duration %}
+                            <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:2px; opacity:0.75;">{{ cp.contract.duration }}</div>
+                            {% endif %}
+                        {% else %}<span style="color:var(--text-secondary);">—</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if cp.contract.status == "active" %}
+                            <span class="badge badge-active">Active</span>
+                        {% else %}
+                            <span class="badge badge-inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div id="cpNoResults" style="display:none; text-align:center; padding:28px; color:var(--text-secondary); font-size:0.85rem;">
+            No contracts match your search.
+        </div>
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:36px 24px;">
+        <span class="material-icons-round" style="font-size:36px; color:var(--text-secondary); display:block; margin-bottom:10px;">assignment_late</span>
+        <div style="font-size:0.88rem; color:var(--text-secondary);">This product is not linked to any contract yet.</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Traceability -->
+<div class="card" style="margin-top:16px;">
+    <div class="section-label">Traceability</div>
+    <div class="info-row">
+        <span class="info-key">Created</span>
+        <span class="info-val">
+            {{ product.created_at|date:"d M Y, H:i" }}
+            {% if product.created_by %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ product.created_by.get_full_name|default:product.created_by.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="info-row" style="border-bottom:none;">
+        <span class="info-key">Last Modified</span>
+        <span class="info-val">
+            {{ product.modified_at|date:"d M Y, H:i" }}
+            {% if product.modified_by %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ product.modified_by.get_full_name|default:product.modified_by.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .prod-avatar {
+        width: 44px; height: 44px; border-radius: 12px;
+        background: rgba(14,165,233,0.12); display: flex;
+        align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0;
+    }
+    .status-badge {
+        display: inline-flex; align-items: center; padding: 2px 8px;
+        border-radius: 20px; font-size: 0.72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.3px; margin-left: 8px; vertical-align: middle;
+    }
+    .status-active   { background: rgba(34,197,94,0.1);  color: #22c55e; }
+    .status-inactive { background: rgba(239,68,68,0.1);  color: #ef4444; }
+
+    .section-label {
+        font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 14px;
+    }
+    .info-row {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        padding: 10px 0; border-bottom: 1px solid var(--card-border);
+    }
+    .info-key { font-size: 0.82rem; color: var(--text-secondary); font-weight: 500; }
+    .info-val { font-size: 0.87rem; color: var(--text-primary); text-align: right; }
+
+    .count-chip {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 22px; height: 22px; padding: 0 7px;
+        background: var(--sidebar-hover); color: var(--text-secondary);
+        border-radius: 20px; font-size: 0.75rem; font-weight: 700;
+    }
+
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table thead th {
+        text-align: left; font-size: 0.75rem; font-weight: 600;
+        color: var(--text-secondary); text-transform: uppercase;
+        letter-spacing: 0.4px; padding: 10px 16px;
+        border-bottom: 1px solid var(--card-border);
+    }
+    .data-table td { padding: 12px 16px; font-size: 0.87rem; color: var(--text-secondary); border-bottom: 1px solid var(--card-border); }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover td { background-color: rgba(14,165,233,0.05); }
+
+    .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-active  { background: rgba(34,197,94,0.1);  color: #22c55e; }
+    .badge-inactive{ background: rgba(239,68,68,0.1);  color: #ef4444; }
+
+    .data-table thead th { position: sticky; top: 0; z-index: 1; background: var(--card-bg); }
+
+    .search-bar {
+        display: flex; align-items: center; gap: 8px;
+        background: var(--content-bg); border: 1px solid var(--card-border);
+        border-radius: 8px; padding: 6px 10px;
+    }
+    .search-bar .material-icons-round { font-size: 16px; color: var(--text-secondary); flex-shrink: 0; }
+    .search-bar input { border: none; background: transparent; outline: none; width: 100%; font-size: 0.85rem; font-family: 'Inter', sans-serif; color: var(--text-primary); }
+    .search-bar input::placeholder { color: var(--text-secondary); }
+
+    .filter-group-label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+    .filter-pills { display: flex; gap: 4px; }
+    .filter-pill {
+        padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+        border: 1px solid var(--card-border); background: transparent;
+        color: var(--text-secondary); cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s;
+    }
+    .filter-pill:hover  { border-color: var(--accent); color: var(--accent); }
+    .filter-pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    let fStatus = 'all';
+
+    function setFilter(value, btn) {
+        fStatus = value;
+        btn.closest('.filter-pills').querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const q    = document.getElementById('cpSearch').value.toLowerCase().trim();
+        const rows = document.querySelectorAll('#cpTableBody tr');
+        let visible = 0;
+        rows.forEach(row => {
+            const show = (!q || (row.dataset.search || '').includes(q))
+                      && (fStatus === 'all' || row.dataset.status === fStatus);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        document.getElementById('cpNoResults').style.display =
+            (visible === 0 && (q || fStatus !== 'all')) ? 'block' : 'none';
+        document.getElementById('cpCount').textContent = visible;
+    }
+</script>
+{% endblock %}

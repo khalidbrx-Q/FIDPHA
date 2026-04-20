@@ -1,9 +1,20 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+:root {
+    --content-bg:   #0f172a;
+    --card-bg:      #1e293b;
+    --card-border:  #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --sidebar-hover: #1e293b;
+    --accent: #1b679b;
+    --accent-hover: #155a8a;
+}
+
 body {
     font-family: 'Inter', sans-serif;
-    background-color: #0f172a;
-    color: #f1f5f9;
+    background-color: var(--content-bg);
+    color: var(--text-primary);
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -24,7 +35,7 @@ body {
 .login-brand-icon {
     width: 52px;
     height: 52px;
-    background-color: #1b679b;
+    background-color: var(--accent);
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -40,18 +51,18 @@ body {
 .login-brand-title {
     font-size: 1.4rem;
     font-weight: 700;
-    color: #f1f5f9;
+    color: var(--text-primary);
 }
 
 .login-brand-sub {
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: var(--text-secondary);
     margin-top: 4px;
 }
 
 .login-card {
-    background-color: #1e293b;
-    border: 1px solid #334155;
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: 16px;
     padding: 32px;
 }
@@ -64,7 +75,7 @@ body {
     display: block;
     font-size: 0.82rem;
     font-weight: 500;
-    color: #94a3b8;
+    color: var(--text-secondary);
     margin-bottom: 8px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -79,17 +90,17 @@ body {
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #475569;
+    color: var(--text-secondary);
     font-size: 18px;
 }
 
 .form-input {
     width: 100%;
     padding: 11px 12px 11px 40px;
-    background-color: #0f172a;
-    border: 1px solid #334155;
+    background-color: var(--content-bg);
+    border: 1px solid var(--card-border);
     border-radius: 8px;
-    color: #f1f5f9;
+    color: var(--text-primary);
     font-size: 0.92rem;
     font-family: 'Inter', sans-serif;
     transition: border-color 0.2s;
@@ -97,18 +108,18 @@ body {
 
 .form-input:focus {
     outline: none;
-    border-color: #1b679b;
+    border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(27, 103, 155, 0.2);
 }
 
 .form-input::placeholder {
-    color: #475569;
+    color: var(--text-secondary);
 }
 
 .login-btn {
     width: 100%;
     padding: 12px;
-    background-color: #1b679b;
+    background-color: var(--accent);
     color: white;
     border: none;
     border-radius: 8px;
@@ -125,7 +136,7 @@ body {
 }
 
 .login-btn:hover {
-    background-color: #155a8a;
+    background-color: var(--accent-hover);
 }
 
 .messages {
@@ -150,17 +161,32 @@ body {
     text-align: center;
     margin-top: 24px;
     font-size: 0.78rem;
-    color: #475569;
+    color: var(--text-secondary);
 }
 
+.login-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+}
+.login-divider-line {
+    flex: 1;
+    height: 1px;
+    background-color: var(--card-border);
+}
+.login-divider-text {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
 
 .google-btn {
     width: 100%;
     padding: 12px;
     background-color: transparent;
-    border: 1px solid #334155;
+    border: 1px solid var(--card-border);
     border-radius: 8px;
-    color: #f1f5f9;
+    color: var(--text-primary);
     font-size: 0.92rem;
     font-weight: 500;
     font-family: 'Inter', sans-serif;
@@ -176,7 +202,58 @@ body {
 }
 
 .google-btn:hover {
-    background-color: #1e293b;
-    border-color: #475569;
-    color: #f1f5f9;
+    background-color: var(--sidebar-hover);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
 }
+
+/* Theme toggle — inside card footer */
+.theme-toggle-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--card-border);
+}
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.theme-toggle:hover {
+    background-color: var(--sidebar-hover);
+    color: var(--text-primary);
+}
+.theme-toggle .material-icons-round { font-size: 16px; }
+
+/* Back link */
+.back-link {
+    display: block;
+    text-align: center;
+    margin-top: 16px;
+    font-size: 0.82rem;
+    color: var(--accent);
+    text-decoration: none;
+}
+.back-link:hover { text-decoration: underline; }
+
+/* Forgot password link */
+.forgot-link {
+    display: block;
+    text-align: center;
+    margin-top: 16px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+.forgot-link:hover { color: var(--text-primary); }

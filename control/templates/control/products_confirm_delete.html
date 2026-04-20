@@ -1,0 +1,65 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Delete Product{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:products_list' %}" style="color:var(--text-secondary);text-decoration:none;">Products</a>
+    › Delete
+{% endblock %}
+{% block nav_products %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Delete Product</div>
+        <div class="page-header-sub">This action cannot be undone.</div>
+    </div>
+    <a href="{% url 'control:products_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+</div>
+
+<div class="card">
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:20px;">
+        <span class="material-icons-round" style="font-size:36px; color:#ef4444;">delete_forever</span>
+        <div>
+            <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">{{ product.designation }}</div>
+            <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:2px;">
+                Code: <span style="font-family:monospace;">{{ product.code }}</span>
+                · Status:
+                {% if product.status == "active" %}<span style="color:#22c55e;">Active</span>
+                {% else %}<span style="color:#ef4444;">Inactive</span>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if active_contract_count %}
+    <div class="alert alert-error" style="margin-bottom:16px;">
+        <span class="material-icons-round" style="font-size:18px;">warning</span>
+        This product is linked to <strong>{{ active_contract_count }} active contract{{ active_contract_count|pluralize }}</strong>.
+        Deleting it will remove those links and may affect sales records.
+    </div>
+    {% elif contract_count %}
+    <div class="alert alert-warning" style="margin-bottom:16px;">
+        <span class="material-icons-round" style="font-size:18px;">info</span>
+        This product is referenced by <strong>{{ contract_count }} contract{{ contract_count|pluralize }}</strong> (all inactive).
+        Those links will be removed.
+    </div>
+    {% endif %}
+
+    <p style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:24px;">
+        Are you sure you want to permanently delete <strong style="color:var(--text-primary);">{{ product.designation }}</strong>?
+    </p>
+
+    <div style="display:flex; gap:10px;">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <span class="material-icons-round">delete_forever</span> Yes, delete product
+            </button>
+        </form>
+        <a href="{% url 'control:products_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</div>
+
+{% endblock %}

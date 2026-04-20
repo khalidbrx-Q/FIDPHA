@@ -1,0 +1,100 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Social Applications{% endblock %}
+{% block page_breadcrumb %}Configuration › Social Applications{% endblock %}
+{% block nav_social_apps %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">Social Applications</div>
+        <div class="page-header-sub">OAuth providers used for social login (e.g. Google)</div>
+    </div>
+    <a href="{% url 'control:social_apps_create' %}" class="btn btn-primary">
+        <span class="material-icons-round">add</span> New Application
+    </a>
+</div>
+
+<div class="card" style="padding:0; overflow:hidden;">
+{% if apps %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Provider</th>
+            <th>Name</th>
+            <th>Client ID</th>
+            <th>Sites</th>
+            <th style="width:80px;"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for app in apps %}
+        <tr onclick="window.location='{% url 'control:social_apps_detail' app.pk %}'" style="cursor:pointer;">
+            <td>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="material-icons-round" style="font-size:18px; color:var(--accent);">
+                        {% if app.provider == "google" %}public{% else %}apps{% endif %}
+                    </span>
+                    <span style="font-weight:600; color:var(--text-primary); text-transform:capitalize;">{{ app.provider }}</span>
+                </div>
+            </td>
+            <td style="font-weight:500; color:var(--text-primary);">{{ app.name }}</td>
+            <td><span class="code-chip">{{ app.client_id|truncatechars:24 }}</span></td>
+            <td style="font-size:0.82rem; color:var(--text-secondary);">
+                {% for site in app.sites.all %}{{ site.domain }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+            </td>
+            <td onclick="event.stopPropagation()">
+                <div class="table-actions">
+                    <a href="{% url 'control:social_apps_edit' app.pk %}" class="action-btn" title="Edit">
+                        <span class="material-icons-round">edit</span>
+                    </a>
+                    <a href="{% url 'control:social_apps_delete' app.pk %}" class="action-btn action-delete" title="Delete">
+                        <span class="material-icons-round">delete</span>
+                    </a>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="text-align:center; padding:48px 24px;">
+    <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">apps</span>
+    <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No social applications yet</div>
+    <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Add a Google OAuth application to enable social login.</div>
+    <a href="{% url 'control:social_apps_create' %}" class="btn btn-primary" style="display:inline-flex;">
+        <span class="material-icons-round">add</span> New Application
+    </a>
+</div>
+{% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table thead th {
+        text-align:left; font-size:0.75rem; font-weight:600;
+        color:var(--text-secondary); text-transform:uppercase;
+        letter-spacing:0.4px; padding:10px 12px;
+        border-bottom:1px solid var(--card-border);
+        background:var(--card-bg);
+    }
+    .data-table td { padding:11px 12px; font-size:0.87rem; color:var(--text-secondary); border-bottom:1px solid var(--card-border); }
+    .data-table tbody tr:last-child td { border-bottom:none; }
+    .data-table tbody tr:hover td { background:rgba(14,165,233,0.05); }
+    .code-chip { font-family:monospace; font-size:0.8rem; color:var(--text-secondary); }
+    .table-actions { display:flex; gap:4px; justify-content:flex-end; }
+    .action-btn {
+        display:inline-flex; align-items:center; justify-content:center;
+        width:30px; height:30px; border-radius:6px; color:var(--text-secondary);
+        text-decoration:none; transition:all 0.15s;
+    }
+    .action-btn:hover { background:var(--sidebar-hover); color:var(--text-primary); }
+    .action-btn .material-icons-round { font-size:16px; }
+    .action-delete:hover { background:rgba(239,68,68,0.1); color:#ef4444; }
+</style>
+{% endblock %}

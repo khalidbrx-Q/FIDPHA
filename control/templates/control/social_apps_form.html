@@ -1,0 +1,156 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}{{ page_action }} Social Application{% endblock %}
+{% block page_breadcrumb %}
+    <a href="{% url 'control:social_apps_list' %}" style="color:var(--text-secondary);text-decoration:none;">Social Applications</a>
+    {% if app %}› <a href="{% url 'control:social_apps_detail' app.pk %}" style="color:var(--text-secondary);text-decoration:none;">{{ app.name }}</a>{% endif %}
+    › {{ page_action }}
+{% endblock %}
+{% block nav_social_apps %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">{{ page_action }} Social Application</div>
+        <div class="page-header-sub">
+            {% if page_action == "Edit" %}Editing "{{ app.name }}"{% else %}Add a new OAuth provider{% endif %}
+        </div>
+    </div>
+    <a href="{% url 'control:social_apps_list' %}" class="btn btn-secondary">
+        <span class="material-icons-round">arrow_back</span> Back
+    </a>
+</div>
+
+{% if form.non_field_errors %}
+<div style="margin-bottom:16px;">
+    {% for error in form.non_field_errors %}
+    <div class="alert alert-error">
+        <span class="material-icons-round" style="font-size:18px;">error_outline</span> {{ error }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" id="appForm" novalidate>
+    {% csrf_token %}
+
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">Provider</div>
+        <div class="form-grid-2">
+            <div class="form-group">
+                <label class="form-label">Provider *</label>
+                {{ form.provider }}
+                {% for e in form.provider.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+                <div class="form-help">OAuth provider — currently only Google is installed.</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Name *</label>
+                {{ form.name }}
+                {% for e in form.name.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+                <div class="form-help">Display name, e.g. <em>Google</em>.</div>
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Provider ID</label>
+            {{ form.provider_id }}
+            {% for e in form.provider_id.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            <div class="form-help">Optional — only needed when running multiple configurations of the same provider.</div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">OAuth Credentials</div>
+        <div class="form-group">
+            <label class="form-label">Client ID *</label>
+            {{ form.client_id }}
+            {% for e in form.client_id.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            <div class="form-help">The application ID from your Google Cloud Console.</div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Client Secret</label>
+            <div style="position:relative;">
+                {{ form.secret }}
+                <button type="button" onclick="toggleSecretVisibility()" id="secretToggle"
+                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
+                           border:none; background:none; cursor:pointer; color:var(--text-secondary);">
+                    <span class="material-icons-round" id="secretIcon" style="font-size:18px;">visibility</span>
+                </button>
+            </div>
+            {% for e in form.secret.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            <div class="form-help">The client secret from your Google Cloud Console. Leave blank to keep the existing value when editing.</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Key</label>
+            {{ form.key }}
+            {% for e in form.key.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            <div class="form-help">Optional API key — not required for standard OAuth flows.</div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+        <div class="section-label">Sites</div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Allowed Sites *</label>
+            {{ form.sites }}
+            {% for e in form.sites.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            <div class="form-help">Hold Ctrl (Windows) or ⌘ (Mac) to select multiple sites.</div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" id="submitBtn" class="btn btn-primary">
+            <span class="material-icons-round" id="submitIcon">save</span>
+            <span id="submitLabel">{{ page_action }} Application</span>
+        </button>
+        <a href="{% url 'control:social_apps_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<script>
+    let secretVisible = false;
+    function toggleSecretVisibility() {
+        secretVisible = !secretVisible;
+        const inp  = document.querySelector('input[name="secret"]');
+        const icon = document.getElementById('secretIcon');
+        inp.type   = secretVisible ? 'text' : 'password';
+        icon.textContent = secretVisible ? 'visibility_off' : 'visibility';
+    }
+    // Default secret field to password type
+    document.addEventListener('DOMContentLoaded', () => {
+        const inp = document.querySelector('input[name="secret"]');
+        if (inp) inp.type = 'password';
+    });
+
+    document.getElementById('appForm').addEventListener('submit', function() {
+        const btn = document.getElementById('submitBtn');
+        if (btn.dataset.locked) return;
+        btn.dataset.locked = '1';
+        btn.disabled = true;
+        document.getElementById('submitIcon').textContent  = 'hourglass_empty';
+        document.getElementById('submitLabel').textContent = 'Saving…';
+    });
+</script>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+    .section-label {
+        font-size:0.75rem; font-weight:700; text-transform:uppercase;
+        letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:14px;
+    }
+    .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:640px) { .form-grid-2 { grid-template-columns:1fr; } }
+    select.form-input {
+        appearance:none; -webkit-appearance:none;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat:no-repeat; background-position:right 10px center;
+        padding-right:32px; border-radius:8px !important; cursor:pointer;
+    }
+    select[multiple].form-input {
+        background-image:none; padding-right:12px; border-radius:8px !important; cursor:default;
+    }
+</style>
+{% endblock %}

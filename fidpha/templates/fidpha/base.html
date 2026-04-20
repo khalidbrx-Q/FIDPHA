@@ -12,8 +12,11 @@
 </head>
 <body>
 
+    <!-- Sidebar backdrop (mobile) -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop" onclick="closeSidebar()"></div>
+
     <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <div class="sidebar-brand-icon">
                 <span class="material-icons-round">local_pharmacy</span>
@@ -26,15 +29,19 @@
 
         <nav class="sidebar-nav">
             <div class="nav-section-title">Menu</div>
-            <a href="/portal/dashboard/" class="nav-item {% block nav_dashboard %}{% endblock %}">
+            <a href="/portal/dashboard/" class="nav-item {% block nav_dashboard %}{% endblock %}" onclick="closeSidebar()">
                 <span class="material-icons-round">dashboard</span>
                 Dashboard
             </a>
-            <a href="/portal/contracts/" class="nav-item {% block nav_contracts %}{% endblock %}">
+            <a href="/portal/contracts/" class="nav-item {% block nav_contracts %}{% endblock %}" onclick="closeSidebar()">
                 <span class="material-icons-round">description</span>
                 Contracts
             </a>
-            <a href="/portal/profile/" class="nav-item {% block nav_profile %}{% endblock %}">
+            <a href="/portal/sales/" class="nav-item {% block nav_sales %}{% endblock %}" onclick="closeSidebar()">
+                <span class="material-icons-round">star</span>
+                Points
+            </a>
+            <a href="/portal/profile/" class="nav-item {% block nav_profile %}{% endblock %}" onclick="closeSidebar()">
                 <span class="material-icons-round">person</span>
                 Profile
             </a>
@@ -42,21 +49,12 @@
 
         <div class="sidebar-footer">
             <div class="user-info">
-                <div class="user-avatar">
-                    {{ request.user.username|first|upper }}
-                </div>
+                <div class="user-avatar">{{ request.user.username|first|upper }}</div>
                 <div>
                     <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
                     <div class="user-role">{{ request.user.profile.account.name }}</div>
                 </div>
             </div>
-            <form method="POST" action="/portal/logout/">
-                {% csrf_token %}
-                <button type="submit" class="logout-btn">
-                    <span class="material-icons-round" style="font-size:16px;">logout</span>
-                    Log Out
-                </button>
-            </form>
         </div>
     </aside>
 
@@ -65,14 +63,44 @@
 
         <!-- TOPBAR -->
         <div class="topbar">
-            <div>
-                <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
-                <div class="topbar-breadcrumb">FIDPHA › <span>{% block page_breadcrumb %}Dashboard{% endblock %}</span></div>
+            <div class="topbar-left">
+                <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open navigation">
+                    <span class="material-icons-round">menu</span>
+                </button>
+                <div>
+                    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+                    <div class="topbar-breadcrumb">FIDPHA › <span>{% block page_breadcrumb %}Dashboard{% endblock %}</span></div>
+                </div>
             </div>
-            <button onclick="toggleTheme()" id="theme-toggle" class="theme-toggle-btn">
-                <span class="material-icons-round" id="theme-icon" style="font-size: 18px;">light_mode</span>
-                <span id="theme-label">Light</span>
-            </button>
+
+            <!-- User avatar dropdown -->
+            <div class="user-dropdown" id="userDropdown">
+                <button class="user-avatar-btn" onclick="toggleUserDropdown()" aria-expanded="false" aria-haspopup="true">
+                    <div class="topbar-avatar">{{ request.user.username|first|upper }}</div>
+                </button>
+                <div class="user-dropdown-menu" id="userDropdownMenu" role="menu">
+                    <div class="dropdown-user-info">
+                        <div class="dropdown-avatar">{{ request.user.username|first|upper }}</div>
+                        <div>
+                            <div class="dropdown-user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                            <div class="dropdown-user-role">{{ request.user.profile.account.name }}</div>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" onclick="toggleTheme(); return false;">
+                        <span class="material-icons-round">contrast</span>
+                        <span id="dropdown-theme-label">Toggle Theme</span>
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <form method="POST" action="/portal/logout/" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item dropdown-item-danger">
+                            <span class="material-icons-round">logout</span>
+                            Log Out
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
 
         <div class="content">
@@ -81,6 +109,36 @@
     </div>
 
     <script src="{% static 'fidpha/js/portal.js' %}"></script>
+
+    <script>
+        // ---- Sidebar (mobile) ----
+        function openSidebar() {
+            document.getElementById('sidebar').classList.add('sidebar-open');
+            document.getElementById('sidebarBackdrop').classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('sidebar-open');
+            document.getElementById('sidebarBackdrop').classList.remove('visible');
+            document.body.style.overflow = '';
+        }
+
+        // ---- User dropdown ----
+        function toggleUserDropdown() {
+            const menu = document.getElementById('userDropdownMenu');
+            const btn  = document.querySelector('.user-avatar-btn');
+            const open = menu.classList.toggle('open');
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('userDropdown');
+            if (dropdown && !dropdown.contains(e.target)) {
+                document.getElementById('userDropdownMenu').classList.remove('open');
+                document.querySelector('.user-avatar-btn').setAttribute('aria-expanded', 'false');
+            }
+        });
+    </script>
+
     {% block extra_js %}{% endblock %}
 
 </body>

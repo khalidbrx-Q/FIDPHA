@@ -1,7 +1,7 @@
 from django.utils import timezone
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from .models import APIToken
+from .models import APIToken, APITokenUsageLog
 
 
 class APITokenAuthentication(BaseAuthentication):
@@ -22,9 +22,15 @@ class APITokenAuthentication(BaseAuthentication):
         except APIToken.DoesNotExist:
             raise AuthenticationFailed("Invalid or revoked token")
 
-        # update last_used_at and usage_count
-        token.last_used_at = timezone.now()
+        now = timezone.now()
+        token.last_used_at = now
         token.usage_count += 1
         token.save(update_fields=["last_used_at", "usage_count"])
+
+        APITokenUsageLog.objects.create(
+            token=token,
+            called_at=now,
+            endpoint=request.path,
+        )
 
         return (None, token)
