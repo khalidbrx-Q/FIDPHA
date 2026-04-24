@@ -101,10 +101,27 @@ class ContractForm(forms.ModelForm):
         ),
         input_formats=['%Y-%m-%dT%H:%M'],
     )
+    last_sale_datetime = forms.DateTimeField(
+        required=False,
+        widget=forms.DateTimeInput(
+            attrs={'type': 'datetime-local', 'class': 'form-input'},
+            format='%Y-%m-%dT%H:%M',
+        ),
+        input_formats=['%Y-%m-%dT%H:%M'],
+    )
+    last_sync_at = forms.DateTimeField(
+        required=False,
+        widget=forms.DateTimeInput(
+            attrs={'type': 'datetime-local', 'class': 'form-input'},
+            format='%Y-%m-%dT%H:%M',
+        ),
+        input_formats=['%Y-%m-%dT%H:%M'],
+    )
 
     class Meta:
         model  = Contract
-        fields = ['title', 'designation', 'account', 'start_date', 'end_date', 'status']
+        fields = ['title', 'designation', 'account', 'start_date', 'end_date', 'status',
+                  'last_sale_datetime', 'last_sync_at']
         widgets = {
             'designation': forms.Textarea(attrs={'rows': 3, 'class': 'form-input'}),
         }
