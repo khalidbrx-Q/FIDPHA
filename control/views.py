@@ -1535,7 +1535,7 @@ def sync_log(request):
         SaleImport.objects
         .select_related("contract_product__product", "token", "inserted_by")
         .annotate(has_sale=Exists(Sale.objects.filter(sale_import=OuterRef("pk"))))
-        .order_by("-received_at")
+        .order_by("-received_at", "-pk")
     )
 
     status_filter  = request.GET.get("status", "")

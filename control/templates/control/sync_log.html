@@ -280,7 +280,7 @@
                     {% elif row.status == STATUS_ACCEPTED %}
                     <span class="material-icons-round"
                           style="color:#f59e0b; font-size:16px;"
-                          data-tip="Duplicate submission — a Sale record for this product and datetime already exists from a previous batch. No double-counting occurred.">
+                          data-tip="Duplicate row within this batch — the same product and datetime already appeared earlier in the same batch. Only one Sale record was created; this row was skipped to prevent double-counting.">
                         warning
                     </span>
                     {% else %}
