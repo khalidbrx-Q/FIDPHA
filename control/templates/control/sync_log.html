@@ -277,8 +277,14 @@
                 <td style="text-align:center;">
                     {% if row.has_sale %}
                     <span class="material-icons-round sale-linked" title="Linked to a validated Sale record">check_circle</span>
+                    {% elif row.status == STATUS_ACCEPTED %}
+                    <span class="material-icons-round"
+                          style="color:#f59e0b; font-size:16px;"
+                          data-tip="Duplicate submission — a Sale record for this product and datetime already exists from a previous batch. No double-counting occurred.">
+                        warning
+                    </span>
                     {% else %}
-                    <span class="material-icons-round sale-unlinked" title="No Sale record — pending or rejected">remove</span>
+                    <span class="material-icons-round sale-unlinked" title="No Sale record — row was rejected or is pending">remove</span>
                     {% endif %}
                 </td>
             </tr>
@@ -330,7 +336,7 @@
     // ── Fixed-position tooltip (escapes overflow clipping) ──
     const tip = document.getElementById('sync-tooltip');
 
-    document.querySelectorAll('.tooltip-wrap[data-tip]').forEach(function (el) {
+    document.querySelectorAll('[data-tip]').forEach(function (el) {
         el.addEventListener('mouseenter', function (e) {
             tip.textContent = el.dataset.tip;
             tip.style.display = 'block';
