@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIDPHA Control Panel</title>
+    <title>WinInPharma Control Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <!-- Reuse the same portal CSS — identical theme and component styles -->
@@ -187,6 +187,7 @@
         .table-actions {
             display: flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 6px;
         }
         .action-btn {
@@ -471,7 +472,7 @@
                 <span class="material-icons-round">admin_panel_settings</span>
             </div>
             <div>
-                <div class="sidebar-brand-text">FIDPHA</div>
+                <div class="sidebar-brand-text">WinInPharma</div>
                 <div class="sidebar-brand-sub">Control Panel</div>
             </div>
         </div>
@@ -488,45 +489,69 @@
             </a>
 
             <!-- Authentication -->
+            {% if perms.auth.view_group or perms.auth.view_user %}
             <div class="nav-section-title">Authentication</div>
+            {% if perms.auth.view_group %}
             <a href="{% url 'control:roles_list' %}"
                class="nav-item {% block nav_roles %}{% endblock %}">
                 <span class="material-icons-round">badge</span>
                 Roles
             </a>
+            {% endif %}
+            {% if perms.auth.view_user %}
             <a href="{% url 'control:users_list' %}"
                class="nav-item {% block nav_users %}{% endblock %}">
                 <span class="material-icons-round">person</span>
                 Users
             </a>
+            {% endif %}
+            {% endif %}
 
-            <!-- FIDPHA -->
-            <div class="nav-section-title">FIDPHA</div>
+            <!-- WinInPharma -->
+            {% if perms.fidpha.view_account or perms.fidpha.view_contract or perms.fidpha.view_product or perms.sales.view_sale %}
+            <div class="nav-section-title">WinInPharma</div>
+            {% if perms.fidpha.view_account %}
             <a href="{% url 'control:accounts_list' %}"
                class="nav-item {% block nav_accounts %}{% endblock %}">
                 <span class="material-icons-round">store</span>
                 Accounts
             </a>
+            {% endif %}
+            {% if perms.fidpha.view_contract %}
             <a href="{% url 'control:contracts_list' %}"
                class="nav-item {% block nav_contracts %}{% endblock %}">
                 <span class="material-icons-round">description</span>
                 Contracts
             </a>
+            {% endif %}
+            {% if perms.fidpha.view_product %}
             <a href="{% url 'control:products_list' %}"
                class="nav-item {% block nav_products %}{% endblock %}">
                 <span class="material-icons-round">medication</span>
                 Products
             </a>
+            {% endif %}
+            {% if perms.sales.view_sale %}
+            <a href="{% url 'control:sales_list' %}"
+               class="nav-item {% block nav_sales %}{% endblock %}">
+                <span class="material-icons-round">point_of_sale</span>
+                Sales
+            </a>
+            {% endif %}
+            {% endif %}
 
             <!-- API -->
+            {% if perms.api.view_apitoken %}
             <div class="nav-section-title">API</div>
             <a href="{% url 'control:tokens_list' %}"
                class="nav-item {% block nav_tokens %}{% endblock %}">
                 <span class="material-icons-round">key</span>
                 API Tokens
             </a>
+            {% endif %}
 
             <!-- Configuration -->
+            {% if request.user.is_superuser %}
             <div class="nav-section-title">Configuration</div>
             <a href="{% url 'control:social_apps_list' %}"
                class="nav-item {% block nav_social_apps %}{% endblock %}">
@@ -543,6 +568,7 @@
                 <span class="material-icons-round">language</span>
                 Site
             </a>
+            {% endif %}
 
         </nav>
 

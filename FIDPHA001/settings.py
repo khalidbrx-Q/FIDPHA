@@ -80,7 +80,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'buarramoukhalid@gmail.com'
 EMAIL_HOST_PASSWORD = 'gbxz sdba xxxh meme'
-DEFAULT_FROM_EMAIL = 'FIDPHA <buarramoukhalid@gmail.com>'
+DEFAULT_FROM_EMAIL = 'WinInPharma <buarramoukhalid@gmail.com>'
 
 TEMPLATES = [
     {
@@ -125,8 +125,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 UNFOLD = {
-    "SITE_TITLE": "FIDPHA Admin",
-    "SITE_HEADER": "FIDPHA",
+    "SITE_TITLE": "WinInPharma Admin",
+    "SITE_HEADER": "WinInPharma",
     "SITE_URL": "/",
     "SITE_ICON": None,
     "SITE_SYMBOL": "medication",
@@ -178,7 +178,7 @@ UNFOLD = {
                 ],
             },
             {
-                "title": "FIDPHA",
+                "title": "WinInPharma",
                 "icon": "local_pharmacy",
                 "items": [
                     {

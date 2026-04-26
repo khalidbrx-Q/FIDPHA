@@ -1,4 +1,5 @@
 
+import hashlib
 import secrets
 from django.db import models
 from django.contrib.auth.models import User
@@ -7,7 +8,8 @@ from django.utils import timezone
 
 class APIToken(models.Model):
     name = models.CharField(max_length=100, help_text="Description of who this token is for")
-    token = models.CharField(max_length=64, unique=True, editable=False)
+    token = models.CharField(max_length=64, unique=True, editable=False)  # SHA-256 hash of raw token
+    token_suffix = models.CharField(max_length=4, editable=False, default="")  # last 4 chars of raw, for display
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
@@ -29,16 +31,15 @@ class APIToken(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.token:
-            self.token = secrets.token_hex(32)
+            raw = secrets.token_hex(32)
+            self.raw_token = raw  # transient — readable once immediately after save()
+            self.token_suffix = raw[-4:]
+            self.token = hashlib.sha256(raw.encode()).hexdigest()
         super().save(*args, **kwargs)
-
-    def regenerate(self):
-        self.token = secrets.token_hex(32)
-        self.save()
 
     @property
     def masked_token(self):
-        return f"••••••••••••••••••••••••••••{self.token[-4:]}"
+        return f"{'•' * 28}{self.token_suffix}"
 
 
 class APITokenUsageLog(models.Model):

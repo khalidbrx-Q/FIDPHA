@@ -6,29 +6,24 @@
 
 {% block content %}
 
-<div class="page-header">
-    <div>
-        <div class="page-header-title">Roles</div>
-        <div class="page-header-sub">Permission presets assigned to staff users</div>
-    </div>
-    <a href="{% url 'control:roles_create' %}" class="btn btn-primary">
-        <span class="material-icons-round">add</span>
-        New Role
-    </a>
-</div>
-
-<!-- Search bar -->
+<!-- Toolbar -->
 <div class="toolbar" style="margin-bottom:12px;">
     <div class="search-bar" style="flex:1; min-width:200px; max-width:420px;">
         <span class="material-icons-round">search</span>
         <input type="text" id="roleSearch" placeholder="Search roles…"
                oninput="filterRoles()" autocomplete="off">
     </div>
-    <span id="roleCount" style="font-size:0.82rem; color:var(--text-secondary); margin-left:8px;"></span>
+    <span id="roleCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ roles|length }} role{{ roles|length|pluralize }}</span>
+    {% if perms.auth.add_group %}
+    <a href="{% url 'control:roles_create' %}" class="btn btn-primary" style="margin-left:auto; flex-shrink:0;">
+        <span class="material-icons-round">add</span> New Role
+    </a>
+    {% endif %}
 </div>
 
-<div class="card">
+<div class="card" style="padding:0; overflow:hidden;">
     {% if roles %}
+    <div class="table-scroll-wrapper">
     <table class="data-table">
         <thead>
             <tr>
@@ -63,21 +58,28 @@
                 </td>
                 <td onclick="event.stopPropagation()">
                     <div class="table-actions">
+                        {% if perms.auth.add_group %}
                         <a href="{% url 'control:roles_create' %}?clone={{ role.pk }}" class="action-btn" title="Clone">
                             <span class="material-icons-round">content_copy</span>
                         </a>
+                        {% endif %}
+                        {% if perms.auth.change_group %}
                         <a href="{% url 'control:roles_edit' role.pk %}" class="action-btn" title="Edit">
                             <span class="material-icons-round">edit</span>
                         </a>
+                        {% endif %}
+                        {% if perms.auth.delete_group %}
                         <a href="{% url 'control:roles_delete' role.pk %}" class="action-btn action-delete" title="Delete">
                             <span class="material-icons-round">delete</span>
                         </a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     <div id="noRoleResults" style="display:none; text-align:center; padding:32px 16px; color:var(--text-secondary); font-size:0.85rem;">
         No roles match your search.
     </div>
@@ -86,10 +88,12 @@
         <span class="material-icons-round" style="font-size: 40px; color: var(--text-secondary); display: block; margin-bottom: 12px;">badge</span>
         <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">No roles yet</div>
         <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">Create a role to define a permission preset for staff users.</div>
+        {% if perms.auth.add_group %}
         <a href="{% url 'control:roles_create' %}" class="btn btn-primary" style="display: inline-flex;">
             <span class="material-icons-round">add</span>
             New Role
         </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>
@@ -98,8 +102,21 @@
 
 {% block extra_css %}
 <style>
+    .content { padding-bottom: 0; }
+
+    .table-scroll-wrapper {
+        max-height: calc(100vh - 160px);
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--card-border) transparent;
+    }
+    .table-scroll-wrapper::-webkit-scrollbar { width: 5px; }
+    .table-scroll-wrapper::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
     .data-table { width: 100%; border-collapse: collapse; }
     .data-table th {
+        position: sticky; top: 0; z-index: 1;
+        background: var(--card-bg);
         text-align: left;
         font-size: 0.75rem;
         font-weight: 600;
@@ -149,11 +166,13 @@
 <script>
     function rowNav(row) { window.location = row.dataset.href; }
 
+    const roleCountEl = document.getElementById('roleCount');
+    const ROLE_TOTAL  = roleCountEl.textContent;
+
     function filterRoles() {
         const q     = document.getElementById('roleSearch').value.toLowerCase().trim();
         const rows  = document.querySelectorAll('#rolesTableBody tr');
         const noRes = document.getElementById('noRoleResults');
-        const count = document.getElementById('roleCount');
         let visible = 0;
 
         rows.forEach(row => {
@@ -164,7 +183,7 @@
         });
 
         noRes.style.display = (q && visible === 0) ? 'block' : 'none';
-        count.textContent   = q ? visible + ' result' + (visible === 1 ? '' : 's') : '';
+        roleCountEl.textContent = q ? visible + ' result' + (visible === 1 ? '' : 's') : ROLE_TOTAL;
     }
 </script>
 {% endblock %}

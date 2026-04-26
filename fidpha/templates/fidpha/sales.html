@@ -7,278 +7,324 @@
 {% block content %}
 
 {% if not active_contract and not past_contracts %}
-<!-- ── No data at all ─────────────────────────────────────────────── -->
-<div class="card" style="text-align:center; padding:48px 24px;">
-    <span class="material-icons-round" style="font-size:48px; color:var(--card-border); display:block; margin-bottom:12px;">star_border</span>
-    <div style="font-size:1rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No contracts yet</div>
-    <div style="font-size:0.85rem; color:var(--text-secondary);">Contact FIDPHA to get started with a loyalty contract.</div>
+
+<!-- ── No data at all ── -->
+<div style="display:flex; align-items:center; justify-content:center; height:70vh;">
+    <div class="card" style="text-align:center; padding:48px 24px; max-width:400px;">
+        <span class="material-icons-round" style="font-size:48px; color:var(--card-border); display:block; margin-bottom:12px;">star_border</span>
+        <div style="font-size:1rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No contracts yet</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary);">Contact WinInPharma to get started with a loyalty contract.</div>
+    </div>
 </div>
 
 {% else %}
 
-{% if active_contract %}
+<script>document.documentElement.classList.add('portal-snap');</script>
 
-<!-- ── Contract banner ──────────────────────────────────────────── -->
-<div class="contract-banner">
-    <div style="display:flex; align-items:center; gap:10px;">
-        <span class="material-icons-round" style="font-size:20px; color:#22c55e;">description</span>
-        <div>
-            <div style="font-size:0.75rem; color:#22c55e; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Active Contract</div>
-            <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">{{ active_contract.title }}</div>
+<!-- Snap dot indicators -->
+<nav class="snap-dots" id="snapDots">
+    <button class="snap-dot active" onclick="scrollToSection(0)" title="Active Contract"></button>
+    <button class="snap-dot"        onclick="scrollToSection(1)" title="Recent Sales"></button>
+    <button class="snap-dot"        onclick="scrollToSection(2)" title="Contract History"></button>
+</nav>
+
+<!-- ================================================================ -->
+<!-- SECTION 1 — Active Contract & Product Breakdown                   -->
+<!-- ================================================================ -->
+<div class="snap-section">
+
+    <div class="snap-title">
+        <span class="material-icons-round" style="color:#22c55e;">description</span>
+        Active Contract &amp; Product Breakdown
+    </div>
+
+    {% if active_contract %}
+
+    <!-- Contract banner -->
+    <div class="contract-banner">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span class="material-icons-round" style="font-size:20px; color:#22c55e;">verified</span>
+            <div>
+                <div style="font-size:0.72rem; color:#22c55e; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Active Contract</div>
+                <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">{{ active_contract.title }}</div>
+            </div>
+        </div>
+        <div style="font-size:0.82rem; color:var(--text-secondary); text-align:right;">
+            {{ active_contract.start_date|date:"d M Y" }} → {{ active_contract.end_date|date:"d M Y" }}
         </div>
     </div>
-    <div style="font-size:0.82rem; color:var(--text-secondary); text-align:right;">
-        {{ active_contract.start_date|date:"d M Y" }} → {{ active_contract.end_date|date:"d M Y" }}
+
+    <!-- Stat cards -->
+    <div class="stats-row">
+        <div class="stat-card stat-points">
+            <div class="stat-icon"><span class="material-icons-round">star</span></div>
+            <div>
+                <div class="stat-label">Points Earned</div>
+                <div class="stat-value">{{ total_points }}</div>
+                <div class="stat-sub">{% if total_points == 0 %}Sell to start earning{% else %}this contract{% endif %}</div>
+            </div>
+        </div>
+        <div class="stat-card stat-units">
+            <div class="stat-icon"><span class="material-icons-round">inventory_2</span></div>
+            <div>
+                <div class="stat-label">Units Sold</div>
+                <div class="stat-value">{{ total_units }}</div>
+                <div class="stat-sub">contract-linked products</div>
+            </div>
+        </div>
+        <div class="stat-card stat-products">
+            <div class="stat-icon"><span class="material-icons-round">medication</span></div>
+            <div>
+                <div class="stat-label">Products Tracked</div>
+                <div class="stat-value">{{ products_data|length }}</div>
+                <div class="stat-sub">in this contract</div>
+            </div>
+        </div>
     </div>
+
+    <!-- Product breakdown -->
+    {% if products_data %}
+    <div class="card" style="padding:14px; flex:1; min-height:0; display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0;">
+            <div class="search-wrap">
+                <span class="material-icons-round">search</span>
+                <input type="text" id="prodSearch" placeholder="Search product…" oninput="filterProductCards()" autocomplete="off">
+            </div>
+            <button class="filter-pill active" onclick="filterProdStatus('all', this)">All</button>
+            <button class="filter-pill" onclick="filterProdStatus('points', this)">With points</button>
+            <button class="filter-pill" onclick="filterProdStatus('no-points', this)">No points</button>
+            <div style="width:1px; height:18px; background:var(--card-border); margin:0 2px; flex-shrink:0;"></div>
+            <button class="sort-pill active" onclick="sortProducts(null, this)">Default</button>
+            <button class="sort-pill" onclick="sortProducts('desc', this)">
+                <span class="material-icons-round" style="font-size:13px; vertical-align:middle;">arrow_downward</span> Points
+            </button>
+            <button class="sort-pill" onclick="sortProducts('asc', this)">
+                <span class="material-icons-round" style="font-size:13px; vertical-align:middle;">arrow_upward</span> Points
+            </button>
+        </div>
+        <div class="products-grid" id="productsGrid" style="flex:1; min-height:0;">
+            {% for item in products_data %}
+            <div class="product-card"
+                 data-name="{{ item.cp.product.designation|lower }} {{ item.cp.external_designation|lower }}"
+                 data-points="{{ item.points }}"
+                 data-index="{{ forloop.counter0 }}">
+                <div style="margin-bottom:10px;">
+                    <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary); margin-bottom:3px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">{{ item.cp.product.designation }}</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary); font-family:monospace;">{{ item.cp.external_designation }}</div>
+                </div>
+                <div class="points-display">
+                    <span class="material-icons-round" style="font-size:15px; color:#f59e0b;">star</span>
+                    <span class="points-number">{{ item.points }}</span>
+                    <span class="points-label">pts</span>
+                    <span class="points-rate">({{ item.cp.points_per_unit }} pt/unit)</span>
+                </div>
+                <div style="margin-top:8px; font-size:0.75rem; color:var(--text-secondary);">{{ item.units_sold }} unit{{ item.units_sold|pluralize }} sold</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="noProdMsg" style="display:none; text-align:center; padding:16px; color:var(--text-secondary); font-size:0.84rem;">No products match your search.</div>
+    </div>
+    {% else %}
+    <div class="snap-empty">
+        <span class="material-icons-round">inventory_2</span>
+        <div>No products in this contract yet.</div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- No active contract -->
+    <div class="card" style="display:flex; align-items:center; gap:14px; border-left:4px solid var(--card-border);">
+        <span class="material-icons-round" style="font-size:28px; color:var(--text-secondary); flex-shrink:0;">info</span>
+        <div>
+            <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:3px;">No active contract</div>
+            <div style="font-size:0.83rem; color:var(--text-secondary);">You don't have an active contract at the moment. Your past contract history is in the last section.</div>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 
-<!-- ── Stat cards ────────────────────────────────────────────────── -->
-<div class="stats-row">
-    <div class="stat-card stat-points">
-        <div class="stat-icon"><span class="material-icons-round">star</span></div>
-        <div>
-            <div class="stat-label">Points Earned</div>
-            <div class="stat-value">{{ total_points }}</div>
-            <div class="stat-sub">{% if total_points == 0 %}Sell to start earning{% else %}this contract{% endif %}</div>
-        </div>
-    </div>
-    <div class="stat-card stat-units">
-        <div class="stat-icon"><span class="material-icons-round">inventory_2</span></div>
-        <div>
-            <div class="stat-label">Units Sold</div>
-            <div class="stat-value">{{ total_units }}</div>
-            <div class="stat-sub">contract-linked products</div>
-        </div>
-    </div>
-    <div class="stat-card stat-products">
-        <div class="stat-icon"><span class="material-icons-round">medication</span></div>
-        <div>
-            <div class="stat-label">Products Tracked</div>
-            <div class="stat-value">{{ products_data|length }}</div>
-            <div class="stat-sub">in this contract</div>
-        </div>
-    </div>
-</div>
+<!-- ================================================================ -->
+<!-- SECTION 2 — Recent Sales                                          -->
+<!-- ================================================================ -->
+<div class="snap-section">
 
-<!-- ── Product breakdown ─────────────────────────────────────────── -->
-<div class="section-title">
-    <span class="material-icons-round" style="font-size:18px;">bar_chart</span>
-    Product Breakdown
-</div>
+    <div class="snap-title">
+        <span class="material-icons-round" style="color:var(--accent);">point_of_sale</span>
+        Sales History
+    </div>
 
-{% if products_data %}
-<div class="card" style="padding:14px; margin-bottom:24px;">
-    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+    {% if all_sales %}
+
+    <div id="salesFilters" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0;">
         <div class="search-wrap">
             <span class="material-icons-round">search</span>
-            <input type="text" id="prodSearch" placeholder="Search product…" oninput="filterProductCards()" autocomplete="off">
+            <input type="text" id="salesSearch" placeholder="Search product…" oninput="filterSales()" autocomplete="off">
         </div>
-        <button class="filter-pill active" onclick="filterProdStatus('all', this)">All</button>
-        <button class="filter-pill" onclick="filterProdStatus('points', this)">With points</button>
-        <button class="filter-pill" onclick="filterProdStatus('no-points', this)">No points</button>
+        <button class="filter-pill active" onclick="setSalesFilter('all', this)">All</button>
+        <button class="filter-pill" onclick="setSalesFilter('accepted', this)">Accepted</button>
+        <button class="filter-pill" onclick="setSalesFilter('rejected', this)">Rejected</button>
+        <button class="filter-pill" onclick="setSalesFilter('pending', this)">Pending</button>
         <div style="width:1px; height:18px; background:var(--card-border); margin:0 2px; flex-shrink:0;"></div>
-        <button class="sort-pill active" onclick="sortProducts(null, this)">Default</button>
-        <button class="sort-pill" onclick="sortProducts('desc', this)">
+        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+            <span style="font-size:0.75rem; color:var(--text-secondary);">From</span>
+            <input type="date" id="salesFrom" class="date-input" onchange="filterSales()">
+            <span style="font-size:0.75rem; color:var(--text-secondary);">To</span>
+            <input type="date" id="salesTo" class="date-input" onchange="filterSales()">
+            <button class="clear-date-btn" onclick="clearSalesDates()" title="Clear dates">
+                <span class="material-icons-round" style="font-size:15px;">close</span>
+            </button>
+        </div>
+        <span id="salesCount" style="font-size:0.82rem; color:var(--text-secondary); margin-left:auto; white-space:nowrap;">{{ all_sales|length }} sale{{ all_sales|length|pluralize }}</span>
+    </div>
+
+    <div class="card" style="padding:0; flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden;">
+        <div style="overflow-y:auto; flex:1; scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;">
+            <table class="sales-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Contract</th>
+                        <th>Product</th>
+                        <th>Ext. Designation</th>
+                        <th style="text-align:center;">Qty</th>
+                        <th style="text-align:center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="salesTableBody">
+                    {% for sale in all_sales %}
+                    <tr data-search="{{ sale.contract_product.product.designation|lower }} {{ sale.contract_product.external_designation|lower }}"
+                        data-status="{{ sale.status }}"
+                        data-date="{{ sale.sale_datetime|date:'Y-m-d' }}">
+                        <td style="white-space:nowrap; color:var(--text-secondary);">{{ sale.sale_datetime|date:"d M Y" }}</td>
+                        <td style="font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.contract.title }}</td>
+                        <td style="font-weight:500; color:var(--text-primary);">{{ sale.contract_product.product.designation }}</td>
+                        <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.external_designation }}</td>
+                        <td style="text-align:center; font-weight:600;">{{ sale.quantity }}</td>
+                        <td style="text-align:center;">
+                            {% if sale.status == "accepted" %}<span class="sale-badge sale-accepted">Accepted</span>
+                            {% elif sale.status == "rejected" %}<span class="sale-badge sale-rejected">Rejected</span>
+                            {% else %}<span class="sale-badge sale-pending">Pending</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div id="noSalesMsg" style="display:none; text-align:center; padding:24px; font-size:0.84rem; color:var(--text-secondary); flex-shrink:0;">
+            No sales match your filters.
+        </div>
+    </div>
+    {% else %}
+    <div class="snap-empty">
+        <span class="material-icons-round">point_of_sale</span>
+        <div style="font-weight:600; margin-bottom:4px;">No sales yet</div>
+        <div style="font-size:0.82rem;">Sales will appear here once your pharmacy submits data.</div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ================================================================ -->
+<!-- SECTION 3 — Contract History                                      -->
+<!-- ================================================================ -->
+<div class="snap-section">
+
+    <div class="snap-title">
+        <span class="material-icons-round" style="color:#f59e0b;">history</span>
+        Contract History
+    </div>
+
+    {% if past_contracts %}
+
+    <div id="historyFilters" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0;">
+        <div class="search-wrap">
+            <span class="material-icons-round">search</span>
+            <input type="text" id="historySearch" placeholder="Search contract or product…" oninput="filterHistory()" autocomplete="off">
+        </div>
+        <button class="filter-pill active" onclick="filterHistoryStatus('all', this)">All</button>
+        <button class="filter-pill" onclick="filterHistoryStatus('points', this)">With points</button>
+        <button class="filter-pill" onclick="filterHistoryStatus('no-points', this)">No points</button>
+        <div style="width:1px; height:18px; background:var(--card-border); margin:0 2px; flex-shrink:0;"></div>
+        <button class="sort-pill active" onclick="sortHistory(null, this)">Default</button>
+        <button class="sort-pill" onclick="sortHistory('desc', this)">
             <span class="material-icons-round" style="font-size:13px; vertical-align:middle;">arrow_downward</span> Points
         </button>
-        <button class="sort-pill" onclick="sortProducts('asc', this)">
+        <button class="sort-pill" onclick="sortHistory('asc', this)">
             <span class="material-icons-round" style="font-size:13px; vertical-align:middle;">arrow_upward</span> Points
         </button>
     </div>
-    <div class="products-grid" id="productsGrid">
-        {% for item in products_data %}
-        <div class="product-card"
-             data-name="{{ item.cp.product.designation|lower }} {{ item.cp.external_designation|lower }}"
-             data-points="{{ item.points }}"
-             data-index="{{ forloop.counter0 }}">
 
-            <div style="margin-bottom:10px;">
-                <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary); margin-bottom:3px; line-height:1.3;">
-                    {{ item.cp.product.designation }}
+    <div id="historyList" style="flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:10px; scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;">
+        {% for entry in past_contracts %}
+        <div class="history-card"
+             data-title="{{ entry.contract.title|lower }}"
+             data-points="{{ entry.total_points }}"
+             data-index="{{ forloop.counter0 }}"
+             data-products="{% for item in entry.products_data %}{{ item.cp.product.designation|lower }} {% endfor %}">
+            <button class="history-header" onclick="toggleHistory(this)" aria-expanded="false">
+                <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+                    <span class="material-icons-round" style="font-size:18px; color:var(--text-secondary); flex-shrink:0;">description</span>
+                    <div style="min-width:0;">
+                        <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ entry.contract.title }}</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary);">{{ entry.contract.start_date|date:"d M Y" }} → {{ entry.contract.end_date|date:"d M Y" }}</div>
+                    </div>
                 </div>
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-family:monospace;">
-                    {{ item.cp.external_designation }}
+                <div style="display:flex; align-items:center; gap:20px; flex-shrink:0;">
+                    <div style="text-align:right;">
+                        <div style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">Points</div>
+                        <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">
+                            <span class="material-icons-round" style="font-size:13px; color:#f59e0b; vertical-align:middle;">star</span>
+                            {{ entry.total_points }}
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">Units</div>
+                        <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">{{ entry.total_units }}</div>
+                    </div>
+                    <span class="material-icons-round history-chevron" style="color:var(--text-secondary); transition:transform 0.2s;">expand_more</span>
+                </div>
+            </button>
+            <div class="history-body" style="display:none;">
+                <div class="search-wrap" style="margin-bottom:10px; max-width:280px;">
+                    <span class="material-icons-round">search</span>
+                    <input type="text" placeholder="Search product…" oninput="filterHistoryProducts(this)" autocomplete="off">
+                </div>
+                <div class="history-products-wrap">
+                    {% if entry.products_data %}
+                    {% for item in entry.products_data %}
+                    <div class="history-product-row" data-hpname="{{ item.cp.product.designation|lower }} {{ item.cp.external_designation|lower }}">
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:0.83rem; font-weight:500; color:var(--text-primary); margin-bottom:1px;">{{ item.cp.product.designation }}</div>
+                            <div style="font-size:0.73rem; color:var(--text-secondary); font-family:monospace;">{{ item.cp.external_designation }}</div>
+                            <div style="font-size:0.73rem; color:var(--text-secondary); margin-top:2px;">{{ item.units_sold }} unit{{ item.units_sold|pluralize }} · {{ item.cp.points_per_unit }} pt/unit</div>
+                        </div>
+                        <div style="text-align:right; flex-shrink:0;">
+                            <span class="material-icons-round" style="font-size:13px; color:#f59e0b; vertical-align:middle;">star</span>
+                            <span style="font-weight:700; color:var(--text-primary);">{{ item.points }} pts</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div style="padding:12px; text-align:center; font-size:0.83rem; color:var(--text-secondary);">No sales recorded for this contract.</div>
+                    {% endif %}
                 </div>
             </div>
-
-            <div class="points-display">
-                <span class="material-icons-round" style="font-size:15px; color:#f59e0b;">star</span>
-                <span class="points-number">{{ item.points }}</span>
-                <span class="points-label">pts</span>
-                <span class="points-rate">({{ item.cp.points_per_unit }} pt/unit)</span>
-            </div>
-
-            <div style="margin-top:8px; font-size:0.75rem; color:var(--text-secondary);">
-                {{ item.units_sold }} unit{{ item.units_sold|pluralize }} sold
-            </div>
-
         </div>
         {% endfor %}
     </div>
-    <div id="noProdMsg" style="display:none; text-align:center; padding:16px; color:var(--text-secondary); font-size:0.84rem;">
-        No products match your search.
-    </div>
-</div>
-{% else %}
-<div class="card" style="text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem; margin-bottom:24px;">
-    No products in this contract yet.
-</div>
-{% endif %}
 
-<!-- ── Recent sales log ──────────────────────────────────────────── -->
-{% if recent_sales %}
-<div class="section-title" style="margin-top:8px;">
-    <span class="material-icons-round" style="font-size:18px;">receipt_long</span>
-    Recent Sales
-</div>
-<div class="card" style="padding:0; margin-bottom:24px;">
-    <div class="sales-scroll">
-        <table class="sales-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Product</th>
-                    <th>Ext. Designation</th>
-                    <th style="text-align:center;">Qty</th>
-                    <th style="text-align:center;">Pts/unit</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for sale in recent_sales %}
-                <tr>
-                    <td style="white-space:nowrap; color:var(--text-secondary);">{{ sale.sale_datetime|date:"d M Y" }}</td>
-                    <td style="font-weight:500; color:var(--text-primary);">{{ sale.contract_product.product.designation }}</td>
-                    <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.external_designation }}</td>
-                    <td style="text-align:center; font-weight:600;">{{ sale.quantity }}</td>
-                    <td style="text-align:center; color:var(--text-secondary);">{{ sale.contract_product.points_per_unit }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% if recent_sales|length == 100 %}
-    <div style="text-align:center; padding:10px; font-size:0.78rem; color:var(--text-secondary); border-top:1px solid var(--card-border);">
-        Showing last 100 records
+    <div id="noHistoryMsg" style="display:none; text-align:center; padding:24px; font-size:0.84rem; color:var(--text-secondary);">No contracts match your search.</div>
+
+    {% else %}
+    <div class="snap-empty">
+        <span class="material-icons-round">history</span>
+        <div style="font-weight:600; margin-bottom:4px;">No past contracts</div>
+        <div style="font-size:0.82rem;">Your contract history will appear here.</div>
     </div>
     {% endif %}
-</div>
-{% endif %}
 
-{% else %}
-<!-- ── No active contract but has history ─────────────────────────── -->
-<div class="card" style="display:flex; align-items:center; gap:14px; margin-bottom:24px; border-left:4px solid var(--card-border);">
-    <span class="material-icons-round" style="font-size:28px; color:var(--text-secondary); flex-shrink:0;">info</span>
-    <div>
-        <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:3px;">No active contract</div>
-        <div style="font-size:0.83rem; color:var(--text-secondary);">You don't have an active contract at the moment. Your past contract history is shown below.</div>
-    </div>
 </div>
-{% endif %}
-
-<!-- ================================================================ -->
-<!-- HISTORY — past inactive contracts                                  -->
-<!-- ================================================================ -->
-{% if past_contracts %}
-<div class="section-title">
-    <span class="material-icons-round" style="font-size:18px;">history</span>
-    Contract History
-</div>
-
-<!-- History search + filter -->
-<div id="historyFilters" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
-    <div class="search-wrap">
-        <span class="material-icons-round">search</span>
-        <input type="text" id="historySearch" placeholder="Search contract or product…" oninput="filterHistory()" autocomplete="off">
-    </div>
-    <button class="filter-pill active" onclick="filterHistoryStatus('all', this)">All</button>
-    <button class="filter-pill" onclick="filterHistoryStatus('points', this)">With points</button>
-    <button class="filter-pill" onclick="filterHistoryStatus('no-points', this)">No points</button>
-    <div style="width:1px; height:18px; background:var(--card-border); margin:0 2px; flex-shrink:0;"></div>
-    <button class="sort-pill active" onclick="sortHistory(null, this)">Default</button>
-    <button class="sort-pill" onclick="sortHistory('desc', this)">
-        <span class="material-icons-round" style="font-size:13px; vertical-align:middle;">arrow_downward</span> Points
-    </button>
-    <button class="sort-pill" onclick="sortHistory('asc', this)">
-        <span class="material-icons-round" style="font-size:13px; vertical-align:middle;">arrow_upward</span> Points
-    </button>
-</div>
-
-<div id="historyList" class="history-list-wrap">
-{% for entry in past_contracts %}
-<div class="history-card"
-     data-title="{{ entry.contract.title|lower }}"
-     data-points="{{ entry.total_points }}"
-     data-index="{{ forloop.counter0 }}"
-     data-products="{% for item in entry.products_data %}{{ item.cp.product.designation|lower }} {% endfor %}">
-
-    <button class="history-header" onclick="toggleHistory(this)" aria-expanded="false">
-        <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
-            <span class="material-icons-round" style="font-size:18px; color:var(--text-secondary); flex-shrink:0;">description</span>
-            <div style="min-width:0;">
-                <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    {{ entry.contract.title }}
-                </div>
-                <div style="font-size:0.75rem; color:var(--text-secondary);">
-                    {{ entry.contract.start_date|date:"d M Y" }} → {{ entry.contract.end_date|date:"d M Y" }}
-                </div>
-            </div>
-        </div>
-        <div style="display:flex; align-items:center; gap:20px; flex-shrink:0;">
-            <div style="text-align:right;">
-                <div style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">Points</div>
-                <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">
-                    <span class="material-icons-round" style="font-size:13px; color:#f59e0b; vertical-align:middle;">star</span>
-                    {{ entry.total_points }}
-                </div>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">Units</div>
-                <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">{{ entry.total_units }}</div>
-            </div>
-            <span class="material-icons-round history-chevron" style="color:var(--text-secondary); transition:transform 0.2s;">expand_more</span>
-        </div>
-    </button>
-
-    <div class="history-body" style="display:none;">
-        <!-- Inner search for products in this contract -->
-        <div class="search-wrap" style="margin-bottom:10px; max-width:280px;">
-            <span class="material-icons-round">search</span>
-            <input type="text" placeholder="Search product…" oninput="filterHistoryProducts(this)" autocomplete="off">
-        </div>
-        <div class="history-products-wrap">
-            {% if entry.products_data %}
-            {% for item in entry.products_data %}
-            <div class="history-product-row" data-hpname="{{ item.cp.product.designation|lower }} {{ item.cp.external_designation|lower }}">
-                <div style="flex:1; min-width:0;">
-                    <div style="font-size:0.83rem; font-weight:500; color:var(--text-primary); margin-bottom:1px;">
-                        {{ item.cp.product.designation }}
-                    </div>
-                    <div style="font-size:0.73rem; color:var(--text-secondary); font-family:monospace;">
-                        {{ item.cp.external_designation }}
-                    </div>
-                    <div style="font-size:0.73rem; color:var(--text-secondary); margin-top:2px;">
-                        {{ item.units_sold }} unit{{ item.units_sold|pluralize }} · {{ item.cp.points_per_unit }} pt/unit
-                    </div>
-                </div>
-                <div style="text-align:right; flex-shrink:0;">
-                    <span class="material-icons-round" style="font-size:13px; color:#f59e0b; vertical-align:middle;">star</span>
-                    <span style="font-weight:700; color:var(--text-primary);">{{ item.points }} pts</span>
-                </div>
-            </div>
-            {% endfor %}
-            {% else %}
-            <div style="padding:12px; text-align:center; font-size:0.83rem; color:var(--text-secondary);">No sales recorded for this contract.</div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-{% endfor %}
-</div>
-
-<div id="noHistoryMsg" style="display:none; text-align:center; padding:24px; font-size:0.84rem; color:var(--text-secondary);">
-    No contracts match your search.
-</div>
-{% endif %}
 
 {% endif %}
 
@@ -287,13 +333,27 @@
 
 {% block extra_js %}
 <script>
+    /* ── Snap scroll ── */
+    function scrollToSection(index) {
+        const content = document.querySelector('.content');
+        content.scrollTo({ top: index * content.clientHeight, behavior: 'smooth' });
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        const content = document.querySelector('.content');
+        const dots    = document.querySelectorAll('.snap-dot');
+        if (!content || !dots.length) return;
+        content.addEventListener('scroll', function () {
+            const active = Math.round(this.scrollTop / this.clientHeight);
+            dots.forEach((d, i) => d.classList.toggle('active', i === active));
+        }, { passive: true });
+    });
+
     /* ── Active contract product search / filter / sort ── */
     let prodStatusFilter = 'all';
     let prodSortOrder    = null;
 
     function filterProdStatus(val, btn) {
         prodStatusFilter = val;
-        document.querySelectorAll('#productsGrid').closest ? null : null; // noop
         btn.closest('div').querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         filterProductCards();
@@ -304,6 +364,7 @@
         btn.closest('div').querySelectorAll('.sort-pill').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const grid  = document.getElementById('productsGrid');
+        if (!grid) return;
         const cards = Array.from(grid.querySelectorAll('.product-card'));
         cards.sort((a, b) => {
             const pa = parseInt(a.dataset.points || 0);
@@ -333,6 +394,45 @@
         if (msg) msg.style.display = visible === 0 ? 'block' : 'none';
     }
 
+    /* ── Recent sales search / filter ── */
+    let salesStatusFilter = 'all';
+    const salesCountEl = document.getElementById('salesCount');
+    const SALES_TOTAL  = salesCountEl ? salesCountEl.textContent : '';
+
+    function setSalesFilter(val, btn) {
+        salesStatusFilter = val;
+        document.querySelectorAll('#salesFilters .filter-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterSales();
+    }
+
+    function filterSales() {
+        const q        = (document.getElementById('salesSearch')?.value || '').toLowerCase().trim();
+        const fromDate = document.getElementById('salesFrom')?.value || '';
+        const toDate   = document.getElementById('salesTo')?.value   || '';
+        let visible = 0;
+        document.querySelectorAll('#salesTableBody tr').forEach(row => {
+            const matchSearch = !q || (row.dataset.search || '').includes(q);
+            const matchStatus = salesStatusFilter === 'all' || row.dataset.status === salesStatusFilter;
+            const rowDate     = row.dataset.date || '';
+            const matchFrom   = !fromDate || rowDate >= fromDate;
+            const matchTo     = !toDate   || rowDate <= toDate;
+            const show = matchSearch && matchStatus && matchFrom && matchTo;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        const isFiltered = q || salesStatusFilter !== 'all' || fromDate || toDate;
+        if (salesCountEl) salesCountEl.textContent = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : SALES_TOTAL;
+        const msg = document.getElementById('noSalesMsg');
+        if (msg) msg.style.display = visible === 0 ? 'block' : 'none';
+    }
+
+    function clearSalesDates() {
+        document.getElementById('salesFrom').value = '';
+        document.getElementById('salesTo').value   = '';
+        filterSales();
+    }
+
     /* ── History: collapse/expand ── */
     function toggleHistory(btn) {
         const body    = btn.nextElementSibling;
@@ -343,8 +443,9 @@
         btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     }
 
-    /* ── History: outer search + filter ── */
+    /* ── History: outer search + filter + sort ── */
     let historyStatusFilter = 'all';
+    let historySortOrder    = null;
 
     function filterHistoryStatus(val, btn) {
         historyStatusFilter = val;
@@ -373,14 +474,12 @@
         if (msg) msg.style.display = visible === 0 ? 'block' : 'none';
     }
 
-    /* ── History: sort by points ── */
-    let historySortOrder = null;
-
     function sortHistory(order, btn) {
         historySortOrder = order;
         document.querySelectorAll('#historyFilters .sort-pill').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const list  = document.getElementById('historyList');
+        if (!list) return;
         const cards = Array.from(list.querySelectorAll('.history-card'));
         cards.sort((a, b) => {
             const pa = parseInt(a.dataset.points || 0);
@@ -406,53 +505,103 @@
 
 {% block extra_css %}
 <style>
+    /* ── Snap scroll (activated by html.portal-snap) ── */
+    html.portal-snap,
+    html.portal-snap body { overflow: hidden; height: 100vh; }
+    html.portal-snap .main    { height: 100vh; overflow: hidden; min-height: unset !important; display: flex; flex-direction: column; }
+    html.portal-snap .content { height: calc(100vh - 63px); overflow-y: scroll; scroll-snap-type: y mandatory; padding: 0; flex: none; scrollbar-width: none; }
+    html.portal-snap .content::-webkit-scrollbar { display: none; }
+
+    .snap-section {
+        height: calc(100vh - 63px);
+        scroll-snap-align: start;
+        padding: 20px 24px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow: hidden;
+    }
+
+    .snap-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-primary);
+        flex-shrink: 0;
+    }
+
+    .snap-empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        text-align: center;
+    }
+    .snap-empty .material-icons-round { font-size: 40px; opacity: 0.4; }
+
+    /* Snap dot indicators */
+    .snap-dots {
+        position: fixed;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 200;
+    }
+    .snap-dot {
+        width: 6px;
+        height: 10px;
+        border-radius: 3px;
+        border: none;
+        background: var(--card-border);
+        cursor: pointer;
+        padding: 0;
+        transition: height 0.25s ease, background 0.2s;
+    }
+    .snap-dot.active { height: 22px; background: var(--accent); }
+
+    /* ── Existing component styles ── */
     .contract-banner {
         display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
         background:var(--card-bg); border:1px solid var(--card-border);
         border-left:4px solid #22c55e;
-        border-radius:12px; padding:16px 20px; margin-bottom:20px;
+        border-radius:12px; padding:14px 18px; flex-shrink:0;
     }
     .stats-row {
-        display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px;
+        display:grid; grid-template-columns:repeat(3,1fr); gap:14px; flex-shrink:0;
     }
     .stat-card {
         background:var(--card-bg); border:1px solid var(--card-border);
-        border-radius:12px; padding:16px 18px; display:flex; align-items:center; gap:14px;
+        border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:12px;
     }
-    .stat-icon {
-        width:40px; height:40px; border-radius:10px; flex-shrink:0;
-        display:flex; align-items:center; justify-content:center;
-    }
+    .stat-icon { width:40px; height:40px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
     .stat-icon .material-icons-round { font-size:20px; color:white; }
     .stat-points   .stat-icon { background:linear-gradient(135deg,#f59e0b,#ef4444); }
     .stat-units    .stat-icon { background:linear-gradient(135deg,var(--accent),#6366f1); }
     .stat-products .stat-icon { background:linear-gradient(135deg,#22c55e,#16a34a); }
     .stat-label { font-size:0.72rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:2px; }
-    .stat-value { font-size:1.6rem; font-weight:700; color:var(--text-primary); line-height:1.1; }
+    .stat-value { font-size:1.5rem; font-weight:700; color:var(--text-primary); line-height:1.1; }
     .stat-sub   { font-size:0.72rem; color:var(--text-secondary); margin-top:3px; }
 
-    .section-title {
-        display:flex; align-items:center; gap:7px;
-        font-size:0.82rem; font-weight:700; text-transform:uppercase;
-        letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:12px;
-    }
-
-    /* Search input */
-    .search-wrap {
-        position:relative; display:flex; align-items:center;
-    }
-    .search-wrap .material-icons-round {
-        position:absolute; left:8px; font-size:16px; color:var(--text-secondary); pointer-events:none;
-    }
+    .search-wrap { position:relative; display:flex; align-items:center; }
+    .search-wrap .material-icons-round { position:absolute; left:8px; font-size:16px; color:var(--text-secondary); pointer-events:none; }
     .search-wrap input {
-        padding:5px 10px 5px 30px; border-radius:8px; width:230px;
+        padding:5px 10px 5px 30px; border-radius:8px; width:220px;
         border:1px solid var(--card-border); background:var(--content-bg);
-        color:var(--text-primary); font-size:0.82rem; font-family:'Inter',sans-serif;
-        transition:border-color 0.15s;
+        color:var(--text-primary); font-size:0.82rem; font-family:'Inter',sans-serif; transition:border-color 0.15s;
     }
     .search-wrap input:focus { outline:none; border-color:var(--accent); }
 
-    /* Filter pills */
     .filter-pill {
         padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:600;
         border:1px solid var(--card-border); background:transparent;
@@ -461,7 +610,6 @@
     .filter-pill:hover  { border-color:var(--accent); color:var(--accent); }
     .filter-pill.active { background:var(--accent); border-color:var(--accent); color:white; }
 
-    /* Sort pills */
     .sort-pill {
         display:inline-flex; align-items:center; gap:3px;
         padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:600;
@@ -471,40 +619,38 @@
     .sort-pill:hover  { border-color:var(--accent); color:var(--accent); }
     .sort-pill.active { background:rgba(14,165,233,0.12); border-color:var(--accent); color:var(--accent); }
 
-    /* History list scroll */
-    .history-list-wrap {
-        max-height:520px; overflow-y:auto;
-        scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;
-        padding-right:4px;
-    }
-    .history-list-wrap::-webkit-scrollbar { width:5px; }
-    .history-list-wrap::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:3px; }
-
-    /* Products grid */
     .products-grid {
-        display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr));
-        gap:12px;
-        max-height:380px; overflow-y:auto;
+        display:grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-auto-rows: auto;
+        gap:12px; overflow-y:auto;
         scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;
     }
     .products-grid::-webkit-scrollbar { width:5px; }
     .products-grid::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:3px; }
     .product-card {
-        background:var(--card-bg); border:1px solid var(--card-border);
-        border-radius:12px; padding:14px;
+        background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; padding:14px;
+        display:flex; flex-direction:column; justify-content:space-between;
     }
     .points-display { display:flex; align-items:baseline; gap:4px; }
     .points-number  { font-size:1.35rem; font-weight:700; color:var(--text-primary); }
     .points-label   { font-size:0.82rem; font-weight:600; color:var(--text-secondary); }
     .points-rate    { font-size:0.73rem; color:var(--text-secondary); margin-left:4px; }
 
-    /* Sales log */
-    .sales-scroll {
-        max-height:320px; overflow-y:auto;
-        scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;
+    .date-input {
+        padding: 4px 8px; border-radius: 8px; border: 1px solid var(--card-border);
+        background: var(--content-bg); color: var(--text-primary);
+        font-size: 0.78rem; font-family: 'Inter', sans-serif; cursor: pointer;
+        transition: border-color 0.15s;
     }
-    .sales-scroll::-webkit-scrollbar { width:5px; }
-    .sales-scroll::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:3px; }
+    .date-input:focus { outline: none; border-color: var(--accent); }
+    .clear-date-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--card-border);
+        background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+    }
+    .clear-date-btn:hover { border-color: var(--accent); color: var(--accent); }
+
     .sales-table { width:100%; border-collapse:collapse; font-size:0.84rem; }
     .sales-table th {
         position:sticky; top:0; z-index:1; background:var(--card-bg);
@@ -516,11 +662,12 @@
     .sales-table tbody tr:last-child td { border-bottom:none; }
     .sales-table tbody tr:hover td { background:rgba(255,255,255,0.02); }
 
-    /* History */
-    .history-card {
-        background:var(--card-bg); border:1px solid var(--card-border);
-        border-radius:12px; margin-bottom:10px; overflow:hidden;
-    }
+    .sale-badge { display:inline-flex; align-items:center; padding:2px 9px; border-radius:20px; font-size:0.72rem; font-weight:600; }
+    .sale-accepted { background:rgba(34,197,94,0.12);  color:#22c55e; }
+    .sale-rejected { background:rgba(239,68,68,0.12);  color:#ef4444; }
+    .sale-pending  { background:rgba(245,158,11,0.12); color:#f59e0b; }
+
+    .history-card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; overflow:hidden; flex-shrink:0; }
     .history-header {
         width:100%; display:flex; align-items:center; gap:12px;
         padding:14px 16px; background:transparent; border:none;
@@ -529,7 +676,7 @@
     .history-header:hover { background:var(--sidebar-hover); }
     .history-body { border-top:1px solid var(--card-border); padding:14px 16px; }
     .history-products-wrap {
-        max-height:300px; overflow-y:auto;
+        max-height:220px; overflow-y:auto;
         scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;
         display:flex; flex-direction:column; gap:6px;
     }
@@ -541,10 +688,21 @@
     }
 
     @media (max-width:768px) {
-        .stats-row { grid-template-columns:1fr; }
-        .products-grid { grid-template-columns:1fr; max-height:300px; }
-        .contract-banner { flex-direction:column; align-items:flex-start; }
-        .search-wrap input { width:160px; }
+        .snap-section { padding:12px 14px; gap:8px; }
+
+        .contract-banner { flex-direction:column; align-items:flex-start; gap:6px; padding:10px 14px; }
+
+        /* Keep 3 columns but compress the cards */
+        .stats-row { grid-template-columns:repeat(3,1fr); gap:8px; }
+        .stat-card { padding:10px 8px; gap:8px; flex-direction:column; align-items:center; text-align:center; }
+        .stat-icon { width:30px; height:30px; border-radius:8px; }
+        .stat-icon .material-icons-round { font-size:15px; }
+        .stat-label { font-size:0.62rem; }
+        .stat-value { font-size:1.1rem; }
+        .stat-sub { display:none; }
+
+        .products-grid { grid-template-columns:repeat(2,1fr); }
+        .search-wrap input { width:130px; }
     }
 </style>
 {% endblock %}

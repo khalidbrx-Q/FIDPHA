@@ -11,8 +11,11 @@ Critical points baked in:
   2. Duplicate / retry batches             → bulk_create(ignore_conflicts=True)
   3. Contract state change mid-sync        → contract re-validated inside atomic()
   4. Large batch sizes                     → MAX_BATCH_SIZE enforced before processing
-  5. Concurrent batches — pending warning  → checked in confirm_sync()
-  6. Validation atomicity                  → transaction.atomic() wraps full batch
+  5. Validation atomicity                  → transaction.atomic() wraps full batch
+
+Date validation rules:
+  - sale_datetime must be AFTER contract.last_sale_datetime (already synced)
+  - sale_datetime date must be BEFORE today (no same-day or future sales)
 """
 
 import datetime
@@ -123,15 +126,26 @@ def submit_sales_batch(
 
             rejection_reason = None
 
-            now = timezone.now()
+            now      = timezone.now()
+            today    = now.date()
+            sale_date = sale_import.sale_datetime.date()
 
             if not cp:
                 rejection_reason = f"Product '{ext}' not found in active contract"
 
-            elif sale_import.sale_datetime > now:
+            elif sale_date >= today:
                 rejection_reason = (
-                    f"sale_datetime is in the future "
+                    f"sale_datetime must be before today — same-day and future sales are not accepted "
                     f"({sale_import.sale_datetime.strftime('%Y-%m-%dT%H:%M:%S')})"
+                )
+
+            elif (
+                contract.last_sale_datetime is not None
+                and sale_import.sale_datetime <= contract.last_sale_datetime
+            ):
+                rejection_reason = (
+                    f"sale_datetime is already covered by a previous sync "
+                    f"(last accepted: {contract.last_sale_datetime.strftime('%Y-%m-%dT%H:%M:%S')})"
                 )
 
             elif sale_import.creation_datetime > now:
@@ -181,6 +195,7 @@ def submit_sales_batch(
                     creation_datetime=sale_import.creation_datetime,
                     quantity=sale_import.quantity,
                     ppv=sale_import.ppv,
+                    status=Sale.STATUS_PENDING,
                     token=token,
                 ))
                 if max_sale_dt is None or sale_import.sale_datetime > max_sale_dt:
@@ -200,15 +215,14 @@ def submit_sales_batch(
             # (same contract_product + sale_datetime) are silently skipped
             Sale.objects.bulk_create(sales_to_create, ignore_conflicts=True)
 
-            # Atomically update last_sale_datetime — select_for_update() above
-            # already holds the row lock, so this plain update is race-free
+            # Atomically update last_sale_datetime and last_sync_at
+            update_fields = {"last_sync_at": now}
             if max_sale_dt and (
                 contract.last_sale_datetime is None
                 or max_sale_dt > contract.last_sale_datetime
             ):
-                Contract.objects.filter(pk=contract.pk).update(
-                    last_sale_datetime=max_sale_dt
-                )
+                update_fields["last_sale_datetime"] = max_sale_dt
+            Contract.objects.filter(pk=contract.pk).update(**update_fields)
 
     accepted_count = len(sales_to_create)
     rejected_count = len(errors)
@@ -220,77 +234,3 @@ def submit_sales_batch(
         "rejected":  rejected_count,
         "errors":    errors,
     }
-
-
-# ---------------------------------------------------------------------------
-# Endpoint 3 — Confirm sync
-# ---------------------------------------------------------------------------
-
-def confirm_sync(
-    account_code: str,
-    batch_id: str,
-    pharmacy_last_sale_datetime,
-) -> dict:
-    """
-    Stamp last_sync_at on the contract and cross-check the reported datetime.
-
-    Args:
-        account_code:                  The pharmacy account code.
-        batch_id:                      The batch being confirmed.
-        pharmacy_last_sale_datetime:   The last sale datetime the pharmacy reports.
-
-    Returns:
-        Dict with contract_id, last_sync_at, last_sale_datetime,
-        sync_status, mismatch, and optional detail / pending_warning.
-    """
-    contract = get_active_contract(account_code)
-    now      = timezone.now()
-
-    Contract.objects.filter(pk=contract.pk).update(last_sync_at=now)
-    contract.refresh_from_db()
-
-    # Cross-check: compare what pharmacy reported vs what we accepted
-    mismatch = False
-    detail   = None
-
-    if pharmacy_last_sale_datetime and contract.last_sale_datetime:
-        if pharmacy_last_sale_datetime.replace(microsecond=0) != contract.last_sale_datetime.replace(microsecond=0):
-            mismatch = True
-            detail = (
-                f"You reported "
-                f"{pharmacy_last_sale_datetime.strftime('%Y-%m-%dT%H:%M:%S')} "
-                f"but we only accepted up to "
-                f"{contract.last_sale_datetime.strftime('%Y-%m-%dT%H:%M:%S')}. "
-                f"Some rows may have been rejected."
-            )
-
-    # Warn if there are still pending rows for this batch
-    pending_count = SaleImport.objects.filter(
-        batch_id=batch_id,
-        account_code=account_code,
-        status=SaleImport.STATUS_PENDING,
-    ).count()
-
-    has_warning  = mismatch or pending_count > 0
-    sync_status  = "warning" if has_warning else "ok"
-
-    result: dict = {
-        "contract_id":        contract.pk,
-        "last_sync_at":       now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "last_sale_datetime": (
-            contract.last_sale_datetime.strftime("%Y-%m-%dT%H:%M:%S")
-            if contract.last_sale_datetime else None
-        ),
-        "sync_status": sync_status,
-        "mismatch":    mismatch,
-    }
-
-    if mismatch:
-        result["detail"] = detail
-
-    if pending_count > 0:
-        result["pending_warning"] = (
-            f"{pending_count} rows from batch '{batch_id}' are still pending."
-        )
-
-    return result

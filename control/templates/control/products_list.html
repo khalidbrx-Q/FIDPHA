@@ -6,16 +6,6 @@
 
 {% block content %}
 
-<div class="page-header">
-    <div>
-        <div class="page-header-title">Products</div>
-        <div class="page-header-sub">{{ products|length }} product{{ products|length|pluralize }}</div>
-    </div>
-    <a href="{% url 'control:products_create' %}" class="btn btn-primary">
-        <span class="material-icons-round">add</span> New Product
-    </a>
-</div>
-
 <!-- Toolbar -->
 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
     <div class="search-bar" style="flex:1; min-width:200px; max-width:400px;">
@@ -31,8 +21,13 @@
             <button class="filter-pill" onclick="setFilter('inactive',this)">Inactive</button>
         </div>
     </div>
-    <span id="prodCount" style="font-size:0.82rem; color:var(--text-secondary);"></span>
+    <span id="prodCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ products|length }} product{{ products|length|pluralize }}</span>
     <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear</button>
+    {% if perms.fidpha.add_product %}
+    <a href="{% url 'control:products_create' %}" class="btn btn-primary" style="margin-left:auto;">
+        <span class="material-icons-round">add</span> New Product
+    </a>
+    {% endif %}
 </div>
 
 <div class="card" style="padding:0; overflow:hidden;">
@@ -43,6 +38,7 @@
                 <tr>
                     <th>Code</th>
                     <th>Designation</th>
+                    <th>PPV</th>
                     <th>Status</th>
                     <th>Contracts</th>
                     <th style="width:96px;"></th>
@@ -56,6 +52,9 @@
                     style="cursor:pointer;">
                     <td><span class="code-chip">{{ p.code }}</span></td>
                     <td style="font-weight:600; color:var(--text-primary);">{{ p.designation }}</td>
+                    <td style="font-size:0.85rem;">
+                        {% if p.ppv %}{{ p.ppv }}{% else %}<span class="dim-dash">—</span>{% endif %}
+                    </td>
                     <td>
                         {% if p.status == "active" %}
                             <span class="badge badge-active">Active</span>
@@ -72,15 +71,21 @@
                     </td>
                     <td onclick="event.stopPropagation()">
                         <div class="table-actions">
+                            {% if perms.fidpha.add_product %}
                             <a href="{% url 'control:products_create' %}?clone={{ p.pk }}" class="action-btn" title="Clone">
                                 <span class="material-icons-round">content_copy</span>
                             </a>
+                            {% endif %}
+                            {% if perms.fidpha.change_product %}
                             <a href="{% url 'control:products_edit' p.pk %}" class="action-btn" title="Edit">
                                 <span class="material-icons-round">edit</span>
                             </a>
+                            {% endif %}
+                            {% if perms.fidpha.delete_product %}
                             <a href="{% url 'control:products_delete' p.pk %}" class="action-btn action-delete" title="Delete">
                                 <span class="material-icons-round">delete</span>
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -96,9 +101,11 @@
         <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">medication_liquid</span>
         <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No products yet</div>
         <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Add products to link them to pharmacy contracts.</div>
+        {% if perms.fidpha.add_product %}
         <a href="{% url 'control:products_create' %}" class="btn btn-primary" style="display:inline-flex;">
             <span class="material-icons-round">add</span> New Product
         </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>
@@ -108,8 +115,10 @@
 
 {% block extra_css %}
 <style>
+    .content { padding-bottom: 0; }
+
     .table-scroll-wrapper {
-        max-height: 640px; overflow-y: auto;
+        max-height: calc(100vh - 160px); overflow-y: auto;
         scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
     }
     .table-scroll-wrapper::-webkit-scrollbar { width: 5px; }
@@ -156,6 +165,8 @@
 {% block extra_js %}
 <script>
     let fStatus = 'all';
+    const prodCountEl   = document.getElementById('prodCount');
+    const PROD_TOTAL    = prodCountEl.textContent;
 
     function setFilter(value, btn) {
         fStatus = value;
@@ -176,13 +187,14 @@
         });
         const isFiltered = q || fStatus !== 'all';
         document.getElementById('noProdResults').style.display = (isFiltered && visible === 0) ? 'block' : 'none';
-        document.getElementById('prodCount').textContent = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : '';
+        prodCountEl.textContent = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : PROD_TOTAL;
         document.getElementById('resetBtn').style.display = isFiltered ? 'inline-block' : 'none';
     }
 
     function resetAll() {
         document.getElementById('prodSearch').value = '';
         fStatus = 'all';
+        prodCountEl.textContent = PROD_TOTAL;
         document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
         document.querySelector('.filter-pill').classList.add('active');
         applyFilters();

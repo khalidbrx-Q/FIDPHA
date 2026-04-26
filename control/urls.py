@@ -85,6 +85,16 @@ urlpatterns = [
     path("tokens/<int:pk>/reactivate/", views.tokens_reactivate, name="tokens_reactivate"),
     path("tokens/<int:pk>/delete/", views.tokens_delete, name="tokens_delete"),
 
+    # Sales Review
+    path("sales/",                   views.sales_list,         name="sales_list"),
+    path("sales/<int:pk>/accept/",   views.sale_accept,        name="sale_accept"),
+    path("sales/<int:pk>/reject/",   views.sale_reject,        name="sale_reject"),
+    path("sales/bulk-accept/",       views.sales_bulk_accept,  name="sales_bulk_accept"),
+    path("sales/bulk-update/",       views.sales_bulk_update,  name="sales_bulk_update"),
+    path("sales/api/contracts/",     views.sales_api_contracts, name="sales_api_contracts"),
+    path("sales/api/batches/",       views.sales_api_batches,   name="sales_api_batches"),
+    path("sales/api/sales/",         views.sales_api_sales,     name="sales_api_sales"),
+
     # Configuration — Social Accounts
     path("settings/social-accounts/", views.social_accounts_list, name="social_accounts_list"),
     path("settings/social-accounts/<int:pk>/unlink/", views.social_account_unlink, name="social_account_unlink"),

@@ -102,7 +102,7 @@ def setup_profile(request):
             verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
             try:
                 send_mail(
-                    "FIDPHA — Verify your email",
+                    "WinInPharma — Verify your email",
                     f"Click the link to verify your email: {verify_url}",
                     settings.DEFAULT_FROM_EMAIL,
                     [email],
@@ -163,7 +163,7 @@ def portal_profile(request):
                 verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
                 try:
                     send_mail(
-                        "FIDPHA — Verify your new email",
+                        "WinInPharma — Verify your new email",
                         f"Click the link to verify your new email: {verify_url}",
                         settings.DEFAULT_FROM_EMAIL,
                         [email],
@@ -264,7 +264,7 @@ def verify_pending(request):
     verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
     try:
         send_mail(
-            "FIDPHA — Verify your email",
+            "WinInPharma — Verify your email",
             f"Click the link to verify your email: {verify_url}",
             settings.DEFAULT_FROM_EMAIL,
             [request.user.email],
@@ -327,9 +327,9 @@ def portal_dashboard(request):
         active_contract_days_remaining = delta.days
 
     for contract in contracts:
-        for cp in Contract_Product.objects.filter(contract=contract):
-            sold = Sale.objects.filter(contract_product=cp).aggregate(t=Sum("quantity"))["t"] or 0
-            total_points += _calculate_points(sold, cp.points_per_unit, cp.target_quantity)
+        for cp in Contract_Product.objects.filter(contract=contract).select_related("product"):
+            for s in Sale.objects.filter(contract_product=cp, status=Sale.STATUS_ACCEPTED).only("quantity"):
+                total_points += _calculate_points(s.quantity, cp.product.ppv)
 
     return render(request, "fidpha/dashboard.html", {
         "account": account,
@@ -368,13 +368,15 @@ def portal_contracts(request):
 # Sales / Loyalty
 # -----------------------
 
-def _calculate_points(units_sold, points_per_unit, target_quantity):
+def _calculate_points(quantity, ppv):
     """
-    Points rule — to be finalised.
-    Currently: simple linear (units × pts_per_unit, no threshold gate).
-    target_quantity is stored in the model but not used here yet.
+    Points rule: round(ppv × quantity) — 1 point per dirham, standard rounding.
+    ppv is taken from the Product table, not from the sale record.
+    Returns 0 if ppv is None.
     """
-    return units_sold * points_per_unit
+    if ppv is None:
+        return 0
+    return round(float(ppv) * quantity)
 
 
 @login_required(login_url="/portal/login/")
@@ -397,7 +399,6 @@ def portal_sales(request):
     products_data = []
     total_points  = 0
     total_units   = 0
-    recent_sales  = []
 
     def _build_products_data(contract):
         data, pts, units = [], 0, 0
@@ -405,21 +406,25 @@ def portal_sales(request):
                    .filter(contract=contract)
                    .select_related("product")
                    .order_by("product__designation")):
-            sold     = (Sale.objects.filter(contract_product=cp)
-                        .aggregate(t=Sum("quantity"))["t"] or 0)
-            points = _calculate_points(sold, cp.points_per_unit, cp.target_quantity)
+            accepted = Sale.objects.filter(contract_product=cp, status=Sale.STATUS_ACCEPTED)
+            sold     = accepted.aggregate(t=Sum("quantity"))["t"] or 0
+            points   = sum(
+                _calculate_points(s.quantity, cp.product.ppv)
+                for s in accepted.only("quantity")
+            )
             data.append({"cp": cp, "units_sold": sold, "points": points})
             pts += points; units += sold
         return data, pts, units
 
     if active_contract:
         products_data, total_points, total_units = _build_products_data(active_contract)
-        recent_sales = (
-            Sale.objects
-            .filter(contract_product__contract=active_contract)
-            .select_related("contract_product__product")
-            .order_by("-sale_datetime")[:100]
-        )
+
+    all_sales = (
+        Sale.objects
+        .filter(contract_product__contract__account=account)
+        .select_related("contract_product__product", "contract_product__contract")
+        .order_by("-sale_datetime")
+    )
 
     # Historical inactive contracts
     past_contracts = []
@@ -437,7 +442,7 @@ def portal_sales(request):
         "products_data":   products_data,
         "total_points":    total_points,
         "total_units":     total_units,
-        "recent_sales":    recent_sales,
+        "all_sales":       all_sales,
         "past_contracts":  past_contracts,
     })
 

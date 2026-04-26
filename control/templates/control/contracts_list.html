@@ -6,16 +6,6 @@
 
 {% block content %}
 
-<div class="page-header">
-    <div>
-        <div class="page-header-title">Contracts</div>
-        <div class="page-header-sub">{{ contracts|length }} contract{{ contracts|length|pluralize }}</div>
-    </div>
-    <a href="{% url 'control:contracts_create' %}" class="btn btn-primary">
-        <span class="material-icons-round">add</span> New Contract
-    </a>
-</div>
-
 <!-- Toolbar -->
 <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -29,6 +19,11 @@
             <input type="text" id="ctCity" placeholder="Filter by city…"
                    oninput="applyFilters()" autocomplete="off">
         </div>
+        {% if perms.fidpha.add_contract %}
+        <a href="{% url 'control:contracts_create' %}" class="btn btn-primary" style="margin-left:auto; flex-shrink:0;">
+            <span class="material-icons-round">add</span> New Contract
+        </a>
+        {% endif %}
     </div>
     <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
         <div style="display:flex; gap:6px; align-items:center;">
@@ -47,7 +42,7 @@
                 <button class="filter-pill" onclick="setFilter('synced','no',this)">Never synced</button>
             </div>
         </div>
-        <span id="ctCount" style="font-size:0.82rem; color:var(--text-secondary);"></span>
+        <span id="ctCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ contracts|length }} contract{{ contracts|length|pluralize }}</span>
         <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear filters</button>
     </div>
 </div>
@@ -116,18 +111,24 @@
                     </td>
                     <td onclick="event.stopPropagation()">
                         <div class="table-actions">
+                            {% if perms.fidpha.add_contract %}
                             <a href="{% url 'control:contracts_create' %}?clone={{ ct.pk }}"
                                class="action-btn" title="Clone">
                                 <span class="material-icons-round">content_copy</span>
                             </a>
+                            {% endif %}
+                            {% if perms.fidpha.change_contract %}
                             <a href="{% url 'control:contracts_edit' ct.pk %}"
                                class="action-btn" title="Edit">
                                 <span class="material-icons-round">edit</span>
                             </a>
+                            {% endif %}
+                            {% if perms.fidpha.delete_contract %}
                             <a href="{% url 'control:contracts_delete' ct.pk %}"
                                class="action-btn action-delete" title="Delete">
                                 <span class="material-icons-round">delete</span>
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -143,9 +144,11 @@
         <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">description_off</span>
         <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No contracts yet</div>
         <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Create a contract to link products to a pharmacy account.</div>
+        {% if perms.fidpha.add_contract %}
         <a href="{% url 'control:contracts_create' %}" class="btn btn-primary" style="display:inline-flex;">
             <span class="material-icons-round">add</span> New Contract
         </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>
@@ -155,9 +158,11 @@
 
 {% block extra_css %}
 <style>
+    .content { padding-bottom: 0; }
+
     /* Scrollable table container — toolbar stays fixed, only rows scroll */
     .table-scroll-wrapper {
-        max-height: 620px;
+        max-height: calc(100vh - 210px);
         overflow-y: auto;
         scrollbar-width: thin;
         scrollbar-color: var(--card-border) transparent;
@@ -211,6 +216,8 @@
 {% block extra_js %}
 <script>
     let fStatus = 'all', fSynced = 'all';
+    const ctCountEl  = document.getElementById('ctCount');
+    const CT_TOTAL   = ctCountEl.textContent;
 
     function rowNav(row) { window.location = row.dataset.href; }
 
@@ -238,7 +245,7 @@
         });
         const isFiltered = q || cityQ || fStatus !== 'all' || fSynced !== 'all';
         document.getElementById('noCtResults').style.display = (isFiltered && visible === 0) ? 'block' : 'none';
-        document.getElementById('ctCount').textContent       = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : '';
+        ctCountEl.textContent = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : CT_TOTAL;
         document.getElementById('resetBtn').style.display    = isFiltered ? 'inline-block' : 'none';
     }
 

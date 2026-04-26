@@ -17,6 +17,7 @@ Author: FIDPHA Dev Team
 Last updated: April 2026
 """
 
+import unittest
 from datetime import timedelta
 
 from django.test import TestCase
@@ -34,7 +35,6 @@ from sales.models import Sale, SaleImport
 from sales.services import (
     BatchTooLargeError,
     MAX_BATCH_SIZE,
-    confirm_sync,
     submit_sales_batch,
 )
 
@@ -56,7 +56,7 @@ def make_product(code="PROD-001", designation="Doliprane 1000", status=STATUS_AC
     return Product.objects.create(code=code, designation=designation, status=status)
 
 
-def make_contract(account, status=STATUS_ACTIVE, days_back=1, days_ahead=30):
+def make_contract(account, status=STATUS_ACTIVE, days_back=3, days_ahead=30):
     now = timezone.now()
     return Contract.objects.create(
         title="Test Contract",
@@ -74,7 +74,7 @@ def make_token(name="Test Token"):
 
 def make_row(ext="DOLI1000", hours_ago=2, quantity=5, ppv=12.50):
     """Return a valid sale row dict (datetimes already parsed as datetime objects)."""
-    dt = timezone.now() - timedelta(hours=hours_ago)
+    dt = timezone.now() - timedelta(days=1, hours=hours_ago)
     return {
         "external_designation": ext,
         "sale_datetime":        dt,
@@ -233,8 +233,8 @@ class SubmitSalesBatchTests(TestCase):
 
     def test_last_sale_datetime_is_max_of_accepted_rows(self):
         now   = timezone.now()
-        early = now - timedelta(hours=5)
-        late  = now - timedelta(hours=1)
+        early = now - timedelta(days=1, hours=5)
+        late  = now - timedelta(days=1, hours=1)
         rows  = [
             {**make_row(), "sale_datetime": early, "creation_datetime": early},
             {**make_row(), "sale_datetime": late,  "creation_datetime": late},
@@ -258,8 +258,8 @@ class SubmitSalesBatchTests(TestCase):
     def test_creation_datetime_before_sale_datetime_is_rejected(self):
         now = timezone.now()
         row = {**make_row(),
-               "sale_datetime":     now - timedelta(hours=1),
-               "creation_datetime": now - timedelta(hours=5)}
+               "sale_datetime":     now - timedelta(days=1, hours=1),
+               "creation_datetime": now - timedelta(days=1, hours=5)}
         result = self._submit(rows=[row])
         self.assertEqual(result["rejected"], 1)
 
@@ -267,8 +267,8 @@ class SubmitSalesBatchTests(TestCase):
 
     def test_last_sale_datetime_not_overwritten_by_older_batch(self):
         now   = timezone.now()
-        late  = now - timedelta(hours=1)
-        early = now - timedelta(hours=6)
+        late  = now - timedelta(days=1, hours=1)
+        early = now - timedelta(days=1, hours=6)
 
         self._submit(rows=[{**make_row(), "sale_datetime": late,  "creation_datetime": late}],
                      batch_id="BATCH-001")
@@ -306,9 +306,10 @@ class SubmitSalesBatchTests(TestCase):
 
 
 # ===========================================================================
-# confirm_sync()
+# confirm_sync()  [REMOVED — function deleted in architecture redesign]
 # ===========================================================================
 
+@unittest.skip("confirm_sync() removed — last_sync_at is auto-stamped on batch submission")
 class ConfirmSyncTests(TestCase):
 
     def setUp(self):

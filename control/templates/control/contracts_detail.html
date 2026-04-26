@@ -94,7 +94,15 @@
 <!-- SALES SYNC                                                         -->
 <!-- ================================================================ -->
 <div class="card">
-    <div class="section-label">Sales Sync</div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div class="section-label" style="margin-bottom:0;">Sales Sync</div>
+        {% if sale_count %}
+        <a href="{% url 'control:sales_list' %}?account={{ contract.account.pk }}&contract={{ contract.pk }}"
+           class="btn btn-secondary" style="padding:5px 12px; font-size:0.8rem;">
+            <span class="material-icons-round" style="font-size:15px;">point_of_sale</span> Review Sales
+        </a>
+        {% endif %}
+    </div>
     <div class="info-row">
         <span class="info-key">Sales Recorded</span>
         <span class="info-val">

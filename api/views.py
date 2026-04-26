@@ -33,7 +33,6 @@ from fidpha.services import (
 )
 from sales.services import (
     BatchTooLargeError,
-    confirm_sync,
     submit_sales_batch,
 )
 
@@ -313,67 +312,5 @@ class SalesSubmitView(APIView):
             )
         except Exception:
             return _error("SERVER_ERROR", "An unexpected error occurred.", 500)
-
-        return Response(result, status=status.HTTP_200_OK)
-
-
-# ---------------------------------------------------------------------------
-# Endpoint 3 — POST /api/v1/contract/sync/
-# ---------------------------------------------------------------------------
-
-class ContractSyncView(APIView):
-    """
-    Pharmacy confirms it has finished syncing its sales batch.
-
-    Sets last_sync_at on the contract and cross-checks the reported
-    last_sale_datetime against what we actually accepted.
-
-    Request Body:
-        {
-            "account_code": "PH-001",
-            "batch_id": "BATCH-20260418-001",
-            "last_sale_datetime": "2026-04-17T14:45:00"
-        }
-
-    Success Response (200):
-        {
-            "contract_id": 1,
-            "last_sync_at": "2026-04-18T09:14:00Z",
-            "last_sale_datetime": "2026-04-17T14:45:00",
-            "sync_status": "ok" | "warning",
-            "mismatch": false | true,
-            "detail": "..." (only when mismatch=true)
-        }
-    """
-
-    def post(self, request, version: str = None) -> Response:
-        data         = request.data
-        account_code = data.get("account_code", "").strip()
-        batch_id     = data.get("batch_id", "").strip()
-        reported_dt  = _parse_dt(data.get("last_sale_datetime"))
-
-        if not account_code:
-            return _error("MISSING_FIELD", "account_code is required", 400)
-        if not batch_id:
-            return _error("MISSING_FIELD", "batch_id is required", 400)
-
-        try:
-            result = confirm_sync(
-                account_code=account_code,
-                batch_id=batch_id,
-                pharmacy_last_sale_datetime=reported_dt,
-            )
-        except AccountNotFoundError:
-            return _error(
-                "ACCOUNT_NOT_FOUND",
-                f"No account found with code '{account_code}'",
-                404,
-            )
-        except ContractNotFoundError:
-            return _error(
-                "CONTRACT_NOT_FOUND",
-                f"No active contract found for account '{account_code}'",
-                404,
-            )
 
         return Response(result, status=status.HTTP_200_OK)

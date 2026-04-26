@@ -1,3 +1,5 @@
+import hashlib
+
 from django.utils import timezone
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
@@ -16,9 +18,10 @@ class APITokenAuthentication(BaseAuthentication):
             raise AuthenticationFailed("Invalid token format. Use: Token <token>")
 
         token_key = parts[1]
+        token_hash = hashlib.sha256(token_key.encode()).hexdigest()
 
         try:
-            token = APIToken.objects.get(token=token_key, is_active=True)
+            token = APIToken.objects.get(token=token_hash, is_active=True)
         except APIToken.DoesNotExist:
             raise AuthenticationFailed("Invalid or revoked token")
 

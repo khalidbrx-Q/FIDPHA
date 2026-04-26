@@ -1,0 +1,1085 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Sales Review{% endblock %}
+{% block page_breadcrumb %}Sales Review{% endblock %}
+{% block nav_sales %}active{% endblock %}
+
+{% block content %}
+
+<script>
+    const URL_CONTRACTS = "{% url 'control:sales_api_contracts' %}";
+    const URL_BATCHES   = "{% url 'control:sales_api_batches' %}";
+    const URL_SALES     = "{% url 'control:sales_api_sales' %}";
+    const URL_ACCEPT    = "/control/sales/{pk}/accept/";
+    const URL_REJECT    = "/control/sales/{pk}/reject/";
+    const URL_BULK_UPD  = "{% url 'control:sales_bulk_update' %}";
+    const CSRF          = "{{ csrf_token }}";
+    const INIT_ACCOUNT  = "{{ init_account }}";
+    const INIT_CONTRACT = "{{ init_contract }}";
+    const INIT_BATCH    = "{{ init_batch }}";
+</script>
+
+<div class="sr-selrow">
+
+    <div class="sr-dd" id="accDD">
+        <button class="sr-dd-trigger" id="accTrigger" onclick="toggleDrop('acc')">
+            <span class="material-icons-round sr-dd-icon">store</span>
+            <span class="sr-dd-val" id="accVal">Select account…</span>
+            <span class="material-icons-round sr-dd-caret" id="accCaret">expand_more</span>
+        </button>
+        <div class="sr-dd-menu" id="accMenu" style="display:none;">
+            <div class="sr-dd-search-row">
+                <span class="material-icons-round">search</span>
+                <input id="accSearch" type="text" placeholder="Search accounts…"
+                       oninput="renderAccList()" autocomplete="off">
+            </div>
+            {% if cities %}
+            <div class="sr-dd-pills-row" id="accCityPills">
+                <button class="sr-pill active" onclick="setAccCity('',this)">All</button>
+                {% for city in cities %}
+                <button class="sr-pill" onclick="setAccCity('{{ city|escapejs }}',this)">{{ city }}</button>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="sr-dd-options" id="accOptions">
+                {% for acc in accounts %}
+                <div class="sr-dd-opt" id="aopt-{{ acc.pk }}"
+                     data-pk="{{ acc.pk }}"
+                     data-name="{{ acc.name|lower }}"
+                     data-code="{{ acc.code|lower }}"
+                     data-city="{{ acc.city }}"
+                     onclick="selectAccount({{ acc.pk }},'{{ acc.name|escapejs }}','{{ acc.city|escapejs }}')">
+                    <div class="sr-dd-opt-main">{{ acc.name }}</div>
+                    <div class="sr-dd-opt-sub">{{ acc.code }} · {{ acc.city }}</div>
+                </div>
+                {% endfor %}
+                <div class="sr-dd-none" id="accNone" style="display:none;">No accounts match.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sr-dd sr-dd-off" id="ctDD">
+        <button class="sr-dd-trigger" id="ctTrigger" onclick="toggleDrop('ct')" disabled>
+            <span class="material-icons-round sr-dd-icon">description</span>
+            <span class="sr-dd-val" id="ctVal">Select contract…</span>
+            <span class="material-icons-round sr-dd-caret" id="ctCaret">expand_more</span>
+        </button>
+        <div class="sr-dd-menu" id="ctMenu" style="display:none;">
+            <div class="sr-dd-search-row">
+                <span class="material-icons-round">search</span>
+                <input id="ctSearch" type="text" placeholder="Search contracts…"
+                       oninput="renderCtList()" autocomplete="off">
+            </div>
+            <div class="sr-dd-pills-row" id="ctStatusPills">
+                <button class="sr-pill active" onclick="setCtStatus('',this)">All</button>
+                <button class="sr-pill" onclick="setCtStatus('active',this)">Active</button>
+                <button class="sr-pill" onclick="setCtStatus('inactive',this)">Inactive</button>
+            </div>
+            <div class="sr-dd-options" id="ctOptions">
+                <div class="sr-dd-none">Select an account first.</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div id="mainArea" style="display:flex;">
+    <div class="sr-split">
+
+        {# ── BATCH CARD ── #}
+        <div class="sr-card">
+            <div class="sr-card-hd sr-card-hd-col">
+                <div class="section-label" style="margin-bottom:0;">
+                    <span class="material-icons-round" style="font-size:14px;vertical-align:middle;">inventory_2</span>
+                    Batches <span class="count-chip" id="batchCount">0</span>
+                </div>
+                <div class="sr-search">
+                    <span class="material-icons-round">search</span>
+                    <input id="batchSearch" type="text" placeholder="Search batch ID…"
+                           oninput="renderBatches()" autocomplete="off">
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                    <div style="display:flex;gap:4px;">
+                        <button class="sr-sort-btn active" id="sortNewest" onclick="setBatchSort('newest',this)">
+                            <span class="material-icons-round">arrow_downward</span> Newest
+                        </button>
+                        <button class="sr-sort-btn" id="sortOldest" onclick="setBatchSort('oldest',this)">
+                            <span class="material-icons-round">arrow_upward</span> Oldest
+                        </button>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <input type="date" class="sr-date-input" id="batchDatePicker"
+                               onchange="onBatchDatePick()" title="Filter by date">
+                        <button class="sr-clear-date" id="clearDateBtn" style="display:none;"
+                                onclick="clearBatchDate()" title="Clear date filter">
+                            <span class="material-icons-round">close</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="sr-list" id="batchList">
+                <div class="sr-placeholder" id="batchPlaceholder">
+                    <span class="material-icons-round">inventory_2</span>
+                    Select a contract to view batches.
+                </div>
+            </div>
+        </div>
+
+        {# ── SALES CARD ── #}
+        <div class="sr-card" id="salesCard">
+{# Toolbar: row 1 = search full-width; row 2 = filters left · actions right #}
+            <div class="sr-card-tb sr-card-tb-2row">
+                <div class="sr-search sr-tb-search">
+                    <span class="material-icons-round">search</span>
+                    <input id="salesSearch" type="text" placeholder="Search product…"
+                           oninput="filterSalesTable()" autocomplete="off">
+                </div>
+                <div class="sr-tb-row2">
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;" id="salesFilterPills">
+                        <button class="sr-pill active" onclick="setSalesFilter('all',this)">All</button>
+                        <button class="sr-pill" onclick="setSalesFilter('pending',this)">Pending</button>
+                        <button class="sr-pill" onclick="setSalesFilter('accepted',this)">Accepted</button>
+                        <button class="sr-pill" onclick="setSalesFilter('rejected',this)">Rejected</button>
+                    </div>
+                    <div id="bulkBar" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                        <span id="selCount" style="display:none;font-size:0.78rem;color:var(--text-secondary);white-space:nowrap;"></span>
+                        <button class="sr-btn sr-btn-accept" id="btnAccSel" style="display:none;" onclick="bulkSelected('accepted')">
+                            <span class="material-icons-round">check</span> Accept
+                        </button>
+                        <button class="sr-btn sr-btn-reject" id="btnRejSel" style="display:none;" onclick="bulkSelected('rejected')">
+                            <span class="material-icons-round">close</span> Reject
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {# Placeholder — shown when no batch selected #}
+            <div id="salesPlaceholder" class="sr-placeholder">
+                <span class="material-icons-round">point_of_sale</span>
+                Select a batch to view sales.
+            </div>
+
+            {# Spinner #}
+            <div id="salesSpinner" style="display:none;padding:32px;text-align:center;">
+                <span class="material-icons-round spinning" style="font-size:28px;color:var(--text-secondary);">autorenew</span>
+            </div>
+
+            {# Table #}
+            <div id="salesTableWrap" class="sr-table-wrap" style="display:none;">
+                <div class="sr-tbl-scroll">
+                    <table class="sr-tbl">
+                        <thead>
+                            <tr>
+                                <th class="th-chk">
+                                    <input type="checkbox" id="selAll" onchange="toggleSelectAll(this.checked)">
+                                </th>
+                                <th>#</th>
+                                <th>Product</th>
+                                <th>Sale Date</th>
+                                <th style="text-align:right;">Qty</th>
+                                <th style="text-align:right;">PPV</th>
+                                <th style="text-align:right;">Pts</th>
+                                <th style="text-align:center;">Status</th>
+                                <th style="text-align:center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesBody"></tbody>
+                    </table>
+                </div>
+                <div id="salesEmpty" style="display:none;" class="sr-empty">No sales match.</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{# Custom confirm modal #}
+<div id="confirmModal" class="confirm-overlay" style="display:none;">
+    <div class="confirm-box">
+        <div class="confirm-title" id="confirmTitle">Confirm</div>
+        <div class="confirm-msg"   id="confirmMsg"></div>
+        <div class="confirm-actions">
+            <button class="confirm-btn confirm-btn-cancel" onclick="closeConfirm()">Cancel</button>
+            <button class="confirm-btn" id="confirmOkBtn" onclick="confirmOk()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+/* ── Fixed-height page: body and cards scroll, page does not ── */
+html, body { overflow: hidden; height: 100vh; }
+.main { height: 100vh; overflow: hidden; min-height: unset !important; }
+.content { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 12px; }
+#mainArea { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.sr-split { flex: 1; min-height: 0; }
+.sr-split > .sr-card { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.sr-list { flex: 1; min-height: 0; max-height: none !important; }
+.sr-table-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.sr-tbl-scroll { flex: 1; min-height: 0; max-height: none !important; }
+#salesSpinner { flex-shrink: 0; }
+
+/* ── Selector row ── */
+.sr-selrow {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+/* ── Dropdown wrapper ── */
+.sr-dd {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+    max-width: 440px;
+}
+.sr-dd-off { opacity: 0.5; pointer-events: none; }
+.sr-dd-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    text-align: left;
+    transition: border-color 0.15s, border-radius 0.15s;
+}
+.sr-dd-trigger:hover { border-color: var(--accent); }
+.sr-dd.open .sr-dd-trigger {
+    border-color: var(--accent);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.sr-dd-icon  { font-size: 17px; color: var(--text-secondary); flex-shrink: 0; }
+.sr-dd-val   { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sr-dd-caret { font-size: 18px; color: var(--text-secondary); flex-shrink: 0; transition: transform 0.2s; }
+.sr-dd.open .sr-dd-caret { transform: rotate(180deg); }
+
+.sr-dd-menu {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    z-index: 300;
+    background: var(--card-bg);
+    border: 1px solid var(--accent);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+    overflow: hidden;
+}
+.sr-dd-search-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--card-border);
+}
+.sr-dd-search-row .material-icons-round { font-size: 16px; color: var(--text-secondary); flex-shrink: 0; }
+.sr-dd-search-row input {
+    border: none; background: transparent; outline: none;
+    font-size: 0.85rem; color: var(--text-primary); width: 100%;
+    font-family: 'Inter', sans-serif;
+}
+.sr-dd-search-row input::placeholder { color: var(--text-secondary); }
+
+.sr-dd-pills-row {
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--card-border);
+    flex-wrap: wrap;
+}
+.sr-dd-options {
+    max-height: 260px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--card-border) transparent;
+}
+.sr-dd-options::-webkit-scrollbar { width: 4px; }
+.sr-dd-options::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 4px; }
+
+.sr-dd-opt {
+    padding: 9px 14px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.1s;
+}
+.sr-dd-opt:hover { background: var(--sidebar-bg); }
+.sr-dd-opt.sel   { background: var(--sidebar-bg); border-left-color: var(--accent); }
+.sr-dd-opt-main  { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
+.sr-dd-opt-sub   { font-size: 0.74rem; color: var(--text-secondary); margin-top: 2px; }
+.sr-dd-none      { padding: 16px 14px; text-align: center; font-size: 0.83rem; color: var(--text-secondary); }
+
+/* ── Pills ── */
+.sr-pill {
+    padding: 3px 11px; border-radius: 20px;
+    border: 1px solid var(--card-border); background: transparent;
+    color: var(--text-secondary); font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: all 0.15s; white-space: nowrap;
+}
+.sr-pill:hover  { border-color: var(--accent); color: var(--accent); }
+.sr-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── Split grid ── */
+.sr-split {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 16px;
+    align-items: stretch;
+}
+@media (max-width: 860px) {
+    .sr-split { grid-template-columns: 1fr; }
+    .sr-dd    { max-width: 100%; }
+}
+
+/* ── Card ── */
+.sr-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+.sr-card-off { opacity: 0.35; pointer-events: none; }
+
+.sr-card-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--card-border);
+    gap: 8px;
+    flex-shrink: 0;
+}
+/* Column variant for batch card: title → pills → search stacked */
+.sr-card-hd-col {
+    flex-direction: column;
+    align-items: stretch;
+}
+.sr-hd-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* Sort buttons (batch card) */
+.sr-sort-btn {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 3px 9px; border-radius: 20px; border: 1px solid var(--card-border);
+    background: transparent; color: var(--text-secondary);
+    font-size: 0.72rem; font-weight: 600; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: all 0.15s; white-space: nowrap;
+}
+.sr-sort-btn .material-icons-round { font-size: 12px; }
+.sr-sort-btn:hover  { border-color: var(--accent); color: var(--accent); }
+.sr-sort-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+
+.sr-card-tb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--card-border);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+/* 2-row toolbar variant for sales card */
+.sr-card-tb-2row {
+    flex-direction: column;
+    align-items: stretch;
+}
+.sr-tb-search { width: 100%; }
+.sr-tb-row2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* ── Search input ── */
+.sr-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 6px 11px;
+}
+.sr-search .material-icons-round { font-size: 15px; color: var(--text-secondary); flex-shrink: 0; }
+.sr-search input {
+    border: none; background: transparent; outline: none;
+    font-size: 0.83rem; color: var(--text-primary); width: 100%;
+    font-family: 'Inter', sans-serif;
+}
+.sr-search input::placeholder { color: var(--text-secondary); }
+
+/* ── Batch list ── */
+.sr-list {
+    max-height: 520px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--card-border) transparent;
+}
+.sr-list::-webkit-scrollbar { width: 4px; }
+.sr-list::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 4px; }
+
+.sr-batch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 16px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.1s;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.sr-batch-row:not(:last-child) { border-bottom: 1px solid var(--card-border); }
+.sr-batch-row:hover { background: var(--sidebar-bg); }
+.sr-batch-row.sel   { background: var(--sidebar-bg); border-left-color: var(--accent); }
+
+.sr-batch-id   { font-family: monospace; font-size: 0.87rem; font-weight: 700; color: var(--text-primary); }
+.sr-batch-meta { font-size: 0.73rem; color: var(--text-secondary); margin-top: 2px; }
+.sr-batch-chips { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+
+/* Batch status chips */
+.bc { padding: 2px 7px; border-radius: 10px; font-size: 0.69rem; font-weight: 700; white-space: nowrap; }
+.bc-p { background:#fef3c7; color:#92400e; }
+.bc-a { background:#dcfce7; color:#166534; }
+.bc-r { background:#fee2e2; color:#991b1b; }
+[data-theme="dark"] .bc-p { background:#451a03; color:#fcd34d; }
+[data-theme="dark"] .bc-a { background:#14532d; color:#86efac; }
+[data-theme="dark"] .bc-r { background:#450a0a; color:#fca5a5; }
+
+
+/* Bulk action buttons */
+.sr-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 12px; border-radius: 20px; border: none;
+    font-size: 0.77rem; font-weight: 700; cursor: pointer;
+    font-family: 'Inter', sans-serif; white-space: nowrap;
+    transition: opacity 0.15s;
+}
+.sr-btn .material-icons-round { font-size: 14px; }
+.sr-btn:hover { opacity: 0.82; }
+.sr-btn-accept { background:#dcfce7; color:#166534; }
+.sr-btn-reject { background:#fee2e2; color:#991b1b; }
+[data-theme="dark"] .sr-btn-accept { background:#14532d; color:#86efac; }
+[data-theme="dark"] .sr-btn-reject { background:#450a0a; color:#fca5a5; }
+
+/* Table */
+.sr-tbl-scroll {
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--card-border) transparent;
+}
+.sr-tbl-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.sr-tbl-scroll::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 4px; }
+
+.sr-tbl { width: 100%; border-collapse: collapse; }
+.sr-tbl thead { position: sticky; top: 0; z-index: 2; }
+.sr-tbl th {
+    padding: 9px 12px;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.4px; color: var(--text-secondary);
+    background: var(--sidebar-bg);
+    border-bottom: 1px solid var(--card-border);
+    white-space: nowrap; text-align: left;
+}
+.th-chk { width: 36px; padding: 9px 4px 9px 14px !important; }
+.sr-tbl td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--card-border);
+    font-size: 0.84rem;
+    vertical-align: middle;
+    color: var(--text-secondary);
+}
+.sr-tbl tbody tr:last-child td { border-bottom: none; }
+.sr-tbl tbody tr:hover { background: var(--sidebar-bg); }
+.sr-tbl tbody tr.row-hidden { display: none; }
+.sr-tbl tbody tr[data-status="rejected"] { opacity: 0.55; }
+
+/* Row status badges */
+.sb { display:inline-block; padding:2px 8px; border-radius:10px; font-size:0.69rem; font-weight:700; }
+.sb-pending  { background:#fef3c7; color:#92400e; }
+.sb-accepted { background:#dcfce7; color:#166534; }
+.sb-rejected { background:#fee2e2; color:#991b1b; }
+[data-theme="dark"] .sb-pending  { background:#451a03; color:#fcd34d; }
+[data-theme="dark"] .sb-accepted { background:#14532d; color:#86efac; }
+[data-theme="dark"] .sb-rejected { background:#450a0a; color:#fca5a5; }
+
+/* Row action buttons */
+.ab {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:6px; border:none; cursor:pointer;
+    transition: background 0.12s, transform 0.1s;
+}
+.ab:hover { transform: scale(1.1); }
+.ab-a { background:#dcfce7; color:#166534; }
+.ab-a:hover { background:#bbf7d0; }
+.ab-r { background:#fee2e2; color:#991b1b; }
+.ab-r:hover { background:#fecaca; }
+[data-theme="dark"] .ab-a { background:#14532d; color:#86efac; }
+[data-theme="dark"] .ab-r { background:#450a0a; color:#fca5a5; }
+.ab .material-icons-round { font-size: 14px; }
+
+/* Checkbox */
+.sr-tbl input[type="checkbox"] { cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent); }
+
+/* Custom confirm modal */
+.confirm-overlay {
+    position: fixed; inset: 0; z-index: 900;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+}
+.confirm-box {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 24px 28px;
+    min-width: 300px; max-width: 400px; width: 90%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+}
+.confirm-title {
+    font-size: 0.97rem; font-weight: 700; color: var(--text-primary);
+    margin-bottom: 8px;
+}
+.confirm-msg {
+    font-size: 0.86rem; color: var(--text-secondary);
+    margin-bottom: 22px; line-height: 1.55;
+}
+.confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.confirm-btn {
+    padding: 8px 18px; border-radius: 8px; border: none;
+    font-size: 0.84rem; font-weight: 600; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+}
+.confirm-btn:hover { opacity: 0.8; }
+.confirm-btn-cancel {
+    background: var(--sidebar-bg); color: var(--text-secondary);
+    border: 1px solid var(--card-border);
+}
+.confirm-btn-ok     { background: var(--accent); color: #fff; }
+.confirm-btn-danger { background: #ef4444; color: #fff; }
+
+/* Date picker (batch card) */
+.sr-date-input {
+    padding: 4px 9px; border-radius: 8px;
+    border: 1px solid var(--card-border);
+    background: var(--sidebar-bg); color: var(--text-primary);
+    font-size: 0.78rem; font-family: 'Inter', sans-serif;
+    outline: none; cursor: pointer; transition: border-color 0.15s;
+    color-scheme: light;
+}
+.sr-date-input:focus { border-color: var(--accent); }
+[data-theme="dark"] .sr-date-input { color-scheme: dark; }
+.sr-clear-date {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%; border: none;
+    background: var(--sidebar-bg); color: var(--text-secondary);
+    cursor: pointer; padding: 0; transition: background 0.15s, color 0.15s;
+}
+.sr-clear-date:hover { background: #fee2e2; color: #991b1b; }
+.sr-clear-date .material-icons-round { font-size: 14px; }
+[data-theme="dark"] .sr-clear-date:hover { background: #450a0a; color: #fca5a5; }
+
+/* Placeholder (empty card state) */
+.sr-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--card-border);
+    font-size: 0.83rem;
+}
+.sr-placeholder .material-icons-round { font-size: 36px; }
+
+/* Misc */
+.sr-empty { padding:24px; text-align:center; color:var(--text-secondary); font-size:0.83rem; }
+.sr-spinner { padding:28px; text-align:center; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.spinning { animation:spin 1s linear infinite; display:inline-block; color:var(--text-secondary); }
+
+.section-label {
+    font-size:0.72rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.5px; color:var(--text-secondary);
+    display:flex; align-items:center; gap:6px;
+}
+.count-chip {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:18px; height:18px; padding:0 5px;
+    border-radius:9px; background:var(--sidebar-bg);
+    font-size:0.7rem; font-weight:700; color:var(--text-secondary);
+    letter-spacing:0;
+}
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+/* ── State ─────────────────────────────────────────────────── */
+let selAcc   = null;   // {pk, name, city}
+let selCt    = null;   // {pk, title, status}
+let selBatch = null;   // string
+
+let accCityFilter  = '';
+let ctStatusFilter = '';
+let batchSort       = 'newest';
+let batchDateFilter = '';
+let salesFilter     = 'all';
+
+let contractsRaw = [];
+let batchesRaw   = [];
+let salesData    = [];
+
+/* ── Confirm modal ───────────────────────────────────────── */
+let _confirmCb = null;
+function showConfirm(title, msg, okLabel, danger, cb) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent   = msg;
+    const okBtn = document.getElementById('confirmOkBtn');
+    okBtn.textContent = okLabel;
+    okBtn.className   = 'confirm-btn ' + (danger ? 'confirm-btn-danger' : 'confirm-btn-ok');
+    _confirmCb = cb;
+    document.getElementById('confirmModal').style.display = 'flex';
+}
+function closeConfirm() {
+    document.getElementById('confirmModal').style.display = 'none';
+    _confirmCb = null;
+}
+function confirmOk() {
+    closeConfirm();
+    if (_confirmCb) _confirmCb();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeConfirm(); });
+
+/* ── Helpers ─────────────────────────────────────────────── */
+function showSalesPlaceholder() {
+    document.getElementById('salesPlaceholder').style.display = '';
+    document.getElementById('salesSpinner').style.display    = 'none';
+    document.getElementById('salesTableWrap').style.display  = 'none';
+    document.getElementById('salesBody').innerHTML           = '';
+    document.getElementById('selAll').checked                = false;
+    updateSelectionUI(0);
+    salesFilter = 'all';
+    document.querySelectorAll('#salesFilterPills .sr-pill').forEach(b => b.classList.remove('active'));
+    document.querySelector('#salesFilterPills .sr-pill').classList.add('active');
+    document.getElementById('salesSearch').value = '';
+}
+
+/* ── Dropdown toggle ─────────────────────────────────────── */
+function toggleDrop(which) {
+    const menu = document.getElementById(which === 'acc' ? 'accMenu' : 'ctMenu');
+    const dd   = document.getElementById(which === 'acc' ? 'accDD'   : 'ctDD');
+    const isOpen = menu.style.display !== 'none';
+    closeDrop('acc'); closeDrop('ct');
+    if (!isOpen) {
+        menu.style.display = '';
+        dd.classList.add('open');
+        const inp = menu.querySelector('input[type="text"]');
+        if (inp) setTimeout(() => inp.focus(), 60);
+    }
+}
+function closeDrop(which) {
+    const menu = document.getElementById(which === 'acc' ? 'accMenu' : 'ctMenu');
+    const dd   = document.getElementById(which === 'acc' ? 'accDD'   : 'ctDD');
+    if (menu) { menu.style.display = 'none'; dd.classList.remove('open'); }
+}
+document.addEventListener('click', e => {
+    if (!document.getElementById('accDD').contains(e.target)) closeDrop('acc');
+    if (!document.getElementById('ctDD').contains(e.target))  closeDrop('ct');
+});
+
+/* ── Account list ─────────────────────────────────────────── */
+function setAccCity(city, btn) {
+    accCityFilter = city.toLowerCase();
+    document.querySelectorAll('#accCityPills .sr-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderAccList();
+}
+function renderAccList() {
+    const q    = (document.getElementById('accSearch').value || '').toLowerCase();
+    const city = accCityFilter;
+    let vis = 0;
+    document.querySelectorAll('#accOptions .sr-dd-opt').forEach(el => {
+        const match = (!q    || el.dataset.name.includes(q) || el.dataset.code.includes(q))
+                   && (!city || el.dataset.city.toLowerCase() === city);
+        el.style.display = match ? '' : 'none';
+        if (match) vis++;
+    });
+    const none = document.getElementById('accNone');
+    if (none) none.style.display = vis ? 'none' : '';
+}
+
+function selectAccount(pk, name, city) {
+    selAcc   = { pk, name, city };
+    selCt    = null;
+    selBatch = null;
+    closeDrop('acc');
+
+    document.getElementById('accVal').textContent = name;
+    document.querySelectorAll('#accOptions .sr-dd-opt').forEach(el =>
+        el.classList.toggle('sel', parseInt(el.dataset.pk) === pk)
+    );
+
+    // Enable contract DD
+    const ctDD = document.getElementById('ctDD');
+    ctDD.classList.remove('sr-dd-off');
+    document.getElementById('ctTrigger').disabled = false;
+    document.getElementById('ctVal').textContent = 'Select contract…';
+    document.getElementById('ctOptions').innerHTML =
+        '<div class="sr-dd-none"><span class="material-icons-round spinning" style="font-size:16px;">autorenew</span></div>';
+
+    // Reset batch card to placeholder
+    document.getElementById('batchList').innerHTML =
+        '<div class="sr-placeholder" id="batchPlaceholder">' +
+        '<span class="material-icons-round">inventory_2</span>' +
+        'Select a contract to view batches.</div>';
+    document.getElementById('batchCount').textContent = '0';
+    document.getElementById('batchSearch').value = '';
+    batchDateFilter = ''; batchSort = 'newest';
+    document.getElementById('batchDatePicker').value = '';
+    document.getElementById('clearDateBtn').style.display = 'none';
+    document.querySelectorAll('.sr-sort-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('sortNewest').classList.add('active');
+
+    // Reset sales card to placeholder
+    showSalesPlaceholder();
+
+    updateUrl();
+    loadContracts(pk);
+
+}
+
+/* ── Contract list ─────────────────────────────────────────── */
+function loadContracts(accPk) {
+    fetch(URL_CONTRACTS + '?account=' + accPk)
+        .then(r => r.json())
+        .then(d => { contractsRaw = d.contracts || []; renderCtList(); });
+}
+function setCtStatus(status, btn) {
+    ctStatusFilter = status;
+    document.querySelectorAll('#ctStatusPills .sr-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCtList();
+}
+function renderCtList() {
+    const q    = (document.getElementById('ctSearch').value || '').toLowerCase();
+    const list = contractsRaw.filter(c =>
+        (!ctStatusFilter || c.status === ctStatusFilter) &&
+        (!q || c.title.toLowerCase().includes(q))
+    );
+    const ul = document.getElementById('ctOptions');
+    if (!list.length) {
+        ul.innerHTML = '<div class="sr-dd-none">No contracts match.</div>';
+        return;
+    }
+    ul.innerHTML = list.map(c => {
+        const badge = c.status === 'active'
+            ? '<span class="sb sb-accepted" style="margin-left:4px;font-size:0.65rem;">Active</span>'
+            : '<span class="sb sb-rejected" style="margin-left:4px;font-size:0.65rem;">Inactive</span>';
+        const isSel = selCt && selCt.pk === c.pk;
+        return `<div class="sr-dd-opt${isSel ? ' sel' : ''}"
+                     data-pk="${c.pk}"
+                     data-title="${c.title.replace(/"/g, '&quot;')}"
+                     data-status="${c.status}"
+                     onclick="selectContractEl(this)">
+            <div class="sr-dd-opt-main">${c.title} ${badge}</div>
+            <div class="sr-dd-opt-sub">${c.start_date} → ${c.end_date}</div>
+        </div>`;
+    }).join('');
+}
+function selectContractEl(el) {
+    selectContract(parseInt(el.dataset.pk), el.dataset.title, el.dataset.status);
+}
+function selectContract(pk, title, status) {
+    selCt    = { pk, title, status };
+    selBatch = null;
+    closeDrop('ct');
+
+    document.getElementById('ctVal').textContent = title;
+    renderCtList(); // refresh .sel state
+
+    // Reset batch card to loading, sales card to placeholder
+    showSalesPlaceholder();
+    document.getElementById('batchList').innerHTML =
+        '<div class="sr-spinner"><span class="material-icons-round spinning">autorenew</span></div>';
+    document.getElementById('batchCount').textContent = '0';
+    document.getElementById('batchSearch').value = '';
+    batchDateFilter = ''; batchSort = 'newest';
+    document.getElementById('batchDatePicker').value = '';
+    document.getElementById('clearDateBtn').style.display = 'none';
+    document.querySelectorAll('.sr-sort-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('sortNewest').classList.add('active');
+
+    updateUrl();
+    loadBatches(pk);
+}
+
+/* ── Batches ───────────────────────────────────────────────── */
+function loadBatches(ctPk) {
+    fetch(URL_BATCHES + '?contract=' + ctPk)
+        .then(r => r.json())
+        .then(d => {
+            batchesRaw  = d.batches || [];
+            batchSort   = 'newest';
+            document.querySelectorAll('.sr-sort-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('sortNewest').classList.add('active');
+            renderBatches();
+        });
+}
+function setBatchSort(dir, btn) {
+    batchSort = dir;
+    document.querySelectorAll('.sr-sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderBatches();
+}
+function onBatchDatePick() {
+    batchDateFilter = document.getElementById('batchDatePicker').value;
+    document.getElementById('clearDateBtn').style.display = batchDateFilter ? '' : 'none';
+    renderBatches();
+}
+function clearBatchDate() {
+    batchDateFilter = '';
+    document.getElementById('batchDatePicker').value = '';
+    document.getElementById('clearDateBtn').style.display = 'none';
+    renderBatches();
+}
+function renderBatches() {
+    const q = (document.getElementById('batchSearch').value || '').toLowerCase();
+    let list = batchesRaw.filter(b => {
+        if (q && !b.batch_id.toLowerCase().includes(q)) return false;
+        if (batchDateFilter && b.last_date_iso !== batchDateFilter) return false;
+        return true;
+    });
+    if (batchSort === 'oldest') list = list.slice().reverse();
+    document.getElementById('batchCount').textContent = list.length;
+    const ul = document.getElementById('batchList');
+    if (!list.length) {
+        ul.innerHTML = '<div class="sr-empty">No batches match.</div>';
+        return;
+    }
+    ul.innerHTML = list.map(b => {
+        const chips = [
+            b.pending  ? `<span class="bc bc-p">${b.pending} pending</span>`   : '',
+            b.accepted ? `<span class="bc bc-a">${b.accepted} accepted</span>` : '',
+            b.rejected ? `<span class="bc bc-r">${b.rejected} rejected</span>` : '',
+        ].filter(Boolean).join('');
+        const isSel = selBatch === b.batch_id;
+        return `<div class="sr-batch-row${isSel ? ' sel' : ''}"
+                     data-bid="${b.batch_id.replace(/"/g, '&quot;')}"
+                     onclick="selectBatchEl(this)">
+            <div>
+                <div class="sr-batch-id">${b.batch_id}</div>
+                <div class="sr-batch-meta">${b.total} sale${b.total !== 1 ? 's' : ''}${b.last_date ? ' · Last: ' + b.last_date : ''}</div>
+            </div>
+            <div class="sr-batch-chips">${chips}</div>
+        </div>`;
+    }).join('');
+}
+function selectBatchEl(el) { selectBatch(el.dataset.bid); }
+function selectBatch(batchId) {
+    selBatch = batchId;
+    renderBatches();
+
+    document.getElementById('salesPlaceholder').style.display = 'none';
+    salesFilter = 'all';
+    document.querySelectorAll('#salesFilterPills .sr-pill').forEach(b => b.classList.remove('active'));
+    document.querySelector('#salesFilterPills .sr-pill').classList.add('active');
+    document.getElementById('salesSearch').value = '';
+    document.getElementById('selAll').checked = false;
+    updateSelectionUI(0);
+    updateUrl();
+    loadSales(selCt.pk, batchId);
+}
+
+/* ── Sales ─────────────────────────────────────────────────── */
+function loadSales(ctPk, batchId) {
+    document.getElementById('salesPlaceholder').style.display = 'none';
+    document.getElementById('salesSpinner').style.display     = '';
+    document.getElementById('salesTableWrap').style.display   = 'none';
+    fetch(URL_SALES + '?contract=' + ctPk + '&batch=' + encodeURIComponent(batchId))
+        .then(r => r.json())
+        .then(d => {
+            salesData = d.sales || [];
+            renderSalesTable();
+            document.getElementById('salesSpinner').style.display   = 'none';
+            document.getElementById('salesTableWrap').style.display = 'flex';
+        });
+}
+
+
+function renderSalesTable() {
+    const tbody = document.getElementById('salesBody');
+    const empty = document.getElementById('salesEmpty');
+    if (!salesData.length) {
+        tbody.innerHTML = '';
+        empty.style.display = '';
+        return;
+    }
+    empty.style.display = 'none';
+    tbody.innerHTML = salesData.map((s, i) => {
+        const hidden   = (salesFilter !== 'all' && s.status !== salesFilter) ? 'row-hidden' : '';
+        const badge    = `<span class="sb sb-${s.status}">${cap(s.status)}</span>`;
+        const reviewer = s.reviewed_by
+            ? `<div style="font-size:0.67rem;color:var(--text-secondary);margin-top:1px;">by ${s.reviewed_by}</div>` : '';
+        const aBtn = s.status !== 'accepted'
+            ? `<button class="ab ab-a" title="Accept" onclick="doAction(${s.pk},'accept',this)"><span class="material-icons-round">check</span></button>` : '';
+        const rBtn = s.status !== 'rejected'
+            ? `<button class="ab ab-r" title="Reject" onclick="doAction(${s.pk},'reject',this)"><span class="material-icons-round">close</span></button>` : '';
+        return `<tr data-pk="${s.pk}" data-status="${s.status}" data-search="${s.product.toLowerCase()} ${s.ext_designation.toLowerCase()}" class="${hidden}">
+            <td style="padding:9px 4px 9px 14px;">
+                <input type="checkbox" class="row-chk" onchange="onRowCheck()">
+            </td>
+            <td style="color:var(--text-secondary);font-size:0.77rem;">${i + 1}</td>
+            <td>
+                <div style="font-weight:600;color:var(--text-primary);">${s.product}</div>
+                <div style="font-size:0.71rem;color:var(--text-secondary);font-family:monospace;">${s.ext_designation}</div>
+            </td>
+            <td style="white-space:nowrap;font-size:0.82rem;">${s.sale_datetime}</td>
+            <td style="text-align:right;font-weight:500;color:var(--text-primary);">${s.quantity}</td>
+            <td style="text-align:right;font-family:monospace;font-size:0.82rem;">${s.ppv}</td>
+            <td style="text-align:right;font-weight:600;color:var(--accent);">${s.points}</td>
+            <td style="text-align:center;">${badge}${reviewer}</td>
+            <td style="text-align:center;">
+                <div style="display:flex;gap:4px;justify-content:center;">${aBtn}${rBtn}</div>
+            </td>
+        </tr>`;
+    }).join('');
+    updateSelectionUI(0);
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function setSalesFilter(status, btn) {
+    salesFilter = status;
+    document.querySelectorAll('#salesFilterPills .sr-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterSalesTable();
+}
+function filterSalesTable() {
+    const q = (document.getElementById('salesSearch').value || '').toLowerCase();
+    document.querySelectorAll('#salesBody tr').forEach(tr => {
+        const matchStatus = salesFilter === 'all' || tr.dataset.status === salesFilter;
+        const matchSearch = !q || (tr.dataset.search || '').includes(q);
+        tr.classList.toggle('row-hidden', !(matchStatus && matchSearch));
+    });
+    document.querySelectorAll('#salesBody tr.row-hidden .row-chk').forEach(c => c.checked = false);
+    onRowCheck();
+}
+
+/* ── Selection ─────────────────────────────────────────────── */
+function toggleSelectAll(checked) {
+    document.querySelectorAll('#salesBody tr:not(.row-hidden) .row-chk').forEach(c => c.checked = checked);
+    onRowCheck();
+}
+function onRowCheck() {
+    const all     = document.querySelectorAll('#salesBody tr:not(.row-hidden) .row-chk');
+    const checked = document.querySelectorAll('#salesBody tr:not(.row-hidden) .row-chk:checked');
+    const selAll  = document.getElementById('selAll');
+    selAll.checked       = checked.length > 0 && checked.length === all.length;
+    selAll.indeterminate = checked.length > 0 && checked.length < all.length;
+    updateSelectionUI(checked.length);
+}
+function updateSelectionUI(n) {
+    document.getElementById('selCount').style.display  = n ? '' : 'none';
+    document.getElementById('btnAccSel').style.display = n ? '' : 'none';
+    document.getElementById('btnRejSel').style.display = n ? '' : 'none';
+    document.getElementById('selCount').textContent    = n + ' selected';
+}
+function getSelectedPks() {
+    return Array.from(
+        document.querySelectorAll('#salesBody tr:not(.row-hidden) .row-chk:checked')
+    ).map(c => parseInt(c.closest('tr').dataset.pk));
+}
+
+/* ── Bulk actions ──────────────────────────────────────────── */
+function bulkSelected(status) {
+    const pks = getSelectedPks();
+    if (!pks.length) return;
+    const label = status === 'accepted' ? 'Accept' : 'Reject';
+    const n     = pks.length;
+    showConfirm(
+        `${label} selected`,
+        `${label} ${n} selected sale${n > 1 ? 's' : ''}?`,
+        label,
+        status === 'rejected',
+        () => fetch(URL_BULK_UPD, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `pks=${pks.join(',')}&status=${status}`,
+        }).then(r => { if (r.ok) refreshSalesAndBatches(); })
+    );
+}
+
+
+function doAction(pk, action, btn) {
+    btn.disabled = true;
+    const url = action === 'accept'
+        ? URL_ACCEPT.replace('{pk}', pk)
+        : URL_REJECT.replace('{pk}', pk);
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `contract=${selCt ? selCt.pk : ''}&batch=${encodeURIComponent(selBatch || '')}`,
+    }).then(r => { if (r.ok || r.redirected) refreshSalesAndBatches(); });
+}
+
+
+function refreshSalesAndBatches() {
+    if (selCt && selBatch) {
+        loadSales(selCt.pk, selBatch);
+        loadBatches(selCt.pk);
+    }
+}
+
+/* ── URL sync ──────────────────────────────────────────────── */
+function updateUrl() {
+    const p = new URLSearchParams();
+    if (selAcc)   p.set('account',  selAcc.pk);
+    if (selCt)    p.set('contract', selCt.pk);
+    if (selBatch) p.set('batch',    selBatch);
+    history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : ''));
+}
+
+/* ── Init from URL params ──────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+    if (!INIT_ACCOUNT) return;
+    const el = document.getElementById('aopt-' + INIT_ACCOUNT);
+    if (!el) return;
+    selectAccount(parseInt(el.dataset.pk),
+                  el.querySelector('.sr-dd-opt-main').textContent.replace(/Active|Inactive/g, '').trim(),
+                  el.dataset.city);
+    if (!INIT_CONTRACT) return;
+    const waitCt = setInterval(() => {
+        const ct = contractsRaw.find(c => String(c.pk) === String(INIT_CONTRACT));
+        if (!ct) return;
+        clearInterval(waitCt);
+        selectContract(ct.pk, ct.title, ct.status);
+        if (!INIT_BATCH) return;
+        const waitB = setInterval(() => {
+            const b = batchesRaw.find(x => x.batch_id === INIT_BATCH);
+            if (!b) return;
+            clearInterval(waitB);
+            selectBatch(INIT_BATCH);
+        }, 80);
+    }, 80);
+});
+</script>
+{% endblock %}

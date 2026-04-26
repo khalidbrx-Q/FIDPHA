@@ -22,16 +22,6 @@
 </div>
 <form id="modalForm" method="post" style="display:none;">{% csrf_token %}</form>
 
-<div class="page-header">
-    <div>
-        <div class="page-header-title">API Tokens</div>
-        <div class="page-header-sub">{{ tokens|length }} token{{ tokens|length|pluralize }}</div>
-    </div>
-    <a href="{% url 'control:tokens_create' %}" class="btn btn-primary">
-        <span class="material-icons-round">add</span> New Token
-    </a>
-</div>
-
 <!-- One-time token reveal banner -->
 {% if new_token_value %}
 <div class="token-reveal-banner" id="revealBanner">
@@ -73,7 +63,12 @@
             <button class="filter-pill" onclick="setFilter('revoked',this)">Revoked</button>
         </div>
     </div>
-    <span id="tokenCount" style="font-size:0.82rem; color:var(--text-secondary);"></span>
+    <span id="tokenCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ tokens|length }} token{{ tokens|length|pluralize }}</span>
+    {% if perms.api.add_apitoken %}
+    <a href="{% url 'control:tokens_create' %}" class="btn btn-primary" style="margin-left:auto; flex-shrink:0;">
+        <span class="material-icons-round">add</span> New Token
+    </a>
+    {% endif %}
 </div>
 
 <div class="card" style="padding:0; overflow:hidden;">
@@ -132,20 +127,24 @@
                     </td>
                     <td onclick="event.stopPropagation()">
                         <div class="table-actions">
-                            {% if t.is_active %}
-                            <button type="button" class="action-btn action-warn" title="Revoke"
-                                    onclick="showConfirm({action:'{% url 'control:tokens_revoke' t.pk %}',title:'Revoke token?',msg:'<strong>{{ t.name|escapejs }}</strong> — the pharmacy using it will lose API access immediately.',btn:'Revoke',icon:'block',color:'#f59e0b'})">
-                                <span class="material-icons-round">block</span>
-                            </button>
-                            {% else %}
-                            <button type="button" class="action-btn action-reactivate" title="Reactivate"
-                                    onclick="showConfirm({action:'{% url 'control:tokens_reactivate' t.pk %}',title:'Reactivate token?',msg:'<strong>{{ t.name|escapejs }}</strong> will regain API access.',btn:'Reactivate',icon:'check_circle',color:'#22c55e'})">
-                                <span class="material-icons-round">check_circle</span>
-                            </button>
+                            {% if perms.api.change_apitoken %}
+                                {% if t.is_active %}
+                                <button type="button" class="action-btn action-warn" title="Revoke"
+                                        onclick="showConfirm({action:'{% url 'control:tokens_revoke' t.pk %}',title:'Revoke token?',msg:'<strong>{{ t.name|escapejs }}</strong> — the pharmacy using it will lose API access immediately.',btn:'Revoke',icon:'block',color:'#f59e0b'})">
+                                    <span class="material-icons-round">block</span>
+                                </button>
+                                {% else %}
+                                <button type="button" class="action-btn action-reactivate" title="Reactivate"
+                                        onclick="showConfirm({action:'{% url 'control:tokens_reactivate' t.pk %}',title:'Reactivate token?',msg:'<strong>{{ t.name|escapejs }}</strong> will regain API access.',btn:'Reactivate',icon:'check_circle',color:'#22c55e'})">
+                                    <span class="material-icons-round">check_circle</span>
+                                </button>
+                                {% endif %}
                             {% endif %}
+                            {% if perms.api.delete_apitoken %}
                             <a href="{% url 'control:tokens_delete' t.pk %}" class="action-btn action-delete" title="Delete">
                                 <span class="material-icons-round">delete</span>
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -161,9 +160,11 @@
         <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">key_off</span>
         <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No API tokens yet</div>
         <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Create a token to allow a pharmacy client to sync sales.</div>
+        {% if perms.api.add_apitoken %}
         <a href="{% url 'control:tokens_create' %}" class="btn btn-primary" style="display:inline-flex;">
             <span class="material-icons-round">add</span> New Token
         </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>
@@ -221,9 +222,11 @@
     .dismiss-btn:hover { color: var(--text-primary); }
     .dismiss-btn .material-icons-round { font-size: 18px; }
 
+    .content { padding-bottom: 0; }
+
     /* Table */
     .table-scroll-wrapper {
-        max-height: 620px; overflow-y: auto;
+        max-height: calc(100vh - 160px); overflow-y: auto;
         scrollbar-width: thin; scrollbar-color: var(--card-border) transparent;
     }
     .table-scroll-wrapper::-webkit-scrollbar { width: 5px; }
@@ -268,6 +271,8 @@
 {% block extra_js %}
 <script>
     let fStatus = 'all';
+    const tokenCountEl = document.getElementById('tokenCount');
+    const TOKEN_TOTAL  = tokenCountEl.textContent;
 
     function setFilter(value, btn) {
         fStatus = value;
@@ -288,7 +293,7 @@
         });
         const isFiltered = q || fStatus !== 'all';
         document.getElementById('noTokenResults').style.display = (isFiltered && visible === 0) ? 'block' : 'none';
-        document.getElementById('tokenCount').textContent = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : '';
+        tokenCountEl.textContent = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : TOKEN_TOTAL;
     }
 
     function copyToken() {

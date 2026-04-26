@@ -19,17 +19,30 @@ from django.contrib import messages
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Min, Max
 from django.db.models.functions import TruncDay, TruncHour
 from django.utils import timezone
 
+from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.sites.models import Site
 from allauth.socialaccount.models import SocialApp, SocialAccount, SocialToken
 
 from fidpha.models import Account, Contract, Contract_Product, Product, UserProfile, RoleProfile
 from api.models import APIToken, APITokenUsageLog
 from sales.models import Sale, SaleImport
-from .decorators import staff_required
+from .decorators import staff_required, perm_required, superuser_required
+
+
+def _log(user, obj, flag, message=""):
+    """Write an entry to Django's admin LogEntry audit table."""
+    LogEntry.objects.log_action(
+        user_id=user.pk,
+        content_type_id=ContentType.objects.get_for_model(obj).pk,
+        object_id=obj.pk,
+        object_repr=str(obj)[:200],
+        action_flag=flag,
+        change_message=message,
+    )
 from .forms import RoleForm, UserForm, AccountForm, ContractForm, ContractProductForm, ContractProductFormSet, ProductForm, TokenForm, SocialAppForm, SiteForm
 
 
@@ -60,7 +73,20 @@ def dashboard(request):
         "tokens_total": APIToken.objects.count(),
     }
 
-    return render(request, "control/dashboard.html", {"stats": stats})
+    recent_activity = (
+        LogEntry.objects
+        .select_related("user", "content_type")
+        .exclude(change_message__startswith="[")
+        .order_by("-action_time")[:25]
+    )
+
+    return render(request, "control/dashboard.html", {
+        "stats": stats,
+        "recent_activity": recent_activity,
+        "ADDITION": ADDITION,
+        "CHANGE": CHANGE,
+        "DELETION": DELETION,
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +123,7 @@ _APP_FRIENDLY: dict[str, str] = {
     "auth":          "Authentication — Users & Groups",
     "authtoken":     "REST Framework — Auth Tokens (internal)",
     "contenttypes":  "Django — Content Types (internal)",
-    "fidpha":        "FIDPHA — Core Data",
+    "fidpha":        "WinInPharma — Core Data",
     "sessions":      "Django — Sessions (internal)",
     "sites":         "Django — Sites",
     "socialaccount": "Allauth — Social OAuth (Google)",
@@ -186,7 +212,7 @@ def _grouped_permissions() -> list[dict]:
     return grouped
 
 
-@staff_required
+@perm_required('auth.view_group')
 def roles_list(request):
     """List all roles with name, permission count, and user count."""
     roles = (
@@ -199,7 +225,7 @@ def roles_list(request):
     return render(request, "control/roles_list.html", {"roles": roles})
 
 
-@staff_required
+@perm_required('auth.view_group')
 def roles_detail(request, pk: int):
     """Read-only detail view for a role."""
     role = get_object_or_404(
@@ -221,7 +247,7 @@ def roles_detail(request, pk: int):
     })
 
 
-@staff_required
+@perm_required('auth.add_group')
 def roles_create(request):
     """Create a new role. Supports ?clone=pk to pre-fill from an existing role."""
     clone_perm_ids = set()
@@ -233,6 +259,7 @@ def roles_create(request):
         if form.is_valid():
             role = form.save()
             RoleProfile.objects.update_or_create(group=role, defaults={'icon': current_icon})
+            _log(request.user, role, ADDITION)
             messages.success(request, f"Role \"{role.name}\" created successfully.")
             return redirect("control:roles_list")
     else:
@@ -257,7 +284,7 @@ def roles_create(request):
     })
 
 
-@staff_required
+@perm_required('auth.change_group')
 def roles_edit(request, pk: int):
     """Edit an existing role."""
     role = get_object_or_404(Group.objects.select_related('profile'), pk=pk)
@@ -268,6 +295,7 @@ def roles_edit(request, pk: int):
         if form.is_valid():
             form.save()
             RoleProfile.objects.update_or_create(group=role, defaults={'icon': submitted_icon})
+            _log(request.user, role, CHANGE)
             messages.success(request, f"Role \"{role.name}\" updated successfully.")
             return redirect("control:roles_detail", pk=role.pk)
         request.session["_role_edit_err"] = {
@@ -295,7 +323,7 @@ def roles_edit(request, pk: int):
     })
 
 
-@staff_required
+@perm_required('auth.delete_group')
 def roles_delete(request, pk: int):
     """Delete a role after confirmation."""
     role = get_object_or_404(Group, pk=pk)
@@ -303,6 +331,7 @@ def roles_delete(request, pk: int):
 
     if request.method == "POST":
         name = role.name
+        _log(request.user, role, DELETION)
         role.delete()
         messages.success(request, f"Role \"{name}\" deleted.")
         return redirect("control:roles_list")
@@ -326,7 +355,7 @@ def _user_type(user: User) -> str:
     return "portal"
 
 
-@staff_required
+@perm_required('auth.view_user')
 def users_list(request):
     """
     List users split into two blocks: Admin users (staff/superusers)
@@ -351,13 +380,14 @@ def users_list(request):
     })
 
 
-@staff_required
+@perm_required('auth.add_user')
 def users_create(request):
     """Create a new user. Supports ?clone=pk to pre-fill from an existing user."""
     if request.method == "POST":
         form = UserForm(request.POST)
         if form.is_valid():
             user = form.save(actor=request.user)
+            _log(request.user, user, ADDITION)
             messages.success(request, f"User \"{user.username}\" created successfully.")
             return redirect("control:users_detail", pk=user.pk)
 
@@ -430,7 +460,7 @@ def users_create(request):
     })
 
 
-@staff_required
+@perm_required('auth.view_user')
 def users_detail(request, pk: int):
     """Read-only detail view for a user."""
     user = get_object_or_404(
@@ -448,15 +478,17 @@ def users_detail(request, pk: int):
         .order_by("provider")
     )
 
-    return render(request, "control/users_detail.html", {
+    ctx = {
         "u":               user,
         "utype":           utype,
         "profile":         profile,
         "social_accounts": social_accounts,
-    })
+    }
+
+    return render(request, "control/users_detail.html", ctx)
 
 
-@staff_required
+@perm_required('auth.change_user')
 def users_edit(request, pk: int):
     """Edit an existing user."""
     user = get_object_or_404(
@@ -470,6 +502,7 @@ def users_edit(request, pk: int):
         form = UserForm(request.POST, instance=user)
         if form.is_valid():
             form.save(actor=request.user)
+            _log(request.user, user, CHANGE)
             messages.success(request, f"User \"{user.username}\" updated successfully.")
             return redirect("control:users_detail", pk=user.pk)
 
@@ -504,7 +537,7 @@ def users_edit(request, pk: int):
 # Accounts
 # ---------------------------------------------------------------------------
 
-@staff_required
+@perm_required('fidpha.view_account')
 def accounts_list(request):
     """List all accounts with annotated contract and user counts."""
     accounts = (
@@ -518,7 +551,7 @@ def accounts_list(request):
     return render(request, "control/accounts_list.html", {"accounts": accounts})
 
 
-@staff_required
+@perm_required('fidpha.add_account')
 def accounts_create(request):
     """Create a new account. Supports ?clone=pk to pre-fill from an existing account."""
     if request.method == "POST":
@@ -527,6 +560,7 @@ def accounts_create(request):
             account = form.save(commit=False)
             account.created_by = request.user
             account.save()
+            _log(request.user, account, ADDITION)
             messages.success(request, f'Account "{account.name}" created successfully.')
             return redirect("control:accounts_detail", pk=account.pk)
         # PRG: store submitted data so a page reload won't re-POST
@@ -563,7 +597,7 @@ def accounts_create(request):
     })
 
 
-@staff_required
+@perm_required('fidpha.view_account')
 def accounts_detail(request, pk: int):
     """Read-only detail view for an account."""
     account = get_object_or_404(
@@ -589,7 +623,7 @@ def accounts_detail(request, pk: int):
     })
 
 
-@staff_required
+@perm_required('fidpha.change_account')
 def accounts_edit(request, pk: int):
     """Edit an existing account."""
     account = get_object_or_404(Account, pk=pk)
@@ -600,6 +634,7 @@ def accounts_edit(request, pk: int):
             account = form.save(commit=False)
             account.modified_by = request.user
             account.save()
+            _log(request.user, account, CHANGE)
             messages.success(request, f'Account "{account.name}" updated successfully.')
             return redirect("control:accounts_detail", pk=account.pk)
         request.session["_account_edit_form"] = {
@@ -636,7 +671,7 @@ def accounts_edit(request, pk: int):
     })
 
 
-@staff_required
+@perm_required('fidpha.delete_account')
 def accounts_delete(request, pk: int):
     """Delete an account after confirmation."""
     account = get_object_or_404(Account, pk=pk)
@@ -646,6 +681,7 @@ def accounts_delete(request, pk: int):
 
     if request.method == "POST":
         name = account.name
+        _log(request.user, account, DELETION)
         account.delete()
         messages.success(request, f'Account "{name}" deleted.')
         return redirect("control:accounts_list")
@@ -658,7 +694,7 @@ def accounts_delete(request, pk: int):
     })
 
 
-@staff_required
+@perm_required('auth.delete_user')
 def users_delete(request, pk: int):
     """Delete a user after confirmation."""
     user = get_object_or_404(User.objects.select_related("profile__account"), pk=pk)
@@ -667,6 +703,7 @@ def users_delete(request, pk: int):
 
     if request.method == "POST":
         username = user.username
+        _log(request.user, user, DELETION)
         user.delete()
         messages.success(request, f"User \"{username}\" deleted.")
         return redirect("control:users_list")
@@ -738,7 +775,7 @@ def _patch_freed_product_queryset(formset, available, data):
             f.fields["product"].queryset = extended.order_by("designation")
 
 
-@staff_required
+@perm_required('fidpha.view_contract')
 def contracts_list(request):
     """List all contracts with account, status, product count, and sync state."""
     contracts = (
@@ -750,7 +787,7 @@ def contracts_list(request):
     return render(request, "control/contracts_list.html", {"contracts": contracts})
 
 
-@staff_required
+@perm_required('fidpha.view_contract')
 def contracts_detail(request, pk: int):
     """Read-only detail view: contract info, product list, and sales sync stats."""
     contract = get_object_or_404(
@@ -772,7 +809,7 @@ def contracts_detail(request, pk: int):
     })
 
 
-@staff_required
+@perm_required('fidpha.add_contract')
 def contracts_create(request):
     """Create a new contract. Supports ?account=pk (preset) and ?clone=pk."""
     from django.forms import inlineformset_factory  # needed for dynamic clone formset
@@ -789,6 +826,7 @@ def contracts_create(request):
             contract.save()
             formset.instance = contract
             formset.save()
+            _log(request.user, contract, ADDITION)
             messages.success(request, f'Contract "{contract.title}" created successfully.')
             return redirect("control:contracts_detail", pk=contract.pk)
         request.session["_contract_create_form"] = {
@@ -851,7 +889,7 @@ def contracts_create(request):
     })
 
 
-@staff_required
+@perm_required('fidpha.change_contract')
 def contracts_edit(request, pk: int):
     """Edit an existing contract and manage its product lines."""
     contract  = get_object_or_404(Contract, pk=pk)
@@ -867,6 +905,7 @@ def contracts_edit(request, pk: int):
             contract.modified_by = request.user
             contract.save()
             formset.save()
+            _log(request.user, contract, CHANGE)
             messages.success(request, f'Contract "{contract.title}" updated successfully.')
             return redirect("control:contracts_detail", pk=contract.pk)
         request.session[f"_contract_edit_form_{pk}"] = {
@@ -898,7 +937,7 @@ def contracts_edit(request, pk: int):
     })
 
 
-@staff_required
+@perm_required('fidpha.delete_contract')
 def contracts_delete(request, pk: int):
     """Delete a contract after confirmation. Blocked if sales records exist."""
     contract      = get_object_or_404(Contract.objects.select_related("account"), pk=pk)
@@ -911,6 +950,7 @@ def contracts_delete(request, pk: int):
             messages.error(request, "Cannot delete: this contract has sales records.")
             return redirect("control:contracts_detail", pk=contract.pk)
         title = contract.title
+        _log(request.user, contract, DELETION)
         contract.delete()
         messages.success(request, f'Contract "{title}" deleted.')
         return redirect("control:contracts_list")
@@ -927,7 +967,7 @@ def contracts_delete(request, pk: int):
 # Products
 # ---------------------------------------------------------------------------
 
-@staff_required
+@perm_required('fidpha.view_product')
 def products_list(request):
     products = (
         Product.objects
@@ -937,7 +977,7 @@ def products_list(request):
     return render(request, "control/products_list.html", {"products": products})
 
 
-@staff_required
+@perm_required('fidpha.view_product')
 def products_detail(request, pk: int):
     product = get_object_or_404(Product, pk=pk)
     contract_products = (
@@ -952,7 +992,7 @@ def products_detail(request, pk: int):
     })
 
 
-@staff_required
+@perm_required('fidpha.add_product')
 def products_create(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
@@ -961,6 +1001,7 @@ def products_create(request):
             product.created_by  = request.user
             product.modified_by = request.user
             product.save()
+            _log(request.user, product, ADDITION)
             messages.success(request, f'Product "{product.designation}" created successfully.')
             return redirect("control:products_list")
         request.session["_product_create_form"] = {
@@ -996,7 +1037,7 @@ def products_create(request):
     })
 
 
-@staff_required
+@perm_required('fidpha.change_product')
 def products_edit(request, pk: int):
     product = get_object_or_404(Product, pk=pk)
 
@@ -1006,6 +1047,7 @@ def products_edit(request, pk: int):
             product = form.save(commit=False)
             product.modified_by = request.user
             product.save()
+            _log(request.user, product, CHANGE)
             messages.success(request, f'Product "{product.designation}" updated successfully.')
             return redirect("control:products_list")
         request.session[f"_product_edit_form_{pk}"] = {
@@ -1025,7 +1067,7 @@ def products_edit(request, pk: int):
     })
 
 
-@staff_required
+@perm_required('fidpha.delete_product')
 def products_delete(request, pk: int):
     product = get_object_or_404(Product, pk=pk)
     contract_count        = Contract_Product.objects.filter(product=product).count()
@@ -1035,6 +1077,7 @@ def products_delete(request, pk: int):
 
     if request.method == "POST":
         name = product.designation
+        _log(request.user, product, DELETION)
         product.delete()
         messages.success(request, f'Product "{name}" deleted.')
         return redirect("control:products_list")
@@ -1050,7 +1093,7 @@ def products_delete(request, pk: int):
 # API Tokens
 # ---------------------------------------------------------------------------
 
-@staff_required
+@perm_required('api.view_apitoken')
 def tokens_list(request):
     tokens          = APIToken.objects.select_related("created_by").order_by("-created_at")
     new_token_value = request.session.pop("_new_token_value", None)
@@ -1060,7 +1103,7 @@ def tokens_list(request):
     })
 
 
-@staff_required
+@perm_required('api.view_apitoken')
 def tokens_detail(request, pk: int):
     token = get_object_or_404(APIToken, pk=pk)
 
@@ -1069,6 +1112,7 @@ def tokens_detail(request, pk: int):
         if new_name:
             token.name = new_name
             token.save(update_fields=["name"])
+            _log(request.user, token, CHANGE, "Renamed")
             messages.success(request, "Token name updated.")
         return redirect("control:tokens_detail", pk=pk)
 
@@ -1124,7 +1168,7 @@ def tokens_detail(request, pk: int):
     })
 
 
-@staff_required
+@perm_required('api.add_apitoken')
 def tokens_create(request):
     if request.method == "POST":
         form = TokenForm(request.POST)
@@ -1132,7 +1176,8 @@ def tokens_create(request):
             token = form.save(commit=False)
             token.created_by = request.user
             token.save()
-            request.session["_new_token_value"] = token.token
+            _log(request.user, token, ADDITION)
+            request.session["_new_token_value"] = token.raw_token
             messages.success(request, f'Token "{token.name}" created.')
             return redirect("control:tokens_list")
     else:
@@ -1141,32 +1186,35 @@ def tokens_create(request):
     return render(request, "control/tokens_form.html", {"form": form})
 
 
-@staff_required
+@perm_required('api.change_apitoken')
 def tokens_revoke(request, pk: int):
     token = get_object_or_404(APIToken, pk=pk)
     if request.method == "POST":
         token.is_active = False
         token.save(update_fields=["is_active"])
+        _log(request.user, token, CHANGE, "Revoked")
         messages.success(request, f'Token "{token.name}" revoked.')
     return redirect("control:tokens_list")
 
 
-@staff_required
+@perm_required('api.change_apitoken')
 def tokens_reactivate(request, pk: int):
     token = get_object_or_404(APIToken, pk=pk)
     if request.method == "POST":
         token.is_active = True
         token.save(update_fields=["is_active"])
+        _log(request.user, token, CHANGE, "Reactivated")
         messages.success(request, f'Token "{token.name}" reactivated.')
     return redirect("control:tokens_list")
 
 
-@staff_required
+@perm_required('api.delete_apitoken')
 def tokens_delete(request, pk: int):
     token = get_object_or_404(APIToken, pk=pk)
 
     if request.method == "POST":
         name = token.name
+        _log(request.user, token, DELETION)
         token.delete()
         messages.success(request, f'Token "{name}" deleted.')
         return redirect("control:tokens_list")
@@ -1178,7 +1226,7 @@ def tokens_delete(request, pk: int):
 # Configuration — Social Accounts
 # ===========================================================================
 
-@staff_required
+@superuser_required
 def social_accounts_list(request):
     accounts = (
         SocialAccount.objects
@@ -1189,7 +1237,7 @@ def social_accounts_list(request):
     return render(request, "control/social_accounts_list.html", {"accounts": accounts})
 
 
-@staff_required
+@superuser_required
 def social_account_unlink(request, pk: int):
     sa = get_object_or_404(SocialAccount, pk=pk)
     user_pk = sa.user_id
@@ -1205,13 +1253,13 @@ def social_account_unlink(request, pk: int):
 # Configuration — Social Applications
 # ===========================================================================
 
-@staff_required
+@superuser_required
 def social_apps_list(request):
     apps = SocialApp.objects.prefetch_related("sites").order_by("provider", "name")
     return render(request, "control/social_apps_list.html", {"apps": apps})
 
 
-@staff_required
+@superuser_required
 def social_apps_detail(request, pk: int):
     app = get_object_or_404(SocialApp.objects.prefetch_related("sites"), pk=pk)
     token_count = SocialToken.objects.filter(app=app).count()
@@ -1221,7 +1269,7 @@ def social_apps_detail(request, pk: int):
     })
 
 
-@staff_required
+@superuser_required
 def social_apps_create(request):
     if request.method == "POST":
         form = SocialAppForm(request.POST)
@@ -1236,7 +1284,7 @@ def social_apps_create(request):
     })
 
 
-@staff_required
+@superuser_required
 def social_apps_edit(request, pk: int):
     app = get_object_or_404(SocialApp, pk=pk)
     if request.method == "POST":
@@ -1252,7 +1300,7 @@ def social_apps_edit(request, pk: int):
     })
 
 
-@staff_required
+@superuser_required
 def social_apps_delete(request, pk: int):
     app = get_object_or_404(SocialApp, pk=pk)
     if request.method == "POST":
@@ -1267,11 +1315,11 @@ def social_apps_delete(request, pk: int):
 # Configuration — Sites
 # ===========================================================================
 
-@staff_required
+@superuser_required
 def site_edit(request):
     site = Site.objects.first()
     if not site:
-        site = Site.objects.create(domain="example.com", name="FIDPHA")
+        site = Site.objects.create(domain="example.com", name="WinInPharma")
     if request.method == "POST":
         form = SiteForm(request.POST, instance=site)
         if form.is_valid():
@@ -1281,3 +1329,195 @@ def site_edit(request):
     else:
         form = SiteForm(instance=site)
     return render(request, "control/site_edit.html", {"form": form, "site": site})
+
+
+# ===========================================================================
+# Sales Review
+# ===========================================================================
+
+@perm_required('sales.view_sale')
+def sales_list(request):
+    """
+    Sales review page — dynamic cascade UI.
+    Renders all accounts server-side; contracts/batches/sales loaded via AJAX.
+    Query params (account, contract, batch) used for JS initialisation only
+    (e.g. when arriving from the contract detail "Review Sales" button).
+    """
+    from django.http import JsonResponse as _JSR
+    accounts = Account.objects.order_by("name")
+    cities   = sorted(set(a.city for a in accounts if a.city))
+    return render(request, "control/sales_list.html", {
+        "accounts":      accounts,
+        "cities":        cities,
+        "init_account":  request.GET.get("account",  ""),
+        "init_contract": request.GET.get("contract", ""),
+        "init_batch":    request.GET.get("batch",    ""),
+    })
+
+
+@perm_required('sales.view_sale')
+def sales_api_contracts(request):
+    from django.http import JsonResponse
+    account_pk = request.GET.get("account", "")
+    if not account_pk:
+        return JsonResponse({"contracts": []})
+    qs = Contract.objects.filter(account_id=account_pk).order_by("-start_date")
+    data = []
+    for c in qs:
+        data.append({
+            "pk":         c.pk,
+            "title":      c.title,
+            "status":     c.status,
+            "start_date": c.start_date.strftime("%d %b %Y"),
+            "end_date":   c.end_date.strftime("%d %b %Y"),
+            "sale_count": Sale.objects.filter(contract_product__contract=c).count(),
+        })
+    return JsonResponse({"contracts": data})
+
+
+@perm_required('sales.view_sale')
+def sales_api_batches(request):
+    from django.http import JsonResponse
+    contract_pk = request.GET.get("contract", "")
+    if not contract_pk:
+        return JsonResponse({"batches": []})
+    rows = (
+        Sale.objects
+        .filter(contract_product__contract_id=contract_pk)
+        .values("sale_import__batch_id")
+        .annotate(
+            total=Count("id"),
+            pending=Count("id",  filter=Q(status=Sale.STATUS_PENDING)),
+            accepted=Count("id", filter=Q(status=Sale.STATUS_ACCEPTED)),
+            rejected=Count("id", filter=Q(status=Sale.STATUS_REJECTED)),
+            first_date=Min("sale_datetime"),
+            last_date=Max("sale_datetime"),
+        )
+        .order_by("-last_date", "sale_import__batch_id")
+    )
+    return JsonResponse({"batches": [
+        {
+            "batch_id":  r["sale_import__batch_id"],
+            "total":     r["total"],
+            "pending":   r["pending"],
+            "accepted":  r["accepted"],
+            "rejected":  r["rejected"],
+            "last_date":      r["last_date"].strftime("%d %b %Y")   if r["last_date"]  else None,
+            "first_date_iso": r["first_date"].strftime("%Y-%m-%d") if r["first_date"] else None,
+            "last_date_iso":  r["last_date"].strftime("%Y-%m-%d")  if r["last_date"]  else None,
+        }
+        for r in rows
+    ]})
+
+
+@perm_required('sales.view_sale')
+def sales_api_sales(request):
+    from django.http import JsonResponse
+    contract_pk = request.GET.get("contract", "")
+    batch_id    = request.GET.get("batch", "").strip()
+    if not contract_pk or not batch_id:
+        return JsonResponse({"sales": [], "counts": {"pending": 0, "accepted": 0, "rejected": 0}})
+    qs = (
+        Sale.objects
+        .filter(
+            contract_product__contract_id=contract_pk,
+            sale_import__batch_id=batch_id,
+        )
+        .select_related("contract_product__product", "sale_import", "reviewed_by")
+        .order_by("sale_datetime")
+    )
+    data   = []
+    counts = {"pending": 0, "accepted": 0, "rejected": 0}
+    for s in qs:
+        points = s.contract_product.points_per_unit * s.quantity
+        data.append({
+            "pk":              s.pk,
+            "product":         s.contract_product.product.designation,
+            "ext_designation": s.sale_import.external_designation,
+            "sale_datetime":   s.sale_datetime.strftime("%d %b %Y, %H:%M"),
+            "quantity":        s.quantity,
+            "ppv":             str(s.ppv) if s.ppv else "—",
+            "points":          points,
+            "status":          s.status,
+            "reviewed_by":     (
+                s.reviewed_by.get_full_name() or s.reviewed_by.username
+                if s.reviewed_by else None
+            ),
+        })
+        counts[s.status] = counts.get(s.status, 0) + 1
+    return JsonResponse({"sales": data, "counts": counts})
+
+
+def _sales_redirect(request):
+    """Rebuild the ?account=&contract=&batch= return URL after an accept/reject action."""
+    from django.urls import reverse
+    params = []
+    for key in ("account", "contract", "batch"):
+        v = request.POST.get(key) or request.GET.get(key)
+        if v:
+            params.append(f"{key}={v}")
+    base = reverse("control:sales_list")
+    return redirect(base + ("?" + "&".join(params) if params else ""))
+
+
+@perm_required('sales.change_sale')
+def sale_accept(request, pk):
+    if request.method != "POST":
+        return redirect("control:sales_list")
+    sale = get_object_or_404(Sale, pk=pk)
+    sale.status      = Sale.STATUS_ACCEPTED
+    sale.reviewed_by = request.user
+    sale.reviewed_at = timezone.now()
+    sale.save(update_fields=["status", "reviewed_by", "reviewed_at"])
+    return _sales_redirect(request)
+
+
+@perm_required('sales.change_sale')
+def sale_reject(request, pk):
+    if request.method != "POST":
+        return redirect("control:sales_list")
+    sale = get_object_or_404(Sale, pk=pk)
+    sale.status      = Sale.STATUS_REJECTED
+    sale.reviewed_by = request.user
+    sale.reviewed_at = timezone.now()
+    sale.save(update_fields=["status", "reviewed_by", "reviewed_at"])
+    return _sales_redirect(request)
+
+
+@perm_required('sales.change_sale')
+def sales_bulk_accept(request):
+    """Accept all pending sales in the selected contract+batch."""
+    if request.method != "POST":
+        return redirect("control:sales_list")
+    contract_pk = request.POST.get("contract")
+    batch_id    = request.POST.get("batch", "").strip()
+    if contract_pk and batch_id:
+        Sale.objects.filter(
+            contract_product__contract_id=contract_pk,
+            sale_import__batch_id=batch_id,
+            status=Sale.STATUS_PENDING,
+        ).update(
+            status=Sale.STATUS_ACCEPTED,
+            reviewed_by=request.user,
+            reviewed_at=timezone.now(),
+        )
+    return _sales_redirect(request)
+
+
+@perm_required('sales.change_sale')
+def sales_bulk_update(request):
+    """AJAX: accept or reject a specific list of sale PKs."""
+    from django.http import JsonResponse
+    if request.method != "POST":
+        return JsonResponse({"ok": False}, status=405)
+    raw_pks = request.POST.get("pks", "")
+    status  = request.POST.get("status", "")
+    pks     = [int(p) for p in raw_pks.split(",") if p.strip().isdigit()]
+    if status not in (Sale.STATUS_ACCEPTED, Sale.STATUS_REJECTED) or not pks:
+        return JsonResponse({"ok": False, "error": "Invalid request"}, status=400)
+    Sale.objects.filter(pk__in=pks).update(
+        status=status,
+        reviewed_by=request.user,
+        reviewed_at=timezone.now(),
+    )
+    return JsonResponse({"ok": True, "updated": len(pks)})

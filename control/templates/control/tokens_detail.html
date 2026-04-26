@@ -39,10 +39,13 @@
                 {% else %}
                     <span class="status-badge status-revoked">Revoked</span>
                 {% endif %}
+                {% if perms.api.change_apitoken %}
                 <button class="icon-btn" onclick="startRename()" title="Rename" style="margin-left:6px;">
                     <span class="material-icons-round" style="font-size:16px; vertical-align:middle;">edit</span>
                 </button>
+                {% endif %}
             </div>
+            {% if perms.api.change_apitoken %}
             <form id="renameForm" method="post" action="{% url 'control:tokens_detail' token.pk %}"
                   style="display:none; margin-top:4px;">
                 {% csrf_token %}
@@ -54,16 +57,10 @@
                             style="padding:5px 12px; font-size:0.82rem;">Cancel</button>
                 </div>
             </form>
-            <!-- Token value row -->
+            {% endif %}
+            <!-- Token value row — masked only, full value shown once at creation -->
             <div class="page-header-sub" style="display:flex; align-items:center; gap:8px; margin-top:4px;">
-                <span id="tokenDisplay" class="masked-token">{{ token.masked_token }}</span>
-                <button class="copy-btn" onclick="copyToken()" title="Copy token">
-                    <span class="material-icons-round" id="copyIcon" style="font-size:16px;">content_copy</span>
-                </button>
-                <button class="copy-btn" onclick="toggleReveal()" title="Reveal token" id="revealBtn">
-                    <span class="material-icons-round" id="revealIcon" style="font-size:16px;">visibility</span>
-                </button>
-                <span id="fullTokenStore" data-val="{{ token.token }}" style="display:none;"></span>
+                <span class="masked-token">{{ token.masked_token }}</span>
             </div>
         </div>
     </div>
@@ -71,31 +68,34 @@
         <a href="{% url 'control:tokens_list' %}" class="btn btn-secondary">
             <span class="material-icons-round">arrow_back</span> Back
         </a>
-        {% if token.is_active %}
-        <button class="btn btn-warn"
-                onclick="showConfirm({
-                    action: '{% url 'control:tokens_revoke' token.pk %}',
-                    title:  'Revoke token?',
-                    msg:    'The pharmacy using <strong>{{ token.name|escapejs }}</strong> will immediately lose API access.',
-                    btn:    'Revoke',
-                    icon:   'block',
-                    color:  '#f59e0b'
-                })">
-            <span class="material-icons-round">block</span> Revoke
-        </button>
-        {% else %}
-        <button class="btn btn-success"
-                onclick="showConfirm({
-                    action: '{% url 'control:tokens_reactivate' token.pk %}',
-                    title:  'Reactivate token?',
-                    msg:    '<strong>{{ token.name|escapejs }}</strong> will regain API access.',
-                    btn:    'Reactivate',
-                    icon:   'check_circle',
-                    color:  '#22c55e'
-                })">
-            <span class="material-icons-round">check_circle</span> Reactivate
-        </button>
+        {% if perms.api.change_apitoken %}
+            {% if token.is_active %}
+            <button class="btn btn-warn"
+                    onclick="showConfirm({
+                        action: '{% url 'control:tokens_revoke' token.pk %}',
+                        title:  'Revoke token?',
+                        msg:    'The pharmacy using <strong>{{ token.name|escapejs }}</strong> will immediately lose API access.',
+                        btn:    'Revoke',
+                        icon:   'block',
+                        color:  '#f59e0b'
+                    })">
+                <span class="material-icons-round">block</span> Revoke
+            </button>
+            {% else %}
+            <button class="btn btn-success"
+                    onclick="showConfirm({
+                        action: '{% url 'control:tokens_reactivate' token.pk %}',
+                        title:  'Reactivate token?',
+                        msg:    '<strong>{{ token.name|escapejs }}</strong> will regain API access.',
+                        btn:    'Reactivate',
+                        icon:   'check_circle',
+                        color:  '#22c55e'
+                    })">
+                <span class="material-icons-round">check_circle</span> Reactivate
+            </button>
+            {% endif %}
         {% endif %}
+        {% if perms.api.delete_apitoken %}
         <button class="btn btn-danger"
                 onclick="showConfirm({
                     action: '{% url 'control:tokens_delete' token.pk %}',
@@ -107,6 +107,7 @@
                 })">
             <span class="material-icons-round">delete</span> Delete
         </button>
+        {% endif %}
     </div>
 </div>
 
@@ -372,22 +373,7 @@ function setRange(key, btn) {
 }
 
 // ── Copy / reveal ─────────────────────────────────────────────────
-const FULL_TOKEN = document.getElementById('fullTokenStore').dataset.val;
-let   revealed   = false;
-
-function copyToken() {
-    navigator.clipboard.writeText(FULL_TOKEN).then(() => {
-        const icon = document.getElementById('copyIcon');
-        icon.textContent = 'check';
-        setTimeout(() => icon.textContent = 'content_copy', 2000);
-    });
-}
-
-function toggleReveal() {
-    revealed = !revealed;
-    document.getElementById('tokenDisplay').textContent = revealed ? FULL_TOKEN : '{{ token.masked_token }}';
-    document.getElementById('revealIcon').textContent   = revealed ? 'visibility_off' : 'visibility';
-}
+// Full token is shown only once at creation. Only the masked value is available here.
 
 // ── Confirm modal ─────────────────────────────────────────────────
 let _modalAction = '';

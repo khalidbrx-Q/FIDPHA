@@ -96,9 +96,10 @@ class Product(TraceableMixin, models.Model):
         ("inactive", "Inactive"),
     ]
 
-    code = models.CharField(max_length=50, unique=True)
+    code        = models.CharField(max_length=50, unique=True)
     designation = models.CharField(max_length=255)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    ppv         = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status      = models.CharField(max_length=10, choices=STATUS_CHOICES)
 
     class Meta:
         db_table = "Product"

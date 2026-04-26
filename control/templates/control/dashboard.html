@@ -7,172 +7,101 @@
 {% block content %}
 
 <!-- ================================================================ -->
-<!-- STAT CARDS — 3 columns                                            -->
+<!-- STAT CARDS — flex-wrap so they adapt to visible permissions       -->
 <!-- ================================================================ -->
-<div class="grid-3" style="margin-bottom: 20px;">
+<div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
 
+    {% if perms.fidpha.view_account %}
     <!-- Accounts -->
-    <div class="stat-card" style="border-left: 3px solid var(--accent);">
+    <div class="stat-card" style="flex: 1; min-width: 220px; border-left: 3px solid var(--accent);">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
             <div class="stat-label">Accounts</div>
-            <div style="
-                width: 36px; height: 36px;
-                background-color: rgba(27,103,155,0.15);
-                border-radius: 8px;
-                display: flex; align-items: center; justify-content: center;
-            ">
+            <div style="width:36px;height:36px;background-color:rgba(27,103,155,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;">
                 <span class="material-icons-round" style="font-size: 18px; color: var(--accent);">store</span>
             </div>
         </div>
         <div class="stat-value">{{ stats.accounts_active }}</div>
         <div class="stat-sub">active out of {{ stats.accounts_total }} total</div>
-        <a href="{% url 'control:accounts_list' %}" style="
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.78rem;
-            color: var(--accent);
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: 10px;
-        ">
-            View all
-            <span class="material-icons-round" style="font-size: 14px;">arrow_forward</span>
+        <a href="{% url 'control:accounts_list' %}" style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--accent);text-decoration:none;font-weight:600;margin-top:10px;">
+            View all <span class="material-icons-round" style="font-size:14px;">arrow_forward</span>
         </a>
     </div>
+    {% endif %}
 
+    {% if perms.fidpha.view_contract %}
     <!-- Contracts -->
-    <div class="stat-card" style="border-left: 3px solid #22c55e;">
+    <div class="stat-card" style="flex: 1; min-width: 220px; border-left: 3px solid #22c55e;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
             <div class="stat-label">Contracts</div>
-            <div style="
-                width: 36px; height: 36px;
-                background-color: rgba(34,197,94,0.15);
-                border-radius: 8px;
-                display: flex; align-items: center; justify-content: center;
-            ">
+            <div style="width:36px;height:36px;background-color:rgba(34,197,94,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;">
                 <span class="material-icons-round" style="font-size: 18px; color: #22c55e;">description</span>
             </div>
         </div>
         <div class="stat-value">{{ stats.contracts_active }}</div>
         <div class="stat-sub">active out of {{ stats.contracts_total }} total</div>
-        <a href="{% url 'control:contracts_list' %}" style="
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.78rem;
-            color: #22c55e;
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: 10px;
-        ">
-            View all
-            <span class="material-icons-round" style="font-size: 14px;">arrow_forward</span>
+        <a href="{% url 'control:contracts_list' %}" style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;color:#22c55e;text-decoration:none;font-weight:600;margin-top:10px;">
+            View all <span class="material-icons-round" style="font-size:14px;">arrow_forward</span>
         </a>
     </div>
+    {% endif %}
 
+    {% if perms.fidpha.view_product %}
     <!-- Products -->
-    <div class="stat-card" style="border-left: 3px solid #f59e0b;">
+    <div class="stat-card" style="flex: 1; min-width: 220px; border-left: 3px solid #f59e0b;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
             <div class="stat-label">Products</div>
-            <div style="
-                width: 36px; height: 36px;
-                background-color: rgba(245,158,11,0.15);
-                border-radius: 8px;
-                display: flex; align-items: center; justify-content: center;
-            ">
+            <div style="width:36px;height:36px;background-color:rgba(245,158,11,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;">
                 <span class="material-icons-round" style="font-size: 18px; color: #f59e0b;">medication</span>
             </div>
         </div>
         <div class="stat-value">{{ stats.products_active }}</div>
         <div class="stat-sub">active out of {{ stats.products_total }} total</div>
-        <a href="{% url 'control:products_list' %}" style="
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.78rem;
-            color: #f59e0b;
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: 10px;
-        ">
-            View all
-            <span class="material-icons-round" style="font-size: 14px;">arrow_forward</span>
+        <a href="{% url 'control:products_list' %}" style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;color:#f59e0b;text-decoration:none;font-weight:600;margin-top:10px;">
+            View all <span class="material-icons-round" style="font-size:14px;">arrow_forward</span>
         </a>
     </div>
+    {% endif %}
 
-</div>
-
-<!-- ================================================================ -->
-<!-- SECOND ROW — Users + API Tokens                                   -->
-<!-- ================================================================ -->
-<div class="grid-2" style="margin-bottom: 20px;">
-
+    {% if perms.auth.view_user %}
     <!-- Users -->
-    <div class="stat-card" style="border-left: 3px solid #a78bfa;">
+    <div class="stat-card" style="flex: 1; min-width: 220px; border-left: 3px solid #a78bfa;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
             <div class="stat-label">Users</div>
-            <div style="
-                width: 36px; height: 36px;
-                background-color: rgba(167,139,250,0.15);
-                border-radius: 8px;
-                display: flex; align-items: center; justify-content: center;
-            ">
+            <div style="width:36px;height:36px;background-color:rgba(167,139,250,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;">
                 <span class="material-icons-round" style="font-size: 18px; color: #a78bfa;">person</span>
             </div>
         </div>
         <div class="stat-value">{{ stats.users_total }}</div>
         <div class="stat-sub">registered users</div>
-        <a href="{% url 'control:users_list' %}" style="
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.78rem;
-            color: #a78bfa;
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: 10px;
-        ">
-            View all
-            <span class="material-icons-round" style="font-size: 14px;">arrow_forward</span>
+        <a href="{% url 'control:users_list' %}" style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;color:#a78bfa;text-decoration:none;font-weight:600;margin-top:10px;">
+            View all <span class="material-icons-round" style="font-size:14px;">arrow_forward</span>
         </a>
     </div>
+    {% endif %}
 
+    {% if perms.api.view_apitoken %}
     <!-- API Tokens -->
-    <div class="stat-card" style="border-left: 3px solid #38bdf8;">
+    <div class="stat-card" style="flex: 1; min-width: 220px; border-left: 3px solid #38bdf8;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
             <div class="stat-label">API Tokens</div>
-            <div style="
-                width: 36px; height: 36px;
-                background-color: rgba(56,189,248,0.15);
-                border-radius: 8px;
-                display: flex; align-items: center; justify-content: center;
-            ">
+            <div style="width:36px;height:36px;background-color:rgba(56,189,248,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;">
                 <span class="material-icons-round" style="font-size: 18px; color: #38bdf8;">key</span>
             </div>
         </div>
         <div class="stat-value">{{ stats.tokens_active }}</div>
         <div class="stat-sub">active out of {{ stats.tokens_total }} total</div>
-        <a href="{% url 'control:tokens_list' %}" style="
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.78rem;
-            color: #38bdf8;
-            text-decoration: none;
-            font-weight: 600;
-            margin-top: 10px;
-        ">
-            View all
-            <span class="material-icons-round" style="font-size: 14px;">arrow_forward</span>
+        <a href="{% url 'control:tokens_list' %}" style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;color:#38bdf8;text-decoration:none;font-weight:600;margin-top:10px;">
+            View all <span class="material-icons-round" style="font-size:14px;">arrow_forward</span>
         </a>
     </div>
+    {% endif %}
 
 </div>
 
 <!-- ================================================================ -->
 <!-- QUICK ACTIONS                                                     -->
 <!-- ================================================================ -->
+{% if perms.fidpha.add_account or perms.fidpha.add_contract or perms.fidpha.add_product or perms.auth.add_user or perms.api.add_apitoken %}
 <div class="card">
     <div class="card-header">
         <div class="card-header-icon">
@@ -181,27 +110,87 @@
         <div class="card-title">Quick Actions</div>
     </div>
     <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        {% if perms.fidpha.add_account %}
         <a href="{% url 'control:accounts_create' %}" class="btn btn-secondary">
             <span class="material-icons-round">add</span>
             New Account
         </a>
+        {% endif %}
+        {% if perms.fidpha.add_contract %}
         <a href="{% url 'control:contracts_create' %}" class="btn btn-secondary">
             <span class="material-icons-round">add</span>
             New Contract
         </a>
+        {% endif %}
+        {% if perms.fidpha.add_product %}
         <a href="{% url 'control:products_create' %}" class="btn btn-secondary">
             <span class="material-icons-round">add</span>
             New Product
         </a>
+        {% endif %}
+        {% if perms.auth.add_user %}
         <a href="{% url 'control:users_create' %}" class="btn btn-secondary">
             <span class="material-icons-round">add</span>
             New User
         </a>
+        {% endif %}
+        {% if perms.api.add_apitoken %}
         <a href="{% url 'control:tokens_create' %}" class="btn btn-secondary">
             <span class="material-icons-round">add</span>
             New API Token
         </a>
+        {% endif %}
     </div>
 </div>
+{% endif %}
+
+<!-- ================================================================ -->
+<!-- RECENT ACTIVITY                                                   -->
+<!-- ================================================================ -->
+{% if recent_activity %}
+<div class="card" style="margin-top:20px; padding:0; overflow:hidden;">
+    <div class="card-header" style="padding:14px 16px;">
+        <div class="card-header-icon">
+            <span class="material-icons-round" style="font-size:16px;">history</span>
+        </div>
+        <div class="card-title">Recent Activity</div>
+    </div>
+    <div style="max-height:380px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;">
+        {% for entry in recent_activity %}
+        <div style="display:flex; align-items:flex-start; gap:12px; padding:11px 16px; border-bottom:1px solid var(--card-border);">
+            <!-- Action icon -->
+            <div style="
+                width:30px; height:30px; border-radius:8px; flex-shrink:0;
+                display:flex; align-items:center; justify-content:center;
+                {% if entry.action_flag == ADDITION %}background:rgba(34,197,94,0.12);{% elif entry.action_flag == DELETION %}background:rgba(239,68,68,0.12);{% else %}background:rgba(245,158,11,0.12);{% endif %}
+            ">
+                <span class="material-icons-round" style="font-size:15px;
+                    {% if entry.action_flag == ADDITION %}color:#22c55e;{% elif entry.action_flag == DELETION %}color:#ef4444;{% else %}color:#f59e0b;{% endif %}
+                ">
+                    {% if entry.action_flag == ADDITION %}add_circle{% elif entry.action_flag == DELETION %}remove_circle{% else %}edit{% endif %}
+                </span>
+            </div>
+            <!-- Text -->
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:0.85rem; color:var(--text-primary); line-height:1.4;">
+                    <span style="font-weight:600;">{{ entry.user.get_full_name|default:entry.user.username }}</span>
+                    <span style="color:var(--text-secondary);">
+                        {% if entry.action_flag == ADDITION %}created
+                        {% elif entry.action_flag == DELETION %}deleted
+                        {% elif entry.change_message and not entry.change_message|slice:":1" == "[" %}{{ entry.change_message|lower }}
+                        {% else %}edited{% endif %}
+                    </span>
+                    <span style="font-weight:500;">{{ entry.content_type.name }}</span>
+                    <span style="color:var(--text-secondary);">"{{ entry.object_repr|truncatechars:60 }}"</span>
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">
+                    {{ entry.action_time|date:"d M Y, H:i" }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 {% endblock %}

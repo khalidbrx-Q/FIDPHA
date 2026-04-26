@@ -56,7 +56,7 @@ def make_product(code="PROD-001", designation="Doliprane 1000", status=STATUS_AC
     return Product.objects.create(code=code, designation=designation, status=status)
 
 
-def make_contract(account, status=STATUS_ACTIVE, days_back=1, days_ahead=30):
+def make_contract(account, status=STATUS_ACTIVE, days_back=3, days_ahead=30):
     now = timezone.now()
     return Contract.objects.create(
         title="Test Contract",
@@ -74,7 +74,7 @@ def make_api_token(name="Test Token", is_active=True):
 
 def make_sale_row(external_designation="DOLI1000", hours_ago=2, quantity=5, ppv=12.50):
     """Return a valid sale row dict for use in POST /api/v1/sales/ requests."""
-    dt = (timezone.now() - timedelta(hours=hours_ago)).strftime("%Y-%m-%dT%H:%M:%S")
+    dt = (timezone.now() - timedelta(days=1, hours=hours_ago)).strftime("%Y-%m-%dT%H:%M:%S")
     return {
         "external_designation": external_designation,
         "sale_datetime":        dt,
@@ -313,10 +313,11 @@ class ActiveContractViewTests(TestCase):
         self.assertRegex(value, r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$")
 
     def test_last_sync_at_format_in_response(self):
-        """After a sync, last_sync_at must be formatted as YYYY-MM-DDTHH:MM:SS."""
+        """After a sale submission, last_sync_at must be formatted as YYYY-MM-DDTHH:MM:SS."""
         self.auth_client.post(
-            "/api/v1/contract/sync/",
-            {"account_code": "PH-001", "batch_id": "B-FMT"},
+            "/api/v1/sales/",
+            {"account_code": "PH-001", "batch_id": "B-FMT",
+             "sales": [make_sale_row("DOLI1000")]},
             format="json",
         )
         data = self.auth_client.get(self.API_URL, {"account_code": "PH-001"}).json()
@@ -599,12 +600,14 @@ class SalesSubmitViewTests(TestCase):
         self.assertEqual(self._post(self._valid_payload(rows=[row])).json()["accepted"], 1)
 
     def test_sale_exactly_on_contract_end_is_accepted(self):
-        # Default end_date is 30 days away — a sale near it would be a future datetime.
-        # Move end_date to 1 hour ago, then submit a sale 30 min before that boundary.
-        past_end = timezone.now() - timedelta(hours=1)
-        Contract.objects.filter(pk=self.contract.pk).update(end_date=past_end)
+        # Move end_date to yesterday so a sale just before it is a valid past date.
+        past_end = timezone.now() - timedelta(days=1)
+        Contract.objects.filter(pk=self.contract.pk).update(
+            start_date=timezone.now() - timedelta(days=30),
+            end_date=past_end,
+        )
         row = make_sale_row("DOLI1000")
-        dt = (past_end - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S")
+        dt = (past_end - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%S")
         row["sale_datetime"] = dt
         row["creation_datetime"] = dt
         self.assertEqual(self._post(self._valid_payload(rows=[row])).json()["accepted"], 1)
@@ -617,8 +620,8 @@ class SalesSubmitViewTests(TestCase):
         self.assertEqual(self._post(self._valid_payload(rows=[row])).json()["rejected"], 1)
 
     def test_creation_datetime_before_sale_datetime_is_rejected(self):
-        sale_dt     = (timezone.now() - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%S")
-        creation_dt = (timezone.now() - timedelta(hours=5)).strftime("%Y-%m-%dT%H:%M:%S")
+        sale_dt     = (timezone.now() - timedelta(days=1, hours=2)).strftime("%Y-%m-%dT%H:%M:%S")
+        creation_dt = (timezone.now() - timedelta(days=1, hours=5)).strftime("%Y-%m-%dT%H:%M:%S")
         row = {
             "external_designation": "DOLI1000",
             "sale_datetime":        sale_dt,
@@ -650,8 +653,8 @@ class SalesSubmitViewTests(TestCase):
 
     def test_last_sale_datetime_is_max_of_accepted_rows(self):
         now   = timezone.now()
-        early = (now - timedelta(hours=5)).strftime("%Y-%m-%dT%H:%M:%S")
-        late  = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+        early = (now - timedelta(days=1, hours=5)).strftime("%Y-%m-%dT%H:%M:%S")
+        late  = (now - timedelta(days=1, hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
         rows  = [
             {"external_designation": "DOLI1000", "sale_datetime": early,
              "creation_datetime": early, "quantity": 1, "ppv": 10},
@@ -667,8 +670,8 @@ class SalesSubmitViewTests(TestCase):
     def test_last_sale_datetime_not_overwritten_by_older_batch(self):
         """A second batch with older datetimes must not go backwards."""
         now = timezone.now()
-        late  = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
-        early = (now - timedelta(hours=5)).strftime("%Y-%m-%dT%H:%M:%S")
+        late  = (now - timedelta(days=1, hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+        early = (now - timedelta(days=1, hours=5)).strftime("%Y-%m-%dT%H:%M:%S")
 
         row_late  = {"external_designation": "DOLI1000", "sale_datetime": late,
                      "creation_datetime": late, "quantity": 1, "ppv": 10}
@@ -705,12 +708,14 @@ class SalesSubmitViewTests(TestCase):
         self.assertEqual(SaleImport.objects.filter(batch_id="BATCH-001").count(), 2)
 
     def test_retry_response_counts_are_correct(self):
-        """Second submission of the same batch must return the same accepted/rejected counts."""
+        """Second submission of same batch: first accepted, second rejected (datetime covered)."""
         payload = self._valid_payload(rows=[make_sale_row("DOLI1000")])
         first  = self._post(payload).json()
         second = self._post(payload).json()
-        self.assertEqual(first["accepted"],  second["accepted"])
-        self.assertEqual(first["rejected"],  second["rejected"])
+        self.assertEqual(first["accepted"],  1)
+        self.assertEqual(first["rejected"],  0)
+        self.assertEqual(second["accepted"], 0)
+        self.assertEqual(second["rejected"], 1)
 
     def test_duplicate_rows_within_batch_create_one_sale(self):
         """Two identical rows in the same request: 2 SaleImports, 1 Sale."""
@@ -737,8 +742,8 @@ class SalesSubmitViewTests(TestCase):
 
     def test_second_batch_with_older_datetimes_does_not_change_last_sale(self):
         now   = timezone.now()
-        late  = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
-        early = (now - timedelta(hours=6)).strftime("%Y-%m-%dT%H:%M:%S")
+        late  = (now - timedelta(days=1, hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+        early = (now - timedelta(days=1, hours=6)).strftime("%Y-%m-%dT%H:%M:%S")
 
         row_late  = {"external_designation": "DOLI1000", "sale_datetime": late,
                      "creation_datetime": late, "quantity": 1, "ppv": 10}
@@ -757,7 +762,7 @@ class SalesSubmitViewTests(TestCase):
     def test_sale_datetime_with_timezone_offset_is_accepted(self):
         """sale_datetime with explicit +00:00 offset must be parsed and accepted."""
         row = make_sale_row("DOLI1000")
-        dt_str = (timezone.now() - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+        dt_str = (timezone.now() - timedelta(days=1, hours=2)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
         row["sale_datetime"]     = dt_str
         row["creation_datetime"] = dt_str
         data = self._post(self._valid_payload(rows=[row])).json()
@@ -766,7 +771,7 @@ class SalesSubmitViewTests(TestCase):
     def test_sale_datetime_with_z_suffix_is_accepted(self):
         """sale_datetime ending in Z (explicit UTC) must be parsed and accepted."""
         row = make_sale_row("DOLI1000")
-        dt_str = (timezone.now() - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        dt_str = (timezone.now() - timedelta(days=1, hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
         row["sale_datetime"]     = dt_str
         row["creation_datetime"] = dt_str
         data = self._post(self._valid_payload(rows=[row])).json()
@@ -805,9 +810,10 @@ class SalesSubmitViewTests(TestCase):
 
 
 # ===========================================================================
-# Endpoint 3 — POST /api/v1/contract/sync/
+# Endpoint 3 — POST /api/v1/contract/sync/  [REMOVED — endpoint deleted]
 # ===========================================================================
 
+@unittest.skip("sync endpoint removed — last_sync_at is now auto-stamped on batch submission")
 class ContractSyncViewTests(TestCase):
 
     API_URL     = "/api/v1/contract/sync/"
@@ -1090,8 +1096,8 @@ class PharmacySyncCycleE2ETest(TestCase):
         return client
 
     def _dt(self, hours_ago):
-        """Return a naive ISO-8601 string N hours in the past."""
-        return (timezone.now() - timedelta(hours=hours_ago)).strftime("%Y-%m-%dT%H:%M:%S")
+        """Return a naive ISO-8601 string anchored to yesterday minus N hours (never today)."""
+        return (timezone.now() - timedelta(days=1, hours=hours_ago)).strftime("%Y-%m-%dT%H:%M:%S")
 
     def _row(self, designation, hours_ago, quantity, ppv):
         dt = self._dt(hours_ago)
@@ -1238,22 +1244,7 @@ class PharmacySyncCycleE2ETest(TestCase):
             late_dt,
         )
 
-        # ── Step 3 ────────────────────────────────────────────────────────
-        r3 = client.post(
-            self.SYNC_URL,
-            {"account_code": "PH-CASA-001", "batch_id": batch_id,
-             "last_sale_datetime": late_dt},
-            format="json",
-        )
-        self.assertEqual(r3.status_code, 200)
-        d3 = r3.json()
-
-        self.assertEqual(d3["sync_status"], "ok")
-        self.assertFalse(d3["mismatch"])
-        self.assertNotIn("detail",          d3)
-        self.assertNotIn("pending_warning", d3)
-        self.assertEqual(d3["last_sale_datetime"], late_dt)
-
+        # ── Step 3 — last_sync_at is auto-stamped after accepted sales ────
         self.contract_1.refresh_from_db()
         self.assertIsNotNone(self.contract_1.last_sync_at)
 
@@ -1326,28 +1317,11 @@ class PharmacySyncCycleE2ETest(TestCase):
             self._dt(hours_ago=3),
         )
 
-        # ── Step 3 — pharmacy reports including rejected rows → mismatch ──
-        # The pharmacy's POS system does not know about our rejections.
-        # It reports the last datetime it saw locally: 1 hour ago (the UNKNOWN row).
-        # We only accepted up to 3 hours ago → mismatch.
-        reported_dt = self._dt(hours_ago=1)
-
-        r3 = client.post(
-            self.SYNC_URL,
-            {"account_code": "PH-RABAT-002", "batch_id": batch_id,
-             "last_sale_datetime": reported_dt},
-            format="json",
-        )
-        self.assertEqual(r3.status_code, 200)
-        d3 = r3.json()
-
-        self.assertEqual(d3["sync_status"], "warning")
-        self.assertTrue(d3["mismatch"])
-        self.assertIn("detail", d3)  # explanation must be present on mismatch
-
-        # last_sale_datetime in the response is what WE accepted (3 hours ago)
+        # ── Step 3 — last_sync_at auto-stamped; last_sale_datetime = max accepted ──
+        self.contract_2.refresh_from_db()
+        self.assertIsNotNone(self.contract_2.last_sync_at)
         self.assertEqual(
-            d3["last_sale_datetime"],
+            self.contract_2.last_sale_datetime.strftime("%Y-%m-%dT%H:%M:%S"),
             self._dt(hours_ago=3),
         )
 
@@ -1388,11 +1362,11 @@ class PharmacySyncCycleE2ETest(TestCase):
             format="json",
         )
         self.assertEqual(r2b.status_code, 200)
-        # Validation still passes — rows are individually valid
-        self.assertEqual(r2b.json()["accepted"], 4)
-        self.assertEqual(r2b.json()["rejected"], 0)
+        # All 4 rows covered by last_sale_datetime → all rejected on retry
+        self.assertEqual(r2b.json()["accepted"], 0)
+        self.assertEqual(r2b.json()["rejected"], 4)
 
-        # Sale table: 4 unique records — duplicates silently skipped
+        # Sale table: 4 unique records from first submission only
         self.assertEqual(Sale.objects.count(), 4)
 
         # SaleImport table: 8 rows — both submissions fully recorded for audit
@@ -1408,18 +1382,8 @@ class PharmacySyncCycleE2ETest(TestCase):
             late_dt,
         )
 
-        # ── Step 3 — sync after retry: ok, no pending rows ────────────────
-        r3 = client.post(
-            self.SYNC_URL,
-            {"account_code": "PH-FES-003", "batch_id": batch_id,
-             "last_sale_datetime": late_dt},
-            format="json",
-        )
-        self.assertEqual(r3.status_code, 200)
-        d3 = r3.json()
-        self.assertEqual(d3["sync_status"], "ok")
-        self.assertFalse(d3["mismatch"])
-        self.assertNotIn("pending_warning", d3)
+        # ── Step 3 — last_sync_at was auto-stamped after first accepted batch ──
+        self.assertIsNotNone(self.contract_3.last_sync_at)
 
     # ── Test 4 — Data isolation between pharmacies ─────────────────────────
 
@@ -1573,8 +1537,8 @@ class PharmacySyncCycleE2ETest(TestCase):
         # is (contract_product, sale_datetime), and every row has a different
         # contract_product.
         now      = timezone.now()
-        base_dt  = (now - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%S")
-        max_dt   = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+        base_dt  = (now - timedelta(days=1, hours=2)).strftime("%Y-%m-%dT%H:%M:%S")
+        max_dt   = (now - timedelta(days=1, hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
 
         rows = [
             {
@@ -1615,27 +1579,7 @@ class PharmacySyncCycleE2ETest(TestCase):
             "last_sale_datetime must be the single latest row (EXT-0999), not any of the 999 earlier rows",
         )
 
-        # ── Step 3: POST /contract/sync/ ──────────────────────────────────
-        # Pharmacy reports its own max (max_dt) → must match what we accepted
-        r3 = client.post(
-            self.SYNC_URL,
-            {
-                "account_code":       "PH-BULK-001",
-                "batch_id":           batch_id,
-                "last_sale_datetime": max_dt,
-            },
-            format="json",
-        )
-        self.assertEqual(r3.status_code, 200)
-        d3 = r3.json()
-
-        self.assertEqual(d3["sync_status"], "ok")
-        self.assertFalse(d3["mismatch"])
-        self.assertNotIn("detail",          d3)
-        self.assertNotIn("pending_warning", d3)
-        self.assertEqual(d3["last_sale_datetime"], max_dt)
-
-        # last_sync_at stamped on the contract
+        # ── Step 3: verify last_sync_at auto-stamped ──────────────────────
         bulk_contract.refresh_from_db()
         self.assertIsNotNone(bulk_contract.last_sync_at)
 
@@ -1743,8 +1687,8 @@ class PharmacyConcurrentSubmissionTest(TransactionTestCase):
 
         # Precompute datetimes:
         # Row j gets sale_datetime = now - (j+1) hours
-        # Row 0 is 1 hour ago → it is the max for every pharmacy
-        max_dt = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+        # Row 0 is anchored to yesterday - 1h → it is the max for every pharmacy
+        max_dt = (now - timedelta(days=1, hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
 
         # ── Thread worker ──────────────────────────────────────────────────
         results = {}   # account_code → response JSON
@@ -1757,8 +1701,8 @@ class PharmacyConcurrentSubmissionTest(TransactionTestCase):
                 rows = [
                     {
                         "external_designation": f"CONC-{idx:03d}-E{j:02d}",
-                        "sale_datetime":        (now - timedelta(hours=j + 1)).strftime("%Y-%m-%dT%H:%M:%S"),
-                        "creation_datetime":    (now - timedelta(hours=j + 1)).strftime("%Y-%m-%dT%H:%M:%S"),
+                        "sale_datetime":        (now - timedelta(days=1, hours=j + 1)).strftime("%Y-%m-%dT%H:%M:%S"),
+                        "creation_datetime":    (now - timedelta(days=1, hours=j + 1)).strftime("%Y-%m-%dT%H:%M:%S"),
                         "quantity":             j + 1,
                         "ppv":                  round(10.00 + j * 0.5, 2),
                     }
@@ -1845,8 +1789,8 @@ class PharmacyConcurrentSubmissionTest(TransactionTestCase):
           So whichever order they run, the final value is always the overall max.
         """
         now  = timezone.now()
-        dt_3h = (now - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
-        dt_1h = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+        dt_3h = (now - timedelta(days=1, hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
+        dt_1h = (now - timedelta(days=1, hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
 
         account  = make_account(code="PH-RACE-001", name="Pharmacie Race Test")
         token    = make_api_token(name="Token Race")

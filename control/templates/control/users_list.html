@@ -6,27 +6,27 @@
 
 {% block content %}
 
-<div class="page-header">
-    <div>
-        <div class="page-header-title">Users</div>
-        <div class="page-header-sub">
-            {{ admin_users|length }} admin user{{ admin_users|length|pluralize }} ·
-            {{ portal_users|length }} portal user{{ portal_users|length|pluralize }}
-        </div>
-    </div>
-    <a href="{% url 'control:users_create' %}" class="btn btn-primary">
-        <span class="material-icons-round">person_add</span>
-        New User
-    </a>
-</div>
+<!-- Snap-section dot indicators -->
+<nav class="snap-dots" id="snapDots" aria-label="Page sections">
+    <button class="snap-dot active" onclick="scrollToSection(0)" title="Admin Users"></button>
+    <button class="snap-dot" onclick="scrollToSection(1)" title="Portal Users"></button>
+</nav>
 
 <!-- ================================================================ -->
 <!-- BLOCK 1 — Admin Users                                             -->
 <!-- ================================================================ -->
-<div class="section-header">
-    <span class="material-icons-round" style="color:#a855f7;">shield</span>
-    Admin Users
-    <span class="section-count" id="admin-count"></span>
+<div class="snap-section">
+<div style="display:flex; align-items:center; justify-content:space-between;">
+    <div class="section-header" style="margin-bottom:0;">
+        <span class="material-icons-round" style="color:#a855f7;">shield</span>
+        Admin Users
+        <span class="section-count" id="admin-count"></span>
+    </div>
+    {% if perms.auth.add_user %}
+    <a href="{% url 'control:users_create' %}" class="btn btn-primary">
+        <span class="material-icons-round">person_add</span> New User
+    </a>
+    {% endif %}
 </div>
 
 <div class="toolbar" style="flex-direction:column; align-items:stretch; gap:10px;">
@@ -65,8 +65,9 @@
     </div>
 </div>
 
-<div class="card" style="margin-bottom:28px;">
+<div class="card" style="padding:0; overflow:hidden;">
     {% if admin_users %}
+    <div class="table-scroll-wrapper">
     <table class="data-table" id="admin-table">
         <thead>
             <tr>
@@ -115,33 +116,50 @@
                 <td class="dim">{{ u.date_joined|date:"d M Y" }}</td>
                 <td onclick="event.stopPropagation();">
                     <div class="table-actions">
+                        {% if perms.auth.add_user %}
                         <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="action-btn" title="Clone user"><span class="material-icons-round">content_copy</span></a>
+                        {% endif %}
+                        {% if perms.auth.change_user %}
                         <a href="{% url 'control:users_edit' u.pk %}" class="action-btn" title="Edit"><span class="material-icons-round">edit</span></a>
+                        {% endif %}
+                        {% if perms.auth.delete_user %}
                         <a href="{% url 'control:users_delete' u.pk %}" class="action-btn action-delete" title="Delete"><span class="material-icons-round">delete</span></a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     <div id="admin-empty" style="display:none;text-align:center;padding:32px;color:var(--text-secondary);font-size:0.87rem;">No admin users match your filter.</div>
     {% else %}
     <div style="text-align:center;padding:40px 24px;">
         <span class="material-icons-round" style="font-size:36px;color:var(--text-secondary);display:block;margin-bottom:10px;">manage_accounts</span>
         <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">No admin users yet</div>
-        <a href="{% url 'control:users_create' %}" class="btn btn-primary" style="display:inline-flex;margin-top:12px;"><span class="material-icons-round">person_add</span> New User</a>
+        {% if perms.auth.add_user %}<a href="{% url 'control:users_create' %}" class="btn btn-primary" style="display:inline-flex;margin-top:12px;"><span class="material-icons-round">person_add</span> New User</a>{% endif %}
     </div>
     {% endif %}
 </div>
 
 
+</div><!-- end snap-section admin -->
+
 <!-- ================================================================ -->
 <!-- BLOCK 2 — Portal Users                                            -->
 <!-- ================================================================ -->
-<div class="section-header">
-    <span class="material-icons-round" style="color:#22c55e;">store</span>
-    Portal Users
-    <span class="section-count" id="portal-count"></span>
+<div class="snap-section">
+<div style="display:flex; align-items:center; justify-content:space-between;">
+    <div class="section-header" style="margin-bottom:0;">
+        <span class="material-icons-round" style="color:#22c55e;">store</span>
+        Portal Users
+        <span class="section-count" id="portal-count"></span>
+    </div>
+    {% if perms.auth.add_user %}
+    <a href="{% url 'control:users_create' %}" class="btn btn-primary">
+        <span class="material-icons-round">person_add</span> New User
+    </a>
+    {% endif %}
 </div>
 
 <div class="toolbar" style="flex-direction:column; align-items:stretch; gap:10px;">
@@ -176,8 +194,9 @@
     </div>
 </div>
 
-<div class="card">
+<div class="card" style="padding:0; overflow:hidden;">
     {% if portal_users %}
+    <div class="table-scroll-wrapper">
     <table class="data-table" id="portal-table">
         <thead>
             <tr>
@@ -227,30 +246,73 @@
                 <td class="dim">{{ u.date_joined|date:"d M Y" }}</td>
                 <td onclick="event.stopPropagation();">
                     <div class="table-actions">
+                        {% if perms.auth.add_user %}
                         <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="action-btn" title="Clone user"><span class="material-icons-round">content_copy</span></a>
+                        {% endif %}
+                        {% if perms.auth.change_user %}
                         <a href="{% url 'control:users_edit' u.pk %}" class="action-btn" title="Edit"><span class="material-icons-round">edit</span></a>
+                        {% endif %}
+                        {% if perms.auth.delete_user %}
                         <a href="{% url 'control:users_delete' u.pk %}" class="action-btn action-delete" title="Delete"><span class="material-icons-round">delete</span></a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     <div id="portal-empty" style="display:none;text-align:center;padding:32px;color:var(--text-secondary);font-size:0.87rem;">No portal users match your filter.</div>
     {% else %}
     <div style="text-align:center;padding:40px 24px;">
         <span class="material-icons-round" style="font-size:36px;color:var(--text-secondary);display:block;margin-bottom:10px;">store</span>
         <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">No portal users yet</div>
-        <a href="{% url 'control:users_create' %}" class="btn btn-primary" style="display:inline-flex;margin-top:12px;"><span class="material-icons-round">person_add</span> New User</a>
+        {% if perms.auth.add_user %}<a href="{% url 'control:users_create' %}" class="btn btn-primary" style="display:inline-flex;margin-top:12px;"><span class="material-icons-round">person_add</span> New User</a>{% endif %}
     </div>
     {% endif %}
 </div>
+
+</div><!-- end snap-section portal -->
 
 {% endblock %}
 
 
 {% block extra_css %}
 <style>
+    /* ── Snap-scroll full-page sections ── */
+    html, body { overflow: hidden; height: 100vh; }
+    .main    { height: 100vh; overflow: hidden; min-height: unset !important; display: flex; flex-direction: column; }
+    .content { height: calc(100vh - 63px); overflow-y: scroll; scroll-snap-type: y mandatory; padding: 0; flex: none; scrollbar-width: none; }
+    .content::-webkit-scrollbar { display: none; }
+
+    .snap-section {
+        height: calc(100vh - 63px);
+        scroll-snap-align: start;
+        padding: 24px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow: hidden;
+    }
+    .snap-section > .card {
+        flex: 1;
+        min-height: 0;
+        margin-bottom: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    .snap-section .table-scroll-wrapper {
+        flex: 1;
+        min-height: 0;
+        max-height: none !important;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--card-border) transparent;
+    }
+    .snap-section .table-scroll-wrapper::-webkit-scrollbar { width: 5px; }
+    .snap-section .table-scroll-wrapper::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
     .section-header {
         display:flex; align-items:center; gap:8px;
         font-size:0.85rem; font-weight:700; text-transform:uppercase;
@@ -261,6 +323,8 @@
 
     .data-table { width:100%; border-collapse:collapse; }
     .data-table th {
+        position: sticky; top: 0; z-index: 2;
+        background: var(--card-bg);
         text-align:left; font-size:0.75rem; font-weight:600; color:var(--text-secondary);
         text-transform:uppercase; letter-spacing:0.4px; padding:10px 12px;
         border-bottom:1px solid var(--card-border);
@@ -314,6 +378,32 @@
     }
     .reset-btn:hover { background:#ef4444; color:white; }
     .reset-btn.visible { display:inline-flex; }
+
+    /* ── Snap dot indicators ── */
+    .snap-dots {
+        position: fixed;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 200;
+    }
+    .snap-dot {
+        width: 6px;
+        height: 10px;
+        border-radius: 3px;
+        border: none;
+        background: var(--card-border);
+        cursor: pointer;
+        padding: 0;
+        transition: height 0.25s ease, background 0.2s;
+    }
+    .snap-dot.active {
+        height: 22px;
+        background: var(--accent);
+    }
 </style>
 {% endblock %}
 
@@ -428,6 +518,12 @@
         el.textContent = visible === total ? '(' + total + ')' : '(' + visible + ' of ' + total + ')';
     }
 
+    // ---- Snap dot navigation ----
+    function scrollToSection(index) {
+        const content = document.querySelector('.content');
+        content.scrollTo({ top: index * content.clientHeight, behavior: 'smooth' });
+    }
+
     // ---- Clickable rows ----
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.clickable-row').forEach(row => {
@@ -441,6 +537,14 @@
             const rows = document.querySelectorAll('#' + s + '-table tbody tr');
             updateCount(s, rows.length, rows.length);
         });
+
+        // Sync dots on scroll
+        const content = document.querySelector('.content');
+        const dots    = document.querySelectorAll('.snap-dot');
+        content.addEventListener('scroll', function () {
+            const active = Math.round(this.scrollTop / this.clientHeight);
+            dots.forEach((d, i) => d.classList.toggle('active', i === active));
+        }, { passive: true });
     });
 </script>
 {% endblock %}

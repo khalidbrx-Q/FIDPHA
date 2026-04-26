@@ -6,19 +6,9 @@
 
 {% block content %}
 
-<div class="page-header">
-    <div>
-        <div class="page-header-title">Accounts</div>
-        <div class="page-header-sub">{{ accounts|length }} pharmacy account{{ accounts|length|pluralize }}</div>
-    </div>
-    <a href="{% url 'control:accounts_create' %}" class="btn btn-primary">
-        <span class="material-icons-round">add</span> New Account
-    </a>
-</div>
-
 <!-- Toolbar -->
 <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
-    <!-- Row 1: search inputs -->
+    <!-- Row 1: search inputs + button -->
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
         <div class="search-bar" style="flex:1; min-width:180px; max-width:360px;">
             <span class="material-icons-round">search</span>
@@ -30,6 +20,11 @@
             <input type="text" id="accCity" placeholder="Filter by city…"
                    oninput="applyFilters()" autocomplete="off">
         </div>
+        {% if perms.fidpha.add_account %}
+        <a href="{% url 'control:accounts_create' %}" class="btn btn-primary" style="margin-left:auto; flex-shrink:0;">
+            <span class="material-icons-round">add</span> New Account
+        </a>
+        {% endif %}
     </div>
     <!-- Row 2: pill filters + count + reset -->
     <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
@@ -49,13 +44,14 @@
                 <button class="filter-pill" onclick="setFilter('portal','no',this)">No Portal</button>
             </div>
         </div>
-        <span id="accCount" style="font-size:0.82rem; color:var(--text-secondary);"></span>
+        <span id="accCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ accounts|length }} account{{ accounts|length|pluralize }}</span>
         <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear filters</button>
     </div>
 </div>
 
-<div class="card">
+<div class="card" style="padding:0; overflow:hidden;">
     {% if accounts %}
+    <div class="table-scroll-wrapper">
     <table class="data-table">
         <thead>
             <tr>
@@ -111,21 +107,28 @@
                 </td>
                 <td onclick="event.stopPropagation()">
                     <div class="table-actions">
+                        {% if perms.fidpha.add_account %}
                         <a href="{% url 'control:accounts_create' %}?clone={{ acc.pk }}" class="action-btn" title="Clone">
                             <span class="material-icons-round">content_copy</span>
                         </a>
+                        {% endif %}
+                        {% if perms.fidpha.change_account %}
                         <a href="{% url 'control:accounts_edit' acc.pk %}" class="action-btn" title="Edit">
                             <span class="material-icons-round">edit</span>
                         </a>
+                        {% endif %}
+                        {% if perms.fidpha.delete_account %}
                         <a href="{% url 'control:accounts_delete' acc.pk %}" class="action-btn action-delete" title="Delete">
                             <span class="material-icons-round">delete</span>
                         </a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     <div id="noAccResults" style="display:none; text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem;">
         No accounts match your filters.
     </div>
@@ -134,9 +137,11 @@
         <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">store_off</span>
         <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No accounts yet</div>
         <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Add a pharmacy account to get started.</div>
+        {% if perms.fidpha.add_account %}
         <a href="{% url 'control:accounts_create' %}" class="btn btn-primary" style="display:inline-flex;">
             <span class="material-icons-round">add</span> New Account
         </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>
@@ -146,8 +151,21 @@
 
 {% block extra_css %}
 <style>
+    .content { padding-bottom: 0; }
+
+    .table-scroll-wrapper {
+        max-height: calc(100vh - 210px);
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--card-border) transparent;
+    }
+    .table-scroll-wrapper::-webkit-scrollbar { width: 5px; }
+    .table-scroll-wrapper::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
     .data-table { width:100%; border-collapse:collapse; }
     .data-table th {
+        position: sticky; top: 0; z-index: 1;
+        background: var(--card-bg);
         text-align:left; font-size:0.75rem; font-weight:600;
         color:var(--text-secondary); text-transform:uppercase;
         letter-spacing:0.4px; padding:10px 12px;
@@ -191,6 +209,8 @@
 {% block extra_js %}
 <script>
     let fStatus = 'all', fPortal = 'all';
+    const accCountEl = document.getElementById('accCount');
+    const ACC_TOTAL  = accCountEl.textContent;
 
     function rowNav(row) { window.location = row.dataset.href; }
 
@@ -220,7 +240,7 @@
 
         const isFiltered = q || cityQ || fStatus !== 'all' || fPortal !== 'all';
         document.getElementById('noAccResults').style.display = (isFiltered && visible === 0) ? 'block' : 'none';
-        document.getElementById('accCount').textContent       = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : '';
+        accCountEl.textContent = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : ACC_TOTAL;
         document.getElementById('resetBtn').style.display     = isFiltered ? 'inline-block' : 'none';
     }
 

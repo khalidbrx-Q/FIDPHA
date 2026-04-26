@@ -9,47 +9,33 @@
 
 {% block content %}
 
+{% if utype == "portal" %}
+
+<!-- ============================================================ -->
+<!-- PORTAL USER — standard detail layout                         -->
+<!-- ============================================================ -->
+
 <div class="page-header">
     <div style="display:flex; align-items:center; gap:14px;">
-        <div class="detail-avatar">{{ u.username|first|upper }}</div>
+        <div class="detail-avatar portal-avatar">{{ u.username|first|upper }}</div>
         <div>
             <div class="page-header-title">
                 {{ u.get_full_name|default:u.username }}
-                {% if u.is_superuser %}
-                    <span class="type-badge type-superuser"><span class="material-icons-round" style="font-size:13px;">shield</span> Superuser</span>
-                {% elif u.is_staff %}
-                    <span class="type-badge type-staff"><span class="material-icons-round" style="font-size:13px;">badge</span> Staff</span>
-                {% else %}
-                    <span class="type-badge type-portal"><span class="material-icons-round" style="font-size:13px;">store</span> Portal</span>
-                {% endif %}
-                {% if u.is_active %}
-                    <span class="badge badge-active">Active</span>
-                {% else %}
-                    <span class="badge badge-inactive">Inactive</span>
-                {% endif %}
+                <span class="type-badge type-portal"><span class="material-icons-round" style="font-size:13px;">store</span> Portal</span>
+                {% if u.is_active %}<span class="badge badge-active">Active</span>
+                {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
             </div>
-            <div class="page-header-sub">{{ u.email }} · Joined {{ u.date_joined|date:"d M Y" }}</div>
+            <div class="page-header-sub">{{ u.email|default:"—" }} · Joined {{ u.date_joined|date:"d M Y" }}</div>
         </div>
     </div>
     <div style="display:flex; gap:8px;">
-        <a href="{% url 'control:users_list' %}" class="btn btn-secondary">
-            <span class="material-icons-round">arrow_back</span> Back
-        </a>
-        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="btn btn-secondary">
-            <span class="material-icons-round">content_copy</span> Clone
-        </a>
-        <a href="{% url 'control:users_edit' u.pk %}" class="btn btn-primary">
-            <span class="material-icons-round">edit</span> Edit
-        </a>
-        <a href="{% url 'control:users_delete' u.pk %}" class="btn btn-danger">
-            <span class="material-icons-round">delete</span> Delete
-        </a>
+        <a href="{% url 'control:users_list' %}" class="btn btn-secondary"><span class="material-icons-round">arrow_back</span> Back</a>
+        <a href="{% url 'control:users_edit' u.pk %}" class="btn btn-primary"><span class="material-icons-round">edit</span> Edit</a>
+        <a href="{% url 'control:users_delete' u.pk %}" class="btn btn-danger"><span class="material-icons-round">delete</span> Delete</a>
     </div>
 </div>
 
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-
-    <!-- Left: basic info -->
     <div class="card">
         <div class="section-label">Account Information</div>
         <div class="info-row"><span class="info-key">Username</span><span class="info-val">{{ u.username }}</span></div>
@@ -65,8 +51,82 @@
             </span>
         </div>
     </div>
+    <div class="card">
+        <div class="section-label">Linked Pharmacy</div>
+        {% if profile and profile.account %}
+        {% with acc=profile.account %}
+        <div class="info-row"><span class="info-key">Name</span>
+            <span class="info-val"><a href="{% url 'control:accounts_detail' acc.pk %}" class="info-account-link">{{ acc.name }}</a></span>
+        </div>
+        <div class="info-row"><span class="info-key">Status</span>
+            <span class="info-val">
+                {% if acc.status == "active" %}<span class="badge badge-active">Active</span>
+                {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+            </span>
+        </div>
+        {% if acc.phone %}<div class="info-row"><span class="info-key">Phone</span><span class="info-val">{{ acc.phone }}</span></div>{% endif %}
+        {% if acc.address %}<div class="info-row" style="border-bottom:none;"><span class="info-key">Address</span><span class="info-val" style="text-align:right;">{{ acc.address }}</span></div>{% endif %}
+        {% if not acc.phone and not acc.address %}<div class="info-row" style="border-bottom:none;"><span class="info-key">Portal access</span><span class="info-val">{% if acc.pharmacy_portal %}<span class="badge badge-active">Enabled</span>{% else %}<span class="badge badge-inactive">Disabled</span>{% endif %}</span></div>{% endif %}
+        {% endwith %}
+        {% else %}
+        <div style="display:flex; flex-direction:column; align-items:center; padding:24px; text-align:center;">
+            <span class="material-icons-round" style="font-size:36px; color:var(--card-border); margin-bottom:10px;">store_off</span>
+            <div style="font-size:0.85rem; color:var(--text-secondary);">No pharmacy account linked to this user.</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
 
-    <!-- Right: type-specific info -->
+{% else %}
+
+<!-- ============================================================ -->
+<!-- STAFF / SUPERUSER — standard layout                          -->
+<!-- ============================================================ -->
+
+<div class="page-header">
+    <div style="display:flex; align-items:center; gap:14px;">
+        <div class="detail-avatar">{{ u.username|first|upper }}</div>
+        <div>
+            <div class="page-header-title">
+                {{ u.get_full_name|default:u.username }}
+                {% if u.is_superuser %}
+                    <span class="type-badge type-superuser"><span class="material-icons-round" style="font-size:13px;">shield</span> Superuser</span>
+                {% elif u.is_staff %}
+                    <span class="type-badge type-staff"><span class="material-icons-round" style="font-size:13px;">badge</span> Staff</span>
+                {% endif %}
+                {% if u.is_active %}
+                    <span class="badge badge-active">Active</span>
+                {% else %}
+                    <span class="badge badge-inactive">Inactive</span>
+                {% endif %}
+            </div>
+            <div class="page-header-sub">{{ u.email }} · Joined {{ u.date_joined|date:"d M Y" }}</div>
+        </div>
+    </div>
+    <div style="display:flex; gap:8px;">
+        <a href="{% url 'control:users_list' %}" class="btn btn-secondary"><span class="material-icons-round">arrow_back</span> Back</a>
+        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="btn btn-secondary"><span class="material-icons-round">content_copy</span> Clone</a>
+        <a href="{% url 'control:users_edit' u.pk %}" class="btn btn-primary"><span class="material-icons-round">edit</span> Edit</a>
+        <a href="{% url 'control:users_delete' u.pk %}" class="btn btn-danger"><span class="material-icons-round">delete</span> Delete</a>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+    <div class="card">
+        <div class="section-label">Account Information</div>
+        <div class="info-row"><span class="info-key">Username</span><span class="info-val">{{ u.username }}</span></div>
+        <div class="info-row"><span class="info-key">Full name</span><span class="info-val">{{ u.get_full_name|default:"—" }}</span></div>
+        <div class="info-row"><span class="info-key">Email</span><span class="info-val">{{ u.email|default:"—" }}</span></div>
+        <div class="info-row"><span class="info-key">Date joined</span><span class="info-val">{{ u.date_joined|date:"d M Y, H:i" }}</span></div>
+        <div class="info-row"><span class="info-key">Last login</span><span class="info-val">{{ u.last_login|date:"d M Y, H:i"|default:"Never" }}</span></div>
+        <div class="info-row" style="border-bottom:none;">
+            <span class="info-key">Status</span>
+            <span class="info-val">
+                {% if u.is_active %}<span class="badge badge-active">Active</span>
+                {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+            </span>
+        </div>
+    </div>
     <div class="card">
         {% if utype == "superuser" %}
             <div class="section-label">Superuser</div>
@@ -75,7 +135,6 @@
                 <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;">Full system access</div>
                 <div style="font-size:0.82rem; color:var(--text-secondary);">Superusers have all permissions automatically — no role needed.</div>
             </div>
-
         {% elif utype == "staff" %}
             <div class="section-label">Role & Permissions</div>
             {% with role=u.groups.first %}
@@ -99,36 +158,8 @@
                 </div>
             {% endif %}
             {% endwith %}
-
-        {% else %}
-            <div class="section-label">Portal Account</div>
-            {% if profile %}
-                <div class="info-row">
-                    <span class="info-key">Account</span>
-                    <a href="{% url 'control:accounts_detail' profile.account.pk %}" class="info-account-link">{{ profile.account.name }}</a>
-                </div>
-                <div class="info-row"><span class="info-key">Account code</span><span class="info-val">{{ profile.account.code }}</span></div>
-                <div class="info-row"><span class="info-key">City</span><span class="info-val">{{ profile.account.city }}</span></div>
-                <div class="info-row" style="border-bottom:none;">
-                    <span class="info-key">Email verified</span>
-                    <span class="info-val">
-                        {% if profile.email_verified %}
-                            <span class="badge badge-active">Verified</span>
-                        {% else %}
-                            <span class="badge badge-inactive">Not verified</span>
-                        {% endif %}
-                    </span>
-                </div>
-            {% else %}
-                <div style="text-align:center; padding:24px; color:var(--text-secondary);">
-                    <span class="material-icons-round" style="font-size:36px; display:block; margin-bottom:8px;">store_off</span>
-                    <div style="font-size:0.85rem;">No account linked.</div>
-                    <a href="{% url 'control:users_edit' u.pk %}" style="font-size:0.82rem; color:var(--accent);">Link an account</a>
-                </div>
-            {% endif %}
         {% endif %}
     </div>
-
 </div>
 
 {% if social_accounts %}
@@ -146,12 +177,8 @@
                 {{ sa.provider|title }}
             </span>
             <div style="min-width:0;">
-                <div style="font-size:0.83rem; color:var(--text-primary); font-weight:500;">
-                    {{ sa.extra_data.email|default:sa.uid }}
-                </div>
-                <div style="font-size:0.75rem; color:var(--text-secondary); font-family:monospace;">
-                    UID: {{ sa.uid|truncatechars:32 }}
-                </div>
+                <div style="font-size:0.83rem; color:var(--text-primary); font-weight:500;">{{ sa.extra_data.email|default:sa.uid }}</div>
+                <div style="font-size:0.75rem; color:var(--text-secondary); font-family:monospace;">UID: {{ sa.uid|truncatechars:32 }}</div>
             </div>
         </div>
         <div style="display:flex; align-items:center; gap:16px; flex-shrink:0;">
@@ -160,22 +187,16 @@
                 <div>Token via <strong style="color:var(--text-primary);">{{ token.app.name|default:token.app.provider|title }}</strong></div>
                 {% if token.expires_at %}
                     {% now "U" as now_ts %}
-                    <div>
-                        Expires {{ token.expires_at|date:"d M Y" }}
-                        {% if token.expires_at|date:"U" > now_ts %}
-                            <span class="sa-badge sa-valid">Valid</span>
-                        {% else %}
-                            <span class="sa-badge sa-expired">Expired</span>
-                        {% endif %}
+                    <div>Expires {{ token.expires_at|date:"d M Y" }}
+                        {% if token.expires_at|date:"U" > now_ts %}<span class="sa-badge sa-valid">Valid</span>
+                        {% else %}<span class="sa-badge sa-expired">Expired</span>{% endif %}
                     </div>
                 {% else %}
                     <div><span class="sa-badge sa-valid">No expiry</span></div>
                 {% endif %}
             </div>
             {% endfor %}
-            <div style="font-size:0.78rem; color:var(--text-secondary);">
-                Linked {{ sa.date_joined|date:"d M Y" }}
-            </div>
+            <div style="font-size:0.78rem; color:var(--text-secondary);">Linked {{ sa.date_joined|date:"d M Y" }}</div>
             <form method="post" action="{% url 'control:social_account_unlink' sa.pk %}" onsubmit="return confirm('Unlink {{ sa.provider|title }} from {{ u.username }}?');">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-danger" style="padding:5px 10px; font-size:0.78rem;">
@@ -189,72 +210,73 @@
 </div>
 {% endif %}
 
+{% endif %}{# end utype portal/staff branch #}
+
 {% endblock %}
 
 
 {% block extra_css %}
 <style>
+    /* ── Shared ── */
     .detail-avatar {
         width:52px; height:52px; border-radius:50%;
         background:linear-gradient(135deg, var(--accent), #6366f1);
         color:white; font-size:1.2rem; font-weight:700;
-        display:flex; align-items:center; justify-content:center;
-        flex-shrink:0;
+        display:flex; align-items:center; justify-content:center; flex-shrink:0;
     }
-    .section-label {
-        font-size:0.75rem; font-weight:700; text-transform:uppercase;
-        letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:14px;
-    }
-    .info-row {
-        display:flex; align-items:center; justify-content:space-between;
-        padding:9px 0; border-bottom:1px solid var(--card-border);
-        font-size:0.85rem;
-    }
+    .portal-avatar { background:linear-gradient(135deg,#22c55e,#16a34a); width:40px; height:40px; font-size:1rem; }
+
+    .section-label { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:14px; }
+    .info-row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--card-border); font-size:0.85rem; }
     .info-key { color:var(--text-secondary); }
     .info-val { color:var(--text-primary); text-align:right; }
 
-    .type-badge {
-        display:inline-flex; align-items:center; gap:4px;
-        padding:3px 8px; border-radius:20px;
-        font-size:0.75rem; font-weight:600; margin-left:6px;
-    }
+    .type-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; margin-left:6px; }
     .type-superuser { background:rgba(168,85,247,0.1); color:#a855f7; }
-    .type-staff     { background:rgba(14,165,233,0.1); color:#0ea5e9; }
-    .type-portal    { background:rgba(34,197,94,0.1);  color:#22c55e; }
+    .type-staff     { background:rgba(14,165,233,0.1);  color:#0ea5e9; }
+    .type-portal    { background:rgba(34,197,94,0.1);   color:#22c55e; }
 
     .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; margin-left:4px; }
     .badge-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
     .badge-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
+    .badge-pending  { background:rgba(245,158,11,0.1); color:#f59e0b; }
+    .badge-neutral  { background:var(--sidebar-hover); color:var(--text-secondary); }
 
     .perm-tags { display:flex; flex-wrap:wrap; gap:5px; }
-    .perm-tag {
-        font-size:0.72rem; padding:3px 8px; border-radius:6px;
-        background:var(--sidebar-hover); color:var(--text-secondary);
-        border:1px solid var(--card-border);
-    }
-    .info-account-link {
-        font-weight:600; color:var(--accent); text-decoration:none; text-align:right;
-    }
+    .perm-tag { font-size:0.72rem; padding:3px 8px; border-radius:6px; background:var(--sidebar-hover); color:var(--text-secondary); border:1px solid var(--card-border); }
+    .info-account-link { font-weight:600; color:var(--accent); text-decoration:none; text-align:right; }
     .info-account-link:hover { text-decoration:underline; }
 
-    .sa-row {
-        display:flex; align-items:center; justify-content:space-between;
-        gap:16px; padding:12px 0; flex-wrap:wrap;
-    }
-    .provider-chip {
-        display:inline-flex; align-items:center; gap:4px;
-        padding:4px 10px; border-radius:20px; font-size:0.78rem; font-weight:600;
-        flex-shrink:0;
-    }
+    .sa-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; flex-wrap:wrap; }
+    .provider-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:20px; font-size:0.78rem; font-weight:600; flex-shrink:0; }
     .provider-google { background:rgba(66,133,244,0.12); color:#4285f4; }
     .provider-chip:not(.provider-google) { background:rgba(100,116,139,0.12); color:var(--text-secondary); }
-
-    .sa-badge {
-        display:inline-flex; align-items:center;
-        padding:2px 7px; border-radius:10px; font-size:0.72rem; font-weight:600; margin-left:4px;
-    }
+    .sa-badge { display:inline-flex; align-items:center; padding:2px 7px; border-radius:10px; font-size:0.72rem; font-weight:600; margin-left:4px; }
     .sa-valid   { background:rgba(34,197,94,0.1);  color:#22c55e; }
     .sa-expired { background:rgba(239,68,68,0.1);  color:#ef4444; }
+
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table thead th {
+        position:sticky; top:0; z-index:1; background:var(--card-bg);
+        text-align:left; font-size:0.75rem; font-weight:600; color:var(--text-secondary);
+        text-transform:uppercase; letter-spacing:0.4px; padding:10px 12px;
+        border-bottom:1px solid var(--card-border);
+    }
+    .data-table td { padding:10px 12px; font-size:0.86rem; color:var(--text-secondary); border-bottom:1px solid var(--card-border); }
+    .data-table tbody tr:last-child td { border-bottom:none; }
+    .data-table tbody tr:hover td { background:rgba(14,165,233,0.06); }
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        text-align: center;
+        padding: 40px;
+    }
+    .empty-state .material-icons-round { font-size: 40px; opacity: 0.5; }
 
     @media (max-width: 700px) {
         div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
@@ -262,3 +284,6 @@
     }
 </style>
 {% endblock %}
+
+{% block extra_js %}{% endblock %}
+

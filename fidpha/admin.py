@@ -578,6 +578,6 @@ class ContractProductAdmin(ModelAdmin):
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
 
-admin.site.site_header = "FIDPHA Administration"
-admin.site.site_title = "FIDPHA Admin"
-admin.site.index_title = "Welcome to FIDPHA"
+admin.site.site_header = "WinInPharma Administration"
+admin.site.site_title = "WinInPharma Admin"
+admin.site.index_title = "Welcome to WinInPharma"
