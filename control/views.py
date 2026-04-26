@@ -1521,3 +1521,57 @@ def sales_bulk_update(request):
         reviewed_at=timezone.now(),
     )
     return JsonResponse({"ok": True, "updated": len(pks)})
+
+
+# ===========================================================================
+# Sync Import Log  (superuser debug tool)
+# ===========================================================================
+
+@superuser_required
+def sync_log(request):
+    from django.db.models import Exists, OuterRef
+
+    qs = (
+        SaleImport.objects
+        .select_related("contract_product__product", "token", "inserted_by")
+        .annotate(has_sale=Exists(Sale.objects.filter(sale_import=OuterRef("pk"))))
+        .order_by("-received_at")
+    )
+
+    status_filter  = request.GET.get("status", "")
+    batch_filter   = request.GET.get("batch", "").strip()
+    account_filter = request.GET.get("account", "").strip()
+    date_from      = request.GET.get("date_from", "")
+    date_to        = request.GET.get("date_to", "")
+
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    if batch_filter:
+        qs = qs.filter(batch_id__icontains=batch_filter)
+    if account_filter:
+        qs = qs.filter(account_code__icontains=account_filter)
+    if date_from:
+        qs = qs.filter(received_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(received_at__date__lte=date_to)
+
+    total     = qs.count()
+    paginator = Paginator(qs, 50)
+    page_obj  = paginator.get_page(request.GET.get("page"))
+
+    query = request.GET.copy()
+    query.pop("page", None)
+
+    return render(request, "control/sync_log.html", {
+        "page_obj":       page_obj,
+        "total":          total,
+        "status_filter":  status_filter,
+        "batch_filter":   batch_filter,
+        "account_filter": account_filter,
+        "date_from":      date_from,
+        "date_to":        date_to,
+        "query_string":   query.urlencode(),
+        "STATUS_PENDING":  SaleImport.STATUS_PENDING,
+        "STATUS_ACCEPTED": SaleImport.STATUS_ACCEPTED,
+        "STATUS_REJECTED": SaleImport.STATUS_REJECTED,
+    })

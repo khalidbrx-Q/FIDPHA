@@ -568,6 +568,11 @@
                 <span class="material-icons-round">language</span>
                 Site
             </a>
+            <a href="{% url 'control:sync_log' %}"
+               class="nav-item {% block nav_sync_log %}{% endblock %}">
+                <span class="material-icons-round">bug_report</span>
+                Sync Import Log
+            </a>
             {% endif %}
 
         </nav>

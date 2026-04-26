@@ -1,0 +1,387 @@
+{% extends "control/base.html" %}
+
+{% block page_title %}Sync Import Log{% endblock %}
+{% block page_breadcrumb %}Sync Import Log{% endblock %}
+{% block nav_sync_log %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
+    }
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .filter-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+    .filter-input {
+        padding: 7px 10px;
+        background-color: var(--content-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 7px;
+        color: var(--text-primary);
+        font-size: 0.83rem;
+        font-family: 'Inter', sans-serif;
+        min-width: 140px;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+    .filter-input:focus { outline: none; border-color: var(--accent); }
+    .filter-input option { background-color: var(--card-bg); }
+    select.filter-input {
+        padding-right: 30px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+    }
+
+    /* Status badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .badge-pending  { background: rgba(245,158,11,0.12); color: #f59e0b; }
+    .badge-accepted { background: rgba(34,197,94,0.12);  color: #22c55e; }
+    .badge-rejected { background: rgba(239,68,68,0.12);  color: #ef4444; }
+
+    /* Tooltip — fixed position via JS to escape any overflow clip */
+    .tooltip-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        cursor: default;
+    }
+    .tooltip-icon { font-size: 13px !important; opacity: 0.7; }
+    #sync-tooltip {
+        display: none;
+        position: fixed;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 7px;
+        padding: 7px 10px;
+        font-size: 0.78rem;
+        color: var(--text-primary);
+        white-space: normal;
+        max-width: 280px;
+        min-width: 160px;
+        z-index: 9999;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        line-height: 1.4;
+        pointer-events: none;
+    }
+
+    /* Table */
+    .sync-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    .sync-table th {
+        padding: 10px 12px;
+        text-align: left;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--card-border);
+        white-space: nowrap;
+    }
+    .sync-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--card-border);
+        color: var(--text-primary);
+        vertical-align: middle;
+    }
+    .sync-table tr:last-child td { border-bottom: none; }
+    .sync-table tr:hover td { background-color: var(--sidebar-hover); }
+
+    .mono { font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--text-secondary); }
+    .num  { text-align: right; }
+    .sale-linked   { color: #22c55e; font-size: 16px !important; }
+    .sale-unlinked { color: var(--card-border); font-size: 16px !important; }
+
+    .count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--card-border);
+        color: var(--text-secondary);
+        border-radius: 20px;
+        padding: 2px 9px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+
+    /* Column header with help tooltip */
+    .th-help {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        cursor: default;
+    }
+    .th-help .material-icons-round { font-size: 13px; opacity: 0.5; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Fixed tooltip element (escapes overflow clipping) -->
+<div id="sync-tooltip"></div>
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">
+            Sync Import Log
+            <span class="count-badge">{{ total }}</span>
+        </div>
+        <div class="page-header-sub">Raw SaleImport staging records — superuser diagnostic view</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding: 16px; margin-bottom: 16px;">
+    <form id="filter-form" method="get" action="">
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <select name="status" class="filter-input" id="f-status">
+                    <option value="">All</option>
+                    <option value="{{ STATUS_PENDING }}"  {% if status_filter == STATUS_PENDING  %}selected{% endif %}>Pending</option>
+                    <option value="{{ STATUS_ACCEPTED }}" {% if status_filter == STATUS_ACCEPTED %}selected{% endif %}>Accepted</option>
+                    <option value="{{ STATUS_REJECTED }}" {% if status_filter == STATUS_REJECTED %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Batch ID</label>
+                <input type="text" name="batch" id="f-batch" class="filter-input" placeholder="Search…" value="{{ batch_filter }}">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Account Code</label>
+                <input type="text" name="account" id="f-account" class="filter-input" placeholder="Search…" value="{{ account_filter }}">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Received from</label>
+                <input type="date" name="date_from" id="f-date-from" class="filter-input" value="{{ date_from }}">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Received to</label>
+                <input type="date" name="date_to" id="f-date-to" class="filter-input" value="{{ date_to }}">
+            </div>
+            {% if status_filter or batch_filter or account_filter or date_from or date_to %}
+            <div class="filter-group" style="justify-content: flex-end;">
+                <a href="{% url 'control:sync_log' %}" class="btn btn-secondary" style="height: 34px;">
+                    <span class="material-icons-round">close</span> Clear
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="card" style="padding: 0;">
+    <div style="overflow-x: auto;">
+    {% if page_obj.object_list %}
+    <table class="sync-table">
+        <thead>
+            <tr>
+                <th>Received at</th>
+                <th>Batch ID</th>
+                <th>Account</th>
+                <th>Designation</th>
+                <th class="num">Qty</th>
+                <th class="num">PPV</th>
+                <th>Status</th>
+                <th>
+                    <span class="th-help" title="API token used to submit this batch">
+                        Source
+                        <span class="material-icons-round">help_outline</span>
+                    </span>
+                </th>
+                <th style="text-align:center;">
+                    <span class="th-help" title="Whether a validated Sale record was created from this import row">
+                        Linked Sale
+                        <span class="material-icons-round">help_outline</span>
+                    </span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in page_obj %}
+            <tr>
+                <td style="white-space:nowrap; color: var(--text-secondary);">
+                    {{ row.received_at|date:"d M Y, H:i" }}
+                </td>
+                <td>
+                    <span class="mono">{{ row.batch_id|truncatechars:20 }}</span>
+                </td>
+                <td>
+                    <span class="mono">{{ row.account_code }}</span>
+                </td>
+                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                    title="{{ row.external_designation }}">
+                    {{ row.external_designation|truncatechars:40 }}
+                </td>
+                <td class="num">{{ row.quantity }}</td>
+                <td class="num">{{ row.ppv }}</td>
+                <td>
+                    {% if row.status == STATUS_REJECTED and row.rejection_reason %}
+                    <div class="tooltip-wrap"
+                         data-tip="{{ row.rejection_reason }}">
+                        <span class="badge badge-rejected">
+                            <span class="material-icons-round" style="font-size:11px;">cancel</span>
+                            Rejected
+                        </span>
+                        <span class="material-icons-round tooltip-icon" style="color:#ef4444;">info</span>
+                    </div>
+                    {% elif row.status == STATUS_REJECTED %}
+                    <span class="badge badge-rejected">
+                        <span class="material-icons-round" style="font-size:11px;">cancel</span>
+                        Rejected
+                    </span>
+                    {% elif row.status == STATUS_ACCEPTED %}
+                    <span class="badge badge-accepted">
+                        <span class="material-icons-round" style="font-size:11px;">check_circle</span>
+                        Accepted
+                    </span>
+                    {% else %}
+                    <span class="badge badge-pending">
+                        <span class="material-icons-round" style="font-size:11px;">schedule</span>
+                        Pending
+                    </span>
+                    {% endif %}
+                </td>
+                <td style="color: var(--text-secondary);">
+                    {% if row.token %}
+                        <span style="font-size:0.8rem;">{{ row.token.name }}</span>
+                    {% elif row.inserted_by %}
+                        <span style="font-size:0.8rem;">{{ row.inserted_by.username }}</span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">
+                    {% if row.has_sale %}
+                    <span class="material-icons-round sale-linked" title="Linked to a validated Sale record">check_circle</span>
+                    {% else %}
+                    <span class="material-icons-round sale-unlinked" title="No Sale record — pending or rejected">remove</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="padding: 48px; text-align: center; color: var(--text-secondary);">
+        <span class="material-icons-round" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.4;">inbox</span>
+        No import records match the current filters.
+    </div>
+    {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination" style="padding: 16px;">
+        {% if page_obj.has_previous %}
+        <a href="?{{ query_string }}&page=1" class="page-btn" title="First">«</a>
+        <a href="?{{ query_string }}&page={{ page_obj.previous_page_number }}" class="page-btn">‹</a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span class="page-btn active">{{ num }}</span>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <a href="?{{ query_string }}&page={{ num }}" class="page-btn">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <a href="?{{ query_string }}&page={{ page_obj.next_page_number }}" class="page-btn">›</a>
+        <a href="?{{ query_string }}&page={{ page_obj.paginator.num_pages }}" class="page-btn" title="Last">»</a>
+        {% endif %}
+
+        <span class="page-info">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            &nbsp;·&nbsp; {{ total }} record{{ total|pluralize }}
+        </span>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    // ── Fixed-position tooltip (escapes overflow clipping) ──
+    const tip = document.getElementById('sync-tooltip');
+
+    document.querySelectorAll('.tooltip-wrap[data-tip]').forEach(function (el) {
+        el.addEventListener('mouseenter', function (e) {
+            tip.textContent = el.dataset.tip;
+            tip.style.display = 'block';
+            positionTip(e);
+        });
+        el.addEventListener('mousemove', positionTip);
+        el.addEventListener('mouseleave', function () {
+            tip.style.display = 'none';
+        });
+    });
+
+    function positionTip(e) {
+        var x = e.clientX + 12;
+        var y = e.clientY - tip.offsetHeight - 8;
+        // Prevent going off right edge
+        if (x + tip.offsetWidth > window.innerWidth - 8) {
+            x = e.clientX - tip.offsetWidth - 12;
+        }
+        // Prevent going above viewport
+        if (y < 6) { y = e.clientY + 16; }
+        tip.style.left = x + 'px';
+        tip.style.top  = y + 'px';
+    }
+
+    // ── Dynamic filtering — submit form on change, debounce text inputs ──
+    var form    = document.getElementById('filter-form');
+    var timeout = null;
+
+    function submitNow() {
+        // Reset to page 1 on any filter change
+        var hidden = form.querySelector('input[name="page"]');
+        if (hidden) hidden.remove();
+        form.submit();
+    }
+
+    function submitDebounced() {
+        clearTimeout(timeout);
+        timeout = setTimeout(submitNow, 400);
+    }
+
+    // Immediate on select and date
+    ['f-status', 'f-date-from', 'f-date-to'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', submitNow);
+    });
+
+    // Debounced on text inputs
+    ['f-batch', 'f-account'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('input', submitDebounced);
+    });
+}());
+</script>
+{% endblock %}
