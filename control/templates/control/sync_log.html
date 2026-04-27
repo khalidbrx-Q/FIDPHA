@@ -110,8 +110,8 @@
 
     .mono { font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--text-secondary); }
     .num  { text-align: right; }
-    .sale-linked   { color: #22c55e; font-size: 16px !important; }
-    .sale-unlinked { color: var(--card-border); font-size: 16px !important; }
+    .sale-linked   { color: #22c55e; font-size: 16px !important; cursor: pointer; }
+    .sale-unlinked { color: var(--card-border); font-size: 16px !important; cursor: pointer; }
 
     .count-badge {
         display: inline-flex;
@@ -126,6 +126,78 @@
         margin-left: 8px;
     }
 
+    /* Searchable dropdown */
+    .ss-wrap { position: relative; }
+    .ss-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        padding-right: 28px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .ss-btn .ss-arrow {
+        position: absolute;
+        right: 10px;
+        font-size: 14px !important;
+        pointer-events: none;
+        opacity: 0.6;
+    }
+    .ss-panel {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        z-index: 2000;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        min-width: 220px;
+        max-width: 340px;
+    }
+    .ss-search {
+        width: 100%;
+        padding: 8px 10px;
+        border: none;
+        border-bottom: 1px solid var(--card-border);
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 0.83rem;
+        font-family: 'Inter', sans-serif;
+        box-sizing: border-box;
+        outline: none;
+    }
+    .ss-options { max-height: 200px; overflow-y: auto; }
+    .ss-option {
+        padding: 8px 12px;
+        font-size: 0.83rem;
+        color: var(--text-primary);
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .ss-option:hover { background: var(--sidebar-hover); }
+    .ss-option.ss-selected { color: var(--accent); font-weight: 600; }
+
+    /* Date group separator */
+    .filter-sep {
+        display: flex;
+        align-items: flex-end;
+        padding-bottom: 1px;
+    }
+    .filter-sep-line {
+        width: 1px;
+        height: 32px;
+        background: var(--card-border);
+        border-radius: 1px;
+    }
+
     /* Column header with help tooltip */
     .th-help {
         display: inline-flex;
@@ -134,6 +206,22 @@
         cursor: default;
     }
     .th-help .material-icons-round { font-size: 13px; opacity: 0.5; }
+
+    /* Batch summary header row */
+    .batch-header td {
+        background: var(--content-bg);
+        border-bottom: 1px solid var(--card-border);
+        border-top: 2px solid var(--card-border);
+        padding: 7px 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+    .batch-header:first-child td { border-top: none; }
+    .batch-stat { margin-left: 10px; }
+    .batch-stat-accepted { color: #22c55e; }
+    .batch-stat-rejected { color: #ef4444; }
+    .batch-stat-pending  { color: #f59e0b; }
 </style>
 {% endblock %}
 
@@ -142,20 +230,27 @@
 <!-- Fixed tooltip element (escapes overflow clipping) -->
 <div id="sync-tooltip"></div>
 
-<div class="page-header">
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
     <div>
         <div class="page-header-title">
             Sync Import Log
-            <span class="count-badge">{{ total }}</span>
+            <span class="count-badge">{{ total_batches }} batch{{ total_batches|pluralize:"es" }}</span>
+            <span class="count-badge">{{ total }} row{{ total|pluralize }}</span>
         </div>
         <div class="page-header-sub">Raw SaleImport staging records — superuser diagnostic view</div>
     </div>
+    <a href="?{{ query_string }}&export=csv"
+       class="btn btn-secondary"
+       style="white-space:nowrap; display:inline-flex; align-items:center; gap:6px;">
+        <span class="material-icons-round" style="font-size:18px;">download</span>
+        Export CSV
+    </a>
 </div>
 
 <!-- Filters -->
 <div class="card" style="padding: 16px; margin-bottom: 16px;">
     <form id="filter-form" method="get" action="">
-        <div class="filter-bar">
+        <div class="filter-bar" style="margin-bottom: 10px;">
             <div class="filter-group">
                 <label class="filter-label">Status</label>
                 <select name="status" class="filter-input" id="f-status">
@@ -174,6 +269,46 @@
                 <input type="text" name="account" id="f-account" class="filter-input" placeholder="Search…" value="{{ account_filter }}">
             </div>
             <div class="filter-group">
+                <label class="filter-label">Contract</label>
+                <div class="ss-wrap" id="ss-contract">
+                    <input type="hidden" name="contract_id" id="ss-contract-val" value="{{ contract_filter }}">
+                    <button type="button" class="filter-input ss-btn" onclick="ssToggle('ss-contract')" style="min-width:180px;">
+                        <span id="ss-contract-label">{% if contract_filter %}{% for c in all_contracts %}{% if contract_filter == c.pk|stringformat:"s" %}{{ c.title }}{% endif %}{% endfor %}{% else %}All contracts{% endif %}</span>
+                        <span class="material-icons-round ss-arrow">expand_more</span>
+                    </button>
+                    <div class="ss-panel" id="ss-contract-panel">
+                        <input type="text" class="ss-search" placeholder="Search contracts…" oninput="ssFilter('ss-contract', this.value)">
+                        <div class="ss-options" id="ss-contract-opts">
+                            <div class="ss-option{% if not contract_filter %} ss-selected{% endif %}" data-val="" data-label="All contracts" onclick="ssPick('ss-contract', this)">All contracts</div>
+                            {% for c in all_contracts %}
+                            <div class="ss-option{% if contract_filter == c.pk|stringformat:"s" %} ss-selected{% endif %}" data-val="{{ c.pk }}" data-label="{{ c.title|escapejs }}" onclick="ssPick('ss-contract', this)">{{ c.title }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Token</label>
+                <div class="ss-wrap" id="ss-token">
+                    <input type="hidden" name="token_id" id="ss-token-val" value="{{ token_filter }}">
+                    <button type="button" class="filter-input ss-btn" onclick="ssToggle('ss-token')" style="min-width:160px;">
+                        <span id="ss-token-label">{% if token_filter %}{% for t in all_tokens %}{% if token_filter == t.pk|stringformat:"s" %}{{ t.name }}{% endif %}{% endfor %}{% else %}All tokens{% endif %}</span>
+                        <span class="material-icons-round ss-arrow">expand_more</span>
+                    </button>
+                    <div class="ss-panel" id="ss-token-panel">
+                        <input type="text" class="ss-search" placeholder="Search tokens…" oninput="ssFilter('ss-token', this.value)">
+                        <div class="ss-options" id="ss-token-opts">
+                            <div class="ss-option{% if not token_filter %} ss-selected{% endif %}" data-val="" data-label="All tokens" onclick="ssPick('ss-token', this)">All tokens</div>
+                            {% for t in all_tokens %}
+                            <div class="ss-option{% if token_filter == t.pk|stringformat:"s" %} ss-selected{% endif %}" data-val="{{ t.pk }}" data-label="{{ t.name|escapejs }}" onclick="ssPick('ss-token', this)">{{ t.name }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="filter-bar">
+            <div class="filter-group">
                 <label class="filter-label">Received from</label>
                 <input type="date" name="date_from" id="f-date-from" class="filter-input" value="{{ date_from }}">
             </div>
@@ -181,7 +316,20 @@
                 <label class="filter-label">Received to</label>
                 <input type="date" name="date_to" id="f-date-to" class="filter-input" value="{{ date_to }}">
             </div>
-            {% if status_filter or batch_filter or account_filter or date_from or date_to %}
+            <div class="filter-sep"><div class="filter-sep-line"></div></div>
+            <div class="filter-group">
+                <label class="filter-label">Sale date from</label>
+                <input type="date" name="sale_date_from" id="f-sale-date-from" class="filter-input" value="{{ sale_date_from }}">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Sale date to</label>
+                <input type="date" name="sale_date_to" id="f-sale-date-to" class="filter-input" value="{{ sale_date_to }}">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Rejection reason</label>
+                <input type="text" name="reason" id="f-reason" class="filter-input" placeholder="Search…" value="{{ reason_filter }}" style="min-width:180px;">
+            </div>
+            {% if any_filter %}
             <div class="filter-group" style="justify-content: flex-end;">
                 <a href="{% url 'control:sync_log' %}" class="btn btn-secondary" style="height: 34px;">
                     <span class="material-icons-round">close</span> Clear
@@ -195,13 +343,13 @@
 <!-- Table -->
 <div class="card" style="padding: 0;">
     <div style="overflow-x: auto;">
-    {% if page_obj.object_list %}
+    {% if groups %}
     <table class="sync-table">
         <thead>
             <tr>
                 <th>Received at</th>
-                <th>Batch ID</th>
-                <th>Account</th>
+                <th>Sale date</th>
+                <th>Contract</th>
                 <th>Designation</th>
                 <th class="num">Qty</th>
                 <th class="num">PPV</th>
@@ -221,16 +369,41 @@
             </tr>
         </thead>
         <tbody>
-            {% for row in page_obj %}
-            <tr>
+            {% for group in groups %}
+            <tr class="batch-header">
+                <td colspan="9">
+                    <button class="batch-toggle" data-idx="{{ forloop.counter0 }}"
+                            onclick="toggleBatch({{ forloop.counter0 }})"
+                            title="Collapse / expand"
+                            style="background:none; border:none; cursor:pointer; padding:0 4px 0 0; vertical-align:middle; color:var(--text-secondary); line-height:1;">
+                        <span class="material-icons-round" style="font-size:16px; vertical-align:middle;">expand_less</span>
+                    </button>
+                    <span class="mono">{{ group.batch_id }}</span>
+                    {% if group.stats %}
+                    <span class="batch-stat">{{ group.stats.total }} row{{ group.stats.total|pluralize }}</span>
+                    {% if group.stats.n_accepted %}<span class="batch-stat batch-stat-accepted">· {{ group.stats.n_accepted }} accepted</span>{% endif %}
+                    {% if group.stats.n_rejected %}<span class="batch-stat batch-stat-rejected">· {{ group.stats.n_rejected }} rejected</span>{% endif %}
+                    {% if group.stats.n_pending  %}<span class="batch-stat batch-stat-pending">· {{ group.stats.n_pending }} pending</span>{% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% for row in group.rows %}
+            <tr data-group="{{ forloop.parentloop.counter0 }}">
                 <td style="white-space:nowrap; color: var(--text-secondary);">
                     {{ row.received_at|date:"d M Y, H:i" }}
                 </td>
-                <td>
-                    <span class="mono">{{ row.batch_id|truncatechars:20 }}</span>
+                <td style="white-space:nowrap; color:var(--text-secondary);">
+                    {{ row.sale_datetime|date:"d M Y, H:i" }}
                 </td>
                 <td>
-                    <span class="mono">{{ row.account_code }}</span>
+                    {% if row.contract_product and row.contract_product.contract %}
+                    <a href="{% url 'control:contracts_detail' row.contract_product.contract.pk %}"
+                       class="mono"
+                       style="color: var(--accent); text-decoration: none;"
+                       title="View contract">{{ row.contract_product.contract.title }}</a>
+                    {% else %}
+                    <span style="color:var(--card-border);">—</span>
+                    {% endif %}
                 </td>
                 <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                     title="{{ row.external_designation }}">
@@ -240,8 +413,7 @@
                 <td class="num">{{ row.ppv }}</td>
                 <td>
                     {% if row.status == STATUS_REJECTED and row.rejection_reason %}
-                    <div class="tooltip-wrap"
-                         data-tip="{{ row.rejection_reason }}">
+                    <div class="tooltip-wrap" data-tip="{{ row.rejection_reason }}">
                         <span class="badge badge-rejected">
                             <span class="material-icons-round" style="font-size:11px;">cancel</span>
                             Rejected
@@ -279,15 +451,16 @@
                     <span class="material-icons-round sale-linked" title="Linked to a validated Sale record">check_circle</span>
                     {% elif row.status == STATUS_ACCEPTED %}
                     <span class="material-icons-round"
-                          style="color:#f59e0b; font-size:16px;"
+                          style="color:#f59e0b; font-size:16px; cursor:pointer;"
                           data-tip="Duplicate row within this batch — the same product and datetime already appeared earlier in the same batch. Only one Sale record was created; this row was skipped to prevent double-counting.">
                         warning
                     </span>
                     {% else %}
-                    <span class="material-icons-round sale-unlinked" title="No Sale record — row was rejected or is pending">remove</span>
+                    <span class="material-icons-round sale-unlinked" title="No Sale record — row was rejected or is pending">close</span>
                     {% endif %}
                 </td>
             </tr>
+            {% endfor %}
             {% endfor %}
         </tbody>
     </table>
@@ -322,7 +495,8 @@
 
         <span class="page-info">
             Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-            &nbsp;·&nbsp; {{ total }} record{{ total|pluralize }}
+            &nbsp;·&nbsp; {{ total_batches }} batch{{ total_batches|pluralize:"es" }}
+            &nbsp;·&nbsp; {{ total }} row{{ total|pluralize }}
         </span>
     </div>
     {% endif %}
@@ -361,32 +535,92 @@
         tip.style.top  = y + 'px';
     }
 
+    // ── Restore focus after reload ──
+    (function () {
+        var focusId = sessionStorage.getItem('sync_log_focus');
+        if (focusId) {
+            var el = document.getElementById(focusId);
+            if (el) {
+                el.focus();
+                // Move cursor to end of existing value
+                var v = el.value;
+                el.value = '';
+                el.value = v;
+            }
+            sessionStorage.removeItem('sync_log_focus');
+        }
+    }());
+
+    // ── Searchable dropdowns ──
+    var _form = document.getElementById('filter-form');
+
+    window.ssToggle = function (id) {
+        var panel = document.getElementById(id + '-panel');
+        var isOpen = panel.style.display === 'block';
+        document.querySelectorAll('.ss-panel').forEach(function (p) { p.style.display = 'none'; });
+        if (!isOpen) {
+            panel.style.display = 'block';
+            var s = panel.querySelector('.ss-search');
+            if (s) { s.value = ''; window.ssFilter(id, ''); s.focus(); }
+        }
+    };
+    window.ssFilter = function (id, q) {
+        q = q.toLowerCase();
+        document.querySelectorAll('#' + id + '-opts .ss-option').forEach(function (o) {
+            o.style.display = o.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    };
+    window.ssPick = function (id, el) {
+        document.getElementById(id + '-val').value = el.dataset.val;
+        document.getElementById(id + '-label').textContent = el.dataset.label;
+        document.getElementById(id + '-panel').style.display = 'none';
+        var hidden = _form.querySelector('input[name="page"]');
+        if (hidden) hidden.remove();
+        _form.submit();
+    };
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.ss-wrap')) {
+            document.querySelectorAll('.ss-panel').forEach(function (p) { p.style.display = 'none'; });
+        }
+    });
+
+    // ── Collapse / expand batches ──
+    var collapsed = {};
+    window.toggleBatch = function (idx) {
+        var rows = document.querySelectorAll('tr[data-group="' + idx + '"]');
+        collapsed[idx] = !collapsed[idx];
+        var isNowCollapsed = collapsed[idx];
+        rows.forEach(function (r) { r.style.display = isNowCollapsed ? 'none' : ''; });
+        var icon = document.querySelector('.batch-toggle[data-idx="' + idx + '"] .material-icons-round');
+        if (icon) icon.textContent = isNowCollapsed ? 'expand_more' : 'expand_less';
+    };
+
     // ── Dynamic filtering — submit form on change, debounce text inputs ──
     var form    = document.getElementById('filter-form');
     var timeout = null;
 
-    function submitNow() {
-        // Reset to page 1 on any filter change
+    function submitNow(sourceId) {
+        if (sourceId) sessionStorage.setItem('sync_log_focus', sourceId);
         var hidden = form.querySelector('input[name="page"]');
         if (hidden) hidden.remove();
         form.submit();
     }
 
-    function submitDebounced() {
+    function submitDebounced(sourceId) {
         clearTimeout(timeout);
-        timeout = setTimeout(submitNow, 400);
+        timeout = setTimeout(function () { submitNow(sourceId); }, 400);
     }
 
-    // Immediate on select and date
-    ['f-status', 'f-date-from', 'f-date-to'].forEach(function (id) {
+    // Immediate on selects and date inputs (contract + token handled by ssPick)
+    ['f-status', 'f-date-from', 'f-date-to', 'f-sale-date-from', 'f-sale-date-to'].forEach(function (id) {
         var el = document.getElementById(id);
-        if (el) el.addEventListener('change', submitNow);
+        if (el) el.addEventListener('change', function () { submitNow(id); });
     });
 
     // Debounced on text inputs
-    ['f-batch', 'f-account'].forEach(function (id) {
+    ['f-batch', 'f-account', 'f-reason'].forEach(function (id) {
         var el = document.getElementById(id);
-        if (el) el.addEventListener('input', submitDebounced);
+        if (el) el.addEventListener('input', function () { submitDebounced(id); });
     });
 }());
 </script>

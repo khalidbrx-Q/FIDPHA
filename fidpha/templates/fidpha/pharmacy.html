@@ -1,0 +1,188 @@
+{% extends "fidpha/base.html" %}
+
+{% block nav_pharmacy %}active{% endblock %}
+{% block page_title %}Account{% endblock %}
+{% block page_breadcrumb %}Account{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+<div style="margin-bottom:20px;">
+    {% for message in messages %}
+    <div style="padding:12px 16px; border-radius:8px; font-size:0.88rem; font-weight:500; display:flex; align-items:center; gap:8px; margin-bottom:8px;
+        background:{% if 'success' in message.tags %}rgba(34,197,94,0.15){% else %}rgba(239,68,68,0.15){% endif %};
+        color:{% if 'success' in message.tags %}#22c55e{% else %}#ef4444{% endif %};
+        border:1px solid {% if 'success' in message.tags %}rgba(34,197,94,0.3){% else %}rgba(239,68,68,0.3){% endif %};">
+        <span class="material-icons-round" style="font-size:18px;">{% if 'success' in message.tags %}check_circle{% else %}error_outline{% endif %}</span>
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ROW 1: Pharmacy info full width -->
+<div class="card" style="margin-bottom:20px;">
+            <div class="card-header">
+                <div class="card-header-icon"><span class="material-icons-round">local_pharmacy</span></div>
+                <div class="card-title">{{ account.name }}</div>
+                <div style="margin-left:auto;">
+                    {% if account.status == "active" %}<span class="badge badge-success">Active</span>
+                    {% else %}<span class="badge badge-danger">Inactive</span>{% endif %}
+                </div>
+            </div>
+            <div class="info-row"><span class="info-label">Code</span><span class="info-value">{{ account.code }}</span></div>
+            <div class="info-row"><span class="info-label">Name</span><span class="info-value">{{ account.name }}</span></div>
+            <div class="info-row"><span class="info-label">City</span><span class="info-value">{{ account.city }}</span></div>
+            <div class="info-row"><span class="info-label">Location</span><span class="info-value">{{ account.location }}</span></div>
+            <div class="info-row"><span class="info-label">Phone</span><span class="info-value">{{ account.phone }}</span></div>
+            <div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ account.email }}</span></div>
+        </div>
+
+<!-- ROW 2: Personal info + password side by side -->
+<div class="grid-2" style="align-items:start;">
+
+    <!-- Personal Info form -->
+    <div class="card">
+            <div class="card-header">
+                <div class="card-header-icon"><span class="material-icons-round">person</span></div>
+                <div class="card-title">Personal Information</div>
+            </div>
+
+            <form method="POST" action="/portal/profile/">
+                {% csrf_token %}
+
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">Username</label>
+                    <div style="padding:10px 14px; background:var(--sidebar-bg); border:1px solid var(--card-border); border-radius:8px; font-size:0.9rem; color:var(--text-secondary);">
+                        {{ request.user.username }}
+                        <span style="font-size:0.75rem; color:#475569; margin-left:8px;">(cannot be changed)</span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">First Name</label>
+                    <input type="text" name="first_name" value="{{ request.user.first_name }}" placeholder="First name"
+                        style="width:100%; padding:10px 14px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; font-size:0.9rem; color:var(--text-primary); box-sizing:border-box; font-family:'Inter',sans-serif;">
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">Last Name</label>
+                    <input type="text" name="last_name" value="{{ request.user.last_name }}" placeholder="Last name"
+                        style="width:100%; padding:10px 14px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; font-size:0.9rem; color:var(--text-primary); box-sizing:border-box; font-family:'Inter',sans-serif;">
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:0.82rem; color:var(--text-secondary); display:flex; align-items:center; gap:6px; margin-bottom:6px; font-weight:500;">
+                        Email
+                        {% if profile.email_verified %}
+                            <span style="background:rgba(34,197,94,0.15); color:#22c55e; font-size:0.72rem; padding:2px 8px; border-radius:20px;">✓ Verified</span>
+                        {% else %}
+                            <span style="background:rgba(245,158,11,0.15); color:#f59e0b; font-size:0.72rem; padding:2px 8px; border-radius:20px;">⚠ Not verified</span>
+                            <a href="/portal/verify-pending/?from=button" style="background:rgba(245,158,11,0.15); color:#f59e0b; font-size:0.72rem; padding:2px 10px; border-radius:20px; text-decoration:none; font-weight:600; border:1px solid rgba(245,158,11,0.3); display:inline-flex; align-items:center; gap:4px;">
+                                <span class="material-icons-round" style="font-size:12px;">mail</span>Verify now
+                            </a>
+                        {% endif %}
+                    </label>
+                    <input type="email" name="email" value="{{ request.user.email }}" placeholder="Email address"
+                        style="width:100%; padding:10px 14px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; font-size:0.9rem; color:var(--text-primary); box-sizing:border-box; font-family:'Inter',sans-serif;">
+                    {% if not profile.email_verified %}
+                        <p style="font-size:0.75rem; color:#f59e0b; margin-top:4px;">Changing your email will send a new verification link.</p>
+                    {% else %}
+                        <p style="font-size:0.75rem; color:#475569; margin-top:4px;">Changing your email will require re-verification.</p>
+                    {% endif %}
+                </div>
+
+                <button type="submit" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:8px; font-size:0.9rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; font-family:'Inter',sans-serif; transition:background 0.2s;">
+                    <span class="material-icons-round" style="font-size:18px;">save</span>Save Changes
+                </button>
+            </form>
+    </div>
+
+    <!-- Change Password -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-icon"><span class="material-icons-round">lock</span></div>
+            <div class="card-title">Change Password</div>
+        </div>
+
+        <form method="POST" action="/portal/profile/password/">
+            {% csrf_token %}
+
+            <div style="margin-bottom:16px;">
+                <label style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">Current Password</label>
+                <input type="password" name="current_password" placeholder="Enter your current password" required
+                    style="width:100%; padding:10px 14px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; font-size:0.9rem; color:var(--text-primary); box-sizing:border-box; font-family:'Inter',sans-serif;">
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">New Password</label>
+                <input type="password" name="password" id="pharmacy_password" placeholder="Enter new password" required
+                    style="width:100%; padding:10px 14px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; font-size:0.9rem; color:var(--text-primary); box-sizing:border-box; font-family:'Inter',sans-serif;">
+            </div>
+
+            <div style="margin-bottom:8px;">
+                <div style="height:4px; background:var(--card-border); border-radius:4px; overflow:hidden; margin-bottom:6px;">
+                    <div id="ph-strength-bar" style="height:100%; width:0%; border-radius:4px; transition:all 0.3s;"></div>
+                </div>
+                <div id="ph-strength-text" style="font-size:0.75rem; margin-bottom:6px; color:var(--text-secondary);"></div>
+                <div id="ph-req-length"  style="font-size:0.75rem; color:var(--text-secondary);">✗ At least 8 characters</div>
+                <div id="ph-req-upper"   style="font-size:0.75rem; color:var(--text-secondary);">✗ At least one uppercase letter</div>
+                <div id="ph-req-number"  style="font-size:0.75rem; color:var(--text-secondary);">✗ At least one number</div>
+                <div id="ph-req-special" style="font-size:0.75rem; color:var(--text-secondary);">✗ At least one special character</div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <label style="font-size:0.82rem; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">Confirm New Password</label>
+                <input type="password" name="confirm_password" id="pharmacy_confirm" placeholder="Confirm new password" required
+                    style="width:100%; padding:10px 14px; background:var(--card-bg); border:1px solid var(--card-border); border-radius:8px; font-size:0.9rem; color:var(--text-primary); box-sizing:border-box; font-family:'Inter',sans-serif;">
+                <div id="ph-match-text" style="font-size:0.75rem; margin-top:4px;"></div>
+            </div>
+
+            <button type="submit" style="padding:10px 20px; background:#1e293b; color:white; border:none; border-radius:8px; font-size:0.9rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; font-family:'Inter',sans-serif; transition:background 0.2s;">
+                <span class="material-icons-round" style="font-size:18px;">lock_reset</span>Update Password
+            </button>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    var pwd     = document.getElementById('pharmacy_password');
+    var confirm = document.getElementById('pharmacy_confirm');
+    var bar     = document.getElementById('ph-strength-bar');
+    var text    = document.getElementById('ph-strength-text');
+    var match   = document.getElementById('ph-match-text');
+
+    function updReq(id, met) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.style.color = met ? '#22c55e' : 'var(--text-secondary)';
+        el.textContent = (met ? '✓' : '✗') + el.textContent.substring(1);
+    }
+    function checkMatch() {
+        if (!confirm || confirm.value.length === 0) { match.textContent = ''; return; }
+        var ok = pwd.value === confirm.value;
+        match.style.color = ok ? '#22c55e' : '#ef4444';
+        match.textContent  = ok ? '✓ Passwords match' : '✗ Passwords don\'t match';
+    }
+    if (pwd) {
+        pwd.addEventListener('input', function () {
+            var p = pwd.value;
+            var hL = p.length >= 8, hU = /[A-Z]/.test(p), hN = /[0-9]/.test(p), hS = /[!@#$%^&*()_+\-=\[\]{}|;':",./<>?]/.test(p);
+            updReq('ph-req-length', hL); updReq('ph-req-upper', hU);
+            updReq('ph-req-number', hN); updReq('ph-req-special', hS);
+            var score = [hL, hU, hN, hS].filter(Boolean).length;
+            var colors = ['#ef4444','#f59e0b','#3b82f6','#22c55e'];
+            var labels = ['Weak','Fair','Good','Strong'];
+            if (p.length === 0) { bar.style.width = '0%'; text.textContent = ''; }
+            else {
+                bar.style.backgroundColor = colors[score-1]; bar.style.width = (score*25)+'%';
+                text.style.color = colors[score-1]; text.textContent = labels[score-1];
+            }
+            checkMatch();
+        });
+    }
+    if (confirm) { confirm.addEventListener('input', checkMatch); }
+</script>
+
+{% endblock %}

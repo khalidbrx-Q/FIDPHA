@@ -14,7 +14,8 @@ Critical points baked in:
   5. Validation atomicity                  → transaction.atomic() wraps full batch
 
 Date validation rules:
-  - sale_datetime must be AFTER contract.last_sale_datetime (already synced)
+  - sale_datetime must be STRICTLY BEFORE contract.last_sale_datetime to be rejected;
+    sales at exactly last_sale_datetime are allowed (different products can share a timestamp)
   - sale_datetime date must be BEFORE today (no same-day or future sales)
 """
 
@@ -115,10 +116,12 @@ def submit_sales_batch(
         created_imports = SaleImport.objects.bulk_create(imports_to_create)
 
         # ── Stage 2: Validate each row ──
-        sales_to_create  = []
+        sales_to_create   = []
         imports_to_update = []
-        errors           = []
-        max_sale_dt      = None
+        errors            = []
+        max_sale_dt       = None
+        # Maps sale_import.pk → original row index (for duplicate error reporting)
+        accepted_si_idx: dict[int, int] = {}
 
         for idx, (row, sale_import) in enumerate(zip(sales_data, created_imports)):
             ext = row.get("external_designation", "")
@@ -141,7 +144,7 @@ def submit_sales_batch(
 
             elif (
                 contract.last_sale_datetime is not None
-                and sale_import.sale_datetime <= contract.last_sale_datetime
+                and sale_import.sale_datetime < contract.last_sale_datetime
             ):
                 rejection_reason = (
                     f"sale_datetime is already covered by a previous sync "
@@ -188,6 +191,7 @@ def submit_sales_batch(
             else:
                 sale_import.status           = SaleImport.STATUS_ACCEPTED
                 sale_import.contract_product = cp
+                accepted_si_idx[sale_import.pk] = idx
                 sales_to_create.append(Sale(
                     sale_import=sale_import,
                     contract_product=cp,
@@ -210,10 +214,35 @@ def submit_sales_batch(
         )
 
         # ── Stage 3: Write accepted rows to Sale ──
+        dup_count = 0
         if sales_to_create:
-            # ignore_conflicts=True handles retries — duplicate rows
-            # (same contract_product + sale_datetime) are silently skipped
+            # ignore_conflicts=True silently skips rows where (contract_product,
+            # sale_datetime) already exists — handles both within-batch duplicates
+            # and cross-batch retries of the same sale.
             Sale.objects.bulk_create(sales_to_create, ignore_conflicts=True)
+
+            # Detect SaleImports whose Sale was silently dropped (their
+            # (contract_product, sale_datetime) already existed from a prior batch).
+            actually_created_pks = set(
+                Sale.objects.filter(sale_import_id__in=accepted_si_idx)
+                .values_list("sale_import_id", flat=True)
+            )
+            dropped_pks = set(accepted_si_idx) - actually_created_pks
+            if dropped_pks:
+                dup_reason = "duplicate: this sale was already accepted in a previous batch"
+                dup_sis = []
+                for si in imports_to_update:
+                    if si.pk in dropped_pks:
+                        si.status           = SaleImport.STATUS_REJECTED
+                        si.rejection_reason = dup_reason
+                        errors.append({
+                            "index":                accepted_si_idx[si.pk],
+                            "external_designation": si.external_designation,
+                            "reason":               dup_reason,
+                        })
+                        dup_sis.append(si)
+                SaleImport.objects.bulk_update(dup_sis, ["status", "rejection_reason"])
+                dup_count = len(dup_sis)
 
             # Atomically update last_sale_datetime and last_sync_at
             update_fields = {"last_sync_at": now}
@@ -224,7 +253,7 @@ def submit_sales_batch(
                 update_fields["last_sale_datetime"] = max_sale_dt
             Contract.objects.filter(pk=contract.pk).update(**update_fields)
 
-    accepted_count = len(sales_to_create)
+    accepted_count = len(sales_to_create) - dup_count
     rejected_count = len(errors)
 
     return {

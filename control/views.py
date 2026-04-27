@@ -19,7 +19,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator
-from django.db.models import Count, Q, Min, Max
+from django.db.models import Count, F, Q, Min, Max
 from django.db.models.functions import TruncDay, TruncHour
 from django.utils import timezone
 
@@ -1337,21 +1337,142 @@ def site_edit(request):
 
 @perm_required('sales.view_sale')
 def sales_list(request):
-    """
-    Sales review page — dynamic cascade UI.
-    Renders all accounts server-side; contracts/batches/sales loaded via AJAX.
-    Query params (account, contract, batch) used for JS initialisation only
-    (e.g. when arriving from the contract detail "Review Sales" button).
-    """
-    from django.http import JsonResponse as _JSR
+    """Sales review page — batch list with inline expansion."""
     accounts = Account.objects.order_by("name")
-    cities   = sorted(set(a.city for a in accounts if a.city))
     return render(request, "control/sales_list.html", {
         "accounts":      accounts,
-        "cities":        cities,
         "init_account":  request.GET.get("account",  ""),
         "init_contract": request.GET.get("contract", ""),
-        "init_batch":    request.GET.get("batch",    ""),
+    })
+
+
+@perm_required('sales.view_sale')
+def sales_api_batches_v2(request):
+    """
+    Paginated batch list built from the Sale table (review perspective).
+    Fully system-rejected batches (no Sale records) are excluded — they live
+    in the sync import log.
+    Status chips / filter reflect Sale review status, not SaleImport validation.
+    Filter params: date_from, date_to (received_at), account, contract, status, q (batch ID).
+    """
+    from django.http import JsonResponse
+
+    date_from   = request.GET.get("date_from",  "").strip()
+    date_to     = request.GET.get("date_to",    "").strip()
+    account_pk  = request.GET.get("account",    "").strip()
+    contract_pk = request.GET.get("contract",   "").strip()
+    status_f    = request.GET.get("status",     "").strip()
+    batch_q     = request.GET.get("q",          "").strip()
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+    except ValueError:
+        page = 1
+    per_page = 25
+
+    qs = Sale.objects.values("sale_import__batch_id", "sale_import__account_code")
+
+    if date_from:
+        qs = qs.filter(sale_import__received_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(sale_import__received_at__date__lte=date_to)
+    if account_pk:
+        try:
+            acc_obj = Account.objects.get(pk=account_pk)
+            qs = qs.filter(sale_import__account_code=acc_obj.code)
+        except Account.DoesNotExist:
+            pass
+    if contract_pk:
+        qs = qs.filter(contract_product__contract_id=contract_pk)
+    if batch_q:
+        qs = qs.filter(sale_import__batch_id__icontains=batch_q)
+
+    qs = qs.annotate(
+        received_at  =Min("sale_import__received_at"),
+        total        =Count("pk"),
+        pending      =Count("pk", filter=Q(status=Sale.STATUS_PENDING)),
+        accepted     =Count("pk", filter=Q(status=Sale.STATUS_ACCEPTED)),
+        rejected     =Count("pk", filter=Q(status=Sale.STATUS_REJECTED)),
+        ppv_mismatch  =Count(
+            "pk",
+            filter=Q(contract_product__product__ppv__isnull=False)
+                   & ~Q(ppv=F("contract_product__product__ppv")),
+        ),
+        sale_date_min =Min("sale_datetime"),
+        sale_date_max =Max("sale_datetime"),
+    )
+
+    if status_f == "pending":
+        qs = qs.filter(pending__gt=0)
+    elif status_f == "accepted":
+        qs = qs.filter(accepted__gt=0)
+    elif status_f == "rejected":
+        qs = qs.filter(rejected__gt=0)
+
+    qs = qs.order_by("-received_at", "sale_import__batch_id")
+
+    total_count = qs.count()
+    offset      = (page - 1) * per_page
+    page_rows   = list(qs[offset : offset + per_page])
+
+    account_codes = {b["sale_import__account_code"] for b in page_rows}
+    batch_ids     = {b["sale_import__batch_id"]     for b in page_rows}
+
+    account_map = {
+        a.code: {"name": a.name, "pk": a.pk, "city": a.city or "", "code": a.code}
+        for a in Account.objects.filter(code__in=account_codes)
+    }
+
+    contract_map = {}
+    if batch_ids:
+        for row in (
+            Sale.objects
+            .filter(sale_import__batch_id__in=batch_ids)
+            .values(
+                "sale_import__batch_id",
+                "contract_product__contract_id",
+                "contract_product__contract__title",
+            )
+            .distinct()
+        ):
+            bid = row["sale_import__batch_id"]
+            if bid not in contract_map:
+                contract_map[bid] = {
+                    "pk":    row["contract_product__contract_id"],
+                    "title": row["contract_product__contract__title"],
+                }
+
+    result = []
+    for b in page_rows:
+        acc = account_map.get(b["sale_import__account_code"], {})
+        ct  = contract_map.get(b["sale_import__batch_id"], {})
+        result.append({
+            "batch_id":       b["sale_import__batch_id"],
+            "account_code":   b["sale_import__account_code"],
+            "account_name":   acc.get("name", b["sale_import__account_code"]),
+            "account_pk":     acc.get("pk"),
+            "account_city":   acc.get("city", ""),
+            "contract_pk":    ct.get("pk"),
+            "contract_title": ct.get("title"),
+            "received_at":     b["received_at"].strftime("%d %b %Y, %H:%M") if b["received_at"] else None,
+            "received_at_iso": b["received_at"].isoformat()                 if b["received_at"] else None,
+            "received_date":   b["received_at"].strftime("%Y-%m-%d")        if b["received_at"] else None,
+            "total":           b["total"],
+            "pending":         b["pending"],
+            "accepted":        b["accepted"],
+            "rejected":        b["rejected"],
+            "ppv_mismatch":    b["ppv_mismatch"],
+            "sale_date_min":   b["sale_date_min"].strftime("%Y-%m-%dT%H:%M:%S") if b["sale_date_min"] else None,
+            "sale_date_max":   b["sale_date_max"].strftime("%Y-%m-%dT%H:%M:%S") if b["sale_date_max"] else None,
+        })
+
+    total_pages = max(1, (total_count + per_page - 1) // per_page)
+    return JsonResponse({
+        "batches":  result,
+        "total":    total_count,
+        "page":     page,
+        "pages":    total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
     })
 
 
@@ -1429,23 +1550,173 @@ def sales_api_sales(request):
     data   = []
     counts = {"pending": 0, "accepted": 0, "rejected": 0}
     for s in qs:
-        points = s.contract_product.points_per_unit * s.quantity
+        contract_ppv = s.contract_product.product.ppv
+        factor       = s.contract_product.points_per_unit
+        points       = round(float(contract_ppv) * float(factor) * s.quantity) if contract_ppv else 0
+        ppv_mismatch = (contract_ppv is not None and s.ppv != contract_ppv)
         data.append({
-            "pk":              s.pk,
-            "product":         s.contract_product.product.designation,
-            "ext_designation": s.sale_import.external_designation,
-            "sale_datetime":   s.sale_datetime.strftime("%d %b %Y, %H:%M"),
-            "quantity":        s.quantity,
-            "ppv":             str(s.ppv) if s.ppv else "—",
-            "points":          points,
-            "status":          s.status,
-            "reviewed_by":     (
+            "pk":               s.pk,
+            "product":          s.contract_product.product.designation,
+            "ext_designation":  s.sale_import.external_designation,
+            "sale_datetime":    s.sale_datetime.strftime("%d %b %Y, %H:%M"),
+            "sale_datetime_iso": s.sale_datetime.strftime("%Y-%m-%dT%H:%M:%S"),
+            "quantity":         s.quantity,
+            "ppv":              str(s.ppv) if s.ppv else "—",
+            "contract_ppv":     str(contract_ppv) if contract_ppv else None,
+            "ppv_mismatch":     ppv_mismatch,
+            "points":           points,
+            "status":           s.status,
+            "reviewed_by":      (
                 s.reviewed_by.get_full_name() or s.reviewed_by.username
                 if s.reviewed_by else None
             ),
+            "reviewed_at":      s.reviewed_at.strftime("%d %b %Y, %H:%M") if s.reviewed_at else None,
         })
         counts[s.status] = counts.get(s.status, 0) + 1
     return JsonResponse({"sales": data, "counts": counts})
+
+
+@perm_required('sales.view_sale')
+def sales_export_csv(request):
+    import csv
+    from django.http import StreamingHttpResponse
+    contract_pk = request.GET.get("contract", "")
+    batch_id    = request.GET.get("batch", "").strip()
+    if not contract_pk:
+        return redirect("control:sales_list")
+    qs = (
+        Sale.objects
+        .filter(contract_product__contract_id=contract_pk)
+        .select_related("contract_product__product", "sale_import", "reviewed_by")
+        .order_by("sale_import__batch_id", "sale_datetime")
+    )
+    if batch_id:
+        qs = qs.filter(sale_import__batch_id=batch_id)
+
+    def generate_rows():
+        yield ["Batch ID", "Product", "External Designation", "Sale Date",
+               "Qty", "PPV", "Contract PPV", "PPV OK", "Points",
+               "Status", "Reviewed By", "Reviewed At"]
+        for s in qs.iterator():
+            cp           = s.contract_product
+            contract_ppv = cp.product.ppv
+            ppv_ok       = contract_ppv is None or s.ppv == contract_ppv
+            points       = round(float(contract_ppv) * float(cp.points_per_unit) * s.quantity) if contract_ppv else 0
+            reviewed_by  = (
+                (s.reviewed_by.get_full_name() or s.reviewed_by.username)
+                if s.reviewed_by else ""
+            )
+            yield [
+                s.sale_import.batch_id if s.sale_import else "",
+                cp.product.designation,
+                s.sale_import.external_designation if s.sale_import else "",
+                s.sale_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                s.quantity,
+                str(s.ppv),
+                str(contract_ppv) if contract_ppv else "",
+                "yes" if ppv_ok else "NO",
+                points,
+                s.status,
+                reviewed_by,
+                s.reviewed_at.strftime("%Y-%m-%d %H:%M:%S") if s.reviewed_at else "",
+            ]
+
+    class _Echo:
+        def write(self, value): return value
+
+    writer = csv.writer(_Echo())
+    ts     = timezone.now().strftime("%Y%m%d_%H%M")
+    fname  = f"sales_{contract_pk}{'_' + batch_id if batch_id else ''}_{ts}.csv"
+    response = StreamingHttpResponse(
+        (writer.writerow(r) for r in generate_rows()),
+        content_type="text/csv",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{fname}"'
+    return response
+
+
+@perm_required('sales.view_sale')
+def sales_export_list_csv(request):
+    """Export all Sale records matching the batch-list filters as CSV."""
+    import csv
+    from django.http import StreamingHttpResponse
+
+    date_from   = request.GET.get("date_from",  "").strip()
+    date_to     = request.GET.get("date_to",    "").strip()
+    account_pk  = request.GET.get("account",    "").strip()
+    contract_pk = request.GET.get("contract",   "").strip()
+    status_f    = request.GET.get("status",     "").strip()
+    batch_q     = request.GET.get("q",          "").strip()
+
+    qs = (
+        Sale.objects
+        .select_related(
+            "contract_product__product",
+            "contract_product__contract__account",
+            "sale_import",
+            "reviewed_by",
+        )
+        .order_by("sale_import__batch_id", "sale_datetime")
+    )
+
+    if date_from:
+        qs = qs.filter(sale_import__received_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(sale_import__received_at__date__lte=date_to)
+    if account_pk:
+        try:
+            acc_obj = Account.objects.get(pk=account_pk)
+            qs = qs.filter(sale_import__account_code=acc_obj.code)
+        except Account.DoesNotExist:
+            pass
+    if contract_pk:
+        qs = qs.filter(contract_product__contract_id=contract_pk)
+    if batch_q:
+        qs = qs.filter(sale_import__batch_id__icontains=batch_q)
+    if status_f in (Sale.STATUS_PENDING, Sale.STATUS_ACCEPTED, Sale.STATUS_REJECTED):
+        qs = qs.filter(status=status_f)
+
+    def generate_rows():
+        yield ["Batch ID", "Account", "Contract", "Product", "External Designation",
+               "Sale Date", "Qty", "PPV", "Contract PPV", "PPV OK", "Points",
+               "Status", "Reviewed By", "Reviewed At"]
+        for s in qs.iterator():
+            cp           = s.contract_product
+            contract_ppv = cp.product.ppv
+            ppv_ok       = contract_ppv is None or s.ppv == contract_ppv
+            points       = round(float(contract_ppv) * float(cp.points_per_unit) * s.quantity) if contract_ppv else 0
+            reviewed_by  = (
+                (s.reviewed_by.get_full_name() or s.reviewed_by.username)
+                if s.reviewed_by else ""
+            )
+            yield [
+                s.sale_import.batch_id if s.sale_import else "",
+                cp.contract.account.name if cp.contract and cp.contract.account else "",
+                cp.contract.title if cp.contract else "",
+                cp.product.designation,
+                s.sale_import.external_designation if s.sale_import else "",
+                s.sale_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                s.quantity,
+                str(s.ppv),
+                str(contract_ppv) if contract_ppv else "",
+                "yes" if ppv_ok else "NO",
+                points,
+                s.status,
+                reviewed_by,
+                s.reviewed_at.strftime("%Y-%m-%d %H:%M:%S") if s.reviewed_at else "",
+            ]
+
+    class _Echo:
+        def write(self, value): return value
+
+    writer   = csv.writer(_Echo())
+    response = StreamingHttpResponse(
+        (writer.writerow(r) for r in generate_rows()),
+        content_type="text/csv",
+    )
+    ts = timezone.now().strftime("%Y%m%d_%H%M")
+    response["Content-Disposition"] = f'attachment; filename="sales_export_{ts}.csv"'
+    return response
 
 
 def _sales_redirect(request):
@@ -1529,49 +1800,171 @@ def sales_bulk_update(request):
 
 @superuser_required
 def sync_log(request):
-    from django.db.models import Exists, OuterRef
+    import csv
+    from django.http import StreamingHttpResponse
+    from django.db.models import Count, Exists, Max, OuterRef, Q
+    from fidpha.models import Contract as _Contract
 
-    qs = (
-        SaleImport.objects
-        .select_related("contract_product__product", "token", "inserted_by")
-        .annotate(has_sale=Exists(Sale.objects.filter(sale_import=OuterRef("pk"))))
-        .order_by("-received_at", "-pk")
-    )
+    # Filters
+    status_filter   = request.GET.get("status", "")
+    batch_filter    = request.GET.get("batch", "").strip()
+    account_filter  = request.GET.get("account", "").strip()
+    date_from       = request.GET.get("date_from", "")
+    date_to         = request.GET.get("date_to", "")
+    sale_date_from  = request.GET.get("sale_date_from", "")
+    sale_date_to    = request.GET.get("sale_date_to", "")
+    contract_filter = request.GET.get("contract_id", "")
+    token_filter    = request.GET.get("token_id", "")
+    reason_filter   = request.GET.get("reason", "").strip()
 
-    status_filter  = request.GET.get("status", "")
-    batch_filter   = request.GET.get("batch", "").strip()
-    account_filter = request.GET.get("account", "").strip()
-    date_from      = request.GET.get("date_from", "")
-    date_to        = request.GET.get("date_to", "")
-
+    filtered_qs = SaleImport.objects.all()
     if status_filter:
-        qs = qs.filter(status=status_filter)
+        filtered_qs = filtered_qs.filter(status=status_filter)
     if batch_filter:
-        qs = qs.filter(batch_id__icontains=batch_filter)
+        filtered_qs = filtered_qs.filter(batch_id__icontains=batch_filter)
     if account_filter:
-        qs = qs.filter(account_code__icontains=account_filter)
+        filtered_qs = filtered_qs.filter(account_code__icontains=account_filter)
     if date_from:
-        qs = qs.filter(received_at__date__gte=date_from)
+        filtered_qs = filtered_qs.filter(received_at__date__gte=date_from)
     if date_to:
-        qs = qs.filter(received_at__date__lte=date_to)
+        filtered_qs = filtered_qs.filter(received_at__date__lte=date_to)
+    if sale_date_from:
+        filtered_qs = filtered_qs.filter(sale_datetime__date__gte=sale_date_from)
+    if sale_date_to:
+        filtered_qs = filtered_qs.filter(sale_datetime__date__lte=sale_date_to)
+    if contract_filter:
+        filtered_qs = filtered_qs.filter(contract_product__contract_id=contract_filter)
+    if token_filter:
+        filtered_qs = filtered_qs.filter(token_id=token_filter)
+    if reason_filter:
+        filtered_qs = filtered_qs.filter(rejection_reason__icontains=reason_filter)
 
-    total     = qs.count()
-    paginator = Paginator(qs, 50)
-    page_obj  = paginator.get_page(request.GET.get("page"))
+    # CSV export — stream all matching rows, bypassing pagination
+    if request.GET.get("export") == "csv":
+        export_qs = (
+            filtered_qs
+            .select_related("token", "inserted_by", "contract_product__contract")
+            .order_by("-received_at", "-pk")
+        )
+
+        def generate_rows():
+            yield ["Batch ID", "Received At", "Sale Date", "Account Code", "Contract",
+                   "Designation", "Qty", "PPV", "Status", "Rejection Reason", "Source"]
+            for r in export_qs.iterator():
+                contract_title = ""
+                if r.contract_product and r.contract_product.contract:
+                    contract_title = r.contract_product.contract.title
+                source = r.token.name if r.token else (r.inserted_by.username if r.inserted_by else "")
+                yield [
+                    r.batch_id,
+                    r.received_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    r.sale_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                    r.account_code,
+                    contract_title,
+                    r.external_designation,
+                    r.quantity,
+                    r.ppv,
+                    r.status,
+                    r.rejection_reason,
+                    source,
+                ]
+
+        class _Echo:
+            def write(self, value): return value
+
+        writer = csv.writer(_Echo())
+        response = StreamingHttpResponse(
+            (writer.writerow(r) for r in generate_rows()),
+            content_type="text/csv",
+        )
+        response["Content-Disposition"] = 'attachment; filename="sync_import_log.csv"'
+        return response
+
+    total = filtered_qs.count()
+
+    # Dropdown options for filters
+    all_contracts = list(_Contract.objects.order_by("title").values("pk", "title"))
+    all_tokens    = list(APIToken.objects.order_by("name").values("pk", "name"))
+
+    any_filter = any([
+        status_filter, batch_filter, account_filter, date_from, date_to,
+        sale_date_from, sale_date_to, contract_filter, token_filter, reason_filter,
+    ])
+
+    # Paginate by distinct batch_id (10 batches per page)
+    batch_qs = (
+        filtered_qs
+        .values("batch_id")
+        .annotate(latest=Max("received_at"))
+        .order_by("-latest")
+    )
+    batch_paginator = Paginator(batch_qs, 10)
+    batch_page      = batch_paginator.get_page(request.GET.get("page"))
+    current_ids     = [b["batch_id"] for b in batch_page.object_list]
+
+    # Fetch filtered rows for this page's batches
+    page_rows = []
+    batch_stats = {}
+    if current_ids:
+        page_rows = list(
+            filtered_qs
+            .filter(batch_id__in=current_ids)
+            .select_related("token", "inserted_by", "contract_product__contract")
+            .annotate(
+                has_sale=Exists(Sale.objects.filter(sale_import=OuterRef("pk"))),
+            )
+            .order_by("-received_at", "-pk")
+        )
+        for b in (
+            SaleImport.objects
+            .filter(batch_id__in=current_ids)
+            .values("batch_id")
+            .annotate(
+                total=Count("pk"),
+                n_accepted=Count("pk", filter=Q(status=SaleImport.STATUS_ACCEPTED)),
+                n_rejected=Count("pk", filter=Q(status=SaleImport.STATUS_REJECTED)),
+                n_pending=Count("pk", filter=Q(status=SaleImport.STATUS_PENDING)),
+            )
+        ):
+            batch_stats[b["batch_id"]] = b
+
+    rows_by_batch = {}
+    for row in page_rows:
+        rows_by_batch.setdefault(row.batch_id, []).append(row)
+
+    groups = [
+        {
+            "batch_id": b["batch_id"],
+            "rows":     rows_by_batch.get(b["batch_id"], []),
+            "stats":    batch_stats.get(b["batch_id"], {}),
+        }
+        for b in batch_page.object_list
+    ]
 
     query = request.GET.copy()
     query.pop("page", None)
+    query.pop("export", None)
 
     return render(request, "control/sync_log.html", {
-        "page_obj":       page_obj,
-        "total":          total,
-        "status_filter":  status_filter,
-        "batch_filter":   batch_filter,
-        "account_filter": account_filter,
-        "date_from":      date_from,
-        "date_to":        date_to,
-        "query_string":   query.urlencode(),
-        "STATUS_PENDING":  SaleImport.STATUS_PENDING,
-        "STATUS_ACCEPTED": SaleImport.STATUS_ACCEPTED,
-        "STATUS_REJECTED": SaleImport.STATUS_REJECTED,
+        "groups":           groups,
+        "page_obj":         batch_page,
+        "total":            total,
+        "total_batches":    batch_paginator.count,
+        "status_filter":    status_filter,
+        "batch_filter":     batch_filter,
+        "account_filter":   account_filter,
+        "date_from":        date_from,
+        "date_to":          date_to,
+        "sale_date_from":   sale_date_from,
+        "sale_date_to":     sale_date_to,
+        "contract_filter":  contract_filter,
+        "token_filter":     token_filter,
+        "reason_filter":    reason_filter,
+        "all_contracts":    all_contracts,
+        "all_tokens":       all_tokens,
+        "any_filter":       any_filter,
+        "query_string":     query.urlencode(),
+        "STATUS_PENDING":   SaleImport.STATUS_PENDING,
+        "STATUS_ACCEPTED":  SaleImport.STATUS_ACCEPTED,
+        "STATUS_REJECTED":  SaleImport.STATUS_REJECTED,
     })

@@ -148,7 +148,7 @@ def portal_profile(request):
         if email:
             if User.objects.filter(email=email).exclude(pk=request.user.pk).exists():
                 messages.error(request, "This email is already used by another account.")
-                return redirect("/portal/profile/")
+                return redirect("/portal/pharmacy/")
 
             if email != request.user.email:
                 profile.email_verified = False
@@ -172,7 +172,7 @@ def portal_profile(request):
                     messages.success(request, "Verification email sent to your new address!")
                 except Exception as e:
                     messages.error(request, f"Failed to send email: {str(e)}")
-                    return redirect("/portal/profile/")
+                    return redirect("/portal/pharmacy/")
 
             request.user.email = email
 
@@ -183,7 +183,7 @@ def portal_profile(request):
         if not email:
             messages.success(request, "Profile updated successfully!")
 
-        return redirect("/portal/profile/")
+        return redirect("/portal/pharmacy/")
 
     return render(request, "fidpha/profile.html", {
         "profile": profile,
@@ -205,35 +205,35 @@ def portal_profile_password(request):
         # verify current password
         if not request.user.check_password(current_password):
             messages.error(request, "Current password is incorrect.")
-            return redirect("/portal/profile/")
+            return redirect("/portal/pharmacy/")
 
         # check new passwords match
         if new_password != confirm_password:
             messages.error(request, "New passwords don't match.")
-            return redirect("/portal/profile/")
+            return redirect("/portal/pharmacy/")
 
         # validate strength
         if len(new_password) < 8:
             messages.error(request, "Password must be at least 8 characters.")
-            return redirect("/portal/profile/")
+            return redirect("/portal/pharmacy/")
         if new_password.isdigit():
             messages.error(request, "Password can't be entirely numeric.")
-            return redirect("/portal/profile/")
+            return redirect("/portal/pharmacy/")
         if not any(c.isupper() for c in new_password):
             messages.error(request, "Password must contain at least one uppercase letter.")
-            return redirect("/portal/profile/")
+            return redirect("/portal/pharmacy/")
         if not any(c.isdigit() for c in new_password):
             messages.error(request, "Password must contain at least one number.")
-            return redirect("/portal/profile/")
+            return redirect("/portal/pharmacy/")
         if not any(c in "!@#$%^&*()_+-=[]{}|;':\",./<>?" for c in new_password):
             messages.error(request, "Password must contain at least one special character.")
-            return redirect("/portal/profile/")
+            return redirect("/portal/pharmacy/")
 
         request.user.set_password(new_password)
         request.user.save()
         login(request, request.user, backend='django.contrib.auth.backends.ModelBackend')
         messages.success(request, "Password updated successfully!")
-        return redirect("/portal/profile/")
+        return redirect("/portal/pharmacy/")
 
     return redirect("/portal/profile/")
 
@@ -309,35 +309,251 @@ def portal_dashboard(request):
     except:
         return redirect("/portal/login/")
 
-    account = profile.account
-    contracts = account.contracts.all().order_by("-start_date")
-    active_contracts = contracts.filter(status="active")
-
+    import json
+    import datetime
     from django.utils import timezone
-    from fidpha.models import Contract_Product
-    from sales.models import Sale
-    from django.db.models import Sum
+    from sales.models import Sale, SaleImport
+    from django.db.models import Sum, F, ExpressionWrapper, FloatField, Count
+    from django.db.models.functions import TruncMonth, TruncDay, Round
 
-    active_contract_days_remaining = None
-    total_points = 0
+    account = profile.account
 
-    if active_contracts.exists():
-        active_contract = active_contracts.first()
-        delta = active_contract.end_date - timezone.now()
-        active_contract_days_remaining = delta.days
+    base_qs = Sale.objects.filter(
+        contract_product__contract__account=account,
+        status=Sale.STATUS_ACCEPTED,
+        contract_product__product__ppv__isnull=False,
+    ).annotate(
+        pts=Round(ExpressionWrapper(
+            F("quantity") * F("contract_product__product__ppv") * F("contract_product__points_per_unit"),
+            output_field=FloatField(),
+        ))
+    )
 
-    for contract in contracts:
-        for cp in Contract_Product.objects.filter(contract=contract).select_related("product"):
-            for s in Sale.objects.filter(contract_product=cp, status=Sale.STATUS_ACCEPTED).only("quantity"):
-                total_points += _calculate_points(s.quantity, cp.product.ppv)
+    total_points = int(base_qs.aggregate(total=Sum("pts"))["total"] or 0)
+
+    def _fmt_big(v):
+        if v >= 1_000_000:
+            s = f"{v / 1_000_000:.1f}".rstrip("0").rstrip(".")
+            return f"{s}M"
+        if v >= 1000:
+            s = f"{v / 1000:.1f}".rstrip("0").rstrip(".")
+            return f"{s}K"
+        return str(v)
+    total_points_display = _fmt_big(total_points)
+
+    now = timezone.now()
+    month_dates = []
+    for i in range(11, -1, -1):
+        m = now.month - i
+        y = now.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        month_dates.append(datetime.datetime(y, m, 1, tzinfo=datetime.timezone.utc))
+
+    monthly_qs = (
+        base_qs.filter(sale_datetime__gte=month_dates[0])
+        .annotate(month=TruncMonth("sale_datetime"))
+        .values("month")
+        .annotate(total=Sum("pts"))
+        .order_by("month")
+    )
+    monthly_map = {r["month"].strftime("%Y-%m"): int(r["total"] or 0) for r in monthly_qs}
+    chart_month_labels = [d.strftime("%b %Y") for d in month_dates]
+    chart_month_data = [monthly_map.get(d.strftime("%Y-%m"), 0) for d in month_dates]
+
+    # Monthly units sold
+    monthly_units_qs = (
+        Sale.objects.filter(
+            contract_product__contract__account=account,
+            status=Sale.STATUS_ACCEPTED,
+            sale_datetime__gte=month_dates[0],
+        )
+        .annotate(month=TruncMonth("sale_datetime"))
+        .values("month")
+        .annotate(total=Sum("quantity"))
+        .order_by("month")
+    )
+    units_map = {r["month"].strftime("%Y-%m"): int(r["total"] or 0) for r in monthly_units_qs}
+    chart_month_units = [units_map.get(d.strftime("%Y-%m"), 0) for d in month_dates]
+
+    # Top products by points earned
+    top_products_qs = (
+        base_qs
+        .values("contract_product__product__designation")
+        .annotate(total=Sum("pts"))
+        .order_by("-total")[:30]
+    )
+    top_product_labels = [r["contract_product__product__designation"] for r in top_products_qs]
+    top_product_data   = [int(r["total"] or 0) for r in top_products_qs]
+
+    # Submission frequency — distinct batch_ids per month (last 12)
+    submit_qs = (
+        SaleImport.objects.filter(
+            account_code=account.code,
+            received_at__gte=month_dates[0],
+        )
+        .annotate(month=TruncMonth("received_at"))
+        .values("month")
+        .annotate(batches=Count("batch_id", distinct=True))
+        .order_by("month")
+    )
+    submit_map = {r["month"].strftime("%Y-%m"): r["batches"] for r in submit_qs}
+    chart_submit_data = [submit_map.get(d.strftime("%Y-%m"), 0) for d in month_dates]
+    chart_month_keys  = [d.strftime("%Y-%m") for d in month_dates]
+
+    import calendar
+    from collections import defaultdict
+    from django.db.models.functions import TruncYear
+
+    # ── Unified daily drill (all time) keyed by YYYY-MM ──
+    d_pts_all    = defaultdict(dict)
+    d_units_all  = defaultdict(dict)
+    d_batches_all = defaultdict(dict)
+
+    for r in (
+        base_qs.annotate(day=TruncDay("sale_datetime"))
+        .values("day").annotate(total=Sum("pts")).order_by("day")
+    ):
+        d_pts_all[r["day"].strftime("%Y-%m")][r["day"].day] = int(r["total"] or 0)
+
+    for r in (
+        Sale.objects.filter(contract_product__contract__account=account, status=Sale.STATUS_ACCEPTED)
+        .annotate(day=TruncDay("sale_datetime"))
+        .values("day").annotate(total=Sum("quantity")).order_by("day")
+    ):
+        d_units_all[r["day"].strftime("%Y-%m")][r["day"].day] = int(r["total"] or 0)
+
+    for r in (
+        SaleImport.objects.filter(account_code=account.code)
+        .annotate(day=TruncDay("received_at"))
+        .values("day").annotate(batches=Count("batch_id", distinct=True)).order_by("day")
+    ):
+        d_batches_all[r["day"].strftime("%Y-%m")][r["day"].day] = r["batches"]
+
+    all_mk = set(d_pts_all) | set(d_units_all) | set(d_batches_all)
+    chart_daily_drill  = {}
+    chart_submit_drill = {}
+    for mk in all_mk:
+        parts = mk.split("-")
+        yr, mo = int(parts[0]), int(parts[1])
+        n = calendar.monthrange(yr, mo)[1]
+        chart_daily_drill[mk]  = {"n": n,
+            "pts":     [d_pts_all[mk].get(d, 0) for d in range(1, n+1)],
+            "units":   [d_units_all[mk].get(d, 0) for d in range(1, n+1)]}
+        chart_submit_drill[mk] = {"n": n,
+            "batches": [d_batches_all[mk].get(d, 0) for d in range(1, n+1)]}
+
+    # ── Per-year monthly data (for year selectors) ──
+    years_qs = (
+        Sale.objects.filter(contract_product__contract__account=account)
+        .annotate(yr=TruncYear("sale_datetime"))
+        .values("yr").distinct().order_by("yr")
+    )
+    dash_years_list = [r["yr"].year for r in years_qs if r["yr"]]
+
+    dash_years_monthly = {}
+    dash_years_submit  = {}
+    current_year  = now.year
+    current_month = now.month
+    for yr in dash_years_list:
+        max_month = current_month if yr == current_year else 12
+        yr_months = [datetime.datetime(yr, m, 1, tzinfo=datetime.timezone.utc) for m in range(1, max_month + 1)]
+        yr_keys   = [d.strftime("%Y-%m") for d in yr_months]
+        yr_labels = [d.strftime("%b") for d in yr_months]
+
+        yr_pts_map = {r["month"].strftime("%Y-%m"): int(r["total"] or 0) for r in (
+            base_qs.filter(sale_datetime__year=yr)
+            .annotate(month=TruncMonth("sale_datetime"))
+            .values("month").annotate(total=Sum("pts")).order_by("month")
+        )}
+        yr_units_map = {r["month"].strftime("%Y-%m"): int(r["total"] or 0) for r in (
+            Sale.objects.filter(
+                contract_product__contract__account=account,
+                status=Sale.STATUS_ACCEPTED, sale_datetime__year=yr,
+            )
+            .annotate(month=TruncMonth("sale_datetime"))
+            .values("month").annotate(total=Sum("quantity")).order_by("month")
+        )}
+        yr_submit_map = {r["month"].strftime("%Y-%m"): r["batches"] for r in (
+            SaleImport.objects.filter(account_code=account.code, received_at__year=yr)
+            .annotate(month=TruncMonth("received_at"))
+            .values("month").annotate(batches=Count("batch_id", distinct=True)).order_by("month")
+        )}
+        yr_pts   = [yr_pts_map.get(k, 0) for k in yr_keys]
+        yr_units = [yr_units_map.get(k, 0) for k in yr_keys]
+        acc = 0; yr_cumul = []
+        for p in yr_pts: acc += p; yr_cumul.append(acc)
+
+        dash_years_monthly[str(yr)] = {
+            "keys": yr_keys, "labels": yr_labels,
+            "pts": yr_pts, "units": yr_units, "cumul": yr_cumul,
+        }
+        dash_years_submit[str(yr)] = {
+            "labels": yr_labels,
+            "counts": [yr_submit_map.get(k, 0) for k in yr_keys],
+        }
+
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    this_month_pts = int(
+        base_qs.filter(sale_datetime__gte=month_start).aggregate(t=Sum("pts"))["t"] or 0
+    )
+    this_month_units = int(
+        Sale.objects.filter(
+            contract_product__contract__account=account,
+            status=Sale.STATUS_ACCEPTED,
+            sale_datetime__gte=month_start,
+        ).aggregate(t=Sum("quantity"))["t"] or 0
+    )
+    active_contract = account.contracts.filter(status="active").first()
+    total_sales_count = Sale.objects.filter(
+        contract_product__contract__account=account
+    ).count()
+    total_contracts_count = account.contracts.count()
+    recent_sales = (
+        Sale.objects
+        .filter(contract_product__contract__account=account)
+        .select_related("contract_product__product", "contract_product__contract")
+        .order_by("-sale_datetime")[:5]
+    )
 
     return render(request, "fidpha/dashboard.html", {
-        "account": account,
-        "contracts": contracts,
-        "active_contracts": active_contracts,
-        "email_verified": profile.email_verified,
-        "active_contract_days_remaining": active_contract_days_remaining,
-        "total_points": total_points,
+        "account":               account,
+        "email_verified":        profile.email_verified,
+        "total_points":          total_points,
+        "total_points_display":  total_points_display,
+        "this_month_pts":        _fmt_big(this_month_pts),
+        "this_month_units":      this_month_units,
+        "active_contract":       active_contract,
+        "total_sales_count":     total_sales_count,
+        "total_contracts_count": total_contracts_count,
+        "recent_sales":          recent_sales,
+        "dash_years_list":       dash_years_list,
+        "chart_month_keys":      json.dumps(chart_month_keys),
+        "chart_month_labels":    json.dumps(chart_month_labels),
+        "chart_month_data":      json.dumps(chart_month_data),
+        "chart_month_units":     json.dumps(chart_month_units),
+        "top_product_labels":    json.dumps(top_product_labels),
+        "top_product_data":      json.dumps(top_product_data),
+        "chart_submit_data":     json.dumps(chart_submit_data),
+        "chart_submit_drill":    json.dumps(chart_submit_drill),
+        "chart_daily_drill":     json.dumps(chart_daily_drill),
+        "dash_years_monthly":    json.dumps(dash_years_monthly),
+        "dash_years_submit":     json.dumps(dash_years_submit),
+    })
+
+
+@login_required(login_url="/portal/login/")
+def portal_pharmacy(request):
+    if request.user.is_staff:
+        return redirect("/control/")
+    try:
+        profile = request.user.profile
+    except:
+        return redirect("/portal/login/")
+    return render(request, "fidpha/pharmacy.html", {
+        "account": profile.account,
+        "profile": profile,
     })
 
 
@@ -351,14 +567,88 @@ def portal_contracts(request):
     except:
         return redirect("/portal/login/")
 
-    all_contracts = profile.account.contracts.all().order_by("-start_date")
-    active_contracts = all_contracts.filter(status="active")
-    inactive_contracts = all_contracts.filter(status="inactive")
+    import json
+    from fidpha.models import Contract_Product
+    from sales.models import Sale
+    from django.db.models import Sum, F, ExpressionWrapper, FloatField
+    from django.db.models.functions import Round
+
+    account = profile.account
+
+    # Active contract + per-product breakdown
+    active_contract = account.contracts.filter(status="active").first()
+    products_data = []
+    active_total_points = 0
+    active_total_units = 0
+
+    if active_contract:
+        for cp in (Contract_Product.objects
+                   .filter(contract=active_contract)
+                   .select_related("product")
+                   .order_by("product__designation")):
+            accepted = Sale.objects.filter(contract_product=cp, status=Sale.STATUS_ACCEPTED)
+            sold = accepted.aggregate(t=Sum("quantity"))["t"] or 0
+            points = sum(
+                _calculate_points(s.quantity, cp.product.ppv, cp.points_per_unit)
+                for s in accepted.only("quantity")
+            )
+            products_data.append({"cp": cp, "units_sold": sold, "points": points})
+            active_total_points += points
+            active_total_units += sold
+
+    # Points per contract (one query for chart + past summaries)
+    pts_by_contract = {}
+    for row in (
+        Sale.objects.filter(
+            contract_product__contract__account=account,
+            status=Sale.STATUS_ACCEPTED,
+            contract_product__product__ppv__isnull=False,
+        )
+        .annotate(pts=Round(ExpressionWrapper(
+            F("quantity") * F("contract_product__product__ppv") * F("contract_product__points_per_unit"),
+            output_field=FloatField(),
+        )))
+        .values("contract_product__contract_id")
+        .annotate(total=Sum("pts"))
+    ):
+        pts_by_contract[row["contract_product__contract_id"]] = int(row["total"] or 0)
+
+    # Past contracts — summary only, no per-product breakdown
+    past_contracts = []
+    for old in account.contracts.filter(status="inactive").order_by("-end_date"):
+        units = int(
+            Sale.objects.filter(
+                contract_product__contract=old,
+                status=Sale.STATUS_ACCEPTED,
+            ).aggregate(t=Sum("quantity"))["t"] or 0
+        )
+        past_contracts.append({
+            "contract":      old,
+            "total_points":  pts_by_contract.get(old.pk, 0),
+            "total_units":   units,
+            "product_count": old.contract_product_set.count(),
+        })
+
+    # Chart: all contracts chronological
+    contracts_chart_order = account.contracts.order_by("start_date")
+    chart_contract_labels = [c.title for c in contracts_chart_order]
+    chart_contract_data   = [pts_by_contract.get(c.pk, 0) for c in contracts_chart_order]
+
+    # Chart: points per product in active contract (sorted desc)
+    products_sorted = sorted(products_data, key=lambda d: d["points"], reverse=True)
+    product_chart_labels = [d["cp"].product.designation for d in products_sorted]
+    product_chart_data   = [d["points"] for d in products_sorted]
 
     return render(request, "fidpha/contracts.html", {
-        "active_contracts": active_contracts,
-        "inactive_contracts": inactive_contracts,
-        "profile": profile,
+        "active_contract":     active_contract,
+        "products_data":       products_data,
+        "active_total_points": active_total_points,
+        "active_total_units":  active_total_units,
+        "past_contracts":      past_contracts,
+        "chart_contract_labels": json.dumps(chart_contract_labels),
+        "chart_contract_data":   json.dumps(chart_contract_data),
+        "product_chart_labels":  json.dumps(product_chart_labels),
+        "product_chart_data":    json.dumps(product_chart_data),
     })
 
 
@@ -368,15 +658,16 @@ def portal_contracts(request):
 # Sales / Loyalty
 # -----------------------
 
-def _calculate_points(quantity, ppv):
+def _calculate_points(quantity, ppv, factor=1):
     """
-    Points rule: round(ppv × quantity) — 1 point per dirham, standard rounding.
+    Points rule: round(ppv × quantity × factor).
+    factor comes from Contract_Product.points_per_unit (default 1 = 1 pt/MAD).
     ppv is taken from the Product table, not from the sale record.
     Returns 0 if ppv is None.
     """
     if ppv is None:
         return 0
-    return round(float(ppv) * quantity)
+    return round(float(ppv) * quantity * float(factor))
 
 
 @login_required(login_url="/portal/login/")
@@ -389,61 +680,145 @@ def portal_sales(request):
     except Exception:
         return redirect("/portal/login/")
 
-    from fidpha.models import Contract_Product
+    import json
+    import datetime
+    import calendar as cal
+    from collections import defaultdict
+    from django.utils import timezone
+    from django.db.models import Count, DecimalField, ExpressionWrapper, F
+    from django.db.models.functions import TruncMonth, TruncDay, TruncYear
     from sales.models import Sale
-    from django.db.models import Sum
 
     account = profile.account
-    active_contract = account.contracts.filter(status="active").first()
-
-    products_data = []
-    total_points  = 0
-    total_units   = 0
-
-    def _build_products_data(contract):
-        data, pts, units = [], 0, 0
-        for cp in (Contract_Product.objects
-                   .filter(contract=contract)
-                   .select_related("product")
-                   .order_by("product__designation")):
-            accepted = Sale.objects.filter(contract_product=cp, status=Sale.STATUS_ACCEPTED)
-            sold     = accepted.aggregate(t=Sum("quantity"))["t"] or 0
-            points   = sum(
-                _calculate_points(s.quantity, cp.product.ppv)
-                for s in accepted.only("quantity")
-            )
-            data.append({"cp": cp, "units_sold": sold, "points": points})
-            pts += points; units += sold
-        return data, pts, units
-
-    if active_contract:
-        products_data, total_points, total_units = _build_products_data(active_contract)
-
     all_sales = (
         Sale.objects
         .filter(contract_product__contract__account=account)
         .select_related("contract_product__product", "contract_product__contract")
+        .annotate(
+            points=ExpressionWrapper(
+                F("ppv") * F("quantity") * F("contract_product__points_per_unit"),
+                output_field=DecimalField(max_digits=14, decimal_places=2),
+            )
+        )
         .order_by("-sale_datetime")
     )
 
-    # Historical inactive contracts
-    past_contracts = []
-    for old in account.contracts.filter(status="inactive").order_by("-end_date"):
-        data, pts, units = _build_products_data(old)
-        past_contracts.append({
-            "contract":     old,
-            "products_data": data,
-            "total_points": pts,
-            "total_units":  units,
-        })
+    accepted_count = all_sales.filter(status=Sale.STATUS_ACCEPTED).count()
+    rejected_count = all_sales.filter(status="rejected").count()
+    pending_count  = all_sales.exclude(status=Sale.STATUS_ACCEPTED).exclude(status="rejected").count()
+
+    # ── Last 12 months ──
+    now = timezone.now()
+    month_dates = []
+    for i in range(11, -1, -1):
+        m = now.month - i
+        y = now.year
+        while m <= 0:
+            m += 12; y -= 1
+        month_dates.append(datetime.datetime(y, m, 1, tzinfo=datetime.timezone.utc))
+
+    monthly_qs = (
+        Sale.objects.filter(
+            contract_product__contract__account=account,
+            sale_datetime__gte=month_dates[0],
+        )
+        .annotate(month=TruncMonth("sale_datetime"))
+        .values("month", "status")
+        .annotate(cnt=Count("id"))
+        .order_by("month")
+    )
+    m_acc = defaultdict(int); m_rej = defaultdict(int); m_pend = defaultdict(int)
+    for r in monthly_qs:
+        mk = r["month"].strftime("%Y-%m")
+        if r["status"] == Sale.STATUS_ACCEPTED: m_acc[mk] += r["cnt"]
+        elif r["status"] == "rejected":         m_rej[mk] += r["cnt"]
+        else:                                   m_pend[mk] += r["cnt"]
+
+    sales_month_keys     = [d.strftime("%Y-%m") for d in month_dates]
+    sales_month_labels   = [d.strftime("%b %Y") for d in month_dates]
+    sales_month_accepted = [m_acc.get(d.strftime("%Y-%m"), 0) for d in month_dates]
+    sales_month_rejected = [m_rej.get(d.strftime("%Y-%m"), 0) for d in month_dates]
+    sales_month_pending  = [m_pend.get(d.strftime("%Y-%m"), 0) for d in month_dates]
+
+    # ── Per-year monthly data (for year selector) ──
+    years_qs = (
+        Sale.objects.filter(contract_product__contract__account=account)
+        .annotate(yr=TruncYear("sale_datetime"))
+        .values("yr").distinct().order_by("yr")
+    )
+    available_years_list = [r["yr"].year for r in years_qs if r["yr"]]
+
+    years_data = {}
+    for yr in available_years_list:
+        yr_months = [datetime.datetime(yr, m, 1, tzinfo=datetime.timezone.utc) for m in range(1, 13)]
+        yr_qs = (
+            Sale.objects.filter(
+                contract_product__contract__account=account,
+                sale_datetime__year=yr,
+            )
+            .annotate(month=TruncMonth("sale_datetime"))
+            .values("month", "status")
+            .annotate(cnt=Count("id"))
+            .order_by("month")
+        )
+        ya = defaultdict(int); yr_rej = defaultdict(int); yp = defaultdict(int)
+        for r in yr_qs:
+            mk = r["month"].strftime("%Y-%m")
+            if r["status"] == Sale.STATUS_ACCEPTED: ya[mk] += r["cnt"]
+            elif r["status"] == "rejected":         yr_rej[mk] += r["cnt"]
+            else:                                   yp[mk] += r["cnt"]
+        years_data[str(yr)] = {
+            "keys":     [d.strftime("%Y-%m") for d in yr_months],
+            "labels":   [d.strftime("%b") for d in yr_months],
+            "accepted": [ya.get(d.strftime("%Y-%m"), 0) for d in yr_months],
+            "rejected": [yr_rej.get(d.strftime("%Y-%m"), 0) for d in yr_months],
+            "pending":  [yp.get(d.strftime("%Y-%m"), 0) for d in yr_months],
+        }
+
+    # ── Daily drill-down data ──
+    daily_qs = (
+        Sale.objects.filter(contract_product__contract__account=account)
+        .annotate(day=TruncDay("sale_datetime"))
+        .values("day", "status")
+        .annotate(cnt=Count("id"))
+        .order_by("day")
+    )
+    daily_map = {}
+    for r in daily_qs:
+        mk    = r["day"].strftime("%Y-%m")
+        d_int = r["day"].day
+        if mk not in daily_map:
+            daily_map[mk] = {"acc": {}, "rej": {}, "pend": {}}
+        if r["status"] == Sale.STATUS_ACCEPTED: bucket = "acc"
+        elif r["status"] == "rejected":         bucket = "rej"
+        else:                                   bucket = "pend"
+        daily_map[mk][bucket][d_int] = daily_map[mk][bucket].get(d_int, 0) + r["cnt"]
+
+    drill_data = {}
+    for mk, buckets in daily_map.items():
+        parts = mk.split("-")
+        yr, mo = int(parts[0]), int(parts[1])
+        num_days = cal.monthrange(yr, mo)[1]
+        drill_data[mk] = {
+            "labels":   list(range(1, num_days + 1)),
+            "accepted": [buckets["acc"].get(d, 0) for d in range(1, num_days + 1)],
+            "rejected": [buckets["rej"].get(d, 0) for d in range(1, num_days + 1)],
+            "pending":  [buckets["pend"].get(d, 0) for d in range(1, num_days + 1)],
+        }
 
     return render(request, "fidpha/sales.html", {
-        "active_contract": active_contract,
-        "products_data":   products_data,
-        "total_points":    total_points,
-        "total_units":     total_units,
-        "all_sales":       all_sales,
-        "past_contracts":  past_contracts,
+        "all_sales":            all_sales,
+        "accepted_count":       accepted_count,
+        "pending_count":        pending_count,
+        "rejected_count":       rejected_count,
+        "available_years_list": available_years_list,
+        "sales_month_keys":     json.dumps(sales_month_keys),
+        "sales_month_labels":   json.dumps(sales_month_labels),
+        "sales_month_accepted": json.dumps(sales_month_accepted),
+        "sales_month_rejected": json.dumps(sales_month_rejected),
+        "sales_month_pending":  json.dumps(sales_month_pending),
+        "years_data":           json.dumps(years_data),
+        "drill_data":           json.dumps(drill_data),
     })
 
 

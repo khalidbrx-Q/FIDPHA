@@ -12,10 +12,19 @@
     <style>
         /* ---- NAV SECTION LABEL ---- */
         .nav-section-title {
-            margin-top: 12px;
+            margin-top: 8px;
         }
         .nav-section-title:first-child {
             margin-top: 0;
+        }
+
+        /* ---- COMPACT NAV (control panel has more items) ---- */
+        .sidebar-nav .nav-item,
+        .sidebar-nav .nav-item-disabled {
+            padding: 7px 10px;
+        }
+        .sidebar-footer {
+            padding: 12px;
         }
 
         /* ---- COMING SOON NAV ITEMS ---- */
@@ -478,7 +487,7 @@
         </div>
 
         <!-- Navigation -->
-        <nav class="sidebar-nav" style="overflow-y: auto; flex: 1; min-height: 0;">
+        <nav class="sidebar-nav">
 
             <!-- Overview -->
             <div class="nav-section-title">Overview</div>
@@ -577,6 +586,38 @@
 
         </nav>
 
+        <!-- Sidebar footer — user popup trigger -->
+        <div class="sidebar-footer" style="position:relative;">
+
+            <!-- Drop-up menu -->
+            <div id="userPopup" style="
+                display:none; position:absolute; bottom:100%; left:0; right:0; margin-bottom:6px;
+                background:var(--card-bg); border:1px solid var(--card-border);
+                border-radius:10px; padding:6px;
+                box-shadow:0 -8px 24px rgba(0,0,0,0.22); z-index:300;
+            ">
+                <button class="dropdown-item" onclick="toggleTheme(); return false;" style="width:100%;">
+                    <span class="material-icons-round">contrast</span>
+                    Toggle Theme
+                </button>
+                <div class="dropdown-divider"></div>
+                <a href="/admin/logout/" class="dropdown-item dropdown-item-danger">
+                    <span class="material-icons-round">logout</span>
+                    Log Out
+                </a>
+            </div>
+
+            <!-- Trigger row -->
+            <div id="userPopupTrigger" class="user-info" onclick="toggleUserPopup()" style="cursor:pointer; user-select:none;">
+                <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+                <div style="flex:1; min-width:0;">
+                    <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    <div class="user-role">{% if request.user.is_superuser %}Superuser{% else %}Staff{% endif %}</div>
+                </div>
+                <span class="material-icons-round" id="userPopupChevron" style="font-size:16px; color:var(--text-secondary); transition:transform 0.2s; flex-shrink:0;">expand_less</span>
+            </div>
+
+        </div>
 
     </aside>
 
@@ -599,39 +640,6 @@
                 </div>
             </div>
 
-            <!-- Topbar right: theme toggle + user dropdown -->
-            <div class="topbar-right">
-
-                <!-- User avatar dropdown -->
-                <div class="user-dropdown" id="userDropdown">
-                    <button class="user-avatar-btn" onclick="toggleUserDropdown()" aria-expanded="false" aria-haspopup="true">
-                        <div class="topbar-avatar">{{ request.user.username|first|upper }}</div>
-                    </button>
-                    <div class="user-dropdown-menu" id="userDropdownMenu" role="menu">
-                        <!-- User info -->
-                        <div class="dropdown-user-info">
-                            <div class="dropdown-avatar">{{ request.user.username|first|upper }}</div>
-                            <div>
-                                <div class="dropdown-user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
-                                <div class="dropdown-user-role">{% if request.user.is_superuser %}Superuser{% else %}Staff{% endif %}</div>
-                            </div>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <!-- Theme toggle -->
-                        <button class="dropdown-item" onclick="toggleTheme(); return false;">
-                            <span class="material-icons-round">contrast</span>
-                            <span id="dropdown-theme-label">Toggle Theme</span>
-                        </button>
-                        <div class="dropdown-divider"></div>
-                        <!-- Logout -->
-                        <a href="/admin/logout/" class="dropdown-item dropdown-item-danger">
-                            <span class="material-icons-round">logout</span>
-                            Log Out
-                        </a>
-                    </div>
-                </div>
-
-            </div>
         </div>
 
         <!-- Page content -->
@@ -675,20 +683,22 @@
             link.addEventListener('click', closeSidebar);
         });
 
-        // ---- User dropdown ----
-        function toggleUserDropdown() {
-            const menu = document.getElementById('userDropdownMenu');
-            const btn  = document.querySelector('.user-avatar-btn');
-            const open = menu.classList.toggle('open');
-            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        // ---- User popup (drop-up) ----
+        function toggleUserPopup() {
+            const popup   = document.getElementById('userPopup');
+            const chevron = document.getElementById('userPopupChevron');
+            const isOpen  = popup.style.display !== 'none';
+            popup.style.display       = isOpen ? 'none' : 'block';
+            chevron.style.transform   = isOpen ? '' : 'rotate(180deg)';
         }
 
-        // Close dropdown when clicking outside
+        // Close popup when clicking outside
         document.addEventListener('click', function (e) {
-            const dropdown = document.getElementById('userDropdown');
-            if (dropdown && !dropdown.contains(e.target)) {
-                document.getElementById('userDropdownMenu').classList.remove('open');
-                document.querySelector('.user-avatar-btn').setAttribute('aria-expanded', 'false');
+            const trigger = document.getElementById('userPopupTrigger');
+            const popup   = document.getElementById('userPopup');
+            if (popup && trigger && !trigger.contains(e.target) && !popup.contains(e.target)) {
+                popup.style.display = 'none';
+                document.getElementById('userPopupChevron').style.transform = '';
             }
         });
     </script>

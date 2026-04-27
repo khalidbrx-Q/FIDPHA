@@ -1,312 +1,476 @@
 {% extends "fidpha/base.html" %}
 
 {% block nav_contracts %}active{% endblock %}
-{% block page_title %}Contracts{% endblock %}
-{% block page_breadcrumb %}Contracts{% endblock %}
+{% block page_title %}Contract{% endblock %}
+{% block page_breadcrumb %}Contract{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pg-btn {
+        min-width:32px; height:30px; padding:0 8px; border-radius:7px;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); font-size:0.8rem; font-weight:500;
+        font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.15s;
+        display:inline-flex; align-items:center; justify-content:center;
+    }
+    .pg-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+    .pg-btn.pg-active { background:var(--accent); border-color:var(--accent); color:white; }
+    .pg-btn:disabled  { opacity:0.35; cursor:default; }
+</style>
+{% endblock %}
 
 {% block content %}
 
-<!-- ACTIVE CONTRACT -->
-{% for contract in active_contracts %}
-<div style="margin-bottom: 24px;">
-    <div style="font-size: 0.78rem; color: #22c55e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-        <span class="material-icons-round" style="font-size: 14px;">verified</span>
-        Active Contract
-    </div>
-    <div class="card" style="border: 1px solid rgba(34,197,94,0.3);">
+{% if active_contract %}
 
-        <!-- HEADER -->
-        <div class="card-header" onclick="toggleContract('active-{{ contract.pk }}')" style="cursor: pointer;">
-            <div class="card-header-icon" style="background-color: rgba(34,197,94,0.15);">
-                <span class="material-icons-round" style="color: #22c55e;">description</span>
-            </div>
-            <div style="flex: 1;">
-                <div class="card-title">{{ contract.title }}</div>
-                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
-                    {{ contract.start_date|date:"d M Y" }} → {{ contract.end_date|date:"d M Y" }}
-                    &nbsp;·&nbsp;
-                    {{ contract.start_date|timesince:contract.end_date }}
-                </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="background-color: rgba(27,103,155,0.15); color: #1b679b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">
-                    {{ contract.contract_product_set.count }} product{{ contract.contract_product_set.count|pluralize }}
-                </span>
-                <span class="badge badge-success">Active</span>
-                <span class="material-icons-round" id="icon-active-{{ contract.pk }}" style="color: #22c55e; font-size: 20px; transition: transform 0.3s;">expand_more</span>
-            </div>
-        </div>
-
-        <!-- BODY -->
-        <div id="contract-active-{{ contract.pk }}" style="display: none; padding-top: 12px;">
-            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
-                {{ contract.designation }}
-            </div>
-
-            {% if contract.contract_product_set.all %}
-            <!-- PRODUCT SEARCH -->
-            <div style="position: relative; margin-bottom: 10px;">
-                <span class="material-icons-round" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;">search</span>
-                <input type="text" id="product-search-active-{{ contract.pk }}" placeholder="Search products..."
-                    onkeyup="filterProducts('active-{{ contract.pk }}')"
-                    style="width: 100%; padding: 8px 14px 8px 36px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.85rem; color: var(--text-primary); box-sizing: border-box;">
-            </div>
-
-            <!-- SCROLLABLE TABLE -->
-            <div style="max-height: 300px; overflow-y: auto; border-radius: 8px; scrollbar-width: thin; scrollbar-color: #334155 transparent;">
-                <table class="table">
-                    <thead style="position: sticky; top: 0; z-index: 1; background-color: var(--card-bg);">
-                        <tr>
-                            <th>Product Code</th>
-                            <th>Product Name</th>
-                            <th>External Designation</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="product-tbody-active-{{ contract.pk }}">
-                        {% for cp in contract.contract_product_set.all %}
-                        <tr class="product-row-active-{{ contract.pk }}"
-                            data-code="{{ cp.product.code|lower }}"
-                            data-name="{{ cp.product.designation|lower }}"
-                            data-ext="{{ cp.external_designation|lower }}">
-                            <td>{{ cp.product.code }}</td>
-                            <td>{{ cp.product.designation }}</td>
-                            <td>{{ cp.external_designation }}</td>
-                            <td>
-                                {% if cp.product.status == "active" %}
-                                    <span class="badge badge-success">Active</span>
-                                {% else %}
-                                    <span class="badge badge-danger">Inactive</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-                <p style="color: var(--text-secondary); font-size: 0.85rem;">No products linked to this contract.</p>
-            {% endif %}
-        </div>
-    </div>
-</div>
-{% empty %}
-    <div class="card" style="margin-bottom: 24px; border: 1px solid rgba(34,197,94,0.2);">
-        <p style="color: var(--text-secondary); text-align: center;">No active contract found for this pharmacy.</p>
-    </div>
-{% endfor %}
-
-<!-- INACTIVE CONTRACTS -->
-{% if inactive_contracts %}
-<div style="font-size: 0.78rem; color: #ef4444; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-    <span class="material-icons-round" style="font-size: 14px;">cancel</span>
-    Inactive Contracts
-</div>
-
-<!-- SEARCH & FILTER BAR -->
-<div class="card" style="margin-bottom: 16px;">
-    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
-
-        <div style="flex: 1; min-width: 200px;">
-            <label style="font-size: 0.78rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">Search</label>
-            <div style="position: relative;">
-                <span class="material-icons-round" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;">search</span>
-                <input type="text" id="search-input" placeholder="Search by contract title..."
-                    style="width: 100%; padding: 9px 14px 9px 36px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.88rem; color: var(--text-primary); box-sizing: border-box;">
-            </div>
-        </div>
-
-        <div style="min-width: 160px;">
-    <label style="font-size: 0.78rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">From Date</label>
-    <input type="date" id="date-from"
-        style="width: 100%; padding: 9px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.88rem; color: var(--text-primary); box-sizing: border-box;">
-</div>
-
-<div style="min-width: 160px;">
-    <label style="font-size: 0.78rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">To Date</label>
-    <input type="date" id="date-to"
-        style="width: 100%; padding: 9px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.88rem; color: var(--text-primary); box-sizing: border-box;">
-</div>
-
+<!-- Active contract banner -->
+<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+     background:var(--card-bg); border:1px solid rgba(34,197,94,0.3); border-left:4px solid #22c55e;
+     border-radius:12px; padding:16px 20px; margin-bottom:20px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <span class="material-icons-round" style="font-size:24px; color:#22c55e; flex-shrink:0;">verified</span>
         <div>
-            <label style="font-size: 0.78rem; color: transparent; display: block; margin-bottom: 6px;">Reset</label>
-            <button onclick="resetFilters()" style="
-                padding: 9px 16px;
-                background-color: transparent;
-                border: 1px solid var(--card-border);
-                border-radius: 8px;
-                font-size: 0.88rem;
-                color: var(--text-secondary);
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            ">
-                <span class="material-icons-round" style="font-size: 16px;">refresh</span>
-                Reset
-            </button>
-        </div>
-    </div>
-    <div style="margin-top: 12px; font-size: 0.78rem; color: var(--text-secondary);">
-        Showing <span id="results-count">{{ inactive_contracts|length }}</span> contract{{ inactive_contracts|length|pluralize }}
-    </div>
-</div>
-
-<!-- INACTIVE CONTRACTS LIST — scrollable container -->
-<div style="max-height: 600px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #334155 transparent; padding-right: 4px;">
-
-    <div id="no-results" style="display: none;">
-        <div class="card">
-            <p style="color: var(--text-secondary); text-align: center;">No contracts match your search.</p>
-        </div>
-    </div>
-
-    {% for contract in inactive_contracts %}
-    <div class="card contract-card"
-        data-title="{{ contract.title|lower }}"
-        data-start="{{ contract.start_date|date:'Y-m-d' }}"
-        data-end="{{ contract.end_date|date:'Y-m-d' }}"
-        style="margin-bottom: 12px;">
-
-        <div class="card-header" onclick="toggleContract('{{ contract.pk }}')" style="cursor: pointer;">
-            <div class="card-header-icon">
-                <span class="material-icons-round">description</span>
-            </div>
-            <div style="flex: 1;">
-                <div class="card-title">{{ contract.title }}</div>
-                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
-                    {{ contract.start_date|date:"d M Y" }} → {{ contract.end_date|date:"d M Y" }}
-                    &nbsp;·&nbsp;
-                    {{ contract.start_date|timesince:contract.end_date }}
-                </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="background-color: rgba(27,103,155,0.15); color: #1b679b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">
-                    {{ contract.contract_product_set.count }} product{{ contract.contract_product_set.count|pluralize }}
-                </span>
-                <span class="badge badge-danger">Inactive</span>
-                <span class="material-icons-round" id="icon-{{ contract.pk }}" style="color: var(--text-secondary); font-size: 20px; transition: transform 0.3s;">expand_more</span>
-            </div>
-        </div>
-
-        <div id="contract-{{ contract.pk }}" style="display: none; padding-top: 12px;">
-            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
-                {{ contract.designation }}
-            </div>
-
-            {% if contract.contract_product_set.all %}
-            <div style="position: relative; margin-bottom: 10px;">
-                <span class="material-icons-round" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;">search</span>
-                <input type="text" id="product-search-{{ contract.pk }}" placeholder="Search products..."
-                    onkeyup="filterProducts('{{ contract.pk }}')"
-                    style="width: 100%; padding: 8px 14px 8px 36px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.85rem; color: var(--text-primary); box-sizing: border-box;">
-            </div>
-            <div style="max-height: 300px; overflow-y: auto; border-radius: 8px; scrollbar-width: thin; scrollbar-color: #334155 transparent;">
-                <table class="table">
-                    <thead style="position: sticky; top: 0; z-index: 1; background-color: var(--card-bg);">
-                        <tr>
-                            <th>Product Code</th>
-                            <th>Product Name</th>
-                            <th>External Designation</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for cp in contract.contract_product_set.all %}
-                        <tr class="product-row-{{ contract.pk }}"
-                            data-code="{{ cp.product.code|lower }}"
-                            data-name="{{ cp.product.designation|lower }}"
-                            data-ext="{{ cp.external_designation|lower }}">
-                            <td>{{ cp.product.code }}</td>
-                            <td>{{ cp.product.designation }}</td>
-                            <td>{{ cp.external_designation }}</td>
-                            <td>
-                                {% if cp.product.status == "active" %}
-                                    <span class="badge badge-success">Active</span>
-                                {% else %}
-                                    <span class="badge badge-danger">Inactive</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-                <p style="color: var(--text-secondary); font-size: 0.85rem;">No products linked to this contract.</p>
+            <div style="font-size:0.72rem; color:#22c55e; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:2px;">Active Contract</div>
+            <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">{{ active_contract.title }}</div>
+            {% if active_contract.designation %}
+            <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">{{ active_contract.designation }}</div>
             {% endif %}
         </div>
     </div>
-    {% endfor %}
+    <div style="font-size:0.83rem; color:var(--text-secondary); text-align:right;">
+        {{ active_contract.start_date|date:"d M Y" }} → {{ active_contract.end_date|date:"d M Y" }}
+    </div>
+</div>
 
+<!-- 3 stat cards -->
+<div class="grid-3" style="margin-bottom:20px;">
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#f59e0b,#ef4444); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">emoji_events</span>
+        </div>
+        <div>
+            <div class="stat-label">Points Earned</div>
+            <div class="stat-value">{{ active_total_points }}</div>
+            <div class="stat-sub">this contract</div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#3b82f6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">inventory_2</span>
+        </div>
+        <div>
+            <div class="stat-label">Units Sold</div>
+            <div class="stat-value">{{ active_total_units }}</div>
+            <div class="stat-sub">contract-linked products</div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#22c55e,#16a34a); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">medication</span>
+        </div>
+        <div>
+            <div class="stat-label">Products</div>
+            <div class="stat-value">{{ products_data|length }}</div>
+            <div class="stat-sub">in this contract</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Products table -->
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+        <div class="card-header-icon"><span class="material-icons-round">medication</span></div>
+        <div class="card-title">Products</div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+            <div style="position:relative;">
+                <span class="material-icons-round" style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-size:16px;">search</span>
+                <input type="text" id="prodSearch" placeholder="Search product..." oninput="filterProds()"
+                    style="padding:5px 10px 5px 28px; border-radius:8px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-primary); font-size:0.82rem; font-family:'Inter',sans-serif; width:180px;">
+            </div>
+            <span style="font-size:0.78rem; color:var(--text-secondary);">Show</span>
+            <select onchange="setProdPageSize(this.value)" style="padding:3px 6px; border-radius:7px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Code</th>
+                    <th>External Ref</th>
+                    <th style="text-align:center;">PPV</th>
+                    <th style="text-align:center;">Units Sold</th>
+                    <th style="text-align:center;">Points Earned</th>
+                    <th style="text-align:center;">Status</th>
+                </tr>
+            </thead>
+            <tbody id="prodTbody">
+                {% for item in products_data %}
+                <tr data-search="{{ item.cp.product.designation|lower }} {{ item.cp.product.code|lower }} {{ item.cp.external_designation|lower }}">
+                    <td style="font-weight:500;">{{ item.cp.product.designation }}</td>
+                    <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ item.cp.product.code }}</td>
+                    <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ item.cp.external_designation }}</td>
+                    <td style="text-align:center; font-weight:600;">{{ item.cp.product.ppv|default:"—" }}</td>
+                    <td style="text-align:center;">{{ item.units_sold }}</td>
+                    <td style="text-align:center; font-weight:700;">
+                        {% if item.points > 0 %}
+                        <span class="material-icons-round" style="font-size:12px; color:#f59e0b; vertical-align:middle;">star</span>
+                        {% endif %}
+                        {{ item.points }}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if item.cp.product.status == "active" %}
+                            <span class="badge badge-success">Active</span>
+                        {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center; color:var(--text-secondary); padding:20px;">No products in this contract.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Products pagination -->
+    <div id="prodPagination" style="display:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:10px 16px; border-top:1px solid var(--card-border);">
+        <span id="prodPgInfo" style="font-size:0.8rem; color:var(--text-secondary);"></span>
+        <div id="prodPgButtons" style="display:flex; align-items:center; gap:4px;"></div>
+    </div>
+</div>
+
+{% else %}
+<!-- No active contract -->
+<div class="card" style="display:flex; align-items:center; gap:16px; border-left:4px solid var(--card-border); margin-bottom:20px;">
+    <span class="material-icons-round" style="font-size:32px; color:var(--text-secondary); flex-shrink:0;">info</span>
+    <div>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;">No active contract</div>
+        <div style="font-size:0.84rem; color:var(--text-secondary);">You don't have an active contract at the moment. Your past contracts are shown below.</div>
+    </div>
 </div>
 {% endif %}
 
+<!-- Charts — side by side -->
+{% if products_data or chart_contract_labels %}
+<div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
+    {% if products_data %}
+    <div class="card" style="flex:1; min-width:280px;">
+        <div class="card-header">
+            <div class="card-header-icon"><span class="material-icons-round">bar_chart</span></div>
+            <div class="card-title">Points by Product</div>
+            <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">Active contract</div>
+        </div>
+        <div id="productChart" style="height:240px;"></div>
+    </div>
+    {% endif %}
+    {% if chart_contract_labels %}
+    <div class="card" style="flex:1; min-width:280px;">
+        <div class="card-header">
+            <div class="card-header-icon"><span class="material-icons-round">assignment</span></div>
+            <div class="card-title">Points per Contract</div>
+            <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">All contracts</div>
+        </div>
+        <div id="contractChart" style="height:240px;"></div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Past contracts -->
+{% if past_contracts %}
+<div style="font-size:0.78rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+    <span class="material-icons-round" style="font-size:14px;">history</span>
+    Past Contracts
+</div>
+
+<div id="pastContractsList" style="display:flex; flex-direction:column; gap:8px;">
+    {% for item in past_contracts %}
+    <div class="card" style="padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px;">
+        <div style="display:flex; align-items:center; gap:12px; min-width:0; flex:1;">
+            <span class="material-icons-round" style="font-size:20px; color:var(--text-secondary); flex-shrink:0;">description</span>
+            <div style="min-width:0;">
+                <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ item.contract.title }}</div>
+                <div style="font-size:0.76rem; color:var(--text-secondary); white-space:nowrap;">{{ item.contract.start_date|date:"d M Y" }} → {{ item.contract.end_date|date:"d M Y" }}</div>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:28px; flex-shrink:0;">
+            <div style="text-align:center;">
+                <div style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px;">Products</div>
+                <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary);">{{ item.product_count }}</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px;">Units Sold</div>
+                <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary);">{{ item.total_units }}</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px;">Points</div>
+                <div style="font-size:0.9rem; font-weight:700; color:var(--text-primary);">
+                    <span class="material-icons-round" style="font-size:12px; color:#f59e0b; vertical-align:middle;">star</span>
+                    {{ item.total_points }}
+                </div>
+            </div>
+            <span class="badge badge-warning">Inactive</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Past contracts pagination -->
+<div id="pastPagination" style="display:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:10px 4px; margin-top:8px;">
+    <span id="pastPgInfo" style="font-size:0.8rem; color:var(--text-secondary);"></span>
+    <div id="pastPgButtons" style="display:flex; align-items:center; gap:4px;"></div>
+    <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-size:0.78rem; color:var(--text-secondary);">Show</span>
+        <select onchange="setPastPageSize(this.value)" style="padding:3px 6px; border-radius:7px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;">
+            <option value="3">3</option>
+            <option value="5" selected>5</option>
+            <option value="10">10</option>
+        </select>
+    </div>
+</div>
+
+{% endif %}
+
 <script>
-    function toggleContract(id) {
-        const body = document.getElementById("contract-" + id);
-        const icon = document.getElementById("icon-" + id);
-        if (!body) return;
-        if (body.style.display === "none") {
-            body.style.display = "block";
-            icon.style.transform = "rotate(180deg)";
-        } else {
-            body.style.display = "none";
-            icon.style.transform = "rotate(0deg)";
+// ── Products table pagination ──
+var prodPage     = 1;
+var prodPageSize = 10;
+
+function filterProds() {
+    var q = (document.getElementById('prodSearch') ? document.getElementById('prodSearch').value : '').toLowerCase().trim();
+    var allRows = document.querySelectorAll('#prodTbody tr');
+    var matched = [];
+    allRows.forEach(function(row) {
+        row.style.display = 'none';
+        if (!q || (row.dataset.search || '').includes(q)) matched.push(row);
+    });
+    prodPage = 1;
+    applyProdPagination(matched);
+}
+
+function applyProdPagination(matched) {
+    var total  = matched.length;
+    var pages  = Math.max(1, Math.ceil(total / prodPageSize));
+    prodPage   = Math.min(prodPage, pages);
+    var start  = (prodPage - 1) * prodPageSize;
+    var end    = Math.min(start + prodPageSize, total);
+    matched.forEach(function(row, i) {
+        row.style.display = (i >= start && i < end) ? '' : 'none';
+    });
+    renderProdPagination(total, pages, start, end);
+}
+
+function renderProdPagination(total, pages, start, end) {
+    var pg = document.getElementById('prodPagination');
+    if (!pg) return;
+    if (total <= prodPageSize) { pg.style.display = 'none'; return; }
+    pg.style.display = 'flex';
+    document.getElementById('prodPgInfo').textContent =
+        'Showing ' + (start + 1) + '–' + end + ' of ' + total;
+    var bc = document.getElementById('prodPgButtons');
+    bc.innerHTML = '';
+    function mkBtn(label, page, disabled, active) {
+        var b = document.createElement('button');
+        b.innerHTML = label; b.disabled = disabled;
+        b.className = 'pg-btn' + (active ? ' pg-active' : '');
+        if (!disabled) b.onclick = (function(pg) { return function() {
+            prodPage = pg;
+            var q = (document.getElementById('prodSearch') ? document.getElementById('prodSearch').value : '').toLowerCase().trim();
+            var matched = [];
+            document.querySelectorAll('#prodTbody tr').forEach(function(row) {
+                row.style.display = 'none';
+                if (!q || (row.dataset.search || '').includes(q)) matched.push(row);
+            });
+            applyProdPagination(matched);
+        }; })(page);
+        return b;
+    }
+    bc.appendChild(mkBtn('&#8249;', prodPage - 1, prodPage === 1, false));
+    var shown = new Set([1, pages]);
+    for (var p = Math.max(1, prodPage-1); p <= Math.min(pages, prodPage+1); p++) shown.add(p);
+    var sorted = Array.from(shown).sort(function(a,b){return a-b;});
+    var prev = null;
+    sorted.forEach(function(p) {
+        if (prev !== null && p - prev > 1) {
+            var dots = document.createElement('span');
+            dots.textContent = '…';
+            dots.style.cssText = 'padding:0 2px;color:var(--text-secondary);font-size:0.82rem;display:flex;align-items:center;';
+            bc.appendChild(dots);
         }
+        bc.appendChild(mkBtn(p, p, false, p === prodPage));
+        prev = p;
+    });
+    bc.appendChild(mkBtn('&#8250;', prodPage + 1, prodPage === pages, false));
+}
+
+function setProdPageSize(val) {
+    prodPageSize = parseInt(val, 10);
+    filterProds();
+}
+
+// Init products pagination on load
+(function() {
+    if (!document.getElementById('prodTbody')) return;
+    var allRows = document.querySelectorAll('#prodTbody tr');
+    var matched = [];
+    allRows.forEach(function(row) { row.style.display = 'none'; matched.push(row); });
+    applyProdPagination(matched);
+}());
+
+// ── Past contracts pagination ──
+var pastPage     = 1;
+var pastPageSize = 5;
+
+function applyPastPagination() {
+    var allCards = document.querySelectorAll('#pastContractsList > div');
+    var total = allCards.length;
+    var pages = Math.max(1, Math.ceil(total / pastPageSize));
+    pastPage  = Math.min(pastPage, pages);
+    var start = (pastPage - 1) * pastPageSize;
+    var end   = Math.min(start + pastPageSize, total);
+    allCards.forEach(function(card, i) {
+        card.style.display = (i >= start && i < end) ? '' : 'none';
+    });
+    renderPastPagination(total, pages, start, end);
+}
+
+function renderPastPagination(total, pages, start, end) {
+    var pg = document.getElementById('pastPagination');
+    if (!pg) return;
+    if (total <= pastPageSize) { pg.style.display = 'none'; return; }
+    pg.style.display = 'flex';
+    document.getElementById('pastPgInfo').textContent =
+        'Showing ' + (start + 1) + '–' + end + ' of ' + total;
+    var bc = document.getElementById('pastPgButtons');
+    bc.innerHTML = '';
+    function mkBtn(label, page, disabled, active) {
+        var b = document.createElement('button');
+        b.innerHTML = label; b.disabled = disabled;
+        b.className = 'pg-btn' + (active ? ' pg-active' : '');
+        if (!disabled) b.onclick = function() { pastPage = page; applyPastPagination(); };
+        return b;
     }
+    bc.appendChild(mkBtn('&#8249;', pastPage - 1, pastPage === 1, false));
+    var shown = new Set([1, pages]);
+    for (var p = Math.max(1, pastPage-1); p <= Math.min(pages, pastPage+1); p++) shown.add(p);
+    var sorted = Array.from(shown).sort(function(a,b){return a-b;});
+    var prev = null;
+    sorted.forEach(function(p) {
+        if (prev !== null && p - prev > 1) {
+            var dots = document.createElement('span');
+            dots.textContent = '…';
+            dots.style.cssText = 'padding:0 2px;color:var(--text-secondary);font-size:0.82rem;display:flex;align-items:center;';
+            bc.appendChild(dots);
+        }
+        bc.appendChild(mkBtn(p, p, false, p === pastPage));
+        prev = p;
+    });
+    bc.appendChild(mkBtn('&#8250;', pastPage + 1, pastPage === pages, false));
+}
 
-    function filterProducts(contractId) {
-        const search = document.getElementById("product-search-" + contractId)?.value.toLowerCase() || "";
-        const rows = document.querySelectorAll(".product-row-" + contractId);
-        rows.forEach(row => {
-            const code = row.dataset.code;
-            const name = row.dataset.name;
-            const ext = row.dataset.ext;
-            row.style.display = (code.includes(search) || name.includes(search) || ext.includes(search)) ? "" : "none";
-        });
-    }
+function setPastPageSize(val) {
+    pastPageSize = parseInt(val, 10);
+    pastPage = 1;
+    applyPastPagination();
+}
 
-    function applyFilters() {
-        const search = document.getElementById("search-input")?.value.toLowerCase().trim() || "";
-        const dateFrom = document.getElementById("date-from")?.value || "";
-        const dateTo = document.getElementById("date-to")?.value || "";
-        const cards = document.querySelectorAll(".contract-card");
-
-        let visible = 0;
-        cards.forEach(card => {
-            const title = card.dataset.title;
-            const cardStart = card.dataset.start;
-            const cardEnd = card.dataset.end;
-
-            const matchesSearch = !search || title.includes(search);
-            const matchesFrom = !dateFrom || cardStart >= dateFrom;
-            const matchesTo = !dateTo || cardEnd <= dateTo;
-
-            if (matchesSearch && matchesFrom && matchesTo) {
-                card.style.display = "block";
-                visible++;
-            } else {
-                card.style.display = "none";
-            }
-        });
-
-        document.getElementById("results-count").textContent = visible;
-        document.getElementById("no-results").style.display = visible === 0 ? "block" : "none";
-    }
-
-    function resetFilters() {
-        document.getElementById("search-input").value = "";
-        document.getElementById("date-from").value = "";
-        document.getElementById("date-to").value = "";
-        applyFilters();
-    }
-
-    if (document.getElementById("search-input")) {
-        document.getElementById("search-input").addEventListener("input", applyFilters);
-        document.getElementById("date-from").addEventListener("change", applyFilters);
-        document.getElementById("date-to").addEventListener("change", applyFilters);
-    }
+(function() { if (document.getElementById('pastContractsList')) applyPastPagination(); }());
 </script>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+(function () {
+    var isDark      = document.documentElement.dataset.theme !== 'light';
+    var labelColor  = isDark ? '#94a3b8' : '#64748b';
+    var gridLine    = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    var axisLine    = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+
+    var productChartLabels  = {{ product_chart_labels|safe }};
+    var productChartData    = {{ product_chart_data|safe }};
+    var contractChartLabels = {{ chart_contract_labels|safe }};
+    var contractChartData   = {{ chart_contract_data|safe }};
+
+    var charts = [];
+
+    function gradH(c1, c2) {
+        return new echarts.graphic.LinearGradient(1, 0, 0, 0, [{ offset: 0, color: c1 }, { offset: 1, color: c2 }]);
+    }
+
+    // Points by product (active contract)
+    if (document.getElementById('productChart') && productChartLabels.length) {
+        var nP = productChartLabels.length;
+        var showP = 8;
+        var pStart = nP > showP ? Math.max(0, 100 - Math.floor(showP / nP * 100)) : 0;
+        var pc = echarts.init(document.getElementById('productChart'), null, { renderer: 'svg' });
+        pc.setOption({
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function (p) { return '<b>' + p[0].name + '</b><br/>' + p[0].value.toLocaleString() + ' pts'; }
+            },
+            grid: { left: 10, right: nP > showP ? 130 : 110, top: 10, bottom: 16, containLabel: true },
+            xAxis: { type: 'value', splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
+                axisLabel: { color: labelColor, fontSize: 10,
+                    formatter: function (v) { return v >= 1000 ? (v/1000).toFixed(0)+'k' : v; } } },
+            yAxis: { type: 'category', data: productChartLabels.slice().reverse(),
+                axisTick: { show: false }, axisLine: { lineStyle: { color: axisLine } },
+                axisLabel: { color: labelColor, fontSize: 11, width: 130, overflow: 'truncate' } },
+            series: [{
+                type: 'bar', data: productChartData.slice().reverse(), barMaxWidth: 28,
+                itemStyle: { borderRadius: [0,4,4,0], color: gradH('#f59e0b','rgba(245,158,11,0.18)') },
+                label: { show: true, position: 'right', color: labelColor, fontSize: 11,
+                    formatter: function (p) { return p.value > 0 ? p.value.toLocaleString() + ' pts' : '—'; } },
+            }],
+            dataZoom: nP > showP ? [{ type: 'slider', yAxisIndex: 0, start: pStart, end: 100,
+                width: 16, right: 4, fillerColor: 'rgba(245,158,11,0.2)', borderColor: axisLine,
+                handleStyle: { color: '#f59e0b' }, moveHandleStyle: { color: '#f59e0b' } }] : [],
+        });
+        charts.push(pc);
+    }
+
+    // Points per contract
+    if (document.getElementById('contractChart') && contractChartLabels.length) {
+        var nC = contractChartLabels.length;
+        var showC = 6;
+        var cStart = nC > showC ? Math.max(0, 100 - Math.floor(showC / nC * 100)) : 0;
+        var cc = echarts.init(document.getElementById('contractChart'), null, { renderer: 'svg' });
+        cc.setOption({
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function (p) { return '<b>' + p[0].name + '</b><br/>' + p[0].value.toLocaleString() + ' pts'; }
+            },
+            grid: { left: 10, right: nC > showC ? 130 : 110, top: 10, bottom: 16, containLabel: true },
+            xAxis: { type: 'value', splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
+                axisLabel: { color: labelColor, fontSize: 10,
+                    formatter: function (v) { return v >= 1000 ? (v/1000).toFixed(0)+'k' : v; } } },
+            yAxis: { type: 'category', data: contractChartLabels, axisTick: { show: false },
+                axisLine: { lineStyle: { color: axisLine } }, axisLabel: { color: labelColor, fontSize: 12 } },
+            series: [{
+                type: 'bar', data: contractChartData, barMaxWidth: 28,
+                itemStyle: { borderRadius: [0,4,4,0], color: gradH('#8b5cf6','rgba(139,92,246,0.18)') },
+                label: { show: true, position: 'right', color: labelColor, fontSize: 11,
+                    formatter: function (p) { return p.value > 0 ? p.value.toLocaleString() + ' pts' : '—'; } },
+            }],
+            dataZoom: nC > showC ? [{ type: 'slider', yAxisIndex: 0, start: cStart, end: 100,
+                width: 16, right: 4, fillerColor: 'rgba(139,92,246,0.2)', borderColor: axisLine,
+                handleStyle: { color: '#8b5cf6' }, moveHandleStyle: { color: '#8b5cf6' } }] : [],
+        });
+        charts.push(cc);
+    }
+
+    window.addEventListener('resize', function () { charts.forEach(function (c) { c.resize(); }); });
+}());
+</script>
 {% endblock %}

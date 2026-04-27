@@ -160,8 +160,9 @@
                         <label class="form-label">External Designation</label>
                         {{ pf.external_designation }}
                     </div>
-                    <div class="form-group" style="margin:0; flex:0 0 90px;">
-                        <label class="form-label" title="Points earned per unit sold">Pts/unit</label>
+
+                    <div class="form-group" style="margin:0; flex:0 0 80px;">
+                        <label class="form-label" title="Points multiplier per dirham of PPV (default 1)">Pts factor</label>
                         {{ pf.points_per_unit }}
                     </div>
                     <div class="form-group" style="margin:0; flex:0 0 100px;">
@@ -193,8 +194,9 @@
                         <label class="form-label">External Designation</label>
                         {{ pf.external_designation }}
                     </div>
-                    <div class="form-group" style="margin:0; flex:0 0 90px;">
-                        <label class="form-label" title="Points earned per unit sold">Pts/unit</label>
+
+                    <div class="form-group" style="margin:0; flex:0 0 80px;">
+                        <label class="form-label" title="Points multiplier per dirham of PPV (default 1)">Pts factor</label>
                         {{ pf.points_per_unit }}
                     </div>
                     <div class="form-group" style="margin:0; flex:0 0 100px;">
@@ -690,13 +692,16 @@
 
     /* ── Unlink confirmation ──────────────────────────────────────── */
     function askUnlink(btn) {
-        pendingUnlinkBtn = btn;
         const row = btn.closest('.product-row');
         const sel = row.querySelector('select[name$="-product"]');
-        const prodName = sel?.value
-            ? (sel.options[sel.selectedIndex]?.text || 'this product')
-            : 'this product';
-        document.getElementById('unlinkProductName').textContent = prodName;
+        if (!sel?.value) {
+            pendingUnlinkBtn = btn;
+            confirmUnlink();
+            return;
+        }
+        pendingUnlinkBtn = btn;
+        document.getElementById('unlinkProductName').textContent =
+            sel.options[sel.selectedIndex]?.text || 'this product';
         document.getElementById('unlinkModal').style.display = 'flex';
     }
 

@@ -219,7 +219,10 @@ class Contract_Product(models.Model):
     contract = models.ForeignKey(Contract, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     external_designation = models.CharField(max_length=255)
-    points_per_unit = models.PositiveIntegerField(default=1)
+    points_per_unit = models.DecimalField(
+        max_digits=6, decimal_places=2, default=1,
+        help_text="Points multiplier per dirham of PPV. Default 1 = 1 pt/MAD.",
+    )
     target_quantity = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:

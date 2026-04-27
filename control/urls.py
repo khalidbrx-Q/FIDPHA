@@ -91,9 +91,12 @@ urlpatterns = [
     path("sales/<int:pk>/reject/",   views.sale_reject,        name="sale_reject"),
     path("sales/bulk-accept/",       views.sales_bulk_accept,  name="sales_bulk_accept"),
     path("sales/bulk-update/",       views.sales_bulk_update,  name="sales_bulk_update"),
-    path("sales/api/contracts/",     views.sales_api_contracts, name="sales_api_contracts"),
-    path("sales/api/batches/",       views.sales_api_batches,   name="sales_api_batches"),
-    path("sales/api/sales/",         views.sales_api_sales,     name="sales_api_sales"),
+    path("sales/api/contracts/",     views.sales_api_contracts,  name="sales_api_contracts"),
+    path("sales/api/batches/",       views.sales_api_batches,    name="sales_api_batches"),
+    path("sales/api/batches-v2/",    views.sales_api_batches_v2, name="sales_api_batches_v2"),
+    path("sales/api/sales/",         views.sales_api_sales,      name="sales_api_sales"),
+    path("sales/export/",            views.sales_export_csv,      name="sales_export_csv"),
+    path("sales/export-list/",       views.sales_export_list_csv, name="sales_export_list_csv"),
 
     # Configuration — Social Accounts
     path("settings/social-accounts/", views.social_accounts_list, name="social_accounts_list"),

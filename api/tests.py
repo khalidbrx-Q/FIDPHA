@@ -98,7 +98,7 @@ class ActiveContractViewTests(TestCase):
 
         self.anon_client = APIClient()
         self.auth_client = APIClient()
-        self.auth_client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.token}")
+        self.auth_client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.raw_token}")
 
         self.account          = make_account(code="PH-001", name="Pharmacie Saada")
         self.product          = make_product(code="PROD-001", designation="Doliprane 1000")
@@ -123,12 +123,12 @@ class ActiveContractViewTests(TestCase):
     def test_returns_401_with_revoked_token(self):
         revoked = make_api_token(name="Revoked", is_active=False)
         bad = APIClient()
-        bad.credentials(HTTP_AUTHORIZATION=f"Token {revoked.token}")
+        bad.credentials(HTTP_AUTHORIZATION=f"Token {revoked.raw_token}")
         self.assertEqual(bad.get(self.API_URL, {"account_code": "PH-001"}).status_code, 401)
 
     def test_returns_401_with_malformed_header(self):
         bad = APIClient()
-        bad.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token.token}")
+        bad.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token.raw_token}")
         self.assertEqual(bad.get(self.API_URL, {"account_code": "PH-001"}).status_code, 401)
 
     def test_auth_error_follows_error_envelope(self):
@@ -338,7 +338,7 @@ class SalesSubmitViewTests(TestCase):
         cache.clear()
         self.token = make_api_token(name="Sales Token")
         self.client = APIClient()
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.token}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.raw_token}")
 
         self.account  = make_account(code="PH-001")
         self.product  = make_product(code="PROD-001", designation="Doliprane 1000")
@@ -508,12 +508,12 @@ class SalesSubmitViewTests(TestCase):
     def test_returns_401_with_revoked_token(self):
         revoked = make_api_token(name="Revoked", is_active=False)
         bad = APIClient()
-        bad.credentials(HTTP_AUTHORIZATION=f"Token {revoked.token}")
+        bad.credentials(HTTP_AUTHORIZATION=f"Token {revoked.raw_token}")
         self.assertEqual(bad.post(self.API_URL, self._valid_payload(), format="json").status_code, 401)
 
     def test_returns_401_with_wrong_auth_scheme(self):
         bad = APIClient()
-        bad.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token.token}")
+        bad.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token.raw_token}")
         self.assertEqual(bad.post(self.API_URL, self._valid_payload(), format="json").status_code, 401)
 
     # ── Request format — missing fields (B8, B9, B10) ──
@@ -823,7 +823,7 @@ class ContractSyncViewTests(TestCase):
         cache.clear()
         self.token = make_api_token(name="Sync Token")
         self.client = APIClient()
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.token}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.raw_token}")
 
         self.account  = make_account(code="PH-001")
         self.product  = make_product(code="PROD-001", designation="Doliprane 1000")
@@ -947,7 +947,7 @@ class ContractSyncViewTests(TestCase):
     def test_returns_401_with_revoked_token(self):
         revoked = make_api_token(name="Revoked Sync", is_active=False)
         bad = APIClient()
-        bad.credentials(HTTP_AUTHORIZATION=f"Token {revoked.token}")
+        bad.credentials(HTTP_AUTHORIZATION=f"Token {revoked.raw_token}")
         self.assertEqual(
             bad.post(self.API_URL, {"account_code": "PH-001", "batch_id": "B-001"},
                      format="json").status_code, 401
@@ -955,7 +955,7 @@ class ContractSyncViewTests(TestCase):
 
     def test_returns_401_with_wrong_auth_scheme(self):
         bad = APIClient()
-        bad.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token.token}")
+        bad.credentials(HTTP_AUTHORIZATION=f"Bearer {self.token.raw_token}")
         self.assertEqual(
             bad.post(self.API_URL, {"account_code": "PH-001", "batch_id": "B-001"},
                      format="json").status_code, 401
@@ -1092,7 +1092,7 @@ class PharmacySyncCycleE2ETest(TestCase):
     def _client_for(self, token):
         """Return an APIClient already authenticated with the given token."""
         client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f"Token {token.token}")
+        client.credentials(HTTP_AUTHORIZATION=f"Token {token.raw_token}")
         return client
 
     def _dt(self, hours_ago):
@@ -1633,7 +1633,7 @@ class PharmacyConcurrentSubmissionTest(TransactionTestCase):
 
     def _client_for(self, token):
         client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f"Token {token.token}")
+        client.credentials(HTTP_AUTHORIZATION=f"Token {token.raw_token}")
         return client
 
     # ── Test 1 — 5 pharmacies, all submitting at the same time ─────────────

@@ -1,708 +1,428 @@
 {% extends "fidpha/base.html" %}
 
-{% block page_title %}Points{% endblock %}
-{% block page_breadcrumb %}Points{% endblock %}
 {% block nav_sales %}active{% endblock %}
+{% block page_title %}Sales{% endblock %}
+{% block page_breadcrumb %}Sales{% endblock %}
+
+{% block extra_css %}
+<style>
+    .fpill {
+        padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:600;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
+    }
+    .fpill:hover  { border-color:var(--accent); color:var(--accent); }
+    .fpill.active { background:var(--accent); border-color:var(--accent); color:white; }
+    .date-inp {
+        padding:5px 8px; border-radius:8px; border:1px solid var(--card-border);
+        background:var(--content-bg); color:var(--text-primary);
+        font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer; transition:border-color 0.15s;
+    }
+    .date-inp:focus { outline:none; border-color:var(--accent); }
+    .pg-btn {
+        min-width:32px; height:30px; padding:0 8px; border-radius:7px;
+        border:1px solid var(--card-border); background:transparent;
+        color:var(--text-secondary); font-size:0.8rem; font-weight:500;
+        font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.15s;
+        display:inline-flex; align-items:center; justify-content:center;
+    }
+    .pg-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+    .pg-btn.pg-active { background:var(--accent); border-color:var(--accent); color:white; }
+    .pg-btn:disabled  { opacity:0.35; cursor:default; }
+    .pg-size {
+        padding:4px 6px; border-radius:7px; border:1px solid var(--card-border);
+        background:var(--content-bg); color:var(--text-secondary);
+        font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 
-{% if not active_contract and not past_contracts %}
+<!-- ── 3 STAT CARDS ── -->
+<div class="grid-3" style="margin-bottom:20px;">
 
-<!-- ── No data at all ── -->
-<div style="display:flex; align-items:center; justify-content:center; height:70vh;">
-    <div class="card" style="text-align:center; padding:48px 24px; max-width:400px;">
-        <span class="material-icons-round" style="font-size:48px; color:var(--card-border); display:block; margin-bottom:12px;">star_border</span>
-        <div style="font-size:1rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No contracts yet</div>
-        <div style="font-size:0.85rem; color:var(--text-secondary);">Contact WinInPharma to get started with a loyalty contract.</div>
-    </div>
-</div>
-
-{% else %}
-
-<script>document.documentElement.classList.add('portal-snap');</script>
-
-<!-- Snap dot indicators -->
-<nav class="snap-dots" id="snapDots">
-    <button class="snap-dot active" onclick="scrollToSection(0)" title="Active Contract"></button>
-    <button class="snap-dot"        onclick="scrollToSection(1)" title="Recent Sales"></button>
-    <button class="snap-dot"        onclick="scrollToSection(2)" title="Contract History"></button>
-</nav>
-
-<!-- ================================================================ -->
-<!-- SECTION 1 — Active Contract & Product Breakdown                   -->
-<!-- ================================================================ -->
-<div class="snap-section">
-
-    <div class="snap-title">
-        <span class="material-icons-round" style="color:#22c55e;">description</span>
-        Active Contract &amp; Product Breakdown
-    </div>
-
-    {% if active_contract %}
-
-    <!-- Contract banner -->
-    <div class="contract-banner">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <span class="material-icons-round" style="font-size:20px; color:#22c55e;">verified</span>
-            <div>
-                <div style="font-size:0.72rem; color:#22c55e; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Active Contract</div>
-                <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">{{ active_contract.title }}</div>
-            </div>
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#22c55e,#16a34a); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">check_circle</span>
         </div>
-        <div style="font-size:0.82rem; color:var(--text-secondary); text-align:right;">
-            {{ active_contract.start_date|date:"d M Y" }} → {{ active_contract.end_date|date:"d M Y" }}
-        </div>
-    </div>
-
-    <!-- Stat cards -->
-    <div class="stats-row">
-        <div class="stat-card stat-points">
-            <div class="stat-icon"><span class="material-icons-round">star</span></div>
-            <div>
-                <div class="stat-label">Points Earned</div>
-                <div class="stat-value">{{ total_points }}</div>
-                <div class="stat-sub">{% if total_points == 0 %}Sell to start earning{% else %}this contract{% endif %}</div>
-            </div>
-        </div>
-        <div class="stat-card stat-units">
-            <div class="stat-icon"><span class="material-icons-round">inventory_2</span></div>
-            <div>
-                <div class="stat-label">Units Sold</div>
-                <div class="stat-value">{{ total_units }}</div>
-                <div class="stat-sub">contract-linked products</div>
-            </div>
-        </div>
-        <div class="stat-card stat-products">
-            <div class="stat-icon"><span class="material-icons-round">medication</span></div>
-            <div>
-                <div class="stat-label">Products Tracked</div>
-                <div class="stat-value">{{ products_data|length }}</div>
-                <div class="stat-sub">in this contract</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Product breakdown -->
-    {% if products_data %}
-    <div class="card" style="padding:14px; flex:1; min-height:0; display:flex; flex-direction:column; gap:10px;">
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0;">
-            <div class="search-wrap">
-                <span class="material-icons-round">search</span>
-                <input type="text" id="prodSearch" placeholder="Search product…" oninput="filterProductCards()" autocomplete="off">
-            </div>
-            <button class="filter-pill active" onclick="filterProdStatus('all', this)">All</button>
-            <button class="filter-pill" onclick="filterProdStatus('points', this)">With points</button>
-            <button class="filter-pill" onclick="filterProdStatus('no-points', this)">No points</button>
-            <div style="width:1px; height:18px; background:var(--card-border); margin:0 2px; flex-shrink:0;"></div>
-            <button class="sort-pill active" onclick="sortProducts(null, this)">Default</button>
-            <button class="sort-pill" onclick="sortProducts('desc', this)">
-                <span class="material-icons-round" style="font-size:13px; vertical-align:middle;">arrow_downward</span> Points
-            </button>
-            <button class="sort-pill" onclick="sortProducts('asc', this)">
-                <span class="material-icons-round" style="font-size:13px; vertical-align:middle;">arrow_upward</span> Points
-            </button>
-        </div>
-        <div class="products-grid" id="productsGrid" style="flex:1; min-height:0;">
-            {% for item in products_data %}
-            <div class="product-card"
-                 data-name="{{ item.cp.product.designation|lower }} {{ item.cp.external_designation|lower }}"
-                 data-points="{{ item.points }}"
-                 data-index="{{ forloop.counter0 }}">
-                <div style="margin-bottom:10px;">
-                    <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary); margin-bottom:3px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">{{ item.cp.product.designation }}</div>
-                    <div style="font-size:0.75rem; color:var(--text-secondary); font-family:monospace;">{{ item.cp.external_designation }}</div>
-                </div>
-                <div class="points-display">
-                    <span class="material-icons-round" style="font-size:15px; color:#f59e0b;">star</span>
-                    <span class="points-number">{{ item.points }}</span>
-                    <span class="points-label">pts</span>
-                    <span class="points-rate">({{ item.cp.points_per_unit }} pt/unit)</span>
-                </div>
-                <div style="margin-top:8px; font-size:0.75rem; color:var(--text-secondary);">{{ item.units_sold }} unit{{ item.units_sold|pluralize }} sold</div>
-            </div>
-            {% endfor %}
-        </div>
-        <div id="noProdMsg" style="display:none; text-align:center; padding:16px; color:var(--text-secondary); font-size:0.84rem;">No products match your search.</div>
-    </div>
-    {% else %}
-    <div class="snap-empty">
-        <span class="material-icons-round">inventory_2</span>
-        <div>No products in this contract yet.</div>
-    </div>
-    {% endif %}
-
-    {% else %}
-    <!-- No active contract -->
-    <div class="card" style="display:flex; align-items:center; gap:14px; border-left:4px solid var(--card-border);">
-        <span class="material-icons-round" style="font-size:28px; color:var(--text-secondary); flex-shrink:0;">info</span>
         <div>
-            <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:3px;">No active contract</div>
-            <div style="font-size:0.83rem; color:var(--text-secondary);">You don't have an active contract at the moment. Your past contract history is in the last section.</div>
+            <div class="stat-label">Accepted</div>
+            <div class="stat-value">{{ accepted_count }}</div>
+            <div class="stat-sub">sales</div>
         </div>
     </div>
-    {% endif %}
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#f59e0b,#d97706); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">pending</span>
+        </div>
+        <div>
+            <div class="stat-label">Pending</div>
+            <div class="stat-value">{{ pending_count }}</div>
+            <div class="stat-sub">awaiting review</div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#ef4444,#dc2626); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">cancel</span>
+        </div>
+        <div>
+            <div class="stat-label">Rejected</div>
+            <div class="stat-value">{{ rejected_count }}</div>
+            <div class="stat-sub">sales</div>
+        </div>
+    </div>
 
 </div>
 
-<!-- ================================================================ -->
-<!-- SECTION 2 — Recent Sales                                          -->
-<!-- ================================================================ -->
-<div class="snap-section">
+<!-- ── MONTHLY CHART ── -->
+{% if all_sales %}
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header" style="flex-wrap:wrap; gap:6px;">
+        <div class="card-header-icon"><span class="material-icons-round">bar_chart</span></div>
+        <div class="card-title" id="monthlyTitle">Monthly Sales</div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+            <button id="monthlyBack" onclick="showMonthly()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+            </button>
+            <select id="yearSelect" onchange="setChartPeriod(this.value)" style="padding:3px 6px; border-radius:6px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                <option value="last12">Last 12 months</option>
+                {% for yr in available_years_list %}<option value="{{ yr }}">{{ yr }}</option>{% endfor %}
+            </select>
+        </div>
+    </div>
+    <div id="monthlyChart" style="height:220px; cursor:pointer;"></div>
+</div>
+{% endif %}
 
-    <div class="snap-title">
-        <span class="material-icons-round" style="color:var(--accent);">point_of_sale</span>
-        Sales History
+<!-- ── SALES TABLE ── -->
+<div class="card">
+    <div class="card-header" style="flex-wrap:wrap; gap:8px;">
+        <div class="card-header-icon"><span class="material-icons-round">receipt_long</span></div>
+        <div class="card-title">Sales History</div>
+
+        <!-- Filters row -->
+        <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div style="position:relative;">
+                <span class="material-icons-round" style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-size:16px;">search</span>
+                <input type="text" id="salesSearch" placeholder="Search product..." oninput="filterSales()"
+                    style="padding:5px 10px 5px 28px; border-radius:8px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-primary); font-size:0.82rem; font-family:'Inter',sans-serif; width:190px;">
+            </div>
+            <button class="fpill active" onclick="setSalesFilter('all',this)">All</button>
+            <button class="fpill" onclick="setSalesFilter('accepted',this)">Accepted</button>
+            <button class="fpill" onclick="setSalesFilter('rejected',this)">Rejected</button>
+            <button class="fpill" onclick="setSalesFilter('pending',this)">Pending</button>
+            <div style="width:1px; height:18px; background:var(--card-border); flex-shrink:0;"></div>
+            <input type="date" id="salesFrom" class="date-inp" onchange="filterSales()" title="From date">
+            <span style="font-size:0.75rem; color:var(--text-secondary);">→</span>
+            <input type="date" id="salesTo" class="date-inp" onchange="filterSales()" title="To date">
+            <button onclick="clearDates()" style="display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); cursor:pointer; transition:all 0.15s;" title="Clear dates">
+                <span class="material-icons-round" style="font-size:15px;">close</span>
+            </button>
+            <span id="salesCount" style="font-size:0.82rem; color:var(--text-secondary); white-space:nowrap; min-width:70px; text-align:right;">{{ all_sales|length }} sale{{ all_sales|length|pluralize }}</span>
+        </div>
     </div>
 
     {% if all_sales %}
-
-    <div id="salesFilters" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0;">
-        <div class="search-wrap">
-            <span class="material-icons-round">search</span>
-            <input type="text" id="salesSearch" placeholder="Search product…" oninput="filterSales()" autocomplete="off">
-        </div>
-        <button class="filter-pill active" onclick="setSalesFilter('all', this)">All</button>
-        <button class="filter-pill" onclick="setSalesFilter('accepted', this)">Accepted</button>
-        <button class="filter-pill" onclick="setSalesFilter('rejected', this)">Rejected</button>
-        <button class="filter-pill" onclick="setSalesFilter('pending', this)">Pending</button>
-        <div style="width:1px; height:18px; background:var(--card-border); margin:0 2px; flex-shrink:0;"></div>
-        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-            <span style="font-size:0.75rem; color:var(--text-secondary);">From</span>
-            <input type="date" id="salesFrom" class="date-input" onchange="filterSales()">
-            <span style="font-size:0.75rem; color:var(--text-secondary);">To</span>
-            <input type="date" id="salesTo" class="date-input" onchange="filterSales()">
-            <button class="clear-date-btn" onclick="clearSalesDates()" title="Clear dates">
-                <span class="material-icons-round" style="font-size:15px;">close</span>
-            </button>
-        </div>
-        <span id="salesCount" style="font-size:0.82rem; color:var(--text-secondary); margin-left:auto; white-space:nowrap;">{{ all_sales|length }} sale{{ all_sales|length|pluralize }}</span>
+    <div style="overflow-x:auto;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Contract</th>
+                    <th>Product</th>
+                    <th>Ext. Ref</th>
+                    <th style="text-align:center;">PPV</th>
+                    <th style="text-align:center;">Qty</th>
+                    <th style="text-align:center;">Points</th>
+                    <th style="text-align:center;">Status</th>
+                </tr>
+            </thead>
+            <tbody id="salesBody">
+                {% for sale in all_sales %}
+                <tr data-search="{{ sale.contract_product.product.designation|lower }} {{ sale.contract_product.external_designation|lower }}"
+                    data-status="{{ sale.status }}"
+                    data-date="{{ sale.sale_datetime|date:'Y-m-d' }}">
+                    <td style="white-space:nowrap; color:var(--text-secondary); font-size:0.84rem;">{{ sale.sale_datetime|date:"d M Y" }}</td>
+                    <td style="font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.contract.title }}</td>
+                    <td style="font-weight:500;">{{ sale.contract_product.product.designation }}</td>
+                    <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.external_designation }}</td>
+                    <td style="text-align:center; font-weight:600;">{{ sale.contract_product.product.ppv|default:"—" }}</td>
+                    <td style="text-align:center; font-weight:600;">{{ sale.quantity }}</td>
+                    <td style="text-align:center;">
+                        {% if sale.status == "accepted" %}
+                            <span style="display:inline-flex;align-items:center;gap:3px;color:#22c55e;font-weight:700;font-size:0.88rem;" title="{{ sale.points|floatformat:2 }} pts (PPV × Qty × multiplier)">
+                                <span class="material-icons-round" style="font-size:13px;">star</span>{{ sale.points|floatformat:0 }}
+                            </span>
+                        {% else %}
+                            <span style="color:var(--text-secondary);opacity:0.35;font-size:0.82rem;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if sale.status == "accepted" %}<span class="badge badge-success">Accepted</span>
+                        {% elif sale.status == "rejected" %}<span class="badge badge-danger">Rejected</span>
+                        {% else %}<span class="badge badge-warning">Pending</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="noSalesMsg" style="display:none; text-align:center; padding:24px; font-size:0.84rem; color:var(--text-secondary);">
+        No sales match your filters.
     </div>
 
-    <div class="card" style="padding:0; flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden;">
-        <div style="overflow-y:auto; flex:1; scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;">
-            <table class="sales-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Contract</th>
-                        <th>Product</th>
-                        <th>Ext. Designation</th>
-                        <th style="text-align:center;">Qty</th>
-                        <th style="text-align:center;">Status</th>
-                    </tr>
-                </thead>
-                <tbody id="salesTableBody">
-                    {% for sale in all_sales %}
-                    <tr data-search="{{ sale.contract_product.product.designation|lower }} {{ sale.contract_product.external_designation|lower }}"
-                        data-status="{{ sale.status }}"
-                        data-date="{{ sale.sale_datetime|date:'Y-m-d' }}">
-                        <td style="white-space:nowrap; color:var(--text-secondary);">{{ sale.sale_datetime|date:"d M Y" }}</td>
-                        <td style="font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.contract.title }}</td>
-                        <td style="font-weight:500; color:var(--text-primary);">{{ sale.contract_product.product.designation }}</td>
-                        <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.external_designation }}</td>
-                        <td style="text-align:center; font-weight:600;">{{ sale.quantity }}</td>
-                        <td style="text-align:center;">
-                            {% if sale.status == "accepted" %}<span class="sale-badge sale-accepted">Accepted</span>
-                            {% elif sale.status == "rejected" %}<span class="sale-badge sale-rejected">Rejected</span>
-                            {% else %}<span class="sale-badge sale-pending">Pending</span>{% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div id="noSalesMsg" style="display:none; text-align:center; padding:24px; font-size:0.84rem; color:var(--text-secondary); flex-shrink:0;">
-            No sales match your filters.
+    <!-- Pagination bar -->
+    <div id="salesPagination" style="display:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 16px; border-top:1px solid var(--card-border); margin-top:4px;">
+        <span id="pgInfo" style="font-size:0.8rem; color:var(--text-secondary); white-space:nowrap;"></span>
+        <div id="pgButtons" style="display:flex; align-items:center; gap:4px;"></div>
+        <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:0.78rem; color:var(--text-secondary);">Show</span>
+            <select class="pg-size" onchange="setPageSize(this.value)">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+            <span style="font-size:0.78rem; color:var(--text-secondary);">per page</span>
         </div>
     </div>
+
     {% else %}
-    <div class="snap-empty">
-        <span class="material-icons-round">point_of_sale</span>
+    <div style="text-align:center; padding:48px 24px; color:var(--text-secondary);">
+        <span class="material-icons-round" style="font-size:44px; opacity:0.35; display:block; margin-bottom:10px;">receipt_long</span>
         <div style="font-weight:600; margin-bottom:4px;">No sales yet</div>
         <div style="font-size:0.82rem;">Sales will appear here once your pharmacy submits data.</div>
     </div>
     {% endif %}
-
 </div>
-
-<!-- ================================================================ -->
-<!-- SECTION 3 — Contract History                                      -->
-<!-- ================================================================ -->
-<div class="snap-section">
-
-    <div class="snap-title">
-        <span class="material-icons-round" style="color:#f59e0b;">history</span>
-        Contract History
-    </div>
-
-    {% if past_contracts %}
-
-    <div id="historyFilters" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0;">
-        <div class="search-wrap">
-            <span class="material-icons-round">search</span>
-            <input type="text" id="historySearch" placeholder="Search contract or product…" oninput="filterHistory()" autocomplete="off">
-        </div>
-        <button class="filter-pill active" onclick="filterHistoryStatus('all', this)">All</button>
-        <button class="filter-pill" onclick="filterHistoryStatus('points', this)">With points</button>
-        <button class="filter-pill" onclick="filterHistoryStatus('no-points', this)">No points</button>
-        <div style="width:1px; height:18px; background:var(--card-border); margin:0 2px; flex-shrink:0;"></div>
-        <button class="sort-pill active" onclick="sortHistory(null, this)">Default</button>
-        <button class="sort-pill" onclick="sortHistory('desc', this)">
-            <span class="material-icons-round" style="font-size:13px; vertical-align:middle;">arrow_downward</span> Points
-        </button>
-        <button class="sort-pill" onclick="sortHistory('asc', this)">
-            <span class="material-icons-round" style="font-size:13px; vertical-align:middle;">arrow_upward</span> Points
-        </button>
-    </div>
-
-    <div id="historyList" style="flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:10px; scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;">
-        {% for entry in past_contracts %}
-        <div class="history-card"
-             data-title="{{ entry.contract.title|lower }}"
-             data-points="{{ entry.total_points }}"
-             data-index="{{ forloop.counter0 }}"
-             data-products="{% for item in entry.products_data %}{{ item.cp.product.designation|lower }} {% endfor %}">
-            <button class="history-header" onclick="toggleHistory(this)" aria-expanded="false">
-                <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
-                    <span class="material-icons-round" style="font-size:18px; color:var(--text-secondary); flex-shrink:0;">description</span>
-                    <div style="min-width:0;">
-                        <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ entry.contract.title }}</div>
-                        <div style="font-size:0.75rem; color:var(--text-secondary);">{{ entry.contract.start_date|date:"d M Y" }} → {{ entry.contract.end_date|date:"d M Y" }}</div>
-                    </div>
-                </div>
-                <div style="display:flex; align-items:center; gap:20px; flex-shrink:0;">
-                    <div style="text-align:right;">
-                        <div style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">Points</div>
-                        <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">
-                            <span class="material-icons-round" style="font-size:13px; color:#f59e0b; vertical-align:middle;">star</span>
-                            {{ entry.total_points }}
-                        </div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:0.7rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">Units</div>
-                        <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">{{ entry.total_units }}</div>
-                    </div>
-                    <span class="material-icons-round history-chevron" style="color:var(--text-secondary); transition:transform 0.2s;">expand_more</span>
-                </div>
-            </button>
-            <div class="history-body" style="display:none;">
-                <div class="search-wrap" style="margin-bottom:10px; max-width:280px;">
-                    <span class="material-icons-round">search</span>
-                    <input type="text" placeholder="Search product…" oninput="filterHistoryProducts(this)" autocomplete="off">
-                </div>
-                <div class="history-products-wrap">
-                    {% if entry.products_data %}
-                    {% for item in entry.products_data %}
-                    <div class="history-product-row" data-hpname="{{ item.cp.product.designation|lower }} {{ item.cp.external_designation|lower }}">
-                        <div style="flex:1; min-width:0;">
-                            <div style="font-size:0.83rem; font-weight:500; color:var(--text-primary); margin-bottom:1px;">{{ item.cp.product.designation }}</div>
-                            <div style="font-size:0.73rem; color:var(--text-secondary); font-family:monospace;">{{ item.cp.external_designation }}</div>
-                            <div style="font-size:0.73rem; color:var(--text-secondary); margin-top:2px;">{{ item.units_sold }} unit{{ item.units_sold|pluralize }} · {{ item.cp.points_per_unit }} pt/unit</div>
-                        </div>
-                        <div style="text-align:right; flex-shrink:0;">
-                            <span class="material-icons-round" style="font-size:13px; color:#f59e0b; vertical-align:middle;">star</span>
-                            <span style="font-weight:700; color:var(--text-primary);">{{ item.points }} pts</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                    {% else %}
-                    <div style="padding:12px; text-align:center; font-size:0.83rem; color:var(--text-secondary);">No sales recorded for this contract.</div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-    <div id="noHistoryMsg" style="display:none; text-align:center; padding:24px; font-size:0.84rem; color:var(--text-secondary);">No contracts match your search.</div>
-
-    {% else %}
-    <div class="snap-empty">
-        <span class="material-icons-round">history</span>
-        <div style="font-weight:600; margin-bottom:4px;">No past contracts</div>
-        <div style="font-size:0.82rem;">Your contract history will appear here.</div>
-    </div>
-    {% endif %}
-
-</div>
-
-{% endif %}
 
 {% endblock %}
 
-
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script>
-    /* ── Snap scroll ── */
-    function scrollToSection(index) {
-        const content = document.querySelector('.content');
-        content.scrollTo({ top: index * content.clientHeight, behavior: 'smooth' });
+(function () {
+    var isDark     = document.documentElement.dataset.theme !== 'light';
+    var labelColor = isDark ? '#94a3b8' : '#64748b';
+    var gridLine   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    var axisLine   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+    var charts = [];
+
+    // ── Monthly chart with year selector + drill-down ──
+    var last12 = {
+        keys:     {{ sales_month_keys|safe }},
+        labels:   {{ sales_month_labels|safe }},
+        accepted: {{ sales_month_accepted|safe }},
+        rejected: {{ sales_month_rejected|safe }},
+        pending:  {{ sales_month_pending|safe }},
+    };
+    var yearsData = {{ years_data|safe }};
+    var drillData = {{ drill_data|safe }};
+    var chartPeriod = 'last12';
+    var chartMode   = 'monthly';
+    var mc;
+
+    function getMonthlyData() {
+        return chartPeriod === 'last12' ? last12 : (yearsData[chartPeriod] || last12);
     }
-    document.addEventListener('DOMContentLoaded', function () {
-        const content = document.querySelector('.content');
-        const dots    = document.querySelectorAll('.snap-dot');
-        if (!content || !dots.length) return;
-        content.addEventListener('scroll', function () {
-            const active = Math.round(this.scrollTop / this.clientHeight);
-            dots.forEach((d, i) => d.classList.toggle('active', i === active));
-        }, { passive: true });
-    });
 
-    /* ── Active contract product search / filter / sort ── */
-    let prodStatusFilter = 'all';
-    let prodSortOrder    = null;
-
-    function filterProdStatus(val, btn) {
-        prodStatusFilter = val;
-        btn.closest('div').querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        filterProductCards();
+    function stackedSeries(data, maxW) {
+        return [
+            { name: 'Accepted', type: 'bar', stack: 'total', data: data.accepted, barMaxWidth: maxW,
+              itemStyle: { color: '#22c55e' } },
+            { name: 'Pending',  type: 'bar', stack: 'total', data: data.pending,  barMaxWidth: maxW,
+              itemStyle: { color: '#f59e0b' } },
+            { name: 'Rejected', type: 'bar', stack: 'total', data: data.rejected, barMaxWidth: maxW,
+              itemStyle: { color: '#ef4444', borderRadius: [4, 4, 0, 0] } },
+        ];
     }
 
-    function sortProducts(order, btn) {
-        prodSortOrder = order;
-        btn.closest('div').querySelectorAll('.sort-pill').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const grid  = document.getElementById('productsGrid');
-        if (!grid) return;
-        const cards = Array.from(grid.querySelectorAll('.product-card'));
-        cards.sort((a, b) => {
-            const pa = parseInt(a.dataset.points || 0);
-            const pb = parseInt(b.dataset.points || 0);
-            if (!prodSortOrder) return parseInt(a.dataset.index) - parseInt(b.dataset.index);
-            return prodSortOrder === 'desc' ? pb - pa : pa - pb;
+    function baseOption(labels, rotateCutoff) {
+        return {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { top: 0, right: 0, icon: 'circle', itemWidth: 10, itemHeight: 10,
+                textStyle: { color: labelColor, fontSize: 11 },
+                data: ['Accepted', 'Pending', 'Rejected'] },
+            grid: { left: 10, right: 10, top: 28, bottom: 0, containLabel: true },
+            xAxis: { type: 'category', data: labels, axisTick: { show: false },
+                axisLine: { lineStyle: { color: axisLine } },
+                axisLabel: { color: labelColor, fontSize: 10,
+                    rotate: labels.length > rotateCutoff ? 30 : 0 } },
+            yAxis: { type: 'value', minInterval: 1,
+                splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
+                axisLabel: { color: labelColor, fontSize: 10 } },
+        };
+    }
+
+    function showMonthly() {
+        chartMode = 'monthly';
+        var data = getMonthlyData();
+        var backBtn = document.getElementById('monthlyBack');
+        if (backBtn) backBtn.style.display = 'none';
+        var titleEl = document.getElementById('monthlyTitle');
+        if (titleEl) titleEl.textContent = chartPeriod === 'last12' ? 'Monthly Sales' : 'Monthly Sales · ' + chartPeriod;
+        var opt = baseOption(data.labels, 8);
+        opt.series = stackedSeries(data, 32);
+        mc.setOption(opt, true);
+    }
+
+    function drillMonth(idx) {
+        var data = getMonthlyData();
+        var mk = data.keys[idx];
+        var daily = drillData[mk];
+        if (!daily) return;
+        chartMode = 'daily';
+        var backBtn = document.getElementById('monthlyBack');
+        if (backBtn) backBtn.style.display = 'inline-flex';
+        var parts = mk.split('-');
+        var monthLabel = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1)
+            .toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        var titleEl = document.getElementById('monthlyTitle');
+        if (titleEl) titleEl.textContent = monthLabel;
+        var opt = baseOption(daily.labels, 20);
+        opt.xAxis.axisLabel.interval = daily.labels.length > 20 ? 2 : daily.labels.length > 10 ? 1 : 0;
+        opt.series = stackedSeries(daily, 20);
+        mc.setOption(opt, true);
+    }
+
+    // expose to inline onclick
+    window.showMonthly = showMonthly;
+    window.setChartPeriod = function(val) {
+        chartPeriod = val;
+        showMonthly();
+    };
+
+    var monthlyEl = document.getElementById('monthlyChart');
+    if (monthlyEl) {
+        mc = echarts.init(monthlyEl, null, { renderer: 'svg' });
+        showMonthly();
+        mc.on('click', function(params) {
+            if (chartMode === 'monthly') drillMonth(params.dataIndex);
         });
-        cards.forEach(c => grid.appendChild(c));
-        filterProductCards();
+        charts.push(mc);
     }
 
-    function filterProductCards() {
-        const q = (document.getElementById('prodSearch')?.value || '').toLowerCase().trim();
-        let visible = 0;
-        document.querySelectorAll('#productsGrid .product-card').forEach(card => {
-            const matchSearch = !q || (card.dataset.name || '').includes(q);
-            const pts = parseInt(card.dataset.points || 0);
-            const matchFilter =
-                prodStatusFilter === 'all'       ? true :
-                prodStatusFilter === 'points'    ? pts > 0 :
-                prodStatusFilter === 'no-points' ? pts === 0 : true;
-            const show = matchSearch && matchFilter;
-            card.style.display = show ? '' : 'none';
-            if (show) visible++;
-        });
-        const msg = document.getElementById('noProdMsg');
-        if (msg) msg.style.display = visible === 0 ? 'block' : 'none';
-    }
-
-    /* ── Recent sales search / filter ── */
-    let salesStatusFilter = 'all';
-    const salesCountEl = document.getElementById('salesCount');
-    const SALES_TOTAL  = salesCountEl ? salesCountEl.textContent : '';
+    window.addEventListener('resize', function () { charts.forEach(function (c) { c.resize(); }); });
+}());
+</script>
+<script>
+    var salesFilter = 'all';
+    var currentPage = 1;
+    var pageSize    = 10;
+    var countEl     = document.getElementById('salesCount');
+    var TOTAL       = countEl ? countEl.textContent : '';
 
     function setSalesFilter(val, btn) {
-        salesStatusFilter = val;
-        document.querySelectorAll('#salesFilters .filter-pill').forEach(b => b.classList.remove('active'));
+        salesFilter = val;
+        document.querySelectorAll('.fpill').forEach(function(b) { b.classList.remove('active'); });
         btn.classList.add('active');
+        currentPage = 1;
         filterSales();
     }
 
-    function filterSales() {
-        const q        = (document.getElementById('salesSearch')?.value || '').toLowerCase().trim();
-        const fromDate = document.getElementById('salesFrom')?.value || '';
-        const toDate   = document.getElementById('salesTo')?.value   || '';
-        let visible = 0;
-        document.querySelectorAll('#salesTableBody tr').forEach(row => {
-            const matchSearch = !q || (row.dataset.search || '').includes(q);
-            const matchStatus = salesStatusFilter === 'all' || row.dataset.status === salesStatusFilter;
-            const rowDate     = row.dataset.date || '';
-            const matchFrom   = !fromDate || rowDate >= fromDate;
-            const matchTo     = !toDate   || rowDate <= toDate;
-            const show = matchSearch && matchStatus && matchFrom && matchTo;
-            row.style.display = show ? '' : 'none';
-            if (show) visible++;
-        });
-        const isFiltered = q || salesStatusFilter !== 'all' || fromDate || toDate;
-        if (salesCountEl) salesCountEl.textContent = isFiltered ? visible + ' result' + (visible === 1 ? '' : 's') : SALES_TOTAL;
-        const msg = document.getElementById('noSalesMsg');
-        if (msg) msg.style.display = visible === 0 ? 'block' : 'none';
+    function setPageSize(val) {
+        pageSize = parseInt(val, 10);
+        currentPage = 1;
+        filterSales();
     }
 
-    function clearSalesDates() {
+    function goToPage(p) {
+        currentPage = p;
+        filterSales();
+        document.getElementById('salesPagination').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function filterSales() {
+        var q    = (document.getElementById('salesSearch').value || '').toLowerCase().trim();
+        var from = document.getElementById('salesFrom').value || '';
+        var to   = document.getElementById('salesTo').value   || '';
+
+        var allRows = document.querySelectorAll('#salesBody tr');
+        var matched = [];
+        allRows.forEach(function(row) {
+            var ok = (!q    || (row.dataset.search || '').includes(q))
+                  && (salesFilter === 'all' || row.dataset.status === salesFilter
+                      || (salesFilter === 'pending' && row.dataset.status !== 'accepted' && row.dataset.status !== 'rejected'))
+                  && (!from || row.dataset.date >= from)
+                  && (!to   || row.dataset.date <= to);
+            row.style.display = 'none';
+            if (ok) matched.push(row);
+        });
+
+        var total = matched.length;
+        var pages = Math.max(1, Math.ceil(total / pageSize));
+        currentPage = Math.min(currentPage, pages);
+        var start = (currentPage - 1) * pageSize;
+        var end   = Math.min(start + pageSize, total);
+
+        matched.forEach(function(row, i) {
+            row.style.display = (i >= start && i < end) ? '' : 'none';
+        });
+
+        var filtered = q || salesFilter !== 'all' || from || to;
+        if (countEl) countEl.textContent = filtered
+            ? total + ' result' + (total === 1 ? '' : 's')
+            : TOTAL;
+
+        var msg = document.getElementById('noSalesMsg');
+        if (msg) msg.style.display = total === 0 ? 'block' : 'none';
+
+        renderPagination(total, pages, start, end);
+    }
+
+    function renderPagination(total, pages, start, end) {
+        var pg = document.getElementById('salesPagination');
+        if (!pg) return;
+        if (total === 0 || pages <= 1) { pg.style.display = 'none'; return; }
+        pg.style.display = 'flex';
+
+        document.getElementById('pgInfo').textContent =
+            'Showing ' + (start + 1) + '–' + end + ' of ' + total;
+
+        var btnContainer = document.getElementById('pgButtons');
+        btnContainer.innerHTML = '';
+
+        function mkBtn(label, page, disabled, active) {
+            var b = document.createElement('button');
+            b.innerHTML = label;
+            b.disabled  = disabled;
+            b.className = 'pg-btn' + (active ? ' pg-active' : '');
+            if (!disabled) b.addEventListener('click', function() { goToPage(page); });
+            return b;
+        }
+
+        btnContainer.appendChild(mkBtn('&#8249;', currentPage - 1, currentPage === 1, false));
+
+        var toShow = new Set([1, pages]);
+        for (var p = Math.max(1, currentPage - 1); p <= Math.min(pages, currentPage + 1); p++) toShow.add(p);
+        var sorted = Array.from(toShow).sort(function(a, b) { return a - b; });
+
+        var prev = null;
+        sorted.forEach(function(p) {
+            if (prev !== null && p - prev > 1) {
+                var dots = document.createElement('span');
+                dots.textContent = '…';
+                dots.style.cssText = 'padding:0 2px; color:var(--text-secondary); font-size:0.82rem; display:flex; align-items:center;';
+                btnContainer.appendChild(dots);
+            }
+            btnContainer.appendChild(mkBtn(p, p, false, p === currentPage));
+            prev = p;
+        });
+
+        btnContainer.appendChild(mkBtn('&#8250;', currentPage + 1, currentPage === pages, false));
+    }
+
+    function clearDates() {
         document.getElementById('salesFrom').value = '';
         document.getElementById('salesTo').value   = '';
         filterSales();
     }
 
-    /* ── History: collapse/expand ── */
-    function toggleHistory(btn) {
-        const body    = btn.nextElementSibling;
-        const chevron = btn.querySelector('.history-chevron');
-        const open    = body.style.display === 'none';
-        body.style.display = open ? 'block' : 'none';
-        chevron.style.transform = open ? 'rotate(180deg)' : '';
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    }
-
-    /* ── History: outer search + filter + sort ── */
-    let historyStatusFilter = 'all';
-    let historySortOrder    = null;
-
-    function filterHistoryStatus(val, btn) {
-        historyStatusFilter = val;
-        document.querySelectorAll('#historyFilters .filter-pill').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        filterHistory();
-    }
-
-    function filterHistory() {
-        const q = (document.getElementById('historySearch')?.value || '').toLowerCase().trim();
-        let visible = 0;
-        document.querySelectorAll('#historyList .history-card').forEach(card => {
-            const title    = card.dataset.title || '';
-            const products = card.dataset.products || '';
-            const points   = parseInt(card.dataset.points || '0');
-            const matchSearch = !q || title.includes(q) || products.includes(q);
-            const matchFilter =
-                historyStatusFilter === 'all'       ? true :
-                historyStatusFilter === 'points'    ? points > 0 :
-                historyStatusFilter === 'no-points' ? points === 0 : true;
-            const show = matchSearch && matchFilter;
-            card.style.display = show ? '' : 'none';
-            if (show) visible++;
-        });
-        const msg = document.getElementById('noHistoryMsg');
-        if (msg) msg.style.display = visible === 0 ? 'block' : 'none';
-    }
-
-    function sortHistory(order, btn) {
-        historySortOrder = order;
-        document.querySelectorAll('#historyFilters .sort-pill').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const list  = document.getElementById('historyList');
-        if (!list) return;
-        const cards = Array.from(list.querySelectorAll('.history-card'));
-        cards.sort((a, b) => {
-            const pa = parseInt(a.dataset.points || 0);
-            const pb = parseInt(b.dataset.points || 0);
-            if (!historySortOrder) return parseInt(a.dataset.index) - parseInt(b.dataset.index);
-            return historySortOrder === 'desc' ? pb - pa : pa - pb;
-        });
-        cards.forEach(c => list.appendChild(c));
-        filterHistory();
-    }
-
-    /* ── History: inner product search (per card) ── */
-    function filterHistoryProducts(input) {
-        const q = input.value.toLowerCase().trim();
-        const wrap = input.closest('.history-body').querySelector('.history-products-wrap');
-        wrap.querySelectorAll('.history-product-row').forEach(row => {
-            row.style.display = !q || (row.dataset.hpname || '').includes(q) ? '' : 'none';
-        });
-    }
+    // Init — show first page immediately
+    filterSales();
 </script>
-{% endblock %}
-
-
-{% block extra_css %}
-<style>
-    /* ── Snap scroll (activated by html.portal-snap) ── */
-    html.portal-snap,
-    html.portal-snap body { overflow: hidden; height: 100vh; }
-    html.portal-snap .main    { height: 100vh; overflow: hidden; min-height: unset !important; display: flex; flex-direction: column; }
-    html.portal-snap .content { height: calc(100vh - 63px); overflow-y: scroll; scroll-snap-type: y mandatory; padding: 0; flex: none; scrollbar-width: none; }
-    html.portal-snap .content::-webkit-scrollbar { display: none; }
-
-    .snap-section {
-        height: calc(100vh - 63px);
-        scroll-snap-align: start;
-        padding: 20px 24px;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        overflow: hidden;
-    }
-
-    .snap-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.82rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--text-primary);
-        flex-shrink: 0;
-    }
-
-    .snap-empty {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        color: var(--text-secondary);
-        text-align: center;
-    }
-    .snap-empty .material-icons-round { font-size: 40px; opacity: 0.4; }
-
-    /* Snap dot indicators */
-    .snap-dots {
-        position: fixed;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        z-index: 200;
-    }
-    .snap-dot {
-        width: 6px;
-        height: 10px;
-        border-radius: 3px;
-        border: none;
-        background: var(--card-border);
-        cursor: pointer;
-        padding: 0;
-        transition: height 0.25s ease, background 0.2s;
-    }
-    .snap-dot.active { height: 22px; background: var(--accent); }
-
-    /* ── Existing component styles ── */
-    .contract-banner {
-        display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
-        background:var(--card-bg); border:1px solid var(--card-border);
-        border-left:4px solid #22c55e;
-        border-radius:12px; padding:14px 18px; flex-shrink:0;
-    }
-    .stats-row {
-        display:grid; grid-template-columns:repeat(3,1fr); gap:14px; flex-shrink:0;
-    }
-    .stat-card {
-        background:var(--card-bg); border:1px solid var(--card-border);
-        border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:12px;
-    }
-    .stat-icon { width:40px; height:40px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-    .stat-icon .material-icons-round { font-size:20px; color:white; }
-    .stat-points   .stat-icon { background:linear-gradient(135deg,#f59e0b,#ef4444); }
-    .stat-units    .stat-icon { background:linear-gradient(135deg,var(--accent),#6366f1); }
-    .stat-products .stat-icon { background:linear-gradient(135deg,#22c55e,#16a34a); }
-    .stat-label { font-size:0.72rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:2px; }
-    .stat-value { font-size:1.5rem; font-weight:700; color:var(--text-primary); line-height:1.1; }
-    .stat-sub   { font-size:0.72rem; color:var(--text-secondary); margin-top:3px; }
-
-    .search-wrap { position:relative; display:flex; align-items:center; }
-    .search-wrap .material-icons-round { position:absolute; left:8px; font-size:16px; color:var(--text-secondary); pointer-events:none; }
-    .search-wrap input {
-        padding:5px 10px 5px 30px; border-radius:8px; width:220px;
-        border:1px solid var(--card-border); background:var(--content-bg);
-        color:var(--text-primary); font-size:0.82rem; font-family:'Inter',sans-serif; transition:border-color 0.15s;
-    }
-    .search-wrap input:focus { outline:none; border-color:var(--accent); }
-
-    .filter-pill {
-        padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:600;
-        border:1px solid var(--card-border); background:transparent;
-        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
-    }
-    .filter-pill:hover  { border-color:var(--accent); color:var(--accent); }
-    .filter-pill.active { background:var(--accent); border-color:var(--accent); color:white; }
-
-    .sort-pill {
-        display:inline-flex; align-items:center; gap:3px;
-        padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:600;
-        border:1px solid var(--card-border); background:transparent;
-        color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
-    }
-    .sort-pill:hover  { border-color:var(--accent); color:var(--accent); }
-    .sort-pill.active { background:rgba(14,165,233,0.12); border-color:var(--accent); color:var(--accent); }
-
-    .products-grid {
-        display:grid;
-        grid-template-columns: repeat(3, 1fr);
-        grid-auto-rows: auto;
-        gap:12px; overflow-y:auto;
-        scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;
-    }
-    .products-grid::-webkit-scrollbar { width:5px; }
-    .products-grid::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:3px; }
-    .product-card {
-        background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; padding:14px;
-        display:flex; flex-direction:column; justify-content:space-between;
-    }
-    .points-display { display:flex; align-items:baseline; gap:4px; }
-    .points-number  { font-size:1.35rem; font-weight:700; color:var(--text-primary); }
-    .points-label   { font-size:0.82rem; font-weight:600; color:var(--text-secondary); }
-    .points-rate    { font-size:0.73rem; color:var(--text-secondary); margin-left:4px; }
-
-    .date-input {
-        padding: 4px 8px; border-radius: 8px; border: 1px solid var(--card-border);
-        background: var(--content-bg); color: var(--text-primary);
-        font-size: 0.78rem; font-family: 'Inter', sans-serif; cursor: pointer;
-        transition: border-color 0.15s;
-    }
-    .date-input:focus { outline: none; border-color: var(--accent); }
-    .clear-date-btn {
-        display: flex; align-items: center; justify-content: center;
-        width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--card-border);
-        background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
-    }
-    .clear-date-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-    .sales-table { width:100%; border-collapse:collapse; font-size:0.84rem; }
-    .sales-table th {
-        position:sticky; top:0; z-index:1; background:var(--card-bg);
-        text-align:left; padding:10px 16px; font-size:0.72rem; font-weight:700;
-        text-transform:uppercase; letter-spacing:0.4px; color:var(--text-secondary);
-        border-bottom:1px solid var(--card-border);
-    }
-    .sales-table td { padding:10px 16px; border-bottom:1px solid var(--card-border); }
-    .sales-table tbody tr:last-child td { border-bottom:none; }
-    .sales-table tbody tr:hover td { background:rgba(255,255,255,0.02); }
-
-    .sale-badge { display:inline-flex; align-items:center; padding:2px 9px; border-radius:20px; font-size:0.72rem; font-weight:600; }
-    .sale-accepted { background:rgba(34,197,94,0.12);  color:#22c55e; }
-    .sale-rejected { background:rgba(239,68,68,0.12);  color:#ef4444; }
-    .sale-pending  { background:rgba(245,158,11,0.12); color:#f59e0b; }
-
-    .history-card { background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; overflow:hidden; flex-shrink:0; }
-    .history-header {
-        width:100%; display:flex; align-items:center; gap:12px;
-        padding:14px 16px; background:transparent; border:none;
-        cursor:pointer; font-family:'Inter',sans-serif; text-align:left; transition:background 0.15s;
-    }
-    .history-header:hover { background:var(--sidebar-hover); }
-    .history-body { border-top:1px solid var(--card-border); padding:14px 16px; }
-    .history-products-wrap {
-        max-height:220px; overflow-y:auto;
-        scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;
-        display:flex; flex-direction:column; gap:6px;
-    }
-    .history-products-wrap::-webkit-scrollbar { width:5px; }
-    .history-products-wrap::-webkit-scrollbar-thumb { background:var(--card-border); border-radius:3px; }
-    .history-product-row {
-        display:flex; align-items:center; justify-content:space-between; gap:12px;
-        padding:8px 10px; border-radius:8px; background:var(--content-bg);
-    }
-
-    @media (max-width:768px) {
-        .snap-section { padding:12px 14px; gap:8px; }
-
-        .contract-banner { flex-direction:column; align-items:flex-start; gap:6px; padding:10px 14px; }
-
-        /* Keep 3 columns but compress the cards */
-        .stats-row { grid-template-columns:repeat(3,1fr); gap:8px; }
-        .stat-card { padding:10px 8px; gap:8px; flex-direction:column; align-items:center; text-align:center; }
-        .stat-icon { width:30px; height:30px; border-radius:8px; }
-        .stat-icon .material-icons-round { font-size:15px; }
-        .stat-label { font-size:0.62rem; }
-        .stat-value { font-size:1.1rem; }
-        .stat-sub { display:none; }
-
-        .products-grid { grid-template-columns:repeat(2,1fr); }
-        .search-wrap input { width:130px; }
-    }
-</style>
 {% endblock %}

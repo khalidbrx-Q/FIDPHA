@@ -7,281 +7,431 @@
 {% block content %}
 
 {% if not email_verified %}
-<div style="
-    background-color: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-">
-    <div style="display: flex; align-items: center; gap: 10px;">
-        <span class="material-icons-round" style="color: #f59e0b; font-size: 20px;">warning</span>
-        <span style="font-size: 0.88rem; color: #f59e0b; font-weight: 500;">
-            Your email is not verified. Verify it to unlock Google login and password recovery.
-        </span>
+<div style="background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); border-radius:10px; padding:12px 16px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span class="material-icons-round" style="color:#f59e0b; font-size:20px;">warning</span>
+        <span style="font-size:0.88rem; color:#f59e0b; font-weight:500;">Your email is not verified. Verify it to unlock Google login and password recovery.</span>
     </div>
-    <a href="/portal/verify-pending/?from=button" style="
-        background-color: #f59e0b;
-        color: #000000;
-        padding: 6px 14px;
-        border-radius: 6px;
-        font-size: 0.82rem;
-        font-weight: 600;
-        text-decoration: none;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    ">
-        <span class="material-icons-round" style="font-size: 16px;">verified</span>
-        Verify now
+    <a href="/portal/verify-pending/?from=button" style="background:#f59e0b; color:#000; padding:6px 14px; border-radius:6px; font-size:0.82rem; font-weight:600; text-decoration:none; white-space:nowrap; display:flex; align-items:center; gap:4px;">
+        <span class="material-icons-round" style="font-size:16px;">verified</span>Verify now
     </a>
 </div>
 {% endif %}
 
 {% if messages %}
-    <div style="margin-bottom: 20px;">
-        {% for message in messages %}
-            <div style="
-                padding: 12px 16px;
-                border-radius: 8px;
-                font-size: 0.88rem;
-                font-weight: 500;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                background-color: {% if 'success' in message.tags %}rgba(34,197,94,0.15){% else %}rgba(239,68,68,0.15){% endif %};
-                color: {% if 'success' in message.tags %}#22c55e{% else %}#ef4444{% endif %};
-                border: 1px solid {% if 'success' in message.tags %}rgba(34,197,94,0.3){% else %}rgba(239,68,68,0.3){% endif %};
-            ">
-                <span class="material-icons-round" style="font-size:18px;">
-                    {% if 'success' in message.tags %}check_circle{% else %}error_outline{% endif %}
-                </span>
-                {{ message }}
-            </div>
-        {% endfor %}
+<div style="margin-bottom:20px;">
+    {% for message in messages %}
+    <div style="padding:12px 16px; border-radius:8px; font-size:0.88rem; font-weight:500; display:flex; align-items:center; gap:8px;
+        background:{% if 'success' in message.tags %}rgba(34,197,94,0.15){% else %}rgba(239,68,68,0.15){% endif %};
+        color:{% if 'success' in message.tags %}#22c55e{% else %}#ef4444{% endif %};
+        border:1px solid {% if 'success' in message.tags %}rgba(34,197,94,0.3){% else %}rgba(239,68,68,0.3){% endif %};">
+        <span class="material-icons-round" style="font-size:18px;">{% if 'success' in message.tags %}check_circle{% else %}error_outline{% endif %}</span>
+        {{ message }}
     </div>
+    {% endfor %}
+</div>
 {% endif %}
 
-<!-- STAT CARDS -->
-<div class="grid-2" style="margin-bottom: 20px;">
-    <div class="stat-card">
-        <div class="stat-label">Pharmacy</div>
-        <div class="stat-value">{{ account.name }}</div>
-        <div class="stat-sub">{{ account.city }}</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Points</div>
-        <div class="stat-value">{{ total_points }}</div>
-        <div class="stat-sub">Cumulative across all contracts</div>
-    </div>
-</div>
+<!-- ── 4 STAT CARDS ── -->
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px;">
 
-<!-- PHARMACY INFO -->
-<div class="card">
-    <div class="card-header">
-        <div class="card-header-icon">
-            <span class="material-icons-round">store</span>
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#f59e0b,#ef4444); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">emoji_events</span>
         </div>
-        <div class="card-title">Pharmacy Information</div>
+        <div>
+            <div class="stat-label">Total Points</div>
+            <div class="stat-value">{{ total_points_display }}</div>
+            <div class="stat-sub">all-time accumulated</div>
+        </div>
     </div>
-    <div class="info-row">
-        <span class="info-label">Code</span>
-        <span class="info-value">{{ account.code }}</span>
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#22c55e,#16a34a); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">star</span>
+        </div>
+        <div>
+            <div class="stat-label">This Month</div>
+            <div class="stat-value">{{ this_month_pts }}</div>
+            <div class="stat-sub">pts · {{ this_month_units }} unit{{ this_month_units|pluralize }}</div>
+        </div>
     </div>
-    <div class="info-row">
-        <span class="info-label">Name</span>
-        <span class="info-value">{{ account.name }}</span>
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#3b82f6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">receipt_long</span>
+        </div>
+        <div>
+            <div class="stat-label">Total Sales</div>
+            <div class="stat-value">{{ total_sales_count }}</div>
+            <div class="stat-sub">across {{ total_contracts_count }} contract{{ total_contracts_count|pluralize }}</div>
+        </div>
     </div>
-    <div class="info-row">
-        <span class="info-label">City</span>
-        <span class="info-value">{{ account.city }}</span>
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,{% if active_contract %}#22c55e,#16a34a{% else %}#64748b,#475569{% endif %}); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">description</span>
+        </div>
+        <div style="min-width:0;">
+            <div class="stat-label">Active Contract</div>
+            <div class="stat-value" style="font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                {% if active_contract %}{{ active_contract.title }}{% else %}None{% endif %}
+            </div>
+            <div class="stat-sub">
+                {% if active_contract %}ends {{ active_contract.end_date|date:"d M Y" }}{% else %}no active contract{% endif %}
+            </div>
+        </div>
     </div>
-    <div class="info-row">
-        <span class="info-label">Location</span>
-        <span class="info-value">{{ account.location }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Phone</span>
-        <span class="info-value">{{ account.phone }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Email</span>
-        <span class="info-value">{{ account.email }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Status</span>
-        <span class="info-value">
-            {% if account.status == "active" %}
-                <span class="badge badge-success">Active</span>
-            {% else %}
-                <span class="badge badge-danger">Inactive</span>
-            {% endif %}
-        </span>
-    </div>
+
 </div>
 
-<!-- ACTIVE CONTRACT ONLY -->
-{% for contract in active_contracts %}
+<!-- ── ROW 1: Monthly Overview + Top Products ── -->
+<div class="grid-2" style="margin-bottom:20px;">
+
+    <div class="card">
+        <div class="card-header" style="flex-wrap:wrap; gap:6px;">
+            <div class="card-header-icon"><span class="material-icons-round">bar_chart</span></div>
+            <div class="card-title" id="monthly-title">Monthly Overview</div>
+            <span id="monthly-drill-info" style="font-size:0.78rem; color:var(--text-secondary); margin-left:4px;"></span>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+                <button id="monthly-drill-back" onclick="monthlyDrillBack()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+                </button>
+                <select id="barYearSelect" onchange="setBarPeriod(this.value)" style="padding:3px 6px; border-radius:6px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                    <option value="last12">Last 12 months</option>
+                    {% for yr in dash_years_list %}<option value="{{ yr }}">{{ yr }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <div id="monthlyChart" style="height:260px; cursor:pointer;" title="Click a bar to drill down"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-icon"><span class="material-icons-round">grid_view</span></div>
+            <div class="card-title">Top Products</div>
+            <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">all-time · top 30</div>
+        </div>
+        <div id="productsChart" style="height:260px;"></div>
+    </div>
+
+</div>
+
+<!-- ── ROW 2: Cumulative + Submission ── -->
+<div class="grid-2" style="margin-bottom:20px;">
+
+    <div class="card">
+        <div class="card-header" style="flex-wrap:wrap; gap:6px;">
+            <div class="card-header-icon"><span class="material-icons-round">show_chart</span></div>
+            <div class="card-title" id="cumul-title">Cumulative Points</div>
+            <span id="cumul-drill-info" style="font-size:0.78rem; color:var(--text-secondary); margin-left:4px;"></span>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+                <button id="cumul-drill-back" onclick="cumulDrillBack()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+                </button>
+                <select id="cumulYearSelect" onchange="setCumulPeriod(this.value)" style="padding:3px 6px; border-radius:6px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                    <option value="last12">Last 12 months</option>
+                    {% for yr in dash_years_list %}<option value="{{ yr }}">{{ yr }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <div id="cumulativeChart" style="height:220px; cursor:pointer;" title="Click a bar to drill down"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header" style="flex-wrap:wrap; gap:6px;">
+            <div class="card-header-icon"><span class="material-icons-round">upload_file</span></div>
+            <div class="card-title" id="submit-title">Submission Frequency</div>
+            <span id="submit-drill-info" style="font-size:0.78rem; color:var(--text-secondary); margin-left:4px;"></span>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+                <button id="submit-drill-back" onclick="submitDrillBack()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+                </button>
+                <select id="submitYearSelect" onchange="setSubmitPeriod(this.value)" style="padding:3px 6px; border-radius:6px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                    <option value="last12">Last 12 months</option>
+                    {% for yr in dash_years_list %}<option value="{{ yr }}">{{ yr }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <div id="submitChart" style="height:220px; cursor:pointer;" title="Click a bar to drill down"></div>
+    </div>
+
+</div>
+
+<!-- ── RECENT SALES ── -->
 <div class="card">
     <div class="card-header">
-    <div class="card-header-icon" style="background-color: rgba(34,197,94,0.15);">
-        <span class="material-icons-round" style="color: #22c55e;">description</span>
+        <div class="card-header-icon"><span class="material-icons-round">receipt_long</span></div>
+        <div class="card-title">Recent Sales</div>
+        <a href="/portal/sales/" style="margin-left:auto; font-size:0.82rem; color:var(--accent); text-decoration:none; font-weight:500;">View all →</a>
     </div>
-    <div class="card-title">{{ contract.title }}</div>
-    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
-        <span style="background-color: rgba(27,103,155,0.15); color: #1b679b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">
-            {{ contract.contract_product_set.count }} product{{ contract.contract_product_set.count|pluralize }}
-        </span>
-        <span style="background-color: rgba(34,197,94,0.15); color: #22c55e; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-            <span class="material-icons-round" style="font-size: 13px;">verified</span>
-            Active Contract
-        </span>
-    </div>
-</div>
-
-<!-- DATES inline with duration and time remaining -->
-<div style="display: flex; align-items: center; gap: 16px; margin: 12px 0; padding-bottom: 12px; border-bottom: 1px solid var(--card-border); font-size: 0.85rem; color: var(--text-secondary); flex-wrap: wrap;">
-    <span><span style="font-weight: 500; color: var(--text-primary);">Start Date</span> &nbsp; {{ contract.start_date|date:"d M Y" }}</span>
-    <span style="color: var(--card-border);">|</span>
-    <span><span style="font-weight: 500; color: var(--text-primary);">End Date</span> &nbsp; {{ contract.end_date|date:"d M Y" }}</span>
-    <span style="color: var(--card-border);">|</span>
-    <span><span style="font-weight: 500; color: var(--text-primary);">Duration</span> &nbsp; {{ contract.start_date|timesince:contract.end_date }}</span>
-    <span style="color: var(--card-border);">|</span>
-    <span>
-    <span style="font-weight: 500; color: var(--text-primary);">Time Remaining</span> &nbsp;
-    {% if active_contract_days_remaining is not None %}
-        {% if active_contract_days_remaining <= 7 %}
-            <span style="color: #ef4444; font-weight: 600;">{{ contract.end_date|timeuntil }} ⚠</span>
-        {% elif active_contract_days_remaining <= 15 %}
-            <span style="color: #f59e0b; font-weight: 600;">{{ contract.end_date|timeuntil }} ⚠</span>
-        {% else %}
-            <span style="color: #22c55e; font-weight: 600;">{{ contract.end_date|timeuntil }}</span>
-        {% endif %}
-    {% endif %}
-</span>
-</div>
-
-    <!-- DESCRIPTION with read more -->
-    <div style="margin-top: 12px; margin-bottom: 12px;">
-        <span id="desc-short-{{ contract.pk }}" style="font-size: 0.85rem; color: var(--text-secondary);">
-            {{ contract.designation|truncatechars:100 }}
-        </span>
-        <span id="desc-full-{{ contract.pk }}" style="font-size: 0.85rem; color: var(--text-secondary); display: none;">
-            {{ contract.designation }}
-        </span>
-        {% if contract.designation|length > 100 %}
-            <a href="#" onclick="toggleDesc('{{ contract.pk }}'); return false;"
-                id="desc-btn-{{ contract.pk }}"
-                style="font-size: 0.78rem; color: #1b679b; font-weight: 600; margin-left: 4px; text-decoration: none;">
-                Read more
-            </a>
-        {% endif %}
-    </div>
-
-    {% if contract.contract_product_set.all %}
-
-    <!-- PRODUCT SEARCH -->
-    <div style="position: relative; margin-bottom: 10px;">
-        <span class="material-icons-round" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;">search</span>
-        <input type="text" id="product-search-{{ contract.pk }}" placeholder="Search products..."
-            onkeyup="filterProducts({{ contract.pk }})"
-            style="width: 100%; padding: 8px 14px 8px 36px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.85rem; color: var(--text-primary); box-sizing: border-box;">
-    </div>
-
-    <!-- SCROLLABLE TABLE -->
-    <div style="max-height: 300px; overflow-y: auto; border-radius: 8px; scrollbar-width: thin; scrollbar-color: #334155 transparent;">
-        <table class="table" id="product-table-{{ contract.pk }}">
-            <thead style="position: sticky; top: 0; z-index: 1; background-color: var(--card-bg);">
-                <tr>
-                    <th>Product Code</th>
-                    <th>Product Name</th>
-                    <th>External Designation</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="product-tbody-{{ contract.pk }}">
-                {% for cp in contract.contract_product_set.all %}
-                <tr class="product-row-{{ contract.pk }}"
-                    data-code="{{ cp.product.code|lower }}"
-                    data-name="{{ cp.product.designation|lower }}"
-                    data-ext="{{ cp.external_designation|lower }}">
-                    <td>{{ cp.product.code }}</td>
-                    <td>{{ cp.product.designation }}</td>
-                    <td>{{ cp.external_designation }}</td>
-                    <td>
-                        {% if cp.product.status == "active" %}
-                            <span class="badge badge-success">Active</span>
-                        {% else %}
-                            <span class="badge badge-danger">Inactive</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
+    {% if recent_sales %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Contract</th>
+                <th>Product</th>
+                <th style="text-align:center;">Qty</th>
+                <th style="text-align:center;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in recent_sales %}
+            <tr>
+                <td style="color:var(--text-secondary); white-space:nowrap; font-size:0.84rem;">{{ sale.sale_datetime|date:"d M Y" }}</td>
+                <td style="font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.contract.title }}</td>
+                <td style="font-weight:500;">{{ sale.contract_product.product.designation }}</td>
+                <td style="text-align:center; font-weight:600;">{{ sale.quantity }}</td>
+                <td style="text-align:center;">
+                    {% if sale.status == "accepted" %}<span class="badge badge-success">Accepted</span>
+                    {% elif sale.status == "rejected" %}<span class="badge badge-danger">Rejected</span>
+                    {% else %}<span class="badge badge-warning">Pending</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     {% else %}
-        <p style="color: var(--text-secondary); font-size: 0.85rem;">No products linked to this contract.</p>
+    <p style="text-align:center; color:var(--text-secondary); padding:24px 0; font-size:0.88rem;">No sales recorded yet.</p>
     {% endif %}
-
-    <!-- LINK TO CONTRACTS PAGE -->
-    <div style="margin-top: 16px; text-align: right;">
-        <a href="/portal/contracts/" style="
-            font-size: 0.82rem;
-            color: #1b679b;
-            text-decoration: none;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        ">
-            View all contracts
-            <span class="material-icons-round" style="font-size: 16px;">arrow_forward</span>
-        </a>
-    </div>
 </div>
-{% empty %}
-    <div class="card">
-        <p style="color: var(--text-secondary); text-align: center;">No active contract found for this pharmacy.</p>
-    </div>
-{% endfor %}
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script>
-    function toggleDesc(id) {
-        const short = document.getElementById("desc-short-" + id);
-        const full = document.getElementById("desc-full-" + id);
-        const btn = document.getElementById("desc-btn-" + id);
-        if (full.style.display === "none") {
-            short.style.display = "none";
-            full.style.display = "inline";
-            btn.textContent = "Read less";
-        } else {
-            short.style.display = "inline";
-            full.style.display = "none";
-            btn.textContent = "Read more";
-        }
+(function () {
+    var isDark     = document.documentElement.dataset.theme !== 'light';
+    var labelColor = isDark ? '#94a3b8' : '#64748b';
+    var gridLine   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    var axisLine   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+    var bgColor    = isDark ? '#0f172a' : '#f1f5f9';
+    var palette    = ['#1b679b','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#14b8a6','#a855f7',
+                      '#3b82f6','#84cc16','#f43f5e','#0ea5e9','#d946ef','#fb923c','#34d399','#fbbf24','#818cf8','#e879f9'];
+
+    // ── Static data ──
+    var last12 = {
+        keys:   {{ chart_month_keys|safe }},
+        labels: {{ chart_month_labels|safe }},
+        pts:    {{ chart_month_data|safe }},
+        units:  {{ chart_month_units|safe }},
+        submit: {{ chart_submit_data|safe }},
+    };
+    (function () { var a = 0, c = []; last12.pts.forEach(function(v){ a+=v; c.push(a); }); last12.cumul = c; }());
+
+    var dashYearsMonthly = {{ dash_years_monthly|safe }};
+    var dashYearsSubmit  = {{ dash_years_submit|safe }};
+    var drillData        = {{ chart_daily_drill|safe }};
+    var submitDrillData  = {{ chart_submit_drill|safe }};
+    var productLabels    = {{ top_product_labels|safe }};
+    var productData      = {{ top_product_data|safe }};
+
+    // ── Period state per chart ──
+    var barPeriod    = 'last12';
+    var cumulPeriod  = 'last12';
+    var submitPeriod = 'last12';
+
+    function getBarData() {
+        return barPeriod === 'last12' ? last12 : (dashYearsMonthly[barPeriod] || last12);
+    }
+    function getCumulData() {
+        return cumulPeriod === 'last12' ? last12 : (dashYearsMonthly[cumulPeriod] || last12);
+    }
+    function getSubmitData() {
+        if (submitPeriod === 'last12') return { labels: last12.labels, counts: last12.submit };
+        var y = dashYearsSubmit[submitPeriod];
+        return y ? { labels: y.labels, counts: y.counts } : { labels: last12.labels, counts: last12.submit };
     }
 
-    function filterProducts(contractId) {
-        const search = document.getElementById("product-search-" + contractId).value.toLowerCase();
-        const rows = document.querySelectorAll(".product-row-" + contractId);
-        rows.forEach(row => {
-            const code = row.dataset.code;
-            const name = row.dataset.name;
-            const ext = row.dataset.ext;
-            if (code.includes(search) || name.includes(search) || ext.includes(search)) {
-                row.style.display = "";
-            } else {
-                row.style.display = "none";
+    // ── Helpers ──
+    var charts = [];
+    function mkChart(id, opts) {
+        var c = echarts.init(document.getElementById(id), null, { renderer: 'svg' });
+        c.setOption(opts); charts.push(c); return c;
+    }
+    function gradV(c1, c2) {
+        return new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: c1 }, { offset: 1, color: c2 }]);
+    }
+    function xCat(data, rotate) {
+        return { type: 'category', data: data, axisTick: { show: false },
+            axisLine: { lineStyle: { color: axisLine } },
+            axisLabel: { color: labelColor, fontSize: 10, rotate: rotate !== undefined ? rotate : 38, interval: 0 } };
+    }
+    function yVal(extra) {
+        var base = { type: 'value', splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
+            axisLabel: { color: labelColor, fontSize: 10,
+                formatter: function (v) { return v >= 1000 ? (v/1000).toFixed(0)+'k' : v; } } };
+        if (extra) Object.keys(extra).forEach(function(k){ base[k] = extra[k]; });
+        return base;
+    }
+    function daysArray(n) { var a = []; for (var d = 1; d <= n; d++) a.push(String(d)); return a; }
+    var grid12 = { left: 10, right: 10, top: 16, bottom: 52, containLabel: true };
+
+    // ── 1. Monthly Overview ──
+    var barDrillActive = false;
+    var barChartInst = mkChart('monthlyChart', {
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: function (params) {
+                var s = '<b>' + params[0].axisValue + '</b><br/>';
+                params.forEach(function (p) {
+                    s += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>'
+                       + (p.seriesName === 'Points' ? ' pts' : ' units') + '<br/>';
+                });
+                return s;
             }
-        });
-    }
-</script>
+        },
+        legend: { data: ['Points', 'Units Sold'], top: 2, textStyle: { color: labelColor, fontSize: 10 } },
+        grid: { left: 10, right: 10, top: 32, bottom: 52, containLabel: true },
+        xAxis: xCat(last12.labels),
+        yAxis: [
+            yVal({ name: 'Points', nameTextStyle: { color: labelColor, fontSize: 9 } }),
+            yVal({ name: 'Units',  nameTextStyle: { color: labelColor, fontSize: 9 }, splitLine: { show: false }, axisLabel: { color: labelColor, fontSize: 9 } }),
+        ],
+        series: [
+            { name: 'Points',     type: 'bar', yAxisIndex: 0, data: last12.pts,   barMaxWidth: 22,
+              itemStyle: { borderRadius: [4,4,0,0], color: gradV('#3b9fd4','rgba(27,103,155,0.18)') },
+              emphasis: { itemStyle: { color: gradV('#60c0f0','rgba(27,103,155,0.38)') } } },
+            { name: 'Units Sold', type: 'bar', yAxisIndex: 1, data: last12.units, barMaxWidth: 22,
+              itemStyle: { borderRadius: [4,4,0,0], color: gradV('#f59e0b','rgba(245,158,11,0.18)') },
+              emphasis: { itemStyle: { color: gradV('#fbbf24','rgba(245,158,11,0.38)') } } },
+        ],
+    });
+    barChartInst.on('click', function (params) {
+        if (barDrillActive || params.componentType !== 'series') return;
+        var data = getBarData();
+        var mk = data.keys[params.dataIndex];
+        var dd = drillData[mk]; if (!dd) return;
+        barDrillActive = true;
+        document.getElementById('monthly-drill-info').textContent = '— ' + data.labels[params.dataIndex];
+        document.getElementById('monthly-drill-back').style.display = 'inline-flex';
+        barChartInst.setOption({ xAxis: xCat(daysArray(dd.n), 0), series: [{ data: dd.pts }, { data: dd.units }] });
+    });
+    window.monthlyDrillBack = function () {
+        if (!barDrillActive) return; barDrillActive = false;
+        document.getElementById('monthly-drill-info').textContent = '';
+        document.getElementById('monthly-drill-back').style.display = 'none';
+        var data = getBarData();
+        barChartInst.setOption({ xAxis: xCat(data.labels), series: [{ data: data.pts }, { data: data.units }] });
+    };
+    window.setBarPeriod = function (val) {
+        barPeriod = val; barDrillActive = false;
+        document.getElementById('monthly-drill-info').textContent = '';
+        document.getElementById('monthly-drill-back').style.display = 'none';
+        var data = getBarData();
+        barChartInst.setOption({ xAxis: xCat(data.labels), series: [{ data: data.pts }, { data: data.units }] });
+    };
 
+    // ── 2. Top Products Treemap (unchanged) ──
+    var productTreeData = productLabels.length
+        ? productLabels.map(function (l, i) { return { name: l, value: productData[i] }; })
+        : [{ name: 'No data', value: 1 }];
+    mkChart('productsChart', {
+        backgroundColor: 'transparent', color: palette,
+        tooltip: { formatter: function (p) { return '<b>' + p.name + '</b><br/>' + p.value.toLocaleString() + ' pts'; } },
+        series: [{
+            type: 'treemap', data: productTreeData, roam: false, breadcrumb: { show: false }, visibleMin: 50,
+            label: {
+                show: true, position: 'inside',
+                formatter: function (p) { return '{nm|' + p.name + '}\n{val|' + p.value.toLocaleString() + ' pts}'; },
+                rich: {
+                    nm:  { fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.92)', fontFamily: 'Inter, sans-serif', overflow: 'truncate' },
+                    val: { fontSize: 9,  color: 'rgba(255,255,255,0.70)', fontFamily: 'Inter, sans-serif' },
+                },
+            },
+            levels: [{ itemStyle: { borderWidth: 3, borderColor: bgColor, gapWidth: 3 } }],
+            itemStyle: { borderWidth: 0 },
+            emphasis: { itemStyle: { shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.4)' } },
+        }],
+    });
+
+    // ── 3. Cumulative Points ──
+    var cumulDrillActive = false;
+    var cumulChartInst = mkChart('cumulativeChart', {
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: function (p) { return '<b>' + p[0].axisValue + '</b><br/>' + p[0].marker + ' ' + p[0].value.toLocaleString() + ' pts'; }
+        },
+        grid: grid12, xAxis: xCat(last12.labels), yAxis: yVal(),
+        series: [{
+            type: 'bar', data: last12.cumul, barMaxWidth: 26,
+            itemStyle: { borderRadius: [4,4,0,0], color: gradV('#22c55e','rgba(34,197,94,0.18)') },
+            emphasis: { itemStyle: { color: gradV('#4ade80','rgba(34,197,94,0.38)') } },
+        }],
+    });
+    cumulChartInst.on('click', function (params) {
+        if (cumulDrillActive || params.componentType !== 'series') return;
+        var data = getCumulData();
+        var mk = data.keys[params.dataIndex];
+        var dd = drillData[mk]; if (!dd) return;
+        cumulDrillActive = true;
+        document.getElementById('cumul-drill-info').textContent = '— ' + data.labels[params.dataIndex];
+        document.getElementById('cumul-drill-back').style.display = 'inline-flex';
+        cumulChartInst.setOption({ xAxis: xCat(daysArray(dd.n), 0), series: [{ data: dd.pts }] });
+    });
+    window.cumulDrillBack = function () {
+        if (!cumulDrillActive) return; cumulDrillActive = false;
+        document.getElementById('cumul-drill-info').textContent = '';
+        document.getElementById('cumul-drill-back').style.display = 'none';
+        var data = getCumulData();
+        cumulChartInst.setOption({ xAxis: xCat(data.labels), series: [{ data: data.cumul }] });
+    };
+    window.setCumulPeriod = function (val) {
+        cumulPeriod = val; cumulDrillActive = false;
+        document.getElementById('cumul-drill-info').textContent = '';
+        document.getElementById('cumul-drill-back').style.display = 'none';
+        var data = getCumulData();
+        cumulChartInst.setOption({ xAxis: xCat(data.labels), series: [{ data: data.cumul }] });
+    };
+
+    // ── 4. Submission Frequency ──
+    var submitDrillActive = false;
+    var submitYAxis = { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
+        axisLabel: { color: labelColor, fontSize: 10 } };
+    var submitChartInst = mkChart('submitChart', {
+        backgroundColor: 'transparent',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+            formatter: function (p) {
+                var v = p[0].value;
+                return '<b>' + p[0].axisValue + '</b><br/>' + p[0].marker + ' ' + v + (v === 1 ? ' batch' : ' batches');
+            }
+        },
+        grid: grid12, xAxis: xCat(last12.labels), yAxis: submitYAxis,
+        series: [{
+            type: 'bar', data: last12.submit, barMaxWidth: 26,
+            itemStyle: { borderRadius: [4,4,0,0], color: gradV('#06b6d4','rgba(6,182,212,0.18)') },
+            emphasis: { itemStyle: { color: gradV('#22d3ee','rgba(6,182,212,0.38)') } },
+        }],
+    });
+    submitChartInst.on('click', function (params) {
+        if (submitDrillActive || params.componentType !== 'series') return;
+        var data = getSubmitData();
+        var sd = getBarData(); // keys come from the matching monthly data
+        var mk = sd.keys[params.dataIndex];
+        var dd = submitDrillData[mk]; if (!dd) return;
+        submitDrillActive = true;
+        document.getElementById('submit-drill-info').textContent = '— ' + data.labels[params.dataIndex];
+        document.getElementById('submit-drill-back').style.display = 'inline-flex';
+        submitChartInst.setOption({ xAxis: xCat(daysArray(dd.n), 0), yAxis: submitYAxis, series: [{ data: dd.batches }] });
+    });
+    window.submitDrillBack = function () {
+        if (!submitDrillActive) return; submitDrillActive = false;
+        document.getElementById('submit-drill-info').textContent = '';
+        document.getElementById('submit-drill-back').style.display = 'none';
+        var data = getSubmitData();
+        submitChartInst.setOption({ xAxis: xCat(data.labels), yAxis: submitYAxis, series: [{ data: data.counts }] });
+    };
+    window.setSubmitPeriod = function (val) {
+        submitPeriod = val; submitDrillActive = false;
+        document.getElementById('submit-drill-info').textContent = '';
+        document.getElementById('submit-drill-back').style.display = 'none';
+        var data = getSubmitData();
+        submitChartInst.setOption({ xAxis: xCat(data.labels), yAxis: submitYAxis, series: [{ data: data.counts }] });
+    };
+
+    window.addEventListener('resize', function () { charts.forEach(function (c) { c.resize(); }); });
+}());
+</script>
 {% endblock %}

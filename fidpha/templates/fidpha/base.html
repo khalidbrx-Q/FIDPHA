@@ -28,32 +28,59 @@
         </div>
 
         <nav class="sidebar-nav">
-            <div class="nav-section-title">Menu</div>
+            <div class="nav-section-title">Overview</div>
             <a href="/portal/dashboard/" class="nav-item {% block nav_dashboard %}{% endblock %}" onclick="closeSidebar()">
-                <span class="material-icons-round">dashboard</span>
+                <span class="material-icons-round">home</span>
                 Dashboard
             </a>
+
+            <div class="nav-section-title" style="margin-top:14px;">My Program</div>
             <a href="/portal/contracts/" class="nav-item {% block nav_contracts %}{% endblock %}" onclick="closeSidebar()">
                 <span class="material-icons-round">description</span>
-                Contracts
+                Contract
             </a>
             <a href="/portal/sales/" class="nav-item {% block nav_sales %}{% endblock %}" onclick="closeSidebar()">
-                <span class="material-icons-round">star</span>
-                Points
+                <span class="material-icons-round">receipt_long</span>
+                Sales
             </a>
-            <a href="/portal/profile/" class="nav-item {% block nav_profile %}{% endblock %}" onclick="closeSidebar()">
-                <span class="material-icons-round">person</span>
-                Profile
+
+            <div class="nav-section-title" style="margin-top:14px;">Account</div>
+            <a href="/portal/pharmacy/" class="nav-item {% block nav_pharmacy %}{% endblock %}" onclick="closeSidebar()">
+                <span class="material-icons-round">local_pharmacy</span>
+                Pharmacy
             </a>
         </nav>
+        {% block nav_profile %}{% endblock %}
 
         <div class="sidebar-footer">
-            <div class="user-info">
+            <div class="user-info" style="margin-bottom:10px;">
                 <div class="user-avatar">{{ request.user.username|first|upper }}</div>
-                <div>
+                <div style="flex:1; min-width:0;">
                     <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
                     <div class="user-role">{{ request.user.profile.account.name }}</div>
                 </div>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <button onclick="toggleTheme()" title="Toggle theme" style="
+                    display:flex; align-items:center; justify-content:center;
+                    width:36px; height:36px; border-radius:8px;
+                    border:1px solid var(--card-border); background:transparent;
+                    color:var(--text-secondary); cursor:pointer; flex-shrink:0; transition:all 0.15s;
+                ">
+                    <span class="material-icons-round" style="font-size:18px;">contrast</span>
+                </button>
+                <form method="POST" action="/portal/logout/" style="flex:1; margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" style="
+                        width:100%; display:flex; align-items:center; justify-content:center; gap:6px;
+                        height:36px; border-radius:8px; border:1px solid rgba(239,68,68,0.3);
+                        background:rgba(239,68,68,0.08); color:#ef4444; cursor:pointer;
+                        font-size:0.82rem; font-weight:600; font-family:'Inter',sans-serif; transition:all 0.15s;
+                    ">
+                        <span class="material-icons-round" style="font-size:16px;">logout</span>
+                        Log Out
+                    </button>
+                </form>
             </div>
         </div>
     </aside>
@@ -73,34 +100,6 @@
                 </div>
             </div>
 
-            <!-- User avatar dropdown -->
-            <div class="user-dropdown" id="userDropdown">
-                <button class="user-avatar-btn" onclick="toggleUserDropdown()" aria-expanded="false" aria-haspopup="true">
-                    <div class="topbar-avatar">{{ request.user.username|first|upper }}</div>
-                </button>
-                <div class="user-dropdown-menu" id="userDropdownMenu" role="menu">
-                    <div class="dropdown-user-info">
-                        <div class="dropdown-avatar">{{ request.user.username|first|upper }}</div>
-                        <div>
-                            <div class="dropdown-user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
-                            <div class="dropdown-user-role">{{ request.user.profile.account.name }}</div>
-                        </div>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <button class="dropdown-item" onclick="toggleTheme(); return false;">
-                        <span class="material-icons-round">contrast</span>
-                        <span id="dropdown-theme-label">Toggle Theme</span>
-                    </button>
-                    <div class="dropdown-divider"></div>
-                    <form method="POST" action="/portal/logout/" style="margin:0;">
-                        {% csrf_token %}
-                        <button type="submit" class="dropdown-item dropdown-item-danger">
-                            <span class="material-icons-round">logout</span>
-                            Log Out
-                        </button>
-                    </form>
-                </div>
-            </div>
         </div>
 
         <div class="content">
@@ -123,20 +122,6 @@
             document.body.style.overflow = '';
         }
 
-        // ---- User dropdown ----
-        function toggleUserDropdown() {
-            const menu = document.getElementById('userDropdownMenu');
-            const btn  = document.querySelector('.user-avatar-btn');
-            const open = menu.classList.toggle('open');
-            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        }
-        document.addEventListener('click', function(e) {
-            const dropdown = document.getElementById('userDropdown');
-            if (dropdown && !dropdown.contains(e.target)) {
-                document.getElementById('userDropdownMenu').classList.remove('open');
-                document.querySelector('.user-avatar-btn').setAttribute('aria-expanded', 'false');
-            }
-        });
     </script>
 
     {% block extra_js %}{% endblock %}
