@@ -155,8 +155,6 @@ class Sale(models.Model):
 
     class Meta:
         db_table = "Sale"
-        # Idempotency guard — prevents double-counting if same batch is resent
-        unique_together = [("contract_product", "sale_datetime")]
         indexes = [
             models.Index(fields=["contract_product", "sale_datetime"]),
         ]
