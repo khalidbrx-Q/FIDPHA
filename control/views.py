@@ -901,6 +901,29 @@ def contracts_detail(request, pk: int):
         "prods":  last12_prods,
     }
 
+    # ── Product chart data (full contract totals) ──
+    products_sorted      = sorted(products_data, key=lambda d: d["points"], reverse=True)
+    product_chart_labels = [d["cp"].product.designation for d in products_sorted]
+    product_chart_data   = [d["points"] for d in products_sorted]
+
+    # ── Products by month (for cross-chart filtering) ──
+    products_by_month = {}
+    prod_month_qs = (
+        _pts_qs()
+        .annotate(month=TruncMonth("sale_datetime"))
+        .values("month", "contract_product__product__designation")
+        .annotate(total=Sum("pts"))
+        .order_by("month", "-total")
+    )
+    for r in prod_month_qs:
+        mk = r["month"].strftime("%Y-%m")
+        if mk not in products_by_month:
+            products_by_month[mk] = []
+        products_by_month[mk].append({
+            "name": r["contract_product__product__designation"],
+            "pts":  int(r["total"] or 0),
+        })
+
     # ── Daily drill-down data (all months with data) ──
     daily_by_month = {}
     daily_qs = (
@@ -931,8 +954,11 @@ def contracts_detail(request, pk: int):
         "sale_count":        sale_count,
         "duration":          _duration_str(contract.start_date, contract.end_date),
         "available_years":   json.dumps(available_years),
-        "years_monthly":     json.dumps(years_monthly),
-        "daily_by_month":    json.dumps(daily_by_month),
+        "years_monthly":          json.dumps(years_monthly),
+        "daily_by_month":         json.dumps(daily_by_month),
+        "products_by_month":      json.dumps(products_by_month),
+        "product_chart_labels":   json.dumps(product_chart_labels),
+        "product_chart_data":     json.dumps(product_chart_data),
     })
 
 

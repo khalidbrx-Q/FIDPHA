@@ -139,7 +139,8 @@
 <!-- MONTHLY / DAILY TREND                                             -->
 <!-- ================================================================ -->
 {% if sale_count %}
-<div class="card">
+<div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;">
+<div class="card" style="flex:1.5; min-width:340px;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
         <div style="display:flex; align-items:center; gap:10px;">
             <div class="section-label" style="margin-bottom:0;">Trend</div>
@@ -159,6 +160,16 @@
         </div>
     </div>
     <div id="trendChart" style="height:240px;"></div>
+</div>
+{% if products_data %}
+<div class="card" style="flex:1; min-width:280px;">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+        <div class="section-label" style="margin-bottom:0;">Points by Product</div>
+        <span id="prodChartMonthLabel" style="font-size:0.75rem; color:#f59e0b;"></span>
+    </div>
+    <div id="prodChart" style="height:240px;"></div>
+</div>
+{% endif %}
 </div>
 {% endif %}
 
@@ -395,9 +406,12 @@
     var gridLine   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
     var axisLine   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
 
-    var yearsMonthly = {{ years_monthly|safe }};
-    var dailyByMonth = {{ daily_by_month|safe }};
-    var availableYears = {{ available_years|safe }};
+    var yearsMonthly       = {{ years_monthly|safe }};
+    var dailyByMonth       = {{ daily_by_month|safe }};
+    var availableYears     = {{ available_years|safe }};
+    var productsByMonth    = {{ products_by_month|safe }};
+    var productChartLabels = {{ product_chart_labels|safe }};
+    var productChartData   = {{ product_chart_data|safe }};
 
     // Populate year selector
     var sel = document.getElementById('yearSelector');
@@ -565,6 +579,41 @@
         });
     }
 
+    function buildProductOpt(labels, data) {
+        var nP = labels.length;
+        var showP = 8;
+        var pStart = nP > showP ? Math.max(0, 100 - Math.floor(showP / nP * 100)) : 0;
+        return {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function (p) { return '<b>' + p[0].name + '</b><br/>' + p[0].value.toLocaleString() + ' pts'; }
+            },
+            grid: { left: 10, right: nP > showP ? 130 : 110, top: 6, bottom: 16, containLabel: true },
+            xAxis: { type: 'value', splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
+                axisLabel: { color: labelColor, fontSize: 10, formatter: fmt } },
+            yAxis: { type: 'category', data: labels.slice().reverse(),
+                axisTick: { show: false }, axisLine: { lineStyle: { color: axisLine } },
+                axisLabel: { color: labelColor, fontSize: 11, width: 120, overflow: 'truncate' } },
+            series: [{
+                type: 'bar', data: data.slice().reverse(), barMaxWidth: 28,
+                itemStyle: { borderRadius: [0,4,4,0], color: '#f59e0b' },
+                label: { show: true, position: 'right', color: labelColor, fontSize: 11,
+                    formatter: function (p) { return p.value > 0 ? p.value.toLocaleString() + ' pts' : '—'; } },
+            }],
+            dataZoom: nP > showP ? [{ type: 'slider', yAxisIndex: 0, start: pStart, end: 100,
+                width: 16, right: 4, fillerColor: 'rgba(245,158,11,0.2)', borderColor: axisLine,
+                handleStyle: { color: '#f59e0b' }, moveHandleStyle: { color: '#f59e0b' } }] : [],
+        };
+    }
+
+    var pc = null;
+    var pcEl = document.getElementById('prodChart');
+    if (pcEl && productChartLabels.length) {
+        pc = echarts.init(pcEl, null, { renderer: 'svg' });
+        pc.setOption(buildProductOpt(productChartLabels, productChartData));
+        window.addEventListener('resize', function () { pc.resize(); });
+    }
+
     function drillDown(monthKey, monthLabel) {
         var data = dailyByMonth[monthKey];
         if (!data) return;
@@ -579,11 +628,24 @@
         chart.off('legendselectchanged');
         chart.on('legendselectchanged', syncAxisNames);
         chart.setOption(buildDailyOption(data, monthLabel), true);
+        // cross-chart: filter product chart to this month
+        var monthData = productsByMonth[monthKey];
+        if (pc && monthData && monthData.length) {
+            var mLabels = monthData.map(function(d) { return d.name; });
+            var mPts    = monthData.map(function(d) { return d.pts;  });
+            pc.setOption(buildProductOpt(mLabels, mPts), true);
+            document.getElementById('prodChartMonthLabel').textContent = '— ' + monthLabel;
+        }
     }
 
     function exitDrillDown() {
         renderMonthly(currentPeriod);
         document.getElementById('yearSelector').style.display = '';
+        // cross-chart: reset product chart
+        if (pc) {
+            pc.setOption(buildProductOpt(productChartLabels, productChartData), true);
+            document.getElementById('prodChartMonthLabel').textContent = '';
+        }
     }
 
     window.switchYear = function (val) {
