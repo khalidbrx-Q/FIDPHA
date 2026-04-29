@@ -292,6 +292,12 @@ body {
     gap: 16px;
 }
 
+.grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
 /* ---- STAT CARDS ---- */
 .stat-card {
     background-color: var(--card-bg);
@@ -531,7 +537,7 @@ body {
     .sidebar { transform: translateX(-100%); }
     .sidebar.sidebar-open { transform: translateX(0); }
     .main { margin-left: 0; }
-    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
     .hamburger-btn { display: flex; }
     .content { padding: 14px; }
     .topbar { padding: 10px 14px; }

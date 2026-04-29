@@ -136,15 +136,42 @@
 </div>
 
 <!-- ================================================================ -->
+<!-- MONTHLY / DAILY TREND                                             -->
+<!-- ================================================================ -->
+{% if sale_count %}
+<div class="card">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div class="section-label" style="margin-bottom:0;">Trend</div>
+            <span id="drillBreadcrumb" style="display:none; font-size:0.78rem; color:var(--text-secondary); display:none; align-items:center; gap:4px;">
+                <button onclick="exitDrillDown()" style="background:none; border:none; cursor:pointer; color:var(--accent); font-size:0.78rem; font-family:'Inter',sans-serif; padding:0; display:flex; align-items:center; gap:2px;">
+                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+                </button>
+                <span id="drillBreadcrumbText" style="color:var(--text-secondary);"></span>
+            </span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span id="trendModeLabel" style="font-size:0.75rem; color:var(--text-secondary);">Points &amp; products by month</span>
+            <select id="yearSelector" onchange="switchYear(this.value)"
+                style="padding:3px 8px; border-radius:7px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                <option value="last12">Last 12 months</option>
+            </select>
+        </div>
+    </div>
+    <div id="trendChart" style="height:240px;"></div>
+</div>
+{% endif %}
+
+<!-- ================================================================ -->
 <!-- PRODUCTS                                                           -->
 <!-- ================================================================ -->
 <div class="card">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
         <div class="section-label" style="margin-bottom:0;">
-            Products <span class="count-chip">{{ contract_products|length }}</span>
+            Products <span class="count-chip">{{ products_data|length }}</span>
         </div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            {% if contract_products %}
+            {% if products_data %}
             <div style="display:flex; gap:4px;">
                 <button class="filter-pill active" onclick="setProdFilter('all',this)">All</button>
                 <button class="filter-pill" onclick="setProdFilter('active',this)">Active</button>
@@ -157,7 +184,7 @@
         </div>
     </div>
 
-    {% if contract_products %}
+    {% if products_data %}
     <div class="search-bar" style="margin-bottom:10px;">
         <span class="material-icons-round">search</span>
         <input type="text" id="prodSearch" placeholder="Search products…"
@@ -171,26 +198,24 @@
                     <th>Product</th>
                     <th>Internal Code</th>
                     <th>External Designation</th>
-                    <th style="text-align:center;">Pts/unit</th>
-                    <th style="text-align:center;">Target qty</th>
+                    <th style="text-align:center;">PPV</th>
+                    <th style="text-align:center;">Factor</th>
                     <th>Status</th>
                 </tr>
             </thead>
             <tbody id="prodTableBody">
-                {% for cp in contract_products %}
-                <tr data-search="{{ cp.product.designation|lower }} {{ cp.product.code|lower }} {{ cp.external_designation|lower }}"
-                    data-prod-status="{{ cp.product.status }}">
-                    <td style="font-weight:600; color:var(--text-primary);">{{ cp.product.designation }}</td>
-                    <td><span class="code-chip">{{ cp.product.code }}</span></td>
-                    <td><span class="ext-chip">{{ cp.external_designation }}</span></td>
+                {% for item in products_data %}
+                <tr data-search="{{ item.cp.product.designation|lower }} {{ item.cp.product.code|lower }} {{ item.cp.external_designation|lower }}"
+                    data-prod-status="{{ item.cp.product.status }}">
+                    <td style="font-weight:600; color:var(--text-primary);">{{ item.cp.product.designation }}</td>
+                    <td><span class="code-chip">{{ item.cp.product.code }}</span></td>
+                    <td><span class="ext-chip">{{ item.cp.external_designation }}</span></td>
+                    <td style="text-align:center; color:var(--text-secondary);">{{ item.cp.product.ppv|default:"—" }}</td>
                     <td style="text-align:center;">
-                        <span class="pts-chip">{{ cp.points_per_unit }}</span>
-                    </td>
-                    <td style="text-align:center; color:var(--text-secondary);">
-                        {% if cp.target_quantity %}{{ cp.target_quantity }}{% else %}—{% endif %}
+                        <span class="pts-chip">{{ item.cp.points_per_unit }}</span>
                     </td>
                     <td>
-                        {% if cp.product.status == "active" %}
+                        {% if item.cp.product.status == "active" %}
                             <span class="badge badge-active">Active</span>
                         {% else %}
                             <span class="badge badge-inactive">Inactive</span>
@@ -348,7 +373,9 @@
         let visible = 0;
         rows.forEach(row => {
             const matchSearch = !q || (row.dataset.search || '').includes(q);
-            const matchFilter = activeProdFilter === 'all' || row.dataset.prodStatus === activeProdFilter;
+            let matchFilter = true;
+            if (activeProdFilter === 'active')    matchFilter = row.dataset.prodStatus === 'active';
+            else if (activeProdFilter === 'inactive') matchFilter = row.dataset.prodStatus === 'inactive';
             const show = matchSearch && matchFilter;
             row.style.display = show ? '' : 'none';
             if (show) visible++;
@@ -358,4 +385,217 @@
         if (noRes) noRes.style.display = (isFiltered && visible === 0) ? 'block' : 'none';
     }
 </script>
+
+{% if sale_count %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+(function () {
+    var isDark     = document.documentElement.dataset.theme !== 'light';
+    var labelColor = isDark ? '#94a3b8' : '#64748b';
+    var gridLine   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    var axisLine   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+
+    var yearsMonthly = {{ years_monthly|safe }};
+    var dailyByMonth = {{ daily_by_month|safe }};
+    var availableYears = {{ available_years|safe }};
+
+    // Populate year selector
+    var sel = document.getElementById('yearSelector');
+    availableYears.forEach(function (yr) {
+        var opt = document.createElement('option');
+        opt.value = String(yr);
+        opt.textContent = String(yr);
+        sel.appendChild(opt);
+    });
+
+    var currentPeriod = 'last12';
+    var inDrillDown   = false;
+    var drillMonthKey = null;
+
+    var el = document.getElementById('trendChart');
+    if (!el) return;
+    var chart = echarts.init(el, null, { renderer: 'svg' });
+
+    function fmt(v) { return v >= 1000 ? (v / 1000).toFixed(1) + 'k' : String(v); }
+
+    function buildMonthlyOption(data) {
+        return {
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function (params) {
+                    var out = '<b>' + params[0].name + '</b><br/>';
+                    params.forEach(function (p) {
+                        out += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>' +
+                            (p.seriesName === 'Points' ? ' pts' : ' products') + '<br/>';
+                    });
+                    return out;
+                }
+            },
+            legend: {
+                data: ['Points', 'Products'],
+                top: 0, left: 'center',
+                textStyle: { color: labelColor, fontSize: 11 },
+                icon: 'roundRect', itemWidth: 10, itemHeight: 8
+            },
+            grid: { left: 10, right: 10, top: 32, bottom: 4, containLabel: true },
+            xAxis: {
+                type: 'category', data: data.labels,
+                axisLine: { lineStyle: { color: axisLine } },
+                axisTick: { show: false },
+                axisLabel: { color: labelColor, fontSize: 10, rotate: data.labels.length > 6 ? 30 : 0, interval: 0 }
+            },
+            yAxis: [
+                {
+                    type: 'value', name: 'Points',
+                    nameTextStyle: { color: labelColor, fontSize: 10 },
+                    splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
+                    axisLabel: { color: labelColor, fontSize: 10, formatter: fmt }
+                },
+                {
+                    type: 'value', name: 'Products',
+                    nameTextStyle: { color: labelColor, fontSize: 10 },
+                    splitLine: { show: false },
+                    axisLabel: { color: labelColor, fontSize: 10 },
+                    minInterval: 1
+                }
+            ],
+            series: [
+                {
+                    name: 'Points', type: 'bar', yAxisIndex: 0, data: data.pts,
+                    barMaxWidth: 20, barGap: '10%',
+                    itemStyle: { borderRadius: [3,3,0,0], color: '#f59e0b' },
+                    emphasis: { itemStyle: { color: '#fbbf24' } },
+                },
+                {
+                    name: 'Products', type: 'bar', yAxisIndex: 1, data: data.prods,
+                    barMaxWidth: 20, barGap: '10%',
+                    itemStyle: { borderRadius: [3,3,0,0], color: '#22c55e' },
+                    emphasis: { itemStyle: { color: '#4ade80' } },
+                }
+            ],
+        };
+    }
+
+    function buildDailyOption(data, monthLabel) {
+        return {
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function (params) {
+                    var out = '<b>' + monthLabel + ' · Day ' + params[0].name + '</b><br/>';
+                    params.forEach(function (p) {
+                        out += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>' +
+                            (p.seriesName === 'Points' ? ' pts' : ' products') + '<br/>';
+                    });
+                    return out;
+                }
+            },
+            legend: {
+                data: ['Points', 'Products'],
+                top: 0, left: 'center',
+                textStyle: { color: labelColor, fontSize: 11 },
+                icon: 'roundRect', itemWidth: 10, itemHeight: 8
+            },
+            grid: { left: 10, right: 10, top: 32, bottom: 4, containLabel: true },
+            xAxis: {
+                type: 'category',
+                data: data.labels.map(String),
+                axisLine: { lineStyle: { color: axisLine } },
+                axisTick: { show: false },
+                axisLabel: { color: labelColor, fontSize: 9, interval: 1 }
+            },
+            yAxis: [
+                {
+                    type: 'value', name: 'Points',
+                    nameTextStyle: { color: labelColor, fontSize: 10 },
+                    splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
+                    axisLabel: { color: labelColor, fontSize: 10, formatter: fmt }
+                },
+                {
+                    type: 'value', name: 'Products',
+                    nameTextStyle: { color: labelColor, fontSize: 10 },
+                    splitLine: { show: false },
+                    axisLabel: { color: labelColor, fontSize: 10 },
+                    minInterval: 1
+                }
+            ],
+            series: [
+                {
+                    name: 'Points', type: 'bar', yAxisIndex: 0, data: data.pts,
+                    barMaxWidth: 16, barGap: '10%',
+                    itemStyle: { borderRadius: [3,3,0,0], color: '#f59e0b' },
+                },
+                {
+                    name: 'Products', type: 'bar', yAxisIndex: 1, data: data.prods,
+                    barMaxWidth: 16, barGap: '10%',
+                    itemStyle: { borderRadius: [3,3,0,0], color: '#22c55e' },
+                }
+            ],
+        };
+    }
+
+    function syncAxisNames() {
+        var selected = chart.getOption().legend[0].selected || {};
+        chart.setOption({
+            yAxis: [
+                { name: selected['Points']   === false ? '' : 'Points' },
+                { name: selected['Products'] === false ? '' : 'Products' },
+            ]
+        });
+    }
+
+    function renderMonthly(periodKey) {
+        var data = yearsMonthly[periodKey];
+        if (!data) return;
+        inDrillDown = false;
+        drillMonthKey = null;
+        document.getElementById('drillBreadcrumb').style.display = 'none';
+        document.getElementById('trendModeLabel').textContent = 'Points & products by month';
+        document.getElementById('yearSelector').style.display = '';
+        chart.setOption(buildMonthlyOption(data), true);
+        chart.off('legendselectchanged');
+        chart.on('legendselectchanged', syncAxisNames);
+        chart.off('click');
+        chart.on('click', function (params) {
+            if (params.componentType !== 'series') return;
+            var monthKey = data.keys[params.dataIndex];
+            if (!monthKey) return;
+            drillDown(monthKey, data.labels[params.dataIndex]);
+        });
+    }
+
+    function drillDown(monthKey, monthLabel) {
+        var data = dailyByMonth[monthKey];
+        if (!data) return;
+        inDrillDown   = true;
+        drillMonthKey = monthKey;
+        var bc = document.getElementById('drillBreadcrumb');
+        bc.style.display = 'flex';
+        document.getElementById('drillBreadcrumbText').textContent = '· ' + monthLabel;
+        document.getElementById('trendModeLabel').textContent = 'Points & products by day';
+        document.getElementById('yearSelector').style.display = 'none';
+        chart.off('click');
+        chart.off('legendselectchanged');
+        chart.on('legendselectchanged', syncAxisNames);
+        chart.setOption(buildDailyOption(data, monthLabel), true);
+    }
+
+    function exitDrillDown() {
+        renderMonthly(currentPeriod);
+        document.getElementById('yearSelector').style.display = '';
+    }
+
+    window.switchYear = function (val) {
+        currentPeriod = val;
+        renderMonthly(val);
+    };
+
+    window.exitDrillDown = exitDrillDown;
+
+    renderMonthly('last12');
+    window.addEventListener('resize', function () { chart.resize(); });
+}());
+</script>
+{% endif %}
 {% endblock %}

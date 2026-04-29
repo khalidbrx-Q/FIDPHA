@@ -789,23 +789,150 @@ def contracts_list(request):
 
 @perm_required('fidpha.view_contract')
 def contracts_detail(request, pk: int):
-    """Read-only detail view: contract info, product list, and sales sync stats."""
+    """Read-only detail view: contract info, product list, and monthly/daily trend chart."""
+    import datetime
+    import calendar as cal
+    from django.db.models import Sum, ExpressionWrapper, FloatField, Count as DbCount
+    from django.db.models.functions import Round, TruncMonth, TruncDay, TruncYear
+
     contract = get_object_or_404(
         Contract.objects.select_related("account"),
         pk=pk,
     )
-    contract_products = (
+
+    contract_products = list(
         Contract_Product.objects
         .filter(contract=contract)
         .select_related("product")
         .order_by("product__designation")
     )
+
     sale_count = Sale.objects.filter(contract_product__contract=contract).count()
+
+    def _pts_qs():
+        return Sale.objects.filter(
+            contract_product__contract=contract,
+            status=Sale.STATUS_ACCEPTED,
+            product_ppv__isnull=False,
+        ).annotate(pts=Round(ExpressionWrapper(
+            F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
+            output_field=FloatField(),
+        )))
+
+    # Per-product breakdown for the products table
+    cp_pts_agg = {
+        r["contract_product_id"]: int(r["total_pts"] or 0)
+        for r in _pts_qs()
+        .values("contract_product_id")
+        .annotate(total_pts=Sum("pts"))
+    }
+    cp_units_agg = {
+        r["contract_product_id"]: int(r["total"] or 0)
+        for r in Sale.objects.filter(
+            contract_product__contract=contract,
+            status=Sale.STATUS_ACCEPTED,
+        ).values("contract_product_id").annotate(total=Sum("quantity"))
+    }
+
+    products_data = []
+    for cp in contract_products:
+        products_data.append({
+            "cp":        cp,
+            "units_sold": cp_units_agg.get(cp.pk, 0),
+            "points":     cp_pts_agg.get(cp.pk, 0),
+        })
+
+    # ── Chart: available years ──
+    now = timezone.now()
+    year_rows = (
+        _pts_qs()
+        .annotate(yr=TruncYear("sale_datetime"))
+        .values_list("yr", flat=True)
+        .distinct()
+        .order_by("yr")
+    )
+    available_years = sorted({dt.year for dt in year_rows if dt})
+
+    # ── Per-year monthly data ──
+    years_monthly = {}
+    for yr in available_years:
+        yr_months = [datetime.datetime(yr, m, 1, tzinfo=datetime.timezone.utc) for m in range(1, 13)]
+        yr_mqs = (
+            _pts_qs()
+            .filter(sale_datetime__year=yr)
+            .annotate(month=TruncMonth("sale_datetime"))
+            .values("month")
+            .annotate(total=Sum("pts"), unique_products=DbCount("contract_product__product", distinct=True))
+        )
+        mmap = {r["month"].strftime("%Y-%m"): r for r in yr_mqs}
+        years_monthly[str(yr)] = {
+            "keys":   [d.strftime("%Y-%m") for d in yr_months],
+            "labels": [d.strftime("%b") for d in yr_months],
+            "pts":    [int(mmap.get(d.strftime("%Y-%m"), {}).get("total") or 0) for d in yr_months],
+            "prods":  [mmap.get(d.strftime("%Y-%m"), {}).get("unique_products") or 0 for d in yr_months],
+        }
+
+    # ── Last-12-months monthly data (default view) ──
+    month_dates = []
+    for i in range(11, -1, -1):
+        m, y = now.month - i, now.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        month_dates.append(datetime.datetime(y, m, 1, tzinfo=datetime.timezone.utc))
+
+    last12_keys   = [d.strftime("%Y-%m") for d in month_dates]
+    last12_labels = [d.strftime("%b %Y") for d in month_dates]
+    l12_mqs = (
+        _pts_qs()
+        .filter(sale_datetime__gte=month_dates[0])
+        .annotate(month=TruncMonth("sale_datetime"))
+        .values("month")
+        .annotate(total=Sum("pts"), unique_products=DbCount("contract_product__product", distinct=True))
+    )
+    l12_map       = {r["month"].strftime("%Y-%m"): r for r in l12_mqs}
+    last12_pts    = [int(l12_map.get(k, {}).get("total") or 0) for k in last12_keys]
+    last12_prods  = [l12_map.get(k, {}).get("unique_products") or 0 for k in last12_keys]
+
+    years_monthly["last12"] = {
+        "keys":   last12_keys,
+        "labels": last12_labels,
+        "pts":    last12_pts,
+        "prods":  last12_prods,
+    }
+
+    # ── Daily drill-down data (all months with data) ──
+    daily_by_month = {}
+    daily_qs = (
+        _pts_qs()
+        .annotate(day=TruncDay("sale_datetime"))
+        .values("day")
+        .annotate(total=Sum("pts"), unique_products=DbCount("contract_product__product", distinct=True))
+        .order_by("day")
+    )
+    for r in daily_qs:
+        mk    = r["day"].strftime("%Y-%m")
+        d_int = r["day"].day
+        if mk not in daily_by_month:
+            yr_d, mo_d = int(mk[:4]), int(mk[5:7])
+            num_days = cal.monthrange(yr_d, mo_d)[1]
+            daily_by_month[mk] = {
+                "labels": list(range(1, num_days + 1)),
+                "pts":    [0] * num_days,
+                "prods":  [0] * num_days,
+            }
+        daily_by_month[mk]["pts"][d_int - 1]   = int(r["total"] or 0)
+        daily_by_month[mk]["prods"][d_int - 1] = r["unique_products"] or 0
+
     return render(request, "control/contracts_detail.html", {
         "contract":          contract,
         "contract_products": contract_products,
+        "products_data":     products_data,
         "sale_count":        sale_count,
         "duration":          _duration_str(contract.start_date, contract.end_date),
+        "available_years":   json.dumps(available_years),
+        "years_monthly":     json.dumps(years_monthly),
+        "daily_by_month":    json.dumps(daily_by_month),
     })
 
 
@@ -1599,7 +1726,7 @@ def sales_export_csv(request):
                "Status", "Reviewed By", "Reviewed At"]
         for s in qs.iterator():
             cp           = s.contract_product
-            contract_ppv = cp.product.ppv
+            contract_ppv = s.product_ppv
             ppv_ok       = contract_ppv is None or s.ppv == contract_ppv
             points       = round(float(contract_ppv) * float(cp.points_per_unit) * s.quantity) if contract_ppv else 0
             reviewed_by  = (
@@ -1682,7 +1809,7 @@ def sales_export_list_csv(request):
                "Status", "Reviewed By", "Reviewed At"]
         for s in qs.iterator():
             cp           = s.contract_product
-            contract_ppv = cp.product.ppv
+            contract_ppv = s.product_ppv
             ppv_ok       = contract_ppv is None or s.ppv == contract_ppv
             points       = round(float(contract_ppv) * float(cp.points_per_unit) * s.quantity) if contract_ppv else 0
             reviewed_by  = (

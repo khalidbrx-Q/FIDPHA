@@ -126,6 +126,12 @@ class Sale(models.Model):
     creation_datetime = models.DateTimeField()
     quantity          = models.IntegerField()
     ppv               = models.DecimalField(max_digits=10, decimal_places=2)
+    # Snapshot of the product's catalog PPV at the moment of insertion.
+    # Decoupled from Product.ppv so future price changes don't affect
+    # historical point calculations.
+    product_ppv       = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
 
     # ── Staff review status ──
     status = models.CharField(

@@ -29,7 +29,7 @@ from fidpha.models import Contract, Contract_Product
 from fidpha.services import get_active_contract
 from sales.models import Sale, SaleImport
 
-MAX_BATCH_SIZE = 5000
+MAX_BATCH_SIZE = 50000
 
 
 # ---------------------------------------------------------------------------
@@ -201,6 +201,7 @@ def submit_sales_batch(
                     creation_datetime=sale_import.creation_datetime,
                     quantity=sale_import.quantity,
                     ppv=sale_import.ppv,
+                    product_ppv=cp.product.ppv,
                     status=Sale.STATUS_PENDING,
                     token=token,
                 ))

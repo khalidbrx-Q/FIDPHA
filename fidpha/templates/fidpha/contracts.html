@@ -16,6 +16,14 @@
     .pg-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
     .pg-btn.pg-active { background:var(--accent); border-color:var(--accent); color:white; }
     .pg-btn:disabled  { opacity:0.35; cursor:default; }
+    .stat-4 {
+        display:grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap:16px;
+        margin-bottom:20px;
+    }
+    @media (max-width:900px) { .stat-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width:520px) { .stat-4 { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
@@ -42,8 +50,8 @@
     </div>
 </div>
 
-<!-- 3 stat cards -->
-<div class="grid-3" style="margin-bottom:20px;">
+<!-- 4 stat cards -->
+<div class="stat-4">
 
     <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
         <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#f59e0b,#ef4444); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
@@ -58,25 +66,26 @@
 
     <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
         <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#3b82f6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-            <span class="material-icons-round" style="font-size:22px; color:white;">inventory_2</span>
+            <span class="material-icons-round" style="font-size:22px; color:white;">medication</span>
         </div>
         <div>
-            <div class="stat-label">Units Sold</div>
-            <div class="stat-value">{{ active_total_units }}</div>
-            <div class="stat-sub">contract-linked products</div>
+            <div class="stat-label">Products in Contract</div>
+            <div class="stat-value">{{ active_products_count }}</div>
+            <div class="stat-sub">total referenced</div>
         </div>
     </div>
 
     <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
         <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#22c55e,#16a34a); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-            <span class="material-icons-round" style="font-size:22px; color:white;">medication</span>
+            <span class="material-icons-round" style="font-size:22px; color:white;">star</span>
         </div>
         <div>
-            <div class="stat-label">Products</div>
-            <div class="stat-value">{{ products_data|length }}</div>
-            <div class="stat-sub">in this contract</div>
+            <div class="stat-label">Products with Points</div>
+            <div class="stat-value">{{ active_products_with_points }}</div>
+            <div class="stat-sub">generating points</div>
         </div>
     </div>
+
 
 </div>
 
@@ -105,10 +114,9 @@
             <thead>
                 <tr>
                     <th>Product</th>
-                    <th>Code</th>
                     <th>External Ref</th>
-                    <th style="text-align:center;">PPV</th>
                     <th style="text-align:center;">Units Sold</th>
+                    <th style="text-align:center;">Accepted Units</th>
                     <th style="text-align:center;">Points Earned</th>
                     <th style="text-align:center;">Status</th>
                 </tr>
@@ -119,8 +127,8 @@
                     <td style="font-weight:500;">{{ item.cp.product.designation }}</td>
                     <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ item.cp.product.code }}</td>
                     <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ item.cp.external_designation }}</td>
-                    <td style="text-align:center; font-weight:600;">{{ item.cp.product.ppv|default:"—" }}</td>
                     <td style="text-align:center;">{{ item.units_sold }}</td>
+                    <td style="text-align:center; color:#22c55e; font-weight:600;">{{ item.accepted_units }}</td>
                     <td style="text-align:center; font-weight:700;">
                         {% if item.points > 0 %}
                         <span class="material-icons-round" style="font-size:12px; color:#f59e0b; vertical-align:middle;">star</span>
@@ -136,17 +144,45 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" style="text-align:center; color:var(--text-secondary); padding:20px;">No products in this contract.</td></tr>
+                <tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:20px;">No products in this contract.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-
-    <!-- Products pagination -->
     <div id="prodPagination" style="display:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:10px 16px; border-top:1px solid var(--card-border);">
         <span id="prodPgInfo" style="font-size:0.8rem; color:var(--text-secondary);"></span>
         <div id="prodPgButtons" style="display:flex; align-items:center; gap:4px;"></div>
     </div>
+</div>
+
+<!-- Monthly trend (points + unique products) -->
+<div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
+    <div class="card" style="flex:1.5; min-width:300px;">
+        <div class="card-header" style="flex-wrap:wrap; gap:6px;">
+            <div class="card-header-icon"><span class="material-icons-round">trending_up</span></div>
+            <div class="card-title">Monthly Trend</div>
+            <span id="trend-drill-info" style="font-size:0.78rem; color:var(--text-secondary); margin-left:4px;"></span>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+                <button id="trend-drill-back" onclick="trendDrillBack()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+                </button>
+                <span style="font-size:0.78rem; color:var(--text-secondary);">{{ chart_period_label }}</span>
+            </div>
+        </div>
+        <div id="monthlyChart" style="height:240px; cursor:pointer;" title="Click a bar to drill down"></div>
+    </div>
+
+    {% if products_data %}
+    <div class="card" style="flex:1; min-width:260px;">
+        <div class="card-header">
+            <div class="card-header-icon"><span class="material-icons-round">bar_chart</span></div>
+            <div class="card-title">Points by Product</div>
+            <span id="product-chart-month-label" style="margin-left:8px; font-size:0.78rem; color:var(--gold);"></span>
+            <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">Active contract</div>
+        </div>
+        <div id="productChart" style="height:240px;"></div>
+    </div>
+    {% endif %}
 </div>
 
 {% else %}
@@ -160,33 +196,19 @@
 </div>
 {% endif %}
 
-<!-- Charts — side by side -->
-{% if products_data or chart_contract_labels %}
-<div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
-    {% if products_data %}
-    <div class="card" style="flex:1; min-width:280px;">
-        <div class="card-header">
-            <div class="card-header-icon"><span class="material-icons-round">bar_chart</span></div>
-            <div class="card-title">Points by Product</div>
-            <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">Active contract</div>
-        </div>
-        <div id="productChart" style="height:240px;"></div>
+<!-- Points per contract (all contracts) -->
+{% if chart_contract_labels %}
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+        <div class="card-header-icon"><span class="material-icons-round">assignment</span></div>
+        <div class="card-title">Points per Contract</div>
+        <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">All contracts</div>
     </div>
-    {% endif %}
-    {% if chart_contract_labels %}
-    <div class="card" style="flex:1; min-width:280px;">
-        <div class="card-header">
-            <div class="card-header-icon"><span class="material-icons-round">assignment</span></div>
-            <div class="card-title">Points per Contract</div>
-            <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">All contracts</div>
-        </div>
-        <div id="contractChart" style="height:240px;"></div>
-    </div>
-    {% endif %}
+    <div id="contractChart" style="height:220px;"></div>
 </div>
 {% endif %}
 
-<!-- Past contracts -->
+<!-- Past / inactive contracts -->
 {% if past_contracts %}
 <div style="font-size:0.78rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
     <span class="material-icons-round" style="font-size:14px;">history</span>
@@ -225,7 +247,6 @@
     {% endfor %}
 </div>
 
-<!-- Past contracts pagination -->
 <div id="pastPagination" style="display:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:10px 4px; margin-top:8px;">
     <span id="pastPgInfo" style="font-size:0.8rem; color:var(--text-secondary);"></span>
     <div id="pastPgButtons" style="display:flex; align-items:center; gap:4px;"></div>
@@ -318,7 +339,6 @@ function setProdPageSize(val) {
     filterProds();
 }
 
-// Init products pagination on load
 (function() {
     if (!document.getElementById('prodTbody')) return;
     var allRows = document.querySelectorAll('#prodTbody tr');
@@ -393,11 +413,17 @@ function setPastPageSize(val) {
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script>
 (function () {
-    var isDark      = document.documentElement.dataset.theme !== 'light';
-    var labelColor  = isDark ? '#94a3b8' : '#64748b';
-    var gridLine    = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-    var axisLine    = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+    var isDark     = document.documentElement.dataset.theme !== 'light';
+    var labelColor = isDark ? '#94a3b8' : '#64748b';
+    var gridLine   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    var axisLine   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
 
+    var monthLabels      = {{ chart_month_labels|safe }};
+    var monthKeys        = {{ chart_month_keys|safe }};
+    var monthPts         = {{ chart_month_pts|safe }};
+    var monthProds       = {{ chart_month_prods|safe }};
+    var dailyDrill          = {{ daily_by_month|safe }};
+    var productsByMonth     = {{ products_by_month|safe }};
     var productChartLabels  = {{ product_chart_labels|safe }};
     var productChartData    = {{ product_chart_data|safe }};
     var contractChartLabels = {{ chart_contract_labels|safe }};
@@ -405,17 +431,133 @@ function setPastPageSize(val) {
 
     var charts = [];
 
+    function gradV(c1, c2) {
+        return new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: c1 }, { offset: 1, color: c2 }]);
+    }
     function gradH(c1, c2) {
         return new echarts.graphic.LinearGradient(1, 0, 0, 0, [{ offset: 0, color: c1 }, { offset: 1, color: c2 }]);
     }
 
-    // Points by product (active contract)
-    if (document.getElementById('productChart') && productChartLabels.length) {
-        var nP = productChartLabels.length;
+    // Monthly trend: grouped bars (Points + Unique Products) with drill-down
+    function daysArray(n) { var a = []; for (var d = 1; d <= n; d++) a.push(String(d)); return a; }
+    var trendDrillActive = false;
+
+    function buildTrendMonthlyOpt() {
+        return {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    var out = '<b>' + params[0].axisValue + '</b><br/>';
+                    params.forEach(function(p) {
+                        var unit = p.seriesName === 'Points' ? ' pts' : ' products';
+                        out += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>' + unit + '<br/>';
+                    });
+                    return out;
+                }
+            },
+            legend: { data: ['Points', 'Unique Products'], top: 0, left: 'center',
+                textStyle: { color: labelColor, fontSize: 11 }, icon: 'circle', itemWidth: 8, itemHeight: 8 },
+            grid: { left: 10, right: 10, top: 32, bottom: 4, containLabel: true },
+            xAxis: { type: 'category', data: monthLabels, axisLine: { lineStyle: { color: axisLine } },
+                axisTick: { show: false }, axisLabel: { color: labelColor, fontSize: 10,
+                    rotate: monthLabels.length > 6 ? 30 : 0,
+                    interval: monthLabels.length > 24 ? 1 : 0 } },
+            yAxis: [
+                { type: 'value', name: 'Points', nameTextStyle: { color: labelColor, fontSize: 10 },
+                  splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
+                  axisLabel: { color: labelColor, fontSize: 10,
+                      formatter: function(v) { return v >= 1000 ? (v/1000).toFixed(0)+'k' : v; } } },
+                { type: 'value', name: 'Products', nameTextStyle: { color: labelColor, fontSize: 10 },
+                  splitLine: { show: false }, axisLabel: { color: labelColor, fontSize: 10 }, minInterval: 1 },
+            ],
+            series: [
+                { name: 'Points',          type: 'bar', yAxisIndex: 0, data: monthPts,   barMaxWidth: 22,
+                  itemStyle: { borderRadius: [4,4,0,0], color: gradV('#f59e0b','rgba(245,158,11,0.18)') },
+                  emphasis: { itemStyle: { color: gradV('#fbbf24','rgba(245,158,11,0.38)') } } },
+                { name: 'Unique Products', type: 'bar', yAxisIndex: 1, data: monthProds, barMaxWidth: 18,
+                  itemStyle: { borderRadius: [3,3,0,0], color: '#22c55e' },
+                  emphasis: { itemStyle: { color: '#4ade80' } } },
+            ],
+        };
+    }
+    function buildTrendDrillOpt(dd) {
+        var n = dd.n;
+        return {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    var out = '<b>Day ' + params[0].axisValue + '</b><br/>';
+                    params.forEach(function(p) {
+                        var unit = p.seriesName === 'Points' ? ' pts' : ' products';
+                        out += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>' + unit + '<br/>';
+                    });
+                    return out;
+                }
+            },
+            legend: { data: ['Points', 'Unique Products'], top: 0, left: 'center',
+                textStyle: { color: labelColor, fontSize: 11 }, icon: 'circle', itemWidth: 8, itemHeight: 8 },
+            grid: { left: 10, right: 10, top: 32, bottom: 4, containLabel: true },
+            xAxis: { type: 'category', data: daysArray(n), axisLine: { lineStyle: { color: axisLine } },
+                axisTick: { show: false }, axisLabel: { color: labelColor, fontSize: 10, rotate: 0,
+                    interval: n > 20 ? 4 : n > 10 ? 1 : 0 } },
+            yAxis: [
+                { type: 'value', name: 'Points', nameTextStyle: { color: labelColor, fontSize: 10 },
+                  splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
+                  axisLabel: { color: labelColor, fontSize: 10,
+                      formatter: function(v) { return v >= 1000 ? (v/1000).toFixed(0)+'k' : v; } } },
+                { type: 'value', name: 'Products', nameTextStyle: { color: labelColor, fontSize: 10 },
+                  splitLine: { show: false }, axisLabel: { color: labelColor, fontSize: 10 }, minInterval: 1 },
+            ],
+            series: [
+                { name: 'Points',          type: 'bar', yAxisIndex: 0, data: dd.pts,   barMaxWidth: 22,
+                  itemStyle: { borderRadius: [4,4,0,0], color: gradV('#f59e0b','rgba(245,158,11,0.18)') } },
+                { name: 'Unique Products', type: 'bar', yAxisIndex: 1, data: dd.prods, barMaxWidth: 18,
+                  itemStyle: { borderRadius: [3,3,0,0], color: '#22c55e' } },
+            ],
+        };
+    }
+    var mcEl = document.getElementById('monthlyChart');
+    if (mcEl) {
+        var mc = echarts.init(mcEl, null, { renderer: 'svg' });
+        mc.setOption(buildTrendMonthlyOpt());
+        mc.on('click', function(params) {
+            if (trendDrillActive || params.componentType !== 'series') return;
+            var mk = monthKeys[params.dataIndex];
+            var dd = dailyDrill[mk]; if (!dd) return;
+            trendDrillActive = true;
+            var lbl = monthLabels[params.dataIndex];
+            document.getElementById('trend-drill-info').textContent = '— ' + lbl;
+            document.getElementById('trend-drill-back').style.display = 'inline-flex';
+            mc.setOption(buildTrendDrillOpt(dd), true);
+            // cross-chart: filter product chart to this month
+            var monthData = productsByMonth[mk];
+            if (pc && monthData && monthData.length) {
+                var mLabels = monthData.map(function(d) { return d.name; });
+                var mPts    = monthData.map(function(d) { return d.pts;  });
+                pc.setOption(buildProductOpt(mLabels, mPts), true);
+                document.getElementById('product-chart-month-label').textContent = '— ' + lbl;
+            }
+        });
+        window.trendDrillBack = function() {
+            if (!trendDrillActive) return; trendDrillActive = false;
+            document.getElementById('trend-drill-info').textContent = '';
+            document.getElementById('trend-drill-back').style.display = 'none';
+            mc.setOption(buildTrendMonthlyOpt(), true);
+            // cross-chart: reset product chart to full contract view
+            if (pc) {
+                pc.setOption(buildProductOpt(productChartLabels, productChartData), true);
+                document.getElementById('product-chart-month-label').textContent = '';
+            }
+        };
+        charts.push(mc);
+    }
+
+    // Points by product (horizontal bar)
+    function buildProductOpt(labels, data) {
+        var nP = labels.length;
         var showP = 8;
         var pStart = nP > showP ? Math.max(0, 100 - Math.floor(showP / nP * 100)) : 0;
-        var pc = echarts.init(document.getElementById('productChart'), null, { renderer: 'svg' });
-        pc.setOption({
+        return {
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
                 formatter: function (p) { return '<b>' + p[0].name + '</b><br/>' + p[0].value.toLocaleString() + ' pts'; }
@@ -424,11 +566,11 @@ function setPastPageSize(val) {
             xAxis: { type: 'value', splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
                 axisLabel: { color: labelColor, fontSize: 10,
                     formatter: function (v) { return v >= 1000 ? (v/1000).toFixed(0)+'k' : v; } } },
-            yAxis: { type: 'category', data: productChartLabels.slice().reverse(),
+            yAxis: { type: 'category', data: labels.slice().reverse(),
                 axisTick: { show: false }, axisLine: { lineStyle: { color: axisLine } },
                 axisLabel: { color: labelColor, fontSize: 11, width: 130, overflow: 'truncate' } },
             series: [{
-                type: 'bar', data: productChartData.slice().reverse(), barMaxWidth: 28,
+                type: 'bar', data: data.slice().reverse(), barMaxWidth: 28,
                 itemStyle: { borderRadius: [0,4,4,0], color: gradH('#f59e0b','rgba(245,158,11,0.18)') },
                 label: { show: true, position: 'right', color: labelColor, fontSize: 11,
                     formatter: function (p) { return p.value > 0 ? p.value.toLocaleString() + ' pts' : '—'; } },
@@ -436,14 +578,19 @@ function setPastPageSize(val) {
             dataZoom: nP > showP ? [{ type: 'slider', yAxisIndex: 0, start: pStart, end: 100,
                 width: 16, right: 4, fillerColor: 'rgba(245,158,11,0.2)', borderColor: axisLine,
                 handleStyle: { color: '#f59e0b' }, moveHandleStyle: { color: '#f59e0b' } }] : [],
-        });
+        };
+    }
+    var pc = null;
+    if (document.getElementById('productChart') && productChartLabels.length) {
+        pc = echarts.init(document.getElementById('productChart'), null, { renderer: 'svg' });
+        pc.setOption(buildProductOpt(productChartLabels, productChartData));
         charts.push(pc);
     }
 
-    // Points per contract
+    // Points per contract (all contracts)
     if (document.getElementById('contractChart') && contractChartLabels.length) {
         var nC = contractChartLabels.length;
-        var showC = 6;
+        var showC = 5;
         var cStart = nC > showC ? Math.max(0, 100 - Math.floor(showC / nC * 100)) : 0;
         var cc = echarts.init(document.getElementById('contractChart'), null, { renderer: 'svg' });
         cc.setOption({

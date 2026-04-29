@@ -39,8 +39,19 @@
 
 {% block content %}
 
-<!-- ── 3 STAT CARDS ── -->
-<div class="grid-3" style="margin-bottom:20px;">
+<!-- ── 4 STAT CARDS ── -->
+<div class="grid-4" style="margin-bottom:20px;">
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#3b82f6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">receipt_long</span>
+        </div>
+        <div>
+            <div class="stat-label">Total Sales</div>
+            <div class="stat-value">{{ total_count }}</div>
+            <div class="stat-sub">all statuses</div>
+        </div>
+    </div>
 
     <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
         <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#22c55e,#16a34a); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
@@ -114,6 +125,12 @@
             <button class="fpill" onclick="setSalesFilter('accepted',this)">Accepted</button>
             <button class="fpill" onclick="setSalesFilter('rejected',this)">Rejected</button>
             <button class="fpill" onclick="setSalesFilter('pending',this)">Pending</button>
+            {% if pharmacy_contracts|length > 1 %}
+            <select id="contractFilter" onchange="filterSales()" style="padding:4px 8px; border-radius:8px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;">
+                <option value="">All Contracts</option>
+                {% for c in pharmacy_contracts %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}
+            </select>
+            {% endif %}
             <div style="width:1px; height:18px; background:var(--card-border); flex-shrink:0;"></div>
             <input type="date" id="salesFrom" class="date-inp" onchange="filterSales()" title="From date">
             <span style="font-size:0.75rem; color:var(--text-secondary);">→</span>
@@ -144,12 +161,13 @@
                 {% for sale in all_sales %}
                 <tr data-search="{{ sale.contract_product.product.designation|lower }} {{ sale.contract_product.external_designation|lower }}"
                     data-status="{{ sale.status }}"
-                    data-date="{{ sale.sale_datetime|date:'Y-m-d' }}">
+                    data-date="{{ sale.sale_datetime|date:'Y-m-d' }}"
+                    data-contract="{{ sale.contract_product.contract.id }}">
                     <td style="white-space:nowrap; color:var(--text-secondary); font-size:0.84rem;">{{ sale.sale_datetime|date:"d M Y" }}</td>
                     <td style="font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.contract.title }}</td>
                     <td style="font-weight:500;">{{ sale.contract_product.product.designation }}</td>
                     <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.external_designation }}</td>
-                    <td style="text-align:center; font-weight:600;">{{ sale.contract_product.product.ppv|default:"—" }}</td>
+                    <td style="text-align:center; font-weight:600;">{{ sale.product_ppv|default:"—" }}</td>
                     <td style="text-align:center; font-weight:600;">{{ sale.quantity }}</td>
                     <td style="text-align:center;">
                         {% if sale.status == "accepted" %}
@@ -243,7 +261,18 @@
     function baseOption(labels, rotateCutoff) {
         return {
             backgroundColor: 'transparent',
-            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    var s = '<b>' + params[0].axisValue + '</b><br/>';
+                    var total = 0;
+                    params.forEach(function(p) { total += (p.value || 0); });
+                    params.forEach(function(p) {
+                        s += p.marker + ' ' + p.seriesName + ': <b>' + p.value + '</b><br/>';
+                    });
+                    s += '<span style="font-size:0.9em;color:#94a3b8;">Total: <b>' + total + '</b></span>';
+                    return s;
+                }
+            },
             legend: { top: 0, right: 0, icon: 'circle', itemWidth: 10, itemHeight: 10,
                 textStyle: { color: labelColor, fontSize: 11 },
                 data: ['Accepted', 'Pending', 'Rejected'] },
@@ -337,18 +366,21 @@
     }
 
     function filterSales() {
-        var q    = (document.getElementById('salesSearch').value || '').toLowerCase().trim();
-        var from = document.getElementById('salesFrom').value || '';
-        var to   = document.getElementById('salesTo').value   || '';
+        var q        = (document.getElementById('salesSearch').value || '').toLowerCase().trim();
+        var from     = document.getElementById('salesFrom').value || '';
+        var to       = document.getElementById('salesTo').value   || '';
+        var cfEl     = document.getElementById('contractFilter');
+        var contract = cfEl ? cfEl.value : '';
 
         var allRows = document.querySelectorAll('#salesBody tr');
         var matched = [];
         allRows.forEach(function(row) {
-            var ok = (!q    || (row.dataset.search || '').includes(q))
+            var ok = (!q        || (row.dataset.search || '').includes(q))
                   && (salesFilter === 'all' || row.dataset.status === salesFilter
                       || (salesFilter === 'pending' && row.dataset.status !== 'accepted' && row.dataset.status !== 'rejected'))
-                  && (!from || row.dataset.date >= from)
-                  && (!to   || row.dataset.date <= to);
+                  && (!from     || row.dataset.date >= from)
+                  && (!to       || row.dataset.date <= to)
+                  && (!contract || row.dataset.contract === contract);
             row.style.display = 'none';
             if (ok) matched.push(row);
         });
@@ -363,7 +395,7 @@
             row.style.display = (i >= start && i < end) ? '' : 'none';
         });
 
-        var filtered = q || salesFilter !== 'all' || from || to;
+        var filtered = q || salesFilter !== 'all' || from || to || contract;
         if (countEl) countEl.textContent = filtered
             ? total + ' result' + (total === 1 ? '' : 's')
             : TOTAL;

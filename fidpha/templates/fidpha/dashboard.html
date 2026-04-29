@@ -59,12 +59,12 @@
 
     <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
         <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#3b82f6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-            <span class="material-icons-round" style="font-size:22px; color:white;">receipt_long</span>
+            <span class="material-icons-round" style="font-size:22px; color:white;">category</span>
         </div>
         <div>
-            <div class="stat-label">Total Sales</div>
-            <div class="stat-value">{{ total_sales_count }}</div>
-            <div class="stat-sub">across {{ total_contracts_count }} contract{{ total_contracts_count|pluralize }}</div>
+            <div class="stat-label">Total Products</div>
+            <div class="stat-value">{{ total_products_count }}</div>
+            <div class="stat-sub">unique products with points</div>
         </div>
     </div>
 
@@ -123,19 +123,15 @@
     <div class="card">
         <div class="card-header" style="flex-wrap:wrap; gap:6px;">
             <div class="card-header-icon"><span class="material-icons-round">show_chart</span></div>
-            <div class="card-title" id="cumul-title">Cumulative Points</div>
-            <span id="cumul-drill-info" style="font-size:0.78rem; color:var(--text-secondary); margin-left:4px;"></span>
-            <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
-                <button id="cumul-drill-back" onclick="cumulDrillBack()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
-                </button>
+            <div class="card-title">Cumulative Points</div>
+            <div style="margin-left:auto;">
                 <select id="cumulYearSelect" onchange="setCumulPeriod(this.value)" style="padding:3px 6px; border-radius:6px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
                     <option value="last12">Last 12 months</option>
                     {% for yr in dash_years_list %}<option value="{{ yr }}">{{ yr }}</option>{% endfor %}
                 </select>
             </div>
         </div>
-        <div id="cumulativeChart" style="height:220px; cursor:pointer;" title="Click a bar to drill down"></div>
+        <div id="cumulativeChart" style="height:220px;"></div>
     </div>
 
     <div class="card">
@@ -173,6 +169,8 @@
                 <th>Contract</th>
                 <th>Product</th>
                 <th style="text-align:center;">Qty</th>
+                <th style="text-align:center;">PPV</th>
+                <th style="text-align:center;">Points</th>
                 <th style="text-align:center;">Status</th>
             </tr>
         </thead>
@@ -183,6 +181,14 @@
                 <td style="font-size:0.8rem; color:var(--text-secondary);">{{ sale.contract_product.contract.title }}</td>
                 <td style="font-weight:500;">{{ sale.contract_product.product.designation }}</td>
                 <td style="text-align:center; font-weight:600;">{{ sale.quantity }}</td>
+                <td style="text-align:center; font-size:0.84rem; color:var(--text-secondary);">{{ sale.product_ppv|default:"—" }}</td>
+                <td style="text-align:center;">
+                    {% if sale.product_ppv %}
+                        <span style="color:#22c55e; font-weight:700; display:inline-flex; align-items:center; gap:3px;">
+                            <span class="material-icons-round" style="font-size:13px;">star</span>{{ sale.pts|default:"—" }}
+                        </span>
+                    {% else %}<span style="opacity:0.35;">—</span>{% endif %}
+                </td>
                 <td style="text-align:center;">
                     {% if sale.status == "accepted" %}<span class="badge badge-success">Accepted</span>
                     {% elif sale.status == "rejected" %}<span class="badge badge-danger">Rejected</span>
@@ -213,13 +219,14 @@
 
     // ── Static data ──
     var last12 = {
-        keys:   {{ chart_month_keys|safe }},
-        labels: {{ chart_month_labels|safe }},
-        pts:    {{ chart_month_data|safe }},
-        units:  {{ chart_month_units|safe }},
-        submit: {{ chart_submit_data|safe }},
+        keys:     {{ chart_month_keys|safe }},
+        labels:   {{ chart_month_labels|safe }},
+        pts:      {{ chart_month_data|safe }},
+        units:    {{ chart_month_units|safe }},
+        products: {{ chart_month_products|safe }},
+        submit:   {{ chart_submit_data|safe }},
     };
-    (function () { var a = 0, c = []; last12.pts.forEach(function(v){ a+=v; c.push(a); }); last12.cumul = c; }());
+    (function () { var a = {{ chart_cumul_base }}, c = []; last12.pts.forEach(function(v){ a+=v; c.push(a); }); last12.cumul = c; }());
 
     var dashYearsMonthly = {{ dash_years_monthly|safe }};
     var dashYearsSubmit  = {{ dash_years_submit|safe }};
@@ -270,36 +277,63 @@
     var grid12 = { left: 10, right: 10, top: 16, bottom: 52, containLabel: true };
 
     // ── 1. Monthly Overview ──
+    function buildMonthlyOpt(data) {
+        var prods = data.products || data.pts.map(function(){ return 0; });
+        return {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    var s = '<b>' + params[0].axisValue + '</b><br/>';
+                    params.forEach(function(p) {
+                        var unit = p.seriesName === 'Points' ? ' pts' : ' products';
+                        s += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>' + unit + '<br/>';
+                    });
+                    return s;
+                }
+            },
+            legend: { data: ['Points', 'Products'], top: 2, textStyle: { color: labelColor, fontSize: 10 } },
+            grid: { left: 10, right: 10, top: 32, bottom: 52, containLabel: true },
+            xAxis: xCat(data.labels),
+            yAxis: [
+                yVal({ name: 'Points', nameTextStyle: { color: labelColor, fontSize: 9 } }),
+                { type: 'value', name: 'Products', splitLine: { show: false },
+                  nameTextStyle: { color: labelColor, fontSize: 9 },
+                  axisLabel: { color: labelColor, fontSize: 9, formatter: function(v){ return v; } },
+                  minInterval: 1 },
+            ],
+            series: [
+                { name: 'Points',   type: 'bar', yAxisIndex: 0, data: data.pts, barMaxWidth: 22,
+                  itemStyle: { borderRadius: [4,4,0,0], color: gradV('#3b9fd4','rgba(27,103,155,0.18)') },
+                  emphasis: { itemStyle: { color: gradV('#60c0f0','rgba(27,103,155,0.38)') } } },
+                { name: 'Products', type: 'bar', yAxisIndex: 1, data: prods, barMaxWidth: 18,
+                  itemStyle: { borderRadius: [3,3,0,0], color: '#22c55e' },
+                  emphasis: { itemStyle: { color: '#4ade80' } } },
+            ],
+        };
+    }
+    function buildMonthlyDrillOpt(dd) {
+        return {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    return '<b>Day ' + params[0].axisValue + '</b><br/>' +
+                           params[0].marker + ' Points: <b>' + params[0].value.toLocaleString() + '</b> pts<br/>';
+                }
+            },
+            legend: { data: ['Points'], top: 2, textStyle: { color: labelColor, fontSize: 10 } },
+            grid: { left: 10, right: 10, top: 32, bottom: 52, containLabel: true },
+            xAxis: xCat(daysArray(dd.n), 0),
+            yAxis: [ yVal({ name: 'Points', nameTextStyle: { color: labelColor, fontSize: 9 } }) ],
+            series: [
+                { name: 'Points', type: 'bar', yAxisIndex: 0, data: dd.pts, barMaxWidth: 26,
+                  itemStyle: { borderRadius: [4,4,0,0], color: gradV('#3b9fd4','rgba(27,103,155,0.18)') },
+                  emphasis: { itemStyle: { color: gradV('#60c0f0','rgba(27,103,155,0.38)') } } },
+            ],
+        };
+    }
     var barDrillActive = false;
-    var barChartInst = mkChart('monthlyChart', {
-        backgroundColor: 'transparent',
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
-            formatter: function (params) {
-                var s = '<b>' + params[0].axisValue + '</b><br/>';
-                params.forEach(function (p) {
-                    s += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>'
-                       + (p.seriesName === 'Points' ? ' pts' : ' units') + '<br/>';
-                });
-                return s;
-            }
-        },
-        legend: { data: ['Points', 'Units Sold'], top: 2, textStyle: { color: labelColor, fontSize: 10 } },
-        grid: { left: 10, right: 10, top: 32, bottom: 52, containLabel: true },
-        xAxis: xCat(last12.labels),
-        yAxis: [
-            yVal({ name: 'Points', nameTextStyle: { color: labelColor, fontSize: 9 } }),
-            yVal({ name: 'Units',  nameTextStyle: { color: labelColor, fontSize: 9 }, splitLine: { show: false }, axisLabel: { color: labelColor, fontSize: 9 } }),
-        ],
-        series: [
-            { name: 'Points',     type: 'bar', yAxisIndex: 0, data: last12.pts,   barMaxWidth: 22,
-              itemStyle: { borderRadius: [4,4,0,0], color: gradV('#3b9fd4','rgba(27,103,155,0.18)') },
-              emphasis: { itemStyle: { color: gradV('#60c0f0','rgba(27,103,155,0.38)') } } },
-            { name: 'Units Sold', type: 'bar', yAxisIndex: 1, data: last12.units, barMaxWidth: 22,
-              itemStyle: { borderRadius: [4,4,0,0], color: gradV('#f59e0b','rgba(245,158,11,0.18)') },
-              emphasis: { itemStyle: { color: gradV('#fbbf24','rgba(245,158,11,0.38)') } } },
-        ],
-    });
-    barChartInst.on('click', function (params) {
+    var barChartInst = mkChart('monthlyChart', buildMonthlyOpt(last12));
+    barChartInst.on('click', function(params) {
         if (barDrillActive || params.componentType !== 'series') return;
         var data = getBarData();
         var mk = data.keys[params.dataIndex];
@@ -307,21 +341,19 @@
         barDrillActive = true;
         document.getElementById('monthly-drill-info').textContent = '— ' + data.labels[params.dataIndex];
         document.getElementById('monthly-drill-back').style.display = 'inline-flex';
-        barChartInst.setOption({ xAxis: xCat(daysArray(dd.n), 0), series: [{ data: dd.pts }, { data: dd.units }] });
+        barChartInst.setOption(buildMonthlyDrillOpt(dd), true);
     });
-    window.monthlyDrillBack = function () {
+    window.monthlyDrillBack = function() {
         if (!barDrillActive) return; barDrillActive = false;
         document.getElementById('monthly-drill-info').textContent = '';
         document.getElementById('monthly-drill-back').style.display = 'none';
-        var data = getBarData();
-        barChartInst.setOption({ xAxis: xCat(data.labels), series: [{ data: data.pts }, { data: data.units }] });
+        barChartInst.setOption(buildMonthlyOpt(getBarData()), true);
     };
-    window.setBarPeriod = function (val) {
+    window.setBarPeriod = function(val) {
         barPeriod = val; barDrillActive = false;
         document.getElementById('monthly-drill-info').textContent = '';
         document.getElementById('monthly-drill-back').style.display = 'none';
-        var data = getBarData();
-        barChartInst.setOption({ xAxis: xCat(data.labels), series: [{ data: data.pts }, { data: data.units }] });
+        barChartInst.setOption(buildMonthlyOpt(getBarData()), true);
     };
 
     // ── 2. Top Products Treemap (unchanged) ──
@@ -348,42 +380,24 @@
     });
 
     // ── 3. Cumulative Points ──
-    var cumulDrillActive = false;
-    var cumulChartInst = mkChart('cumulativeChart', {
-        backgroundColor: 'transparent',
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
-            formatter: function (p) { return '<b>' + p[0].axisValue + '</b><br/>' + p[0].marker + ' ' + p[0].value.toLocaleString() + ' pts'; }
-        },
-        grid: grid12, xAxis: xCat(last12.labels), yAxis: yVal(),
-        series: [{
-            type: 'bar', data: last12.cumul, barMaxWidth: 26,
-            itemStyle: { borderRadius: [4,4,0,0], color: gradV('#22c55e','rgba(34,197,94,0.18)') },
-            emphasis: { itemStyle: { color: gradV('#4ade80','rgba(34,197,94,0.38)') } },
-        }],
-    });
-    cumulChartInst.on('click', function (params) {
-        if (cumulDrillActive || params.componentType !== 'series') return;
-        var data = getCumulData();
-        var mk = data.keys[params.dataIndex];
-        var dd = drillData[mk]; if (!dd) return;
-        cumulDrillActive = true;
-        document.getElementById('cumul-drill-info').textContent = '— ' + data.labels[params.dataIndex];
-        document.getElementById('cumul-drill-back').style.display = 'inline-flex';
-        cumulChartInst.setOption({ xAxis: xCat(daysArray(dd.n), 0), series: [{ data: dd.pts }] });
-    });
-    window.cumulDrillBack = function () {
-        if (!cumulDrillActive) return; cumulDrillActive = false;
-        document.getElementById('cumul-drill-info').textContent = '';
-        document.getElementById('cumul-drill-back').style.display = 'none';
-        var data = getCumulData();
-        cumulChartInst.setOption({ xAxis: xCat(data.labels), series: [{ data: data.cumul }] });
-    };
-    window.setCumulPeriod = function (val) {
-        cumulPeriod = val; cumulDrillActive = false;
-        document.getElementById('cumul-drill-info').textContent = '';
-        document.getElementById('cumul-drill-back').style.display = 'none';
-        var data = getCumulData();
-        cumulChartInst.setOption({ xAxis: xCat(data.labels), series: [{ data: data.cumul }] });
+    function buildCumulOpt(data) {
+        return {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', axisPointer: { type: 'line' },
+                formatter: function(p) { return '<b>' + p[0].axisValue + '</b><br/>' + p[0].marker + ' ' + p[0].value.toLocaleString() + ' pts'; }
+            },
+            grid: grid12, xAxis: xCat(data.labels), yAxis: yVal(),
+            series: [{
+                type: 'line', data: data.cumul, smooth: true, symbol: 'none',
+                lineStyle: { color: '#22c55e', width: 2.5 },
+                areaStyle: { color: gradV('rgba(34,197,94,0.30)', 'rgba(34,197,94,0.02)') },
+            }],
+        };
+    }
+    var cumulChartInst = mkChart('cumulativeChart', buildCumulOpt(last12));
+    window.setCumulPeriod = function(val) {
+        cumulPeriod = val;
+        cumulChartInst.setOption(buildCumulOpt(getCumulData()), true);
     };
 
     // ── 4. Submission Frequency ──
