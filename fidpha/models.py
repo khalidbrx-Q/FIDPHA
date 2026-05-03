@@ -38,9 +38,11 @@ class TraceableMixin(models.Model):
 # -----------------------
 
 class Account(TraceableMixin, models.Model):
+    STATUS_ACTIVE   = "active"
+    STATUS_INACTIVE = "inactive"
     STATUS_CHOICES = [
-        ("active", "Active"),
-        ("inactive", "Inactive"),
+        (STATUS_ACTIVE,   "Active"),
+        (STATUS_INACTIVE, "Inactive"),
     ]
 
     code = models.CharField(max_length=50, unique=True)
@@ -60,8 +62,8 @@ class Account(TraceableMixin, models.Model):
 
     def clean(self):
         # Rule 3: cannot deactivate account if it has at least one active contract
-        if self.status == "inactive" and self.pk:
-            active_contracts = self.contracts.filter(status="active")
+        if self.status == Account.STATUS_INACTIVE and self.pk:
+            active_contracts = self.contracts.filter(status=Contract.STATUS_ACTIVE)
             if active_contracts.exists():
                 raise ValidationError(
                     "Cannot deactivate this account because it has active contracts. "
@@ -91,9 +93,11 @@ class UserProfile(TraceableMixin, models.Model):
 # -----------------------
 
 class Product(TraceableMixin, models.Model):
+    STATUS_ACTIVE   = "active"
+    STATUS_INACTIVE = "inactive"
     STATUS_CHOICES = [
-        ("active", "Active"),
-        ("inactive", "Inactive"),
+        (STATUS_ACTIVE,   "Active"),
+        (STATUS_INACTIVE, "Inactive"),
     ]
 
     code        = models.CharField(max_length=50, unique=True)
@@ -109,10 +113,10 @@ class Product(TraceableMixin, models.Model):
 
     def clean(self):
         # Rule 2: cannot deactivate a product if it is in at least one active contract
-        if self.status == "inactive" and self.pk:
+        if self.status == Product.STATUS_INACTIVE and self.pk:
             active_contracts = Contract_Product.objects.filter(
                 product=self,
-                contract__status="active"
+                contract__status=Contract.STATUS_ACTIVE
             )
             if active_contracts.exists():
                 raise ValidationError(
@@ -126,9 +130,11 @@ class Product(TraceableMixin, models.Model):
 # -----------------------
 
 class Contract(TraceableMixin, models.Model):
+    STATUS_ACTIVE   = "active"
+    STATUS_INACTIVE = "inactive"
     STATUS_CHOICES = [
-        ("active", "Active"),
-        ("inactive", "Inactive"),
+        (STATUS_ACTIVE,   "Active"),
+        (STATUS_INACTIVE, "Inactive"),
     ]
 
     title = models.CharField(max_length=255)
@@ -184,10 +190,10 @@ class Contract(TraceableMixin, models.Model):
                 )
 
         # Rule 1: only one active contract per account at a time
-        if self.status == "active" and self.account_id:
+        if self.status == Contract.STATUS_ACTIVE and self.account_id:
             active_contracts = Contract.objects.filter(
                 account=self.account,
-                status="active"
+                status=Contract.STATUS_ACTIVE
             )
             if self.pk:
                 active_contracts = active_contracts.exclude(pk=self.pk)
@@ -198,10 +204,10 @@ class Contract(TraceableMixin, models.Model):
                 )
 
         # Rule 6: cannot activate a contract if it has inactive products linked
-        if self.status == "active" and self.pk:
+        if self.status == Contract.STATUS_ACTIVE and self.pk:
             inactive_links = (
                 Contract_Product.objects
-                .filter(contract=self, product__status="inactive")
+                .filter(contract=self, product__status=Product.STATUS_INACTIVE)
                 .select_related("product")
             )
             if inactive_links.exists():

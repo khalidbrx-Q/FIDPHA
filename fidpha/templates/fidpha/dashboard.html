@@ -356,28 +356,41 @@
         barChartInst.setOption(buildMonthlyOpt(getBarData()), true);
     };
 
-    // ── 2. Top Products Treemap (unchanged) ──
-    var productTreeData = productLabels.length
-        ? productLabels.map(function (l, i) { return { name: l, value: productData[i] }; })
-        : [{ name: 'No data', value: 1 }];
-    mkChart('productsChart', {
-        backgroundColor: 'transparent', color: palette,
-        tooltip: { formatter: function (p) { return '<b>' + p.name + '</b><br/>' + p.value.toLocaleString() + ' pts'; } },
-        series: [{
-            type: 'treemap', data: productTreeData, roam: false, breadcrumb: { show: false }, visibleMin: 50,
-            label: {
-                show: true, position: 'inside',
-                formatter: function (p) { return '{nm|' + p.name + '}\n{val|' + p.value.toLocaleString() + ' pts}'; },
-                rich: {
-                    nm:  { fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.92)', fontFamily: 'Inter, sans-serif', overflow: 'truncate' },
-                    val: { fontSize: 9,  color: 'rgba(255,255,255,0.70)', fontFamily: 'Inter, sans-serif' },
-                },
-            },
-            levels: [{ itemStyle: { borderWidth: 3, borderColor: bgColor, gapWidth: 3 } }],
-            itemStyle: { borderWidth: 0 },
-            emphasis: { itemStyle: { shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.4)' } },
-        }],
-    });
+    // ── 2. Top Products Treemap ──
+    var productsEl = document.getElementById('productsChart');
+    if (productsEl) {
+        if (productLabels.length) {
+            mkChart('productsChart', {
+                backgroundColor: 'transparent', color: palette,
+                tooltip: { formatter: function (p) { return '<b>' + p.name + '</b><br/>' + p.value.toLocaleString() + ' pts'; } },
+                series: [{
+                    type: 'treemap',
+                    data: productLabels.map(function (l, i) { return { name: l, value: productData[i] }; }),
+                    roam: false, breadcrumb: { show: false }, visibleMin: 50,
+                    label: {
+                        show: true, position: 'inside',
+                        formatter: function (p) { return '{nm|' + p.name + '}\n{val|' + p.value.toLocaleString() + ' pts}'; },
+                        rich: {
+                            nm:  { fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.92)', fontFamily: 'Inter, sans-serif', overflow: 'truncate' },
+                            val: { fontSize: 9,  color: 'rgba(255,255,255,0.70)', fontFamily: 'Inter, sans-serif' },
+                        },
+                    },
+                    levels: [{ itemStyle: { borderWidth: 3, borderColor: bgColor, gapWidth: 3 } }],
+                    itemStyle: { borderWidth: 0 },
+                    emphasis: { itemStyle: { shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.4)' } },
+                }],
+            });
+        } else {
+            productsEl.style.display = 'flex';
+            productsEl.style.flexDirection = 'column';
+            productsEl.style.alignItems = 'center';
+            productsEl.style.justifyContent = 'center';
+            productsEl.style.gap = '8px';
+            productsEl.innerHTML =
+                '<span class="material-icons-round" style="font-size:36px;opacity:0.25;color:var(--text-secondary);">grid_view</span>' +
+                '<span style="font-size:0.83rem;color:var(--text-secondary);opacity:0.6;">No sales data yet</span>';
+        }
+    }
 
     // ── 3. Cumulative Points ──
     function buildCumulOpt(data) {

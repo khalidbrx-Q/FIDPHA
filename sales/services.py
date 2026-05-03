@@ -96,7 +96,7 @@ def submit_sales_batch(
         contract = (
             Contract.objects
             .select_for_update()
-            .get(pk=contract.pk, status="active")
+            .get(pk=contract.pk, status=Contract.STATUS_ACTIVE)
         )
 
         # ── Stage 1: Insert all rows to SaleImport (status=pending) ──

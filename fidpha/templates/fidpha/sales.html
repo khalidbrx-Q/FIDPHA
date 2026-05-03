@@ -1,8 +1,8 @@
 {% extends "fidpha/base.html" %}
 
 {% block nav_sales %}active{% endblock %}
-{% block page_title %}Sales{% endblock %}
-{% block page_breadcrumb %}Sales{% endblock %}
+{% block page_title %}Points Breakdown{% endblock %}
+{% block page_breadcrumb %}Points Breakdown{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -34,6 +34,39 @@
         background:var(--content-bg); color:var(--text-secondary);
         font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;
     }
+    .ss-wrap { position:relative; }
+    .ss-btn {
+        display:inline-flex; align-items:center; gap:6px; position:relative;
+        padding:4px 28px 4px 8px; border-radius:8px;
+        border:1px solid var(--card-border); background:var(--content-bg);
+        color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif;
+        cursor:pointer; white-space:nowrap; min-width:130px; max-width:200px;
+        overflow:hidden; text-overflow:ellipsis; text-align:left; transition:border-color 0.15s;
+    }
+    .ss-btn:hover { border-color:var(--accent); }
+    .ss-btn .ss-arrow { position:absolute; right:5px; font-size:15px !important; pointer-events:none; opacity:0.55; }
+    .ss-panel {
+        display:none; position:absolute; top:calc(100% + 4px); left:0;
+        z-index:3000; background:var(--card-bg); border:1px solid var(--card-border);
+        border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.25);
+        min-width:200px; max-width:320px;
+    }
+    .ss-panel.open { display:block; }
+    .ss-search {
+        width:100%; padding:8px 10px; border:none;
+        border-bottom:1px solid var(--card-border);
+        background:transparent; color:var(--text-primary);
+        font-size:0.83rem; font-family:'Inter',sans-serif;
+        box-sizing:border-box; outline:none;
+    }
+    .ss-options { max-height:200px; overflow-y:auto; }
+    .ss-option {
+        padding:8px 12px; font-size:0.83rem; color:var(--text-primary);
+        cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .ss-option:hover { background:var(--sidebar-hover); }
+    .ss-option.ss-selected { color:var(--accent); font-weight:600; }
+    .ss-option.ss-hidden { display:none; }
 </style>
 {% endblock %}
 
@@ -113,6 +146,9 @@
     <div class="card-header" style="flex-wrap:wrap; gap:8px;">
         <div class="card-header-icon"><span class="material-icons-round">receipt_long</span></div>
         <div class="card-title">Sales History</div>
+        {% if total_count > 0 %}
+        <span style="font-size:0.78rem; color:var(--text-secondary); padding:3px 8px; border-radius:20px; border:1px solid var(--card-border); white-space:nowrap;">{% widthratio accepted_count total_count 100 %}% accepted</span>
+        {% endif %}
 
         <!-- Filters row -->
         <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
@@ -126,10 +162,21 @@
             <button class="fpill" onclick="setSalesFilter('rejected',this)">Rejected</button>
             <button class="fpill" onclick="setSalesFilter('pending',this)">Pending</button>
             {% if pharmacy_contracts|length > 1 %}
-            <select id="contractFilter" onchange="filterSales()" style="padding:4px 8px; border-radius:8px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                <option value="">All Contracts</option>
-                {% for c in pharmacy_contracts %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}
-            </select>
+            <div class="ss-wrap" id="ctWrap">
+                <button class="ss-btn" onclick="toggleSs('ctWrap')">
+                    <span id="ctLabel">All Contracts</span>
+                    <span class="material-icons-round ss-arrow">expand_more</span>
+                </button>
+                <div class="ss-panel" id="ctPanel">
+                    <input class="ss-search" type="text" placeholder="Search contract…" oninput="filterSsOpts(this,'ctOptions')" autocomplete="off">
+                    <div class="ss-options" id="ctOptions">
+                        <div class="ss-option ss-selected" data-val="" onclick="pickContract('','All Contracts')">All Contracts</div>
+                        {% for c in pharmacy_contracts %}
+                        <div class="ss-option" data-val="{{ c.id }}" onclick="pickContract('{{ c.id }}','{{ c.title|escapejs }}')">{{ c.title }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
             {% endif %}
             <div style="width:1px; height:18px; background:var(--card-border); flex-shrink:0;"></div>
             <input type="date" id="salesFrom" class="date-inp" onchange="filterSales()" title="From date">
@@ -339,11 +386,43 @@
 }());
 </script>
 <script>
-    var salesFilter = 'all';
+    var salesFilter      = 'all';
+    var selectedContract = '';
     var currentPage = 1;
     var pageSize    = 10;
     var countEl     = document.getElementById('salesCount');
     var TOTAL       = countEl ? countEl.textContent : '';
+
+    function toggleSs(wrapId) {
+        var panel = document.querySelector('#' + wrapId + ' .ss-panel');
+        var isOpen = panel.classList.contains('open');
+        closeAllSs();
+        if (!isOpen) {
+            panel.classList.add('open');
+            var si = panel.querySelector('.ss-search');
+            if (si) { si.value = ''; filterSsOpts(si, 'ctOptions'); si.focus(); }
+        }
+    }
+    function closeAllSs() {
+        document.querySelectorAll('.ss-panel.open').forEach(function(p) { p.classList.remove('open'); });
+    }
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.ss-wrap')) closeAllSs();
+    });
+    function filterSsOpts(input, optionsId) {
+        var q = input.value.toLowerCase();
+        var opts = document.getElementById(optionsId) ? document.getElementById(optionsId).querySelectorAll('.ss-option') : [];
+        opts.forEach(function(o) { o.classList.toggle('ss-hidden', q ? !o.textContent.toLowerCase().includes(q) : false); });
+    }
+    function pickContract(pk, name) {
+        selectedContract = pk;
+        document.getElementById('ctLabel').textContent = name || 'All Contracts';
+        var opts = document.getElementById('ctOptions');
+        if (opts) opts.querySelectorAll('.ss-option').forEach(function(o) { o.classList.toggle('ss-selected', o.dataset.val === pk); });
+        closeAllSs();
+        currentPage = 1;
+        filterSales();
+    }
 
     function setSalesFilter(val, btn) {
         salesFilter = val;
@@ -369,8 +448,7 @@
         var q        = (document.getElementById('salesSearch').value || '').toLowerCase().trim();
         var from     = document.getElementById('salesFrom').value || '';
         var to       = document.getElementById('salesTo').value   || '';
-        var cfEl     = document.getElementById('contractFilter');
-        var contract = cfEl ? cfEl.value : '';
+        var contract = selectedContract;
 
         var allRows = document.querySelectorAll('#salesBody tr');
         var matched = [];

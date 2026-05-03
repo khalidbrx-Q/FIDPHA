@@ -62,11 +62,11 @@ def dashboard(request):
         Rendered dashboard template with stats context.
     """
     stats = {
-        "accounts_active": Account.objects.filter(status="active").count(),
+        "accounts_active": Account.objects.filter(status=Account.STATUS_ACTIVE).count(),
         "accounts_total": Account.objects.count(),
-        "contracts_active": Contract.objects.filter(status="active").count(),
+        "contracts_active": Contract.objects.filter(status=Contract.STATUS_ACTIVE).count(),
         "contracts_total": Contract.objects.count(),
-        "products_active": Product.objects.filter(status="active").count(),
+        "products_active": Product.objects.filter(status=Product.STATUS_ACTIVE).count(),
         "products_total": Product.objects.count(),
         "users_total": User.objects.count(),
         "tokens_active": APIToken.objects.filter(is_active=True).count(),
@@ -605,11 +605,11 @@ def accounts_detail(request, pk: int):
         pk=pk,
     )
     active_contract    = (account.contracts
-                          .filter(status="active")
+                          .filter(status=Contract.STATUS_ACTIVE)
                           .annotate(product_count=Count("products", distinct=True))
                           .first())
     inactive_contracts = (account.contracts
-                          .filter(status="inactive")
+                          .filter(status=Contract.STATUS_INACTIVE)
                           .annotate(product_count=Count("products", distinct=True))
                           .order_by("-end_date"))
     contract_count     = account.contracts.count()
@@ -650,11 +650,11 @@ def accounts_edit(request, pk: int):
         form = AccountForm(instance=account)
 
     active_contract    = (account.contracts
-                          .filter(status="active")
+                          .filter(status=Contract.STATUS_ACTIVE)
                           .annotate(product_count=Count("products", distinct=True))
                           .first())
     inactive_contracts = (account.contracts
-                          .exclude(status="active")
+                          .exclude(status=Contract.STATUS_ACTIVE)
                           .annotate(product_count=Count("products", distinct=True))
                           .order_by("-end_date"))
     contract_count     = account.contracts.count()
@@ -676,7 +676,7 @@ def accounts_delete(request, pk: int):
     """Delete an account after confirmation."""
     account = get_object_or_404(Account, pk=pk)
     contract_count        = account.contracts.count()
-    active_contract_count = account.contracts.filter(status="active").count()
+    active_contract_count = account.contracts.filter(status=Contract.STATUS_ACTIVE).count()
     user_count            = account.users.count()
 
     if request.method == "POST":
@@ -749,8 +749,8 @@ def _available_products(contract=None):
     Already-linked products for the given contract are excluded (they show via
     the existing formset rows).
     """
-    allow_inactive = contract is not None and contract.status == "inactive"
-    qs = Product.objects.all() if allow_inactive else Product.objects.filter(status="active")
+    allow_inactive = contract is not None and contract.status == Contract.STATUS_INACTIVE
+    qs = Product.objects.all() if allow_inactive else Product.objects.filter(status=Product.STATUS_ACTIVE)
     if contract:
         linked = Contract_Product.objects.filter(contract=contract).values_list("product_id", flat=True)
         qs = qs.exclude(pk__in=linked)
@@ -769,7 +769,7 @@ def _patch_freed_product_queryset(formset, available, data):
         if data.get(f"{f.prefix}-DELETE") and f.instance.product_id
     }
     if freed_pks:
-        freed_qs = Product.objects.filter(pk__in=freed_pks, status="active")
+        freed_qs = Product.objects.filter(pk__in=freed_pks, status=Product.STATUS_ACTIVE)
         extended  = (available | freed_qs).distinct()
         for f in formset.extra_forms:
             f.fields["product"].queryset = extended.order_by("designation")
@@ -1036,7 +1036,7 @@ def contracts_create(request):
         "page_action":   "Create",
         "cp_prefix":     _CP_PREFIX,
         "products_json": json.dumps([
-            {"id": p.pk, "label": p.designation, "active": p.status == "active"}
+            {"id": p.pk, "label": p.designation, "active": p.status == Product.STATUS_ACTIVE}
             for p in Product.objects.order_by("designation")
         ]),
     })
@@ -1084,7 +1084,7 @@ def contracts_edit(request, pk: int):
         "page_action":   "Edit",
         "cp_prefix":     _CP_PREFIX,
         "products_json": json.dumps([
-            {"id": p.pk, "label": p.designation, "active": p.status == "active"}
+            {"id": p.pk, "label": p.designation, "active": p.status == Product.STATUS_ACTIVE}
             for p in Product.objects.order_by("designation")
         ]),
     })
@@ -1225,7 +1225,7 @@ def products_delete(request, pk: int):
     product = get_object_or_404(Product, pk=pk)
     contract_count        = Contract_Product.objects.filter(product=product).count()
     active_contract_count = Contract_Product.objects.filter(
-        product=product, contract__status="active"
+        product=product, contract__status=Contract.STATUS_ACTIVE
     ).count()
 
     if request.method == "POST":
@@ -1687,6 +1687,8 @@ def sales_api_batches(request):
 @perm_required('sales.view_sale')
 def sales_api_sales(request):
     from django.http import JsonResponse
+    from django.db.models import ExpressionWrapper, FloatField
+    from django.db.models.functions import Round
     contract_pk = request.GET.get("contract", "")
     batch_id    = request.GET.get("batch", "").strip()
     if not contract_pk or not batch_id:
@@ -1698,14 +1700,16 @@ def sales_api_sales(request):
             sale_import__batch_id=batch_id,
         )
         .select_related("contract_product__product", "sale_import", "reviewed_by")
+        .annotate(pts=Round(ExpressionWrapper(
+            F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
+            output_field=FloatField(),
+        )))
         .order_by("sale_datetime")
     )
     data   = []
     counts = {"pending": 0, "accepted": 0, "rejected": 0}
     for s in qs:
         contract_ppv = s.contract_product.product.ppv
-        factor       = s.contract_product.points_per_unit
-        points       = round(float(contract_ppv) * float(factor) * s.quantity) if contract_ppv else 0
         ppv_mismatch = (contract_ppv is not None and s.ppv != contract_ppv)
         data.append({
             "pk":               s.pk,
@@ -1717,7 +1721,7 @@ def sales_api_sales(request):
             "ppv":              str(s.ppv) if s.ppv else "—",
             "contract_ppv":     str(contract_ppv) if contract_ppv else None,
             "ppv_mismatch":     ppv_mismatch,
-            "points":           points,
+            "points":           int(s.pts or 0),
             "status":           s.status,
             "reviewed_by":      (
                 s.reviewed_by.get_full_name() or s.reviewed_by.username

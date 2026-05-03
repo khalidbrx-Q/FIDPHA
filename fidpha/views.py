@@ -7,7 +7,7 @@ from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
 from django.urls import reverse_lazy
 from django.contrib.auth.models import User
-from .models import UserProfile
+from .models import UserProfile, Contract
 import secrets
 from django.utils import timezone
 from django.core.mail import send_mail
@@ -318,16 +318,17 @@ def portal_dashboard(request):
 
     account = profile.account
 
-    base_qs = Sale.objects.filter(
-        contract_product__contract__account=account,
-        status=Sale.STATUS_ACCEPTED,
-        product_ppv__isnull=False,
-    ).annotate(
-        pts=Round(ExpressionWrapper(
-            F("quantity") * F("product_ppv") * F("contract_product__points_per_unit"),
+    def _pts_qs(extra_filter):
+        return Sale.objects.filter(
+            status=Sale.STATUS_ACCEPTED,
+            product_ppv__isnull=False,
+            **extra_filter,
+        ).annotate(pts=Round(ExpressionWrapper(
+            F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
             output_field=FloatField(),
-        ))
-    )
+        )))
+
+    base_qs = _pts_qs({"contract_product__contract__account": account})
 
     total_points = int(base_qs.aggregate(total=Sum("pts"))["total"] or 0)
 
@@ -521,19 +522,12 @@ def portal_dashboard(request):
             sale_datetime__gte=month_start,
         ).aggregate(t=Sum("quantity"))["t"] or 0
     )
-    active_contract = account.contracts.filter(status="active").first()
+    active_contract = account.contracts.filter(status=Contract.STATUS_ACTIVE).first()
     total_products_count = base_qs.values("contract_product__product").distinct().count()
     total_contracts_count = account.contracts.count()
     recent_sales = (
-        Sale.objects
-        .filter(contract_product__contract__account=account)
+        _pts_qs({"contract_product__contract__account": account})
         .select_related("contract_product__product", "contract_product__contract")
-        .annotate(
-            pts=Round(ExpressionWrapper(
-                F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
-                output_field=FloatField(),
-            ))
-        )
         .order_by("-sale_datetime")[:5]
     )
 
@@ -599,7 +593,7 @@ def portal_contracts(request):
     from django.db.models.functions import Round, TruncMonth, TruncDay
 
     account = profile.account
-    active_contract = account.contracts.filter(status="active").first()
+    active_contract = account.contracts.filter(status=Contract.STATUS_ACTIVE).first()
 
     def _pts_qs(extra_filter):
         return (
@@ -675,7 +669,7 @@ def portal_contracts(request):
 
     # ── Past contracts ──
     past_contracts = []
-    for old in account.contracts.exclude(status="active").order_by("-end_date"):
+    for old in account.contracts.exclude(status=Contract.STATUS_ACTIVE).order_by("-end_date"):
         units = int(
             Sale.objects.filter(contract_product__contract=old)
             .aggregate(t=Sum("quantity"))["t"] or 0
@@ -816,17 +810,6 @@ def portal_contracts(request):
 # Sales / Loyalty
 # -----------------------
 
-def _calculate_points(quantity, ppv, factor=1):
-    """
-    Points rule: round(ppv × quantity × factor).
-    factor comes from Contract_Product.points_per_unit (default 1 = 1 pt/MAD).
-    ppv is taken from the Product table, not from the sale record.
-    Returns 0 if ppv is None.
-    """
-    if ppv is None:
-        return 0
-    return round(float(ppv) * quantity * float(factor))
-
 
 @login_required(login_url="/portal/login/")
 def portal_sales(request):
@@ -848,22 +831,21 @@ def portal_sales(request):
     from sales.models import Sale
 
     account = profile.account
+
     all_sales = (
         Sale.objects
         .filter(contract_product__contract__account=account)
         .select_related("contract_product__product", "contract_product__contract")
-        .annotate(
-            points=Round(ExpressionWrapper(
-                F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
-                output_field=FloatField(),
-            ))
-        )
+        .annotate(points=Round(ExpressionWrapper(
+            F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
+            output_field=FloatField(),
+        )))
         .order_by("-sale_datetime")
     )
 
     accepted_count = all_sales.filter(status=Sale.STATUS_ACCEPTED).count()
-    rejected_count = all_sales.filter(status="rejected").count()
-    pending_count  = all_sales.exclude(status=Sale.STATUS_ACCEPTED).exclude(status="rejected").count()
+    rejected_count = all_sales.filter(status=Sale.STATUS_REJECTED).count()
+    pending_count  = all_sales.exclude(status=Sale.STATUS_ACCEPTED).exclude(status=Sale.STATUS_REJECTED).count()
     total_count    = accepted_count + pending_count + rejected_count
 
     # ── Last 12 months ──
@@ -890,7 +872,7 @@ def portal_sales(request):
     for r in monthly_qs:
         mk = r["month"].strftime("%Y-%m")
         if r["status"] == Sale.STATUS_ACCEPTED: m_acc[mk] += r["cnt"]
-        elif r["status"] == "rejected":         m_rej[mk] += r["cnt"]
+        elif r["status"] == Sale.STATUS_REJECTED:         m_rej[mk] += r["cnt"]
         else:                                   m_pend[mk] += r["cnt"]
 
     sales_month_keys     = [d.strftime("%Y-%m") for d in month_dates]
@@ -924,7 +906,7 @@ def portal_sales(request):
         for r in yr_qs:
             mk = r["month"].strftime("%Y-%m")
             if r["status"] == Sale.STATUS_ACCEPTED: ya[mk] += r["cnt"]
-            elif r["status"] == "rejected":         yr_rej[mk] += r["cnt"]
+            elif r["status"] == Sale.STATUS_REJECTED:         yr_rej[mk] += r["cnt"]
             else:                                   yp[mk] += r["cnt"]
         years_data[str(yr)] = {
             "keys":     [d.strftime("%Y-%m") for d in yr_months],
@@ -949,7 +931,7 @@ def portal_sales(request):
         if mk not in daily_map:
             daily_map[mk] = {"acc": {}, "rej": {}, "pend": {}}
         if r["status"] == Sale.STATUS_ACCEPTED: bucket = "acc"
-        elif r["status"] == "rejected":         bucket = "rej"
+        elif r["status"] == Sale.STATUS_REJECTED:         bucket = "rej"
         else:                                   bucket = "pend"
         daily_map[mk][bucket][d_int] = daily_map[mk][bucket].get(d_int, 0) + r["cnt"]
 

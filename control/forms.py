@@ -179,7 +179,7 @@ class ContractProductForm(forms.ModelForm):
         base_qs = (
             self.available_products
             if self.available_products is not None
-            else Product.objects.filter(status='active')
+            else Product.objects.all()
         )
         if self.instance and self.instance.pk:
             # Existing row — always include the currently linked product so it
@@ -192,7 +192,7 @@ class ContractProductForm(forms.ModelForm):
 
         self.fields['product'].queryset = qs
         self.fields['product'].label_from_instance = lambda obj: (
-            f"{obj.designation} [Inactive]" if obj.status == "inactive" else obj.designation
+            f"{obj.designation} [Inactive]" if obj.status == Product.STATUS_INACTIVE else obj.designation
         )
 
     def validate_unique(self):
