@@ -43,7 +43,7 @@ class AccountForm(forms.ModelForm):
     class Meta:
         model  = Account
         fields = ['code', 'name', 'city', 'location', 'phone',
-                  'email', 'pharmacy_portal', 'status']
+                  'email', 'pharmacy_portal', 'auto_review_enabled', 'status']
         widgets = {
             'location': forms.Textarea(attrs={'rows': 3}),
         }
@@ -463,12 +463,12 @@ class UserForm(forms.Form):
             # with only user set, hitting the NOT NULL constraint on account_id.
             defaults = {"account": data["account"]}
             if actor:
-                # On edit, always stamp modified_by; on create, also stamp created_by.
                 existing = UserProfile.objects.filter(user=user).exists()
                 if existing:
                     defaults["modified_by"] = actor
                 else:
                     defaults["created_by"] = actor
+                    defaults["modified_by"] = actor
             profile, _ = UserProfile.objects.update_or_create(
                 user=user,
                 defaults=defaults,

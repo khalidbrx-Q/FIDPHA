@@ -112,6 +112,9 @@ urlpatterns = [
     # Configuration — Site
     path("settings/site/", views.site_edit, name="site_edit"),
 
+    # Configuration — System
+    path("settings/system/", views.system_settings, name="system_settings"),
+
     # Sync Import Log (superuser debug)
     path("sync-log/", views.sync_log, name="sync_log"),
 ]

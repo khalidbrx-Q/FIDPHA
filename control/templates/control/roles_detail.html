@@ -106,6 +106,35 @@
     {% endif %}
 </div>
 
+<!-- Traceability -->
+{% if role.profile.created_at %}
+<div class="card" style="margin-top:16px;">
+    <div class="section-label">Traceability</div>
+    <div class="info-row">
+        <span class="info-key">Created</span>
+        <span class="info-val">
+            {{ role.profile.created_at|date:"d M Y, H:i" }}
+            {% if role.profile.created_by %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ role.profile.created_by.get_full_name|default:role.profile.created_by.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="info-row">
+        <span class="info-key">Last Modified</span>
+        <span class="info-val">
+            {{ role.profile.modified_at|date:"d M Y, H:i" }}
+            {% if role.profile.modified_by %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ role.profile.modified_by.get_full_name|default:role.profile.modified_by.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 

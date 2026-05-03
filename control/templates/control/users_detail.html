@@ -77,6 +77,34 @@
     </div>
 </div>
 
+{% if profile and profile.created_at %}
+<div class="card" style="margin-top:16px;">
+    <div class="section-label">Traceability</div>
+    <div class="info-row">
+        <span class="info-key">Created</span>
+        <span class="info-val">
+            {{ profile.created_at|date:"d M Y, H:i" }}
+            {% if profile.created_by %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ profile.created_by.get_full_name|default:profile.created_by.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="info-row" style="border-bottom:none;">
+        <span class="info-key">Last Modified</span>
+        <span class="info-val">
+            {{ profile.modified_at|date:"d M Y, H:i" }}
+            {% if profile.modified_by %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ profile.modified_by.get_full_name|default:profile.modified_by.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
+</div>
+{% endif %}
+
 {% else %}
 
 <!-- ============================================================ -->
@@ -209,6 +237,33 @@
     {% endfor %}
 </div>
 {% endif %}
+
+<!-- Traceability (staff / superuser — sourced from audit log) -->
+<div class="card" style="margin-top:16px;">
+    <div class="section-label">Traceability</div>
+    <div class="info-row">
+        <span class="info-key">Created</span>
+        <span class="info-val">
+            {{ u.date_joined|date:"d M Y, H:i" }}
+            {% if creation_log %}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ creation_log.user.get_full_name|default:creation_log.user.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="info-row" style="border-bottom:none;">
+        <span class="info-key">Last Modified</span>
+        <span class="info-val">
+            {% if last_change_log %}
+                {{ last_change_log.action_time|date:"d M Y, H:i" }}
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ last_change_log.user.get_full_name|default:last_change_log.user.username }}</span>
+            {% else %}
+                <span style="color:var(--text-secondary); opacity:0.5;">—</span>
+            {% endif %}
+        </span>
+    </div>
+</div>
 
 {% endif %}{# end utype portal/staff branch #}
 

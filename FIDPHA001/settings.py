@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-84==t^=mjl&51p8p)x)w%+=j=vd4=548f4q!c2snwih0a%qsnj"
 
-DEBUG = False ################## CHANGE THIS TO False FOR PRODUCTION
+DEBUG = True ################## CHANGE THIS TO False FOR PRODUCTION
 
 ALLOWED_HOSTS = ['*', 'khalidbrx.pythonanywhere.com']
 
@@ -269,12 +269,10 @@ REST_FRAMEWORK = {
         "api.permissions.HasAPIToken",
     ],
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "api.throttles.APITokenThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
+        "api_token": "1000/hour",
     },
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
     "DEFAULT_VERSION": "v1",

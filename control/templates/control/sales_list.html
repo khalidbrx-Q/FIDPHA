@@ -21,7 +21,7 @@
 </script>
 
 {# ── Filter bar ── #}
-<div class="card mb-3 p-3">
+<div class="card mb-3 p-3" style="position:sticky;top:0;z-index:10;">
     <div class="filter-bar">
 
         <div class="filter-group">
@@ -167,6 +167,7 @@
     <div id="blEmpty" class="bl-state" style="display:none;">
         <span class="material-icons-round" style="font-size:28px;color:var(--card-border);">search_off</span>
         <span style="font-size:0.83rem;color:var(--text-secondary);">No batches match the current filters.</span>
+        <a onclick="resetFilters()" style="font-size:0.8rem;color:var(--accent);cursor:pointer;text-decoration:none;margin-top:2px;">Clear filters</a>
     </div>
 
     <div id="blRows"></div>
@@ -215,6 +216,10 @@
     <div class="confirm-box">
         <div class="confirm-title" id="confirmTitle">Confirm</div>
         <div class="confirm-msg"   id="confirmMsg"></div>
+        <div id="confirmReasonWrap" style="display:none;margin-top:10px;">
+            <label style="font-size:0.75rem;opacity:0.6;display:block;margin-bottom:4px;">Rejection reason (optional)</label>
+            <textarea id="confirmReason" rows="2" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--card-border);border-radius:6px;background:var(--card-bg);color:var(--text-primary);font-size:0.82rem;resize:vertical;" placeholder="e.g. duplicate batch, wrong product codes…"></textarea>
+        </div>
         <div class="confirm-actions">
             <button class="confirm-btn confirm-btn-cancel" onclick="closeConfirm()">Cancel</button>
             <button class="confirm-btn" id="confirmOkBtn" onclick="confirmOk()">Confirm</button>
@@ -425,6 +430,9 @@
 .bl-prog-r { background:rgba(239,68,68,0.7);  flex-shrink:0; transition:width 0.3s; }
 .bl-mini-counts { display:flex; align-items:center; gap:4px; font-size:0.73rem; }
 .bl-cnt-sep { opacity:0.2; font-weight:400; }
+.bl-rr-badge { font-size:0.65rem; font-weight:700; padding:1px 5px; border-radius:8px; margin-left:4px; }
+.bl-rr-med  { background:rgba(245,158,11,0.15); color:#d97706; }
+.bl-rr-high { background:rgba(239,68,68,0.15);  color:#dc2626; }
 
 /* ── Batch modal ── */
 .bm-overlay {
@@ -493,6 +501,11 @@
     flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0;
 }
 .bm-body .sr-tbl-scroll { flex:1; max-height:none; overflow-y:auto; }
+.bm-summary { flex-shrink:0; display:flex; align-items:center; gap:6px; padding:7px 14px; border-top:1px solid var(--card-border); font-size:0.73rem; background:var(--card-bg); }
+.bms-lbl    { font-weight:600; opacity:0.5; font-size:0.68rem; text-transform:uppercase; letter-spacing:.04em; margin-right:4px; }
+.bms-item   { font-weight:700; }
+.bms-dim    { font-weight:400; opacity:0.55; }
+.bms-sep    { opacity:0.2; }
 
 /* ── Sales toolbar ── */
 .st-toolbar {
@@ -592,6 +605,14 @@
 .sb-pending  { background:rgba(245,158,11,0.12); color:#f59e0b; }
 .sb-accepted { background:rgba(34,197,94,0.12);  color:#22c55e; }
 .sb-rejected { background:rgba(239,68,68,0.12);  color:#ef4444; }
+.srt { display:flex; flex-direction:column; gap:2px; margin-top:3px; }
+.srt-row { display:flex; align-items:center; gap:3px; }
+.srt-icon { font-size:9px !important; opacity:0.55; }
+.srt-icon-recv { color:#64748b; }
+.srt-icon-ok   { color:#22c55e; }
+.srt-icon-rej  { color:#ef4444; }
+.srt-icon-wait { color:#f59e0b; }
+.srt-txt  { font-size:0.65rem; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; }
 
 .ab {
     display:inline-flex; align-items:center; justify-content:center;
@@ -663,14 +684,18 @@ let salesSort   = { col:null, dir:'asc' };
    Confirm modal
 ═══════════════════════════════════════════════════════ */
 let _confirmCb = null;
-function showConfirm(title, msg, okLabel, danger, cb) {
+function showConfirm(title, msg, okLabel, danger, cb, withReason=false) {
     document.getElementById('confirmTitle').textContent = title;
     document.getElementById('confirmMsg').textContent   = msg;
     const ok = document.getElementById('confirmOkBtn');
     ok.textContent = okLabel;
     ok.className   = 'confirm-btn ' + (danger ? 'confirm-btn-danger' : 'confirm-btn-ok');
+    const rw = document.getElementById('confirmReasonWrap');
+    const rt = document.getElementById('confirmReason');
+    if (rw) { rw.style.display = withReason ? '' : 'none'; if (rt) rt.value = ''; }
     _confirmCb = cb;
     document.getElementById('confirmModal').style.display = 'flex';
+    if (withReason && rt) setTimeout(()=>rt.focus(), 50);
 }
 function closeConfirm() {
     document.getElementById('confirmModal').style.display = 'none';
@@ -1053,7 +1078,8 @@ function getSalesTableHtml() {
     </table>
   </div>
   <div id="salesEmpty" class="st-empty" style="display:none;">No sales match.</div>
-</div>`;
+</div>
+<div id="bmSummary" class="bm-summary" style="display:none;"></div>`;
 }
 
 /* ════════════════════════════════════════════════════════
@@ -1070,6 +1096,18 @@ function loadSales(contractPk, batchId) {
             document.getElementById('salesTableWrap').style.display='';
             renderSalesTable();
             updateSelectionUI(0);
+            const c=d.counts||{};
+            const sumEl=document.getElementById('bmSummary');
+            if (sumEl) {
+                sumEl.style.display='';
+                sumEl.innerHTML=`<span class="bms-lbl">Batch totals</span>`
+                    +`<span class="bms-item">${c.pending||0} <span class="bms-dim">pending</span></span>`
+                    +`<span class="bms-sep">·</span>`
+                    +`<span class="bms-item" style="color:#22c55e;">${c.accepted||0} <span class="bms-dim">accepted</span></span>`
+                    +`<span class="bms-sep">·</span>`
+                    +`<span class="bms-item" style="color:#ef4444;">${c.rejected||0} <span class="bms-dim">rejected</span></span>`
+                    +((c.total_pts>0)?`<span class="bms-sep">·</span><span class="bms-item" style="color:var(--accent);">${c.total_pts.toLocaleString()} <span class="bms-dim">pts</span></span>`:'');
+            }
         });
 }
 
@@ -1103,8 +1141,12 @@ function renderSalesTable() {
     tbody.innerHTML=data.map((s,i)=>{
         const hidden=(salesFilter!=='all'&&s.status!==salesFilter)?'row-hidden':'';
         const badge=`<span class="sb sb-${s.status}">${cap(s.status)}</span>`;
-        const reviewer=s.reviewed_by
-            ?`<div style="font-size:0.67rem;color:var(--text-secondary);margin-top:1px;">by ${escHtml(s.reviewed_by)}${s.reviewed_at?' · '+s.reviewed_at:''}</div>`:'';
+        const timeline=`<div class="srt">` +
+            (s.import_received_at?`<div class="srt-row"><span class="srt-icon srt-icon-recv material-icons-round">arrow_downward</span><span class="srt-txt">${escHtml(s.import_received_at)}</span></div>`:'') +
+            (s.reviewed_at
+                ?`<div class="srt-row"><span class="srt-icon ${s.status==='accepted'?'srt-icon-ok':'srt-icon-rej'} material-icons-round">${s.status==='accepted'?'check':'close'}</span><span class="srt-txt">${s.reviewed_by?escHtml(s.reviewed_by)+' · ':''}${escHtml(s.reviewed_at)}</span></div>`
+                :`<div class="srt-row"><span class="srt-icon srt-icon-wait material-icons-round">hourglass_empty</span><span class="srt-txt" style="opacity:0.45;">Awaiting review</span></div>`)
+            +`</div>`;
         const ppvWarn=s.ppv_mismatch
             ?`<span class="material-icons-round" title="PPV mismatch — submitted: ${s.ppv}, contract: ${s.contract_ppv}" style="font-size:13px;color:#f59e0b;vertical-align:middle;margin-left:3px;cursor:default;">warning</span>`:'';
         const aBtn=s.status!=='accepted'?`<button class="ab ab-a" title="Accept" onclick="doAction(${s.pk},'accept',this)"><span class="material-icons-round">check</span></button>`:'';
@@ -1118,7 +1160,7 @@ function renderSalesTable() {
             <td style="text-align:right;font-weight:500;">${s.quantity}</td>
             <td style="text-align:right;font-family:monospace;font-size:0.82rem;color:var(--text-secondary);">${s.ppv}${ppvWarn}</td>
             <td style="text-align:right;font-weight:600;color:var(--accent);">${s.points}</td>
-            <td style="text-align:center;">${badge}${reviewer}</td>
+            <td style="text-align:center;">${badge}${timeline}</td>
             <td style="text-align:center;"><div style="display:flex;gap:4px;justify-content:center;">${aBtn}${rBtn}</div></td>
         </tr>`;
     }).join('');
@@ -1170,10 +1212,16 @@ function getSelectedPks() {
 function bulkSelected(status) {
     const pks=getSelectedPks();
     if (!pks.length) return;
-    const label=status==='accepted'?'Accept':'Reject';
-    showConfirm(`${label} selected`,`${label} ${pks.length} selected sale${pks.length>1?'s':''}?`,label,status==='rejected',
-        ()=>fetch(URL_BULK_UPD,{method:'POST',headers:{'X-CSRFToken':CSRF,'Content-Type':'application/x-www-form-urlencoded'},body:`pks=${pks.join(',')}&status=${status}`})
-            .then(r=>{if(r.ok) refreshActiveSales();}));
+    const isReject=status==='rejected';
+    const label=isReject?'Reject':'Accept';
+    showConfirm(`${label} selected`,`${label} ${pks.length} selected sale${pks.length>1?'s':''}?`,label,isReject,
+        ()=>{
+            const reason=isReject?(document.getElementById('confirmReason')||{}).value||''  :'';
+            let body=`pks=${pks.join(',')}&status=${status}`;
+            if (reason) body+=`&reason=${encodeURIComponent(reason)}`;
+            fetch(URL_BULK_UPD,{method:'POST',headers:{'X-CSRFToken':CSRF,'Content-Type':'application/x-www-form-urlencoded'},body})
+                .then(r=>{if(r.ok) refreshActiveSales();});
+        }, isReject);
 }
 function doAction(pk, action, btn) {
     btn.disabled=true;
@@ -1198,7 +1246,7 @@ function refreshBatchChips(batchId) {
             if (!b) return;
             // Update batch list data
             const idx=batchList.findIndex(x=>x.batch_id===batchId);
-            if (idx>=0) Object.assign(batchList[idx],{pending:b.pending,accepted:b.accepted,rejected:b.rejected,total:b.total,ppv_mismatch:b.ppv_mismatch});
+            if (idx>=0) Object.assign(batchList[idx],{pending:b.pending,accepted:b.accepted,rejected:b.rejected,total:b.total,ppv_mismatch:b.ppv_mismatch,rejection_rate:b.rejection_rate});
             // Update row in list
             if (el) {
                 const statusEl=el.querySelector('.bl-status-col');
@@ -1293,11 +1341,16 @@ function buildStatusCol(b) {
     const ppvBit = b.ppv_mismatch
         ? `<span class="bl-cnt-sep">·</span><span style="color:#f59e0b;" title="${b.ppv_mismatch} PPV mismatch"><span class="material-icons-round" style="font-size:10px;vertical-align:middle;">warning</span>${b.ppv_mismatch}</span>`
         : '';
+    const rrBadge = b.rejection_rate >= 50
+        ? `<span class="bl-rr-badge bl-rr-high" title="${b.rejection_rate}% rejection rate">${b.rejection_rate}% rejected</span>`
+        : b.rejection_rate >= 20
+        ? `<span class="bl-rr-badge bl-rr-med" title="${b.rejection_rate}% rejection rate">${b.rejection_rate}% rejected</span>`
+        : '';
     return `<div class="bl-prog-bar" title="${barTitle}">
   <div class="bl-prog-p" style="width:${pPct}%"></div>
   <div class="bl-prog-a" style="width:${aPct}%"></div>
   <div class="bl-prog-r" style="width:${rPct}%"></div>
-</div><div class="bl-mini-counts">${pStr}<span class="bl-cnt-sep">·</span>${aStr}<span class="bl-cnt-sep">·</span>${rStr}${ppvBit}</div>`;
+</div><div class="bl-mini-counts">${pStr}<span class="bl-cnt-sep">·</span>${aStr}<span class="bl-cnt-sep">·</span>${rStr}${ppvBit}${rrBadge}</div>`;
 }
 
 /* ════════════════════════════════════════════════════════

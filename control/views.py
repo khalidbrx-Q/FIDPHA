@@ -19,7 +19,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator
-from django.db.models import Count, F, Q, Min, Max
+from django.db.models import Count, F, Q, Min, Max, Sum
 from django.db.models.functions import TruncDay, TruncHour
 from django.utils import timezone
 
@@ -31,6 +31,7 @@ from fidpha.models import Account, Contract, Contract_Product, Product, UserProf
 from api.models import APIToken, APITokenUsageLog
 from sales.models import Sale, SaleImport
 from .decorators import staff_required, perm_required, superuser_required
+from .models import SystemConfig
 
 
 def _log(user, obj, flag, message=""):
@@ -115,6 +116,16 @@ _ROLE_ICONS = [
     ('assignment',          'Tasks'),
 ]
 
+# App labels excluded from the Roles permission form — framework internals or superuser-only
+_EXCLUDED_APPS: frozenset[str] = frozenset({
+    "authtoken",     # DRF token model — not used by this system
+    "contenttypes",  # Django framework internal
+    "sessions",      # Django framework internal
+    "account",       # allauth email/login internals — not meaningful for staff
+    "socialaccount", # OAuth management is superuser-only via settings pages
+    "sites",         # site config is superuser-only via settings page
+})
+
 # Human-readable labels for Django / third-party app labels
 _APP_FRIENDLY: dict[str, str] = {
     "account":       "Allauth — Email & Login",
@@ -188,6 +199,7 @@ def _grouped_permissions() -> list[dict]:
     perms = (
         Permission.objects
         .select_related("content_type")
+        .exclude(content_type__app_label__in=_EXCLUDED_APPS)
         .order_by("content_type__app_label", "content_type__model", "codename")
     )
     for perm in perms:
@@ -258,7 +270,10 @@ def roles_create(request):
         form = RoleForm(request.POST)
         if form.is_valid():
             role = form.save()
-            RoleProfile.objects.update_or_create(group=role, defaults={'icon': current_icon})
+            rp, _ = RoleProfile.objects.update_or_create(group=role, defaults={'icon': current_icon})
+            rp.created_by = request.user
+            rp.modified_by = request.user
+            rp.save()
             _log(request.user, role, ADDITION)
             messages.success(request, f"Role \"{role.name}\" created successfully.")
             return redirect("control:roles_list")
@@ -294,7 +309,9 @@ def roles_edit(request, pk: int):
         form = RoleForm(request.POST, instance=role)
         if form.is_valid():
             form.save()
-            RoleProfile.objects.update_or_create(group=role, defaults={'icon': submitted_icon})
+            rp, _ = RoleProfile.objects.update_or_create(group=role, defaults={'icon': submitted_icon})
+            rp.modified_by = request.user
+            rp.save()
             _log(request.user, role, CHANGE)
             messages.success(request, f"Role \"{role.name}\" updated successfully.")
             return redirect("control:roles_detail", pk=role.pk)
@@ -477,12 +494,23 @@ def users_detail(request, pk: int):
         .prefetch_related("socialtoken_set__app")
         .order_by("provider")
     )
+    user_ct = ContentType.objects.get_for_model(User)
+    user_logs = (
+        LogEntry.objects
+        .filter(content_type=user_ct, object_id=str(user.pk))
+        .select_related("user")
+        .order_by("action_time")
+    )
+    creation_log    = user_logs.filter(action_flag=ADDITION).first()
+    last_change_log = user_logs.filter(action_flag=CHANGE).last()
 
     ctx = {
         "u":               user,
         "utype":           utype,
         "profile":         profile,
         "social_accounts": social_accounts,
+        "creation_log":    creation_log,
+        "last_change_log": last_change_log,
     }
 
     return render(request, "control/users_detail.html", ctx)
@@ -592,8 +620,9 @@ def accounts_create(request):
                 pass
 
     return render(request, "control/accounts_form.html", {
-        "form":        form,
-        "page_action": "Create",
+        "form":               form,
+        "page_action":        "Create",
+        "global_auto_review": SystemConfig.get().auto_review_enabled,
     })
 
 
@@ -668,6 +697,7 @@ def accounts_edit(request, pk: int):
         "inactive_contracts": inactive_contracts,
         "contract_count":     contract_count,
         "portal_users":       portal_users,
+        "global_auto_review": SystemConfig.get().auto_review_enabled,
     })
 
 
@@ -1485,6 +1515,22 @@ def site_edit(request):
 
 
 # ===========================================================================
+# Configuration — System
+# ===========================================================================
+
+@superuser_required
+def system_settings(request):
+    config = SystemConfig.get()
+    if request.method == "POST":
+        config.auto_review_enabled    = request.POST.get("auto_review_enabled") == "1"
+        config.auto_review_updated_by = request.user
+        config.save()
+        messages.success(request, "System configuration updated.")
+        return redirect("control:system_settings")
+    return render(request, "control/system_settings.html", {"config": config})
+
+
+# ===========================================================================
 # Sales Review
 # ===========================================================================
 
@@ -1616,6 +1662,10 @@ def sales_api_batches_v2(request):
             "ppv_mismatch":    b["ppv_mismatch"],
             "sale_date_min":   b["sale_date_min"].strftime("%Y-%m-%dT%H:%M:%S") if b["sale_date_min"] else None,
             "sale_date_max":   b["sale_date_max"].strftime("%Y-%m-%dT%H:%M:%S") if b["sale_date_max"] else None,
+            "rejection_rate":  (
+                round(b["rejected"] * 100 / (b["accepted"] + b["rejected"]))
+                if (b["accepted"] + b["rejected"]) > 0 else -1
+            ),
         })
 
     total_pages = max(1, (total_count + per_page - 1) // per_page)
@@ -1707,10 +1757,11 @@ def sales_api_sales(request):
         .order_by("sale_datetime")
     )
     data   = []
-    counts = {"pending": 0, "accepted": 0, "rejected": 0}
+    counts = {"pending": 0, "accepted": 0, "rejected": 0, "total_pts": 0}
     for s in qs:
         contract_ppv = s.contract_product.product.ppv
         ppv_mismatch = (contract_ppv is not None and s.ppv != contract_ppv)
+        pts = int(s.pts or 0)
         data.append({
             "pk":               s.pk,
             "product":          s.contract_product.product.designation,
@@ -1721,15 +1772,19 @@ def sales_api_sales(request):
             "ppv":              str(s.ppv) if s.ppv else "—",
             "contract_ppv":     str(contract_ppv) if contract_ppv else None,
             "ppv_mismatch":     ppv_mismatch,
-            "points":           int(s.pts or 0),
+            "points":           pts,
             "status":           s.status,
             "reviewed_by":      (
                 s.reviewed_by.get_full_name() or s.reviewed_by.username
                 if s.reviewed_by else None
             ),
             "reviewed_at":      s.reviewed_at.strftime("%d %b %Y, %H:%M") if s.reviewed_at else None,
+            "import_received_at": s.sale_import.received_at.strftime("%d %b %Y, %H:%M") if s.sale_import and s.sale_import.received_at else None,
+            "sale_created_at":  s.created_at.strftime("%d %b %Y, %H:%M") if s.created_at else None,
         })
         counts[s.status] = counts.get(s.status, 0) + 1
+        if s.status == Sale.STATUS_ACCEPTED:
+            counts["total_pts"] += pts
     return JsonResponse({"sales": data, "counts": counts})
 
 
@@ -1940,14 +1995,18 @@ def sales_bulk_update(request):
         return JsonResponse({"ok": False}, status=405)
     raw_pks = request.POST.get("pks", "")
     status  = request.POST.get("status", "")
+    reason  = request.POST.get("reason", "").strip()
     pks     = [int(p) for p in raw_pks.split(",") if p.strip().isdigit()]
     if status not in (Sale.STATUS_ACCEPTED, Sale.STATUS_REJECTED) or not pks:
         return JsonResponse({"ok": False, "error": "Invalid request"}, status=400)
-    Sale.objects.filter(pk__in=pks).update(
-        status=status,
-        reviewed_by=request.user,
-        reviewed_at=timezone.now(),
-    )
+    update_fields = {
+        "status":      status,
+        "reviewed_by": request.user,
+        "reviewed_at": timezone.now(),
+    }
+    if status == Sale.STATUS_REJECTED and reason:
+        update_fields["rejection_reason"] = reason
+    Sale.objects.filter(pk__in=pks).update(**update_fields)
     return JsonResponse({"ok": True, "updated": len(pks)})
 
 

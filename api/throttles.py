@@ -1,0 +1,17 @@
+from rest_framework.throttling import SimpleRateThrottle
+
+
+class APITokenThrottle(SimpleRateThrottle):
+    """
+    Per-token rate limiter. Uses the APIToken PK as the cache key so each
+    pharmacy token gets its own quota independent of IP address.
+    Falls through (returns None) for requests with no auth token, which
+    means unauthenticated requests are blocked by HasAPIToken before throttle.
+    """
+    scope = "api_token"
+
+    def get_cache_key(self, request, view):
+        token = getattr(request, "auth", None)
+        if token is None:
+            return None
+        return self.cache_format % {"scope": self.scope, "ident": token.pk}

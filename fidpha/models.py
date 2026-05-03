@@ -51,7 +51,8 @@ class Account(TraceableMixin, models.Model):
     location = models.TextField()
     phone = models.CharField(max_length=50)
     email = models.EmailField()
-    pharmacy_portal = models.BooleanField(default=False)
+    pharmacy_portal     = models.BooleanField(default=False)
+    auto_review_enabled = models.BooleanField(default=False)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
 
     class Meta:
@@ -267,7 +268,7 @@ class Contract_Product(models.Model):
 # 6. RoleProfile
 # -----------------------
 
-class RoleProfile(models.Model):
+class RoleProfile(TraceableMixin, models.Model):
     """Display metadata (icon) for a Django auth Group (Role)."""
     group = models.OneToOneField(
         'auth.Group',
