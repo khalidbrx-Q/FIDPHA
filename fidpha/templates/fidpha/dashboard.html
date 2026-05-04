@@ -158,7 +158,7 @@
 <div class="card">
     <div class="card-header">
         <div class="card-header-icon"><span class="material-icons-round">receipt_long</span></div>
-        <div class="card-title">Recent Accepted Sales</div>
+        <div class="card-title">Recent Accepted</div>
         <a href="/portal/sales/" style="margin-left:auto; font-size:0.82rem; color:var(--accent); text-decoration:none; font-weight:500;">View all →</a>
     </div>
     {% if recent_sales %}
@@ -199,7 +199,7 @@
         </tbody>
     </table>
     {% else %}
-    <p style="text-align:center; color:var(--text-secondary); padding:24px 0; font-size:0.88rem;">No sales recorded yet.</p>
+    <p style="text-align:center; color:var(--text-secondary); padding:24px 0; font-size:0.88rem;">No recorded yet.</p>
     {% endif %}
 </div>
 
@@ -316,18 +316,31 @@
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
                 formatter: function(params) {
-                    return '<b>Day ' + params[0].axisValue + '</b><br/>' +
-                           params[0].marker + ' Points: <b>' + params[0].value.toLocaleString() + '</b> pts<br/>';
+                    var s = '<b>Day ' + params[0].axisValue + '</b><br/>';
+                    params.forEach(function(p) {
+                        var unit = p.seriesName === 'Points' ? ' pts' : ' products';
+                        s += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>' + unit + '<br/>';
+                    });
+                    return s;
                 }
             },
-            legend: { data: ['Points'], top: 2, textStyle: { color: labelColor, fontSize: 10 } },
+            legend: { data: ['Points', 'Products'], top: 2, textStyle: { color: labelColor, fontSize: 10 } },
             grid: { left: 10, right: 10, top: 32, bottom: 52, containLabel: true },
             xAxis: xCat(daysArray(dd.n), 0),
-            yAxis: [ yVal({ name: 'Points', nameTextStyle: { color: labelColor, fontSize: 9 } }) ],
+            yAxis: [
+                yVal({ name: 'Points', nameTextStyle: { color: labelColor, fontSize: 9 } }),
+                { type: 'value', name: 'Products', splitLine: { show: false },
+                  nameTextStyle: { color: labelColor, fontSize: 9 },
+                  axisLabel: { color: labelColor, fontSize: 9, formatter: function(v){ return v; } },
+                  minInterval: 1 },
+            ],
             series: [
-                { name: 'Points', type: 'bar', yAxisIndex: 0, data: dd.pts, barMaxWidth: 26,
+                { name: 'Points',   type: 'bar', yAxisIndex: 0, data: dd.pts,   barMaxWidth: 22,
                   itemStyle: { borderRadius: [4,4,0,0], color: gradV('#3b9fd4','rgba(27,103,155,0.18)') },
                   emphasis: { itemStyle: { color: gradV('#60c0f0','rgba(27,103,155,0.38)') } } },
+                { name: 'Products', type: 'bar', yAxisIndex: 1, data: dd.prods, barMaxWidth: 18,
+                  itemStyle: { borderRadius: [3,3,0,0], color: '#22c55e' },
+                  emphasis: { itemStyle: { color: '#4ade80' } } },
             ],
         };
     }

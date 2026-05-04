@@ -80,7 +80,7 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">receipt_long</span>
         </div>
         <div>
-            <div class="stat-label">Total Sales</div>
+            <div class="stat-label">Total</div>
             <div class="stat-value">{{ total_count }}</div>
             <div class="stat-sub">all statuses</div>
         </div>
@@ -93,7 +93,7 @@
         <div>
             <div class="stat-label">Accepted</div>
             <div class="stat-value">{{ accepted_count }}</div>
-            <div class="stat-sub">sales</div>
+            <div class="stat-sub"></div>
         </div>
     </div>
 
@@ -115,7 +115,7 @@
         <div>
             <div class="stat-label">Rejected</div>
             <div class="stat-value">{{ rejected_count }}</div>
-            <div class="stat-sub">sales</div>
+            <div class="stat-sub"></div>
         </div>
     </div>
 
@@ -126,7 +126,7 @@
 <div class="card" style="margin-bottom:20px;">
     <div class="card-header" style="flex-wrap:wrap; gap:6px;">
         <div class="card-header-icon"><span class="material-icons-round">bar_chart</span></div>
-        <div class="card-title" id="monthlyTitle">Monthly Sales</div>
+        <div class="card-title" id="monthlyTitle">Monthly Acceptence</div>
         <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
             <button id="monthlyBack" onclick="showMonthly()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
                 <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
@@ -145,13 +145,13 @@
 <div class="card">
     <div class="card-header" style="flex-wrap:wrap; gap:8px;">
         <div class="card-header-icon"><span class="material-icons-round">receipt_long</span></div>
-        <div class="card-title">Sales History</div>
+        <div class="card-title">History</div>
         {% if total_count > 0 %}
         <span style="font-size:0.78rem; color:var(--text-secondary); padding:3px 8px; border-radius:20px; border:1px solid var(--card-border); white-space:nowrap;">{% widthratio accepted_count total_count 100 %}% accepted</span>
         {% endif %}
-
         <!-- Filters row -->
-        <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <div style="flex-basis:100%; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span id="salesCount" style="font-size:0.82rem; color:var(--text-secondary); white-space:nowrap;">{{ all_sales|length }} row{{ all_sales|length|pluralize }}</span>
             <div style="position:relative;">
                 <span class="material-icons-round" style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-size:16px;">search</span>
                 <input type="text" id="salesSearch" placeholder="Search product..." oninput="filterSales()"
@@ -185,7 +185,6 @@
             <button onclick="clearDates()" style="display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); cursor:pointer; transition:all 0.15s;" title="Clear dates">
                 <span class="material-icons-round" style="font-size:15px;">close</span>
             </button>
-            <span id="salesCount" style="font-size:0.82rem; color:var(--text-secondary); white-space:nowrap; min-width:70px; text-align:right;">{{ all_sales|length }} sale{{ all_sales|length|pluralize }}</span>
         </div>
     </div>
 
@@ -340,7 +339,7 @@
         var backBtn = document.getElementById('monthlyBack');
         if (backBtn) backBtn.style.display = 'none';
         var titleEl = document.getElementById('monthlyTitle');
-        if (titleEl) titleEl.textContent = chartPeriod === 'last12' ? 'Monthly Sales' : 'Monthly Sales · ' + chartPeriod;
+        if (titleEl) titleEl.textContent = chartPeriod === 'last12' ? 'Monthly Acceptence' : 'Monthly Acceptence · ' + chartPeriod;
         var opt = baseOption(data.labels, 8);
         opt.series = stackedSeries(data, 32);
         mc.setOption(opt, true);

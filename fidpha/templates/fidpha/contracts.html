@@ -125,7 +125,6 @@
                 {% for item in products_data %}
                 <tr data-search="{{ item.cp.product.designation|lower }} {{ item.cp.product.code|lower }} {{ item.cp.external_designation|lower }}">
                     <td style="font-weight:500;">{{ item.cp.product.designation }}</td>
-                    <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ item.cp.product.code }}</td>
                     <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ item.cp.external_designation }}</td>
                     <td style="text-align:center;">{{ item.units_sold }}</td>
                     <td style="text-align:center; color:#22c55e; font-weight:600;">{{ item.accepted_units }}</td>

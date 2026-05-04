@@ -417,14 +417,16 @@ def portal_dashboard(request):
 
     # ── Unified daily drill (all time) keyed by YYYY-MM ──
     d_pts_all    = defaultdict(dict)
+    d_prods_all  = defaultdict(dict)
     d_units_all  = defaultdict(dict)
     d_batches_all = defaultdict(dict)
 
     for r in (
         base_qs.annotate(day=TruncDay("sale_datetime"))
-        .values("day").annotate(total=Sum("pts")).order_by("day")
+        .values("day").annotate(total=Sum("pts"), unique_products=Count("contract_product__product", distinct=True)).order_by("day")
     ):
         d_pts_all[r["day"].strftime("%Y-%m")][r["day"].day] = int(r["total"] or 0)
+        d_prods_all[r["day"].strftime("%Y-%m")][r["day"].day] = r["unique_products"]
 
     for r in (
         Sale.objects.filter(contract_product__contract__account=account, status=Sale.STATUS_ACCEPTED)
@@ -449,6 +451,7 @@ def portal_dashboard(request):
         n = calendar.monthrange(yr, mo)[1]
         chart_daily_drill[mk]  = {"n": n,
             "pts":     [d_pts_all[mk].get(d, 0) for d in range(1, n+1)],
+            "prods":   [d_prods_all[mk].get(d, 0) for d in range(1, n+1)],
             "units":   [d_units_all[mk].get(d, 0) for d in range(1, n+1)]}
         chart_submit_drill[mk] = {"n": n,
             "batches": [d_batches_all[mk].get(d, 0) for d in range(1, n+1)]}
