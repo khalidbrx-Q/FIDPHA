@@ -1,8 +1,9 @@
 {% extends "fidpha/base.html" %}
+{% load i18n %}
 
 {% block nav_profile %}active{% endblock %}
-{% block page_title %}Profile{% endblock %}
-{% block page_breadcrumb %}Profile{% endblock %}
+{% block page_title %}{% trans "Profile" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Profile" %}{% endblock %}
 
 {% block content %}
 
@@ -39,14 +40,14 @@
             <div class="card-header-icon">
                 <span class="material-icons-round">person</span>
             </div>
-            <div class="card-title">Personal Information</div>
+            <div class="card-title">{% trans "Personal Information" %}</div>
         </div>
 
         <form method="POST" action="/portal/profile/">
             {% csrf_token %}
 
             <div style="margin-bottom: 16px;">
-                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">Username</label>
+                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">{% trans "Username" %}</label>
                 <div style="
                     padding: 10px 14px;
                     background-color: var(--sidebar-bg);
@@ -56,31 +57,31 @@
                     color: var(--text-secondary);
                 ">
                     {{ request.user.username }}
-                    <span style="font-size: 0.75rem; color: #475569; margin-left: 8px;">(cannot be changed)</span>
+                    <span style="font-size: 0.75rem; color: #475569; margin-left: 8px;">{% trans "(cannot be changed)" %}</span>
                 </div>
             </div>
 
             <div style="margin-bottom: 16px;">
-                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">First Name</label>
+                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">{% trans "First Name" %}</label>
                 <input type="text" name="first_name" value="{{ request.user.first_name }}"
-                    placeholder="Enter your first name"
+                    placeholder="{% trans "Enter your first name" %}"
                     style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
             </div>
 
             <div style="margin-bottom: 16px;">
-                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">Last Name</label>
+                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">{% trans "Last Name" %}</label>
                 <input type="text" name="last_name" value="{{ request.user.last_name }}"
-                    placeholder="Enter your last name"
+                    placeholder="{% trans "Enter your last name" %}"
                     style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
             </div>
 
             <div style="margin-bottom: 16px;">
                 <label style="font-size: 0.82rem; color: var(--text-secondary); display: flex; align-items: center; margin-bottom: 6px; font-weight: 500; gap: 6px;">
-                    Email
+                    {% trans "Email" %}
                     {% if profile.email_verified %}
-                        <span style="background-color: rgba(34,197,94,0.15); color: #22c55e; font-size: 0.72rem; padding: 2px 8px; border-radius: 20px;">✓ Verified</span>
+                        <span style="background-color: rgba(34,197,94,0.15); color: #22c55e; font-size: 0.72rem; padding: 2px 8px; border-radius: 20px;">✓ {% trans "Verified" %}</span>
                     {% else %}
-                        <span style="background-color: rgba(245,158,11,0.15); color: #f59e0b; font-size: 0.72rem; padding: 2px 8px; border-radius: 20px;">⚠ Not verified</span>
+                        <span style="background-color: rgba(245,158,11,0.15); color: #f59e0b; font-size: 0.72rem; padding: 2px 8px; border-radius: 20px;">⚠ {% trans "Not verified" %}</span>
                         <a href="/portal/verify-pending/?from=button" style="
                             background-color: rgba(245,158,11,0.15);
                             color: #f59e0b;
@@ -95,17 +96,17 @@
                             gap: 4px;
                         ">
                             <span class="material-icons-round" style="font-size: 12px;">mail</span>
-                            Verify now
+                            {% trans "Verify now" %}
                         </a>
                     {% endif %}
                 </label>
                 <input type="email" name="email" value="{{ request.user.email }}"
-    placeholder="Enter your email"
+                    placeholder="{% trans "Enter your email" %}"
                     style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
                 {% if not profile.email_verified %}
-                    <p style="font-size: 0.75rem; color: #f59e0b; margin-top: 4px;">Email not verified. Changing it will send a new verification link.</p>
+                    <p style="font-size: 0.75rem; color: #f59e0b; margin-top: 4px;">{% trans "Email not verified. Changing it will send a new verification link." %}</p>
                 {% else %}
-                    <p style="font-size: 0.75rem; color: #475569; margin-top: 4px;">Changing your email will require re-verification.</p>
+                    <p style="font-size: 0.75rem; color: #475569; margin-top: 4px;">{% trans "Changing your email will require re-verification." %}</p>
                 {% endif %}
             </div>
 
@@ -124,7 +125,7 @@
                 transition: background-color 0.2s;
             ">
                 <span class="material-icons-round" style="font-size: 18px;">save</span>
-                Save Changes
+                {% trans "Save Changes" %}
             </button>
         </form>
     </div>
@@ -135,24 +136,24 @@
             <div class="card-header-icon">
                 <span class="material-icons-round">lock</span>
             </div>
-            <div class="card-title">Change Password</div>
+            <div class="card-title">{% trans "Change Password" %}</div>
         </div>
 
         <form method="POST" action="/portal/profile/password/">
             {% csrf_token %}
 
             <div style="margin-bottom: 16px;">
-                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">Current Password</label>
+                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">{% trans "Current Password" %}</label>
                 <input type="password" name="current_password"
-                    placeholder="Enter your current password"
+                    placeholder="{% trans "Enter your current password" %}"
                     required
                     style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
             </div>
 
             <div style="margin-bottom: 16px;">
-                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">New Password</label>
+                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">{% trans "New Password" %}</label>
                 <input type="password" name="password" id="profile_password"
-                    placeholder="Enter new password"
+                    placeholder="{% trans "Enter new password" %}"
                     required
                     style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
             </div>
@@ -162,16 +163,16 @@
                     <div id="profile-strength-bar" style="height: 100%; width: 0%; border-radius: 4px; transition: all 0.3s;"></div>
                 </div>
                 <div id="profile-strength-text" style="font-size: 0.75rem; margin-bottom: 6px; color: var(--text-secondary);"></div>
-                <div id="profile-req-length"  style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least 8 characters</div>
-                <div id="profile-req-upper"   style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least one uppercase letter</div>
-                <div id="profile-req-number"  style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least one number</div>
-                <div id="profile-req-special" style="font-size: 0.75rem; color: var(--text-secondary);">✗ At least one special character</div>
+                <div id="profile-req-length"  style="font-size: 0.75rem; color: var(--text-secondary);">✗ {% trans "At least 8 characters" %}</div>
+                <div id="profile-req-upper"   style="font-size: 0.75rem; color: var(--text-secondary);">✗ {% trans "At least one uppercase letter" %}</div>
+                <div id="profile-req-number"  style="font-size: 0.75rem; color: var(--text-secondary);">✗ {% trans "At least one number" %}</div>
+                <div id="profile-req-special" style="font-size: 0.75rem; color: var(--text-secondary);">✗ {% trans "At least one special character" %}</div>
             </div>
 
             <div style="margin-bottom: 16px;">
-                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">Confirm New Password</label>
+                <label style="font-size: 0.82rem; color: var(--text-secondary); display: block; margin-bottom: 6px; font-weight: 500;">{% trans "Confirm New Password" %}</label>
                 <input type="password" name="confirm_password" id="profile_confirm_password"
-                    placeholder="Confirm new password"
+                    placeholder="{% trans "Confirm new password" %}"
                     required
                     style="width: 100%; padding: 10px 14px; background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 0.9rem; color: var(--text-primary); box-sizing: border-box;">
                 <div id="profile-match-text" style="font-size: 0.75rem; margin-top: 4px;"></div>
@@ -192,7 +193,7 @@
                 transition: background-color 0.2s;
             ">
                 <span class="material-icons-round" style="font-size: 18px;">lock_reset</span>
-                Update Password
+                {% trans "Update Password" %}
             </button>
         </form>
 
@@ -202,18 +203,18 @@
                 <div class="card-header-icon">
                     <span class="material-icons-round">store</span>
                 </div>
-                <div class="card-title">Linked Account</div>
+                <div class="card-title">{% trans "Linked Account" %}</div>
             </div>
             <div class="info-row">
-                <span class="info-label">Pharmacy</span>
+                <span class="info-label">{% trans "Pharmacy" %}</span>
                 <span class="info-value">{{ profile.account.name }}</span>
             </div>
             <div class="info-row">
-                <span class="info-label">City</span>
+                <span class="info-label">{% trans "City" %}</span>
                 <span class="info-value">{{ profile.account.city }}</span>
             </div>
             <div class="info-row">
-                <span class="info-label">Code</span>
+                <span class="info-label">{% trans "Code" %}</span>
                 <span class="info-value">{{ profile.account.code }}</span>
             </div>
         </div>
@@ -222,6 +223,10 @@
 </div>
 
 <script>
+    var STR_MATCH   = '✓ {% trans "Passwords match" %}';
+    var STR_NOMATCH = '✗ {% trans "Passwords don\'t match" %}';
+    var STR_LABELS  = ['{% trans "Weak" %}', '{% trans "Fair" %}', '{% trans "Good" %}', '{% trans "Strong" %}'];
+
     const pwd = document.getElementById("profile_password");
     const confirmPwd = document.getElementById("profile_confirm_password");
     const bar = document.getElementById("profile-strength-bar");
@@ -242,10 +247,10 @@
         }
         if (pwd.value === confirmPwd.value) {
             matchText.style.color = "#22c55e";
-            matchText.textContent = "✓ Passwords match";
+            matchText.textContent = STR_MATCH;
         } else {
             matchText.style.color = "#ef4444";
-            matchText.textContent = "✗ Passwords don't match";
+            matchText.textContent = STR_NOMATCH;
         }
     }
 
@@ -264,17 +269,17 @@
 
             const score = [hasLength, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
             const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e"];
-            const labels = ["Weak", "Fair", "Good", "Strong"];
             const widths = ["25%", "50%", "75%", "100%"];
 
-            if (p.length === 0) {
+            if (p.length === 0 || score === 0) {
                 bar.style.width = "0%";
+                bar.style.backgroundColor = "";
                 text.textContent = "";
             } else {
                 bar.style.backgroundColor = colors[score - 1];
                 bar.style.width = widths[score - 1];
                 text.style.color = colors[score - 1];
-                text.textContent = labels[score - 1];
+                text.textContent = STR_LABELS[score - 1];
             }
             checkMatch();
         });

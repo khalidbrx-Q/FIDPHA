@@ -41,6 +41,7 @@ urlpatterns = [
     path("auth/", include("allauth.urls")),
     path("", lambda request: redirect("/portal/login/")),
 
+    path("i18n/", include("django.conf.urls.i18n")),
     path("api/v1/", include("api.urls")),
 
     # Custom admin control panel — staff only, Django admin kept as fallback

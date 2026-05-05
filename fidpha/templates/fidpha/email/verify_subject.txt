@@ -1,0 +1,1 @@
+{% load i18n %}{% if is_new_email %}{% trans "WinInPharma — Verify your new email" %}{% else %}{% trans "WinInPharma — Verify your email" %}{% endif %}

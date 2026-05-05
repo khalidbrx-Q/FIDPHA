@@ -1,12 +1,12 @@
+{% load static %}{% load i18n %}
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="{{ LANGUAGE_CODE }}" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WinInPharma — Login</title>
+    <title>WinInPharma — {% trans "Login" %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    {% load static %}
     <link rel="stylesheet" href="{% static 'fidpha/css/login.css' %}">
     <script src="{% static 'fidpha/js/portal.js' %}"></script>
 </head>
@@ -19,7 +19,7 @@
                 <span class="material-icons-round">workspace_premium</span>
             </div>
             <div class="login-brand-title">WinInPharma</div>
-            <div class="login-brand-sub">Pharmacy Management Portal</div>
+            <div class="login-brand-sub">{% trans "Pharmacy Management Portal" %}</div>
         </div>
 
         <div class="login-card">
@@ -38,32 +38,32 @@
                 {% csrf_token %}
 
                 <div class="form-group">
-                    <label class="form-label">Username</label>
+                    <label class="form-label">{% trans "Username" %}</label>
                     <div class="form-input-wrapper">
                         <span class="material-icons-round form-input-icon">person</span>
-                        <input type="text" name="username" class="form-input" placeholder="Enter your username" required autofocus>
+                        <input type="text" name="username" class="form-input" placeholder="{% trans "Enter your username" %}" required autofocus>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Password</label>
+                    <label class="form-label">{% trans "Password" %}</label>
                     <div class="form-input-wrapper">
                         <span class="material-icons-round form-input-icon">lock</span>
-                        <input type="password" name="password" class="form-input" placeholder="Enter your password" required>
+                        <input type="password" name="password" class="form-input" placeholder="{% trans "Enter your password" %}" required>
                     </div>
                 </div>
 
                 <button type="submit" class="login-btn">
                     <span class="material-icons-round" style="font-size:18px;">login</span>
-                    Sign In
+                    {% trans "Sign In" %}
                 </button>
 
-                <a href="/accounts/password_reset/" class="forgot-link">Forgot your password?</a>
+                <a href="/accounts/password_reset/" class="forgot-link">{% trans "Forgot your password?" %}</a>
             </form>
 
             <div class="login-divider">
                 <div class="login-divider-line"></div>
-                <span class="login-divider-text">or</span>
+                <span class="login-divider-text">{% trans "or" %}</span>
                 <div class="login-divider-line"></div>
             </div>
 
@@ -75,18 +75,29 @@
                     <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
                     <path fill="none" d="M0 0h48v48H0z"/>
                 </svg>
-                Continue with Google
+                {% trans "Continue with Google" %}
             </a>
-            <div class="theme-toggle-row">
+            <div class="theme-toggle-row" style="display: flex; align-items: center; justify-content: space-between;">
                 <button class="theme-toggle" onclick="toggleTheme()">
                     <span class="material-icons-round" id="theme-icon">light_mode</span>
-                    <span id="theme-label">Light mode</span>
+                    <span id="theme-label" data-light="{% trans "Light mode" %}" data-dark="{% trans "Dark mode" %}">{% trans "Light mode" %}</span>
                 </button>
+
+                {% get_current_language as CURRENT_LANG %}
+                <form method="POST" action="{% url 'set_language' %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="/portal/login/">
+                    <input type="hidden" name="language" id="lang-input" value="{% if CURRENT_LANG == 'fr' %}en{% else %}fr{% endif %}">
+                    <button type="submit" class="theme-toggle">
+                        <span class="material-icons-round">translate</span>
+                        <span>{% if CURRENT_LANG == 'fr' %}EN{% else %}FR{% endif %}</span>
+                    </button>
+                </form>
             </div>
         </div>
 
         <div class="login-footer">
-            WinInPharma © 2026 — Pharmacy Management System
+            WinInPharma © 2026 — {% trans "Pharmacy Management System" %}
         </div>
 
     </div>

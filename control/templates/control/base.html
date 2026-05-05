@@ -1,6 +1,6 @@
-{% load static %}
+{% load static %}{% load i18n %}
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="{{ LANGUAGE_CODE }}" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -482,7 +482,7 @@
             </div>
             <div>
                 <div class="sidebar-brand-text">WinInPharma</div>
-                <div class="sidebar-brand-sub">Control Panel</div>
+                <div class="sidebar-brand-sub">{% trans "Control Panel" %}</div>
             </div>
         </div>
 
@@ -490,28 +490,28 @@
         <nav class="sidebar-nav">
 
             <!-- Overview -->
-            <div class="nav-section-title">Overview</div>
+            <div class="nav-section-title">{% trans "Overview" %}</div>
             <a href="{% url 'control:dashboard' %}"
                class="nav-item {% block nav_dashboard %}{% endblock %}">
                 <span class="material-icons-round">dashboard</span>
-                Dashboard
+                {% trans "Dashboard" %}
             </a>
 
             <!-- Authentication -->
             {% if perms.auth.view_group or perms.auth.view_user %}
-            <div class="nav-section-title">Authentication</div>
+            <div class="nav-section-title">{% trans "Authentication" %}</div>
             {% if perms.auth.view_group %}
             <a href="{% url 'control:roles_list' %}"
                class="nav-item {% block nav_roles %}{% endblock %}">
                 <span class="material-icons-round">badge</span>
-                Roles
+                {% trans "Roles" %}
             </a>
             {% endif %}
             {% if perms.auth.view_user %}
             <a href="{% url 'control:users_list' %}"
                class="nav-item {% block nav_users %}{% endblock %}">
                 <span class="material-icons-round">person</span>
-                Users
+                {% trans "Users" %}
             </a>
             {% endif %}
             {% endif %}
@@ -523,28 +523,28 @@
             <a href="{% url 'control:accounts_list' %}"
                class="nav-item {% block nav_accounts %}{% endblock %}">
                 <span class="material-icons-round">store</span>
-                Accounts
+                {% trans "Accounts" %}
             </a>
             {% endif %}
             {% if perms.fidpha.view_contract %}
             <a href="{% url 'control:contracts_list' %}"
                class="nav-item {% block nav_contracts %}{% endblock %}">
                 <span class="material-icons-round">description</span>
-                Contracts
+                {% trans "Contracts" %}
             </a>
             {% endif %}
             {% if perms.fidpha.view_product %}
             <a href="{% url 'control:products_list' %}"
                class="nav-item {% block nav_products %}{% endblock %}">
                 <span class="material-icons-round">medication</span>
-                Products
+                {% trans "Products" %}
             </a>
             {% endif %}
             {% if perms.sales.view_sale %}
             <a href="{% url 'control:sales_list' %}"
                class="nav-item {% block nav_sales %}{% endblock %}">
                 <span class="material-icons-round">point_of_sale</span>
-                Sales
+                {% trans "Sales" %}
             </a>
             {% endif %}
             {% endif %}
@@ -555,37 +555,37 @@
             <a href="{% url 'control:tokens_list' %}"
                class="nav-item {% block nav_tokens %}{% endblock %}">
                 <span class="material-icons-round">key</span>
-                API Tokens
+                {% trans "API Tokens" %}
             </a>
             {% endif %}
 
             <!-- Configuration -->
             {% if request.user.is_superuser %}
-            <div class="nav-section-title">Configuration</div>
+            <div class="nav-section-title">{% trans "Configuration" %}</div>
             <a href="{% url 'control:social_apps_list' %}"
                class="nav-item {% block nav_social_apps %}{% endblock %}">
                 <span class="material-icons-round">public</span>
-                Social Applications
+                {% trans "Social Applications" %}
             </a>
             <a href="{% url 'control:social_accounts_list' %}"
                class="nav-item {% block nav_social_accounts %}{% endblock %}">
                 <span class="material-icons-round">link</span>
-                Social Accounts
+                {% trans "Social Accounts" %}
             </a>
             <a href="{% url 'control:site_edit' %}"
                class="nav-item {% block nav_site %}{% endblock %}">
                 <span class="material-icons-round">language</span>
-                Site
+                {% trans "Site" %}
             </a>
             <a href="{% url 'control:system_settings' %}"
                class="nav-item {% block nav_system %}{% endblock %}">
                 <span class="material-icons-round">settings</span>
-                System
+                {% trans "System" %}
             </a>
             <a href="{% url 'control:sync_log' %}"
                class="nav-item {% block nav_sync_log %}{% endblock %}">
                 <span class="material-icons-round">bug_report</span>
-                Sync Import Log
+                {% trans "Sync Import Log" %}
             </a>
             {% endif %}
 
@@ -603,12 +603,35 @@
             ">
                 <button class="dropdown-item" onclick="toggleTheme(); return false;" style="width:100%;">
                     <span class="material-icons-round">contrast</span>
-                    Toggle Theme
+                    {% trans "Toggle Theme" %}
                 </button>
+                <div class="dropdown-divider"></div>
+                {% get_current_language as current_lang %}
+                {% if current_lang == "fr" %}
+                <form method="post" action="{% url 'set_language' %}" style="margin:0;">
+                    {% csrf_token %}
+                    <input name="next" type="hidden" value="{{ request.path }}">
+                    <input name="language" type="hidden" value="en">
+                    <button type="submit" class="dropdown-item" style="width:100%;">
+                        <span class="material-icons-round">translate</span>
+                        English
+                    </button>
+                </form>
+                {% else %}
+                <form method="post" action="{% url 'set_language' %}" style="margin:0;">
+                    {% csrf_token %}
+                    <input name="next" type="hidden" value="{{ request.path }}">
+                    <input name="language" type="hidden" value="fr">
+                    <button type="submit" class="dropdown-item" style="width:100%;">
+                        <span class="material-icons-round">translate</span>
+                        Français
+                    </button>
+                </form>
+                {% endif %}
                 <div class="dropdown-divider"></div>
                 <a href="/admin/logout/" class="dropdown-item dropdown-item-danger">
                     <span class="material-icons-round">logout</span>
-                    Log Out
+                    {% trans "Log Out" %}
                 </a>
             </div>
 
@@ -617,7 +640,7 @@
                 <div class="user-avatar">{{ request.user.username|first|upper }}</div>
                 <div style="flex:1; min-width:0;">
                     <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
-                    <div class="user-role">{% if request.user.is_superuser %}Superuser{% else %}Staff{% endif %}</div>
+                    <div class="user-role">{% if request.user.is_superuser %}{% trans "Superuser" %}{% else %}{% trans "Staff" %}{% endif %}</div>
                 </div>
                 <span class="material-icons-round" id="userPopupChevron" style="font-size:16px; color:var(--text-secondary); transition:transform 0.2s; flex-shrink:0;">expand_less</span>
             </div>
@@ -638,9 +661,9 @@
                     <span class="material-icons-round">menu</span>
                 </button>
                 <div class="topbar-titles">
-                    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+                    <div class="topbar-title">{% block page_title %}{% trans "Dashboard" %}{% endblock %}</div>
                     <div class="topbar-breadcrumb">
-                        Control Panel › <span>{% block page_breadcrumb %}Dashboard{% endblock %}</span>
+                        {% trans "Control Panel" %} › <span>{% block page_breadcrumb %}{% trans "Dashboard" %}{% endblock %}</span>
                     </div>
                 </div>
             </div>

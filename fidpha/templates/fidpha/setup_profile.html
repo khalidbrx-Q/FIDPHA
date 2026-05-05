@@ -1,10 +1,10 @@
-{% load static %}
+{% load static %}{% load i18n %}
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="{{ LANGUAGE_CODE }}" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WinInPharma — Setup Profile</title>
+    <title>WinInPharma — {% trans "Setup Profile" %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'fidpha/css/login.css' %}">
@@ -17,13 +17,13 @@
                 <span class="material-icons-round">workspace_premium</span>
             </div>
             <div class="login-brand-title">WinInPharma</div>
-            <div class="login-brand-sub">Complete your profile</div>
+            <div class="login-brand-sub">{% trans "Complete your profile" %}</div>
         </div>
 
         <div class="login-card">
 
             <p style="font-size: 0.88rem; color: #94a3b8; margin-bottom: 20px;">
-                Welcome! Please set up your email and personal info before continuing.
+                {% trans "Welcome! Please set up your email and personal info before continuing." %}
             </p>
 
             {% if messages %}
@@ -47,75 +47,76 @@
                 {% csrf_token %}
 
                 <div class="form-group">
-                    <label class="form-label">Email Address <span style="color:#ef4444;">*</span></label>
+                    <label class="form-label">{% trans "Email Address" %} <span style="color:#ef4444;">*</span></label>
                     <div class="form-input-wrapper">
                         <span class="material-icons-round form-input-icon">email</span>
                         <input type="email" name="email" class="form-input"
                                value="{{ request.user.email }}"
-                               placeholder="Enter your email" required autofocus>
+                               placeholder="{% trans "Enter your email" %}" required autofocus>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">First Name <span style="color:#94a3b8; font-size:0.75rem;">(optional)</span></label>
+                    <label class="form-label">{% trans "First Name" %} <span style="color:#94a3b8; font-size:0.75rem;">{% trans "(optional)" %}</span></label>
                     <div class="form-input-wrapper">
                         <span class="material-icons-round form-input-icon">badge</span>
                         <input type="text" name="first_name" class="form-input"
                                value="{{ request.user.first_name }}"
-                               placeholder="Enter your first name">
+                               placeholder="{% trans "Enter your first name" %}">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Last Name <span style="color:#94a3b8; font-size:0.75rem;">(optional)</span></label>
+                    <label class="form-label">{% trans "Last Name" %} <span style="color:#94a3b8; font-size:0.75rem;">{% trans "(optional)" %}</span></label>
                     <div class="form-input-wrapper">
                         <span class="material-icons-round form-input-icon">badge</span>
                         <input type="text" name="last_name" class="form-input"
                                value="{{ request.user.last_name }}"
-                               placeholder="Enter your last name">
+                               placeholder="{% trans "Enter your last name" %}">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">New Password <span style="color:#94a3b8; font-size:0.75rem;">(optional)</span></label>
+                    <label class="form-label">{% trans "New Password" %} <span style="color:#94a3b8; font-size:0.75rem;">{% trans "(optional)" %}</span></label>
                     <div class="form-input-wrapper">
                         <span class="material-icons-round form-input-icon">lock</span>
                         <input type="password" name="password" id="new_password" class="form-input"
-                               placeholder="Leave blank to keep current password">
+                               placeholder="{% trans "Leave blank to keep current password" %}">
                     </div>
                     <div style="margin-top: 8px;">
                         <div style="height: 4px; background-color: #334155; border-radius: 4px; overflow: hidden; margin-bottom: 6px;">
                             <div id="strength-bar" style="height: 100%; width: 0%; border-radius: 4px; transition: all 0.3s;"></div>
                         </div>
                         <div id="strength-text" style="font-size: 0.75rem; margin-bottom: 6px;"></div>
-                        <div id="req-length"  style="font-size: 0.75rem; color: #475569;">✗ At least 8 characters</div>
-                        <div id="req-upper"   style="font-size: 0.75rem; color: #475569;">✗ At least one uppercase letter</div>
-                        <div id="req-number"  style="font-size: 0.75rem; color: #475569;">✗ At least one number</div>
-                        <div id="req-special" style="font-size: 0.75rem; color: #475569;">✗ At least one special character</div>
+                        <div id="req-length"  style="font-size: 0.75rem; color: #475569;">✗ {% trans "At least 8 characters" %}</div>
+                        <div id="req-upper"   style="font-size: 0.75rem; color: #475569;">✗ {% trans "At least one uppercase letter" %}</div>
+                        <div id="req-number"  style="font-size: 0.75rem; color: #475569;">✗ {% trans "At least one number" %}</div>
+                        <div id="req-special" style="font-size: 0.75rem; color: #475569;">✗ {% trans "At least one special character" %}</div>
                     </div>
                 </div>
 
                 <button type="submit" class="login-btn">
                     <span class="material-icons-round" style="font-size:18px;">send</span>
-                    Save & Send Verification Email
+                    {% trans "Save & Send Verification Email" %}
                 </button>
             </form>
 
             <div style="text-align: center; margin-top: 16px;">
                 <a href="/portal/dashboard/" style="font-size: 0.82rem; color: #475569; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 4px;">
                     <span class="material-icons-round" style="font-size: 16px;">schedule</span>
-                    Do it later
+                    {% trans "Do it later" %}
                 </a>
             </div>
 
         </div>
 
         <div class="login-footer">
-            WinInPharma © 2026 — Pharmacy Management System
+            WinInPharma © 2026 — {% trans "Pharmacy Management System" %}
         </div>
     </div>
 
     <script>
+        var STR_LABELS = ['{% trans "Weak" %}', '{% trans "Fair" %}', '{% trans "Good" %}', '{% trans "Strong" %}'];
         const p = document.getElementById("new_password");
         const bar = document.getElementById("strength-bar");
         const strengthText = document.getElementById("strength-text");
@@ -142,17 +143,17 @@
 
                 const score = [hasLength, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
                 const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e"];
-                const labels = ["Weak", "Fair", "Good", "Strong"];
                 const widths = ["25%", "50%", "75%", "100%"];
 
-                if (pwd.length === 0) {
+                if (pwd.length === 0 || score === 0) {
                     bar.style.width = "0%";
+                    bar.style.backgroundColor = "";
                     strengthText.textContent = "";
                 } else {
                     bar.style.backgroundColor = colors[score - 1];
                     bar.style.width = widths[score - 1];
                     strengthText.style.color = colors[score - 1];
-                    strengthText.textContent = labels[score - 1];
+                    strengthText.textContent = STR_LABELS[score - 1];
                 }
             });
         }

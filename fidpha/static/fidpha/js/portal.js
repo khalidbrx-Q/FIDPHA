@@ -18,7 +18,7 @@ function applyTheme(theme) {
         root.style.setProperty("--text-primary", "#0f172a");
         root.style.setProperty("--text-secondary", "#64748b");
         if (icon) icon.textContent = "dark_mode";
-        if (label) label.textContent = "Dark";
+        if (label) label.textContent = label.dataset.dark || "Dark mode";
     } else {
         root.setAttribute("data-theme", "dark");
         root.style.setProperty("--sidebar-bg", "#0f172a");
@@ -31,7 +31,7 @@ function applyTheme(theme) {
         root.style.setProperty("--text-primary", "#f1f5f9");
         root.style.setProperty("--text-secondary", "#94a3b8");
         if (icon) icon.textContent = "light_mode";
-        if (label) label.textContent = "Light";
+        if (label) label.textContent = label.dataset.light || "Light mode";
     }
 
     localStorage.setItem("fidpha-theme", theme);
@@ -41,3 +41,7 @@ function toggleTheme() {
     const current = localStorage.getItem("fidpha-theme") || "dark";
     applyTheme(current === "dark" ? "light" : "dark");
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+    applyTheme(localStorage.getItem("fidpha-theme") || "dark");
+});

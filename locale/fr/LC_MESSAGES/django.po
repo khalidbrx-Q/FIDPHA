@@ -1,0 +1,1063 @@
+# French translations for WinInPharma.
+# Copyright (C) 2026 WinInPharma
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: WinInPharma 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-05 04:52+0100\n"
+"PO-Revision-Date: 2026-05-04 23:42+0100\n"
+"Last-Translator: WinInPharma\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: .\control\templates\control\base.html:485
+#: .\control\templates\control\base.html:666
+msgid "Control Panel"
+msgstr "Panneau de contrôle"
+
+#: .\control\templates\control\base.html:493
+#: .\fidpha\templates\fidpha\base.html:31
+msgid "Overview"
+msgstr "Aperçu"
+
+#: .\control\templates\control\base.html:497
+#: .\control\templates\control\base.html:664
+#: .\control\templates\control\base.html:666
+#: .\fidpha\templates\fidpha\base.html:34
+#: .\fidpha\templates\fidpha\base.html:126
+#: .\fidpha\templates\fidpha\base.html:127
+#: .\fidpha\templates\fidpha\dashboard.html:5
+#: .\fidpha\templates\fidpha\dashboard.html:6
+msgid "Dashboard"
+msgstr "Tableau de bord"
+
+#: .\control\templates\control\base.html:502
+msgid "Authentication"
+msgstr "Authentification"
+
+#: .\control\templates\control\base.html:507
+msgid "Roles"
+msgstr "Rôles"
+
+#: .\control\templates\control\base.html:514
+msgid "Users"
+msgstr "Utilisateurs"
+
+#: .\control\templates\control\base.html:526
+msgid "Accounts"
+msgstr "Comptes"
+
+#: .\control\templates\control\base.html:533
+msgid "Contracts"
+msgstr "Contrats"
+
+#: .\control\templates\control\base.html:540
+#: .\fidpha\templates\fidpha\contracts.html:97
+#: .\fidpha\templates\fidpha\contracts.html:230
+#: .\fidpha\templates\fidpha\dashboard.html:223
+msgid "Products"
+msgstr "Produits"
+
+#: .\control\templates\control\base.html:547
+msgid "Sales"
+msgstr "Ventes"
+
+#: .\control\templates\control\base.html:558
+msgid "API Tokens"
+msgstr "Jetons API"
+
+#: .\control\templates\control\base.html:564
+msgid "Configuration"
+msgstr "Configuration"
+
+#: .\control\templates\control\base.html:568
+msgid "Social Applications"
+msgstr "Applications sociales"
+
+#: .\control\templates\control\base.html:573
+msgid "Social Accounts"
+msgstr "Comptes sociaux"
+
+#: .\control\templates\control\base.html:578
+msgid "Site"
+msgstr "Site"
+
+#: .\control\templates\control\base.html:583
+msgid "System"
+msgstr "Système"
+
+#: .\control\templates\control\base.html:588
+msgid "Sync Import Log"
+msgstr "Journal d'import"
+
+#: .\control\templates\control\base.html:606
+msgid "Toggle Theme"
+msgstr "Changer le thème"
+
+#: .\control\templates\control\base.html:634
+#: .\fidpha\templates\fidpha\base.html:109
+msgid "Log Out"
+msgstr "Déconnexion"
+
+#: .\control\templates\control\base.html:643
+msgid "Superuser"
+msgstr "Super-administrateur"
+
+#: .\control\templates\control\base.html:643
+msgid "Staff"
+msgstr "Personnel"
+
+#: .\fidpha\templates\fidpha\base.html:26
+msgid "Pharmacy Portal"
+msgstr "Portail Pharmacie"
+
+#: .\fidpha\templates\fidpha\base.html:37
+msgid "My Program"
+msgstr "Mon Programme"
+
+#: .\fidpha\templates\fidpha\base.html:40
+#: .\fidpha\templates\fidpha\contracts.html:5
+#: .\fidpha\templates\fidpha\contracts.html:6
+#: .\fidpha\templates\fidpha\dashboard.html:170
+#: .\fidpha\templates\fidpha\sales.html:198
+msgid "Contract"
+msgstr "Contrat"
+
+#: .\fidpha\templates\fidpha\base.html:44
+#: .\fidpha\templates\fidpha\contracts.html:238
+#: .\fidpha\templates\fidpha\contracts.html:426
+#: .\fidpha\templates\fidpha\dashboard.html:174
+#: .\fidpha\templates\fidpha\dashboard.html:222
+#: .\fidpha\templates\fidpha\sales.html:203
+msgid "Points"
+msgstr "Points"
+
+#: .\fidpha\templates\fidpha\base.html:47
+#: .\fidpha\templates\fidpha\pharmacy.html:5
+#: .\fidpha\templates\fidpha\pharmacy.html:6
+msgid "Account"
+msgstr "Compte"
+
+#: .\fidpha\templates\fidpha\base.html:50
+#: .\fidpha\templates\fidpha\profile.html:209
+msgid "Pharmacy"
+msgstr "Pharmacie"
+
+#: .\fidpha\templates\fidpha\base.html:64
+msgid "Toggle theme"
+msgstr "Changer le thème"
+
+#: .\fidpha\templates\fidpha\contracts.html:42
+#: .\fidpha\templates\fidpha\dashboard.html:77
+msgid "Active Contract"
+msgstr "Contrat actif"
+
+#: .\fidpha\templates\fidpha\contracts.html:62
+#: .\fidpha\templates\fidpha\contracts.html:121
+msgid "Points Earned"
+msgstr "Points gagnés"
+
+#: .\fidpha\templates\fidpha\contracts.html:64
+msgid "this contract"
+msgstr "ce contrat"
+
+#: .\fidpha\templates\fidpha\contracts.html:73
+msgid "Products in Contract"
+msgstr "Produits du contrat"
+
+#: .\fidpha\templates\fidpha\contracts.html:75
+msgid "total referenced"
+msgstr "total référencés"
+
+#: .\fidpha\templates\fidpha\contracts.html:84
+msgid "Products with Points"
+msgstr "Produits avec points"
+
+#: .\fidpha\templates\fidpha\contracts.html:86
+msgid "generating points"
+msgstr "générant des points"
+
+#: .\fidpha\templates\fidpha\contracts.html:101
+#: .\fidpha\templates\fidpha\sales.html:158
+msgid "Search product..."
+msgstr "Rechercher un produit..."
+
+#: .\fidpha\templates\fidpha\contracts.html:104
+#: .\fidpha\templates\fidpha\contracts.html:254
+#: .\fidpha\templates\fidpha\sales.html:247
+msgid "Show"
+msgstr "Afficher"
+
+#: .\fidpha\templates\fidpha\contracts.html:117
+#: .\fidpha\templates\fidpha\dashboard.html:171
+#: .\fidpha\templates\fidpha\sales.html:199
+msgid "Product"
+msgstr "Produit"
+
+#: .\fidpha\templates\fidpha\contracts.html:118
+msgid "External Ref"
+msgstr "Réf. externe"
+
+#: .\fidpha\templates\fidpha\contracts.html:119
+#: .\fidpha\templates\fidpha\contracts.html:234
+msgid "Units Sold"
+msgstr "Unités vendues"
+
+#: .\fidpha\templates\fidpha\contracts.html:120
+msgid "Accepted Units"
+msgstr "Unités acceptées"
+
+#: .\fidpha\templates\fidpha\contracts.html:122
+#: .\fidpha\templates\fidpha\dashboard.html:175
+#: .\fidpha\templates\fidpha\sales.html:204
+msgid "Status"
+msgstr "Statut"
+
+#: .\fidpha\templates\fidpha\contracts.html:140
+#: .\fidpha\templates\fidpha\pharmacy.html:30
+msgid "Active"
+msgstr "Actif"
+
+#: .\fidpha\templates\fidpha\contracts.html:142
+#: .\fidpha\templates\fidpha\contracts.html:244
+#: .\fidpha\templates\fidpha\pharmacy.html:31
+msgid "Inactive"
+msgstr "Inactif"
+
+#: .\fidpha\templates\fidpha\contracts.html:147
+msgid "No products in this contract."
+msgstr "Aucun produit dans ce contrat."
+
+#: .\fidpha\templates\fidpha\contracts.html:163
+msgid "Monthly Trend"
+msgstr "Tendance mensuelle"
+
+#: .\fidpha\templates\fidpha\contracts.html:167
+#: .\fidpha\templates\fidpha\dashboard.html:99
+#: .\fidpha\templates\fidpha\dashboard.html:145
+#: .\fidpha\templates\fidpha\sales.html:133
+msgid "Back"
+msgstr "Retour"
+
+#: .\fidpha\templates\fidpha\contracts.html:179
+msgid "Points by Product"
+msgstr "Points par produit"
+
+#: .\fidpha\templates\fidpha\contracts.html:181
+msgid "Active contract"
+msgstr "Contrat actif"
+
+#: .\fidpha\templates\fidpha\contracts.html:193
+msgid "No active contract"
+msgstr "Aucun contrat actif"
+
+#: .\fidpha\templates\fidpha\contracts.html:194
+msgid "You don't have an active contract at the moment. Your inactive contracts are shown below."
+msgstr "Vous n'avez pas de contrat actif pour le moment. Vos contrats inactifs sont affichés ci-dessous."
+
+#: .\fidpha\templates\fidpha\contracts.html:204
+msgid "Points per Contract"
+msgstr "Points par contrat"
+
+#: .\fidpha\templates\fidpha\contracts.html:205
+msgid "All contracts"
+msgstr "Tous les contrats"
+
+#: .\fidpha\templates\fidpha\contracts.html:215
+msgid "Inactive Contracts"
+msgstr "Contrats inactifs"
+
+#: .\fidpha\templates\fidpha\contracts.html:267
+#: .\fidpha\templates\fidpha\sales.html:397
+msgid "Showing"
+msgstr "Affichage"
+
+#: .\fidpha\templates\fidpha\contracts.html:268
+#: .\fidpha\templates\fidpha\sales.html:398
+msgid "of"
+msgstr "sur"
+
+#: .\fidpha\templates\fidpha\contracts.html:427
+msgid "Unique Products"
+msgstr "Produits uniques"
+
+#: .\fidpha\templates\fidpha\contracts.html:428
+#: .\fidpha\templates\fidpha\dashboard.html:224
+msgid "Day"
+msgstr "Jour"
+
+#: .\fidpha\templates\fidpha\contracts.html:429
+msgid "pts"
+msgstr "pts"
+
+#: .\fidpha\templates\fidpha\contracts.html:430
+msgid "products"
+msgstr "produits"
+
+#: .\fidpha\templates\fidpha\dashboard.html:14
+msgid "Your email is not verified. Verify it to unlock Google login and password recovery."
+msgstr "Votre email n'est pas vérifié. Vérifiez-le pour activer la connexion Google et la récupération de mot de passe."
+
+#: .\fidpha\templates\fidpha\dashboard.html:17
+#: .\fidpha\templates\fidpha\pharmacy.html:83
+#: .\fidpha\templates\fidpha\profile.html:99
+msgid "Verify now"
+msgstr "Vérifier maintenant"
+
+#: .\fidpha\templates\fidpha\dashboard.html:44
+msgid "Total Points"
+msgstr "Points totaux"
+
+#: .\fidpha\templates\fidpha\dashboard.html:46
+msgid "all-time accumulated"
+msgstr "total cumulé"
+
+#: .\fidpha\templates\fidpha\dashboard.html:55
+msgid "This Month"
+msgstr "Ce mois-ci"
+
+#: .\fidpha\templates\fidpha\dashboard.html:57
+msgid "unit"
+msgid_plural "units"
+msgstr[0] "unité"
+msgstr[1] "unités"
+
+#: .\fidpha\templates\fidpha\dashboard.html:66
+msgid "Total Products"
+msgstr "Total produits"
+
+#: .\fidpha\templates\fidpha\dashboard.html:68
+msgid "unique products with points"
+msgstr "produits uniques avec points"
+
+#: .\fidpha\templates\fidpha\dashboard.html:79
+msgid "None"
+msgstr "Aucun"
+
+#: .\fidpha\templates\fidpha\dashboard.html:82
+#, python-format
+msgid "ends %(date)s"
+msgstr "se termine le %(date)s"
+
+#: .\fidpha\templates\fidpha\dashboard.html:82
+msgid "no active contract"
+msgstr "aucun contrat actif"
+
+#: .\fidpha\templates\fidpha\dashboard.html:95
+msgid "Monthly Overview"
+msgstr "Aperçu mensuel"
+
+#: .\fidpha\templates\fidpha\dashboard.html:102
+#: .\fidpha\templates\fidpha\dashboard.html:130
+#: .\fidpha\templates\fidpha\dashboard.html:148
+#: .\fidpha\templates\fidpha\sales.html:136
+msgid "Last 12 months"
+msgstr "12 derniers mois"
+
+#: .\fidpha\templates\fidpha\dashboard.html:113
+msgid "Top Products"
+msgstr "Top produits"
+
+#: .\fidpha\templates\fidpha\dashboard.html:114
+msgid "all-time · top 30"
+msgstr "de toujours · top 30"
+
+#: .\fidpha\templates\fidpha\dashboard.html:127
+msgid "Cumulative Points"
+msgstr "Points cumulés"
+
+#: .\fidpha\templates\fidpha\dashboard.html:141
+msgid "Submission Frequency"
+msgstr "Fréquence de soumission"
+
+#: .\fidpha\templates\fidpha\dashboard.html:162
+msgid "Recent Accepted"
+msgstr "Récemment acceptés"
+
+#: .\fidpha\templates\fidpha\dashboard.html:163
+msgid "View all"
+msgstr "Voir tout"
+
+#: .\fidpha\templates\fidpha\dashboard.html:169
+#: .\fidpha\templates\fidpha\sales.html:197
+msgid "Date"
+msgstr "Date"
+
+#: .\fidpha\templates\fidpha\dashboard.html:172
+#: .\fidpha\templates\fidpha\sales.html:202
+msgid "Qty"
+msgstr "Qté"
+
+#: .\fidpha\templates\fidpha\dashboard.html:194
+#: .\fidpha\templates\fidpha\sales.html:95
+#: .\fidpha\templates\fidpha\sales.html:162
+#: .\fidpha\templates\fidpha\sales.html:229
+#: .\fidpha\templates\fidpha\sales.html:280
+msgid "Accepted"
+msgstr "Accepté"
+
+#: .\fidpha\templates\fidpha\dashboard.html:195
+#: .\fidpha\templates\fidpha\sales.html:117
+#: .\fidpha\templates\fidpha\sales.html:163
+#: .\fidpha\templates\fidpha\sales.html:230
+#: .\fidpha\templates\fidpha\sales.html:282
+msgid "Rejected"
+msgstr "Rejeté"
+
+#: .\fidpha\templates\fidpha\dashboard.html:196
+#: .\fidpha\templates\fidpha\sales.html:106
+#: .\fidpha\templates\fidpha\sales.html:164
+#: .\fidpha\templates\fidpha\sales.html:231
+#: .\fidpha\templates\fidpha\sales.html:281
+msgid "Pending"
+msgstr "En attente"
+
+#: .\fidpha\templates\fidpha\dashboard.html:203
+msgid "No recorded yet."
+msgstr "Aucun enregistrement pour l'instant."
+
+#: .\fidpha\templates\fidpha\dashboard.html:225
+msgid "batch"
+msgstr "lot"
+
+#: .\fidpha\templates\fidpha\dashboard.html:226
+msgid "batches"
+msgstr "lots"
+
+#: .\fidpha\templates\fidpha\dashboard.html:227
+msgid "No accepted data yet"
+msgstr "Aucune donnée acceptée"
+
+#: .\fidpha\templates\fidpha\email\verify_body.html:20
+msgid "Verify your new email"
+msgstr "Vérifiez votre nouvel email"
+
+#: .\fidpha\templates\fidpha\email\verify_body.html:20
+msgid "Verify your email"
+msgstr "Vérifiez votre email"
+
+#: .\fidpha\templates\fidpha\email\verify_body.html:30
+#: .\fidpha\templates\fidpha\email\verify_body.txt:1
+msgid "You're receiving this email because you requested to change your email address on WinInPharma."
+msgstr "Vous recevez ce message car vous avez demandé à modifier votre adresse email sur WinInPharma."
+
+#: .\fidpha\templates\fidpha\email\verify_body.html:32
+#: .\fidpha\templates\fidpha\email\verify_body.txt:1
+msgid "You're receiving this email because you requested email verification for your WinInPharma account."
+msgstr "Vous recevez ce message car vous avez demandé la vérification de votre adresse email sur WinInPharma."
+
+#: .\fidpha\templates\fidpha\email\verify_body.html:37
+msgid "Click the button below to verify your email address."
+msgstr "Cliquez sur le bouton ci-dessous pour vérifier votre adresse email."
+
+#: .\fidpha\templates\fidpha\email\verify_body.html:46
+msgid "Verify Email Address"
+msgstr "Vérifier l'adresse email"
+
+#: .\fidpha\templates\fidpha\email\verify_body.html:54
+#: .\templates\registration\password_reset_email_html.html:50
+msgid "Or copy and paste this link into your browser:"
+msgstr "Ou copiez-collez ce lien dans votre navigateur :"
+
+#: .\fidpha\templates\fidpha\email\verify_body.html:61
+#: .\fidpha\templates\fidpha\email\verify_body.txt:7
+#: .\templates\registration\password_reset_email_html.html:65
+msgid "This link expires after 24 hours. If you didn't request this, you can safely ignore this email."
+msgstr "Ce lien expire après 24 heures. Si vous n'avez pas fait cette demande, vous pouvez ignorer cet email."
+
+#: .\fidpha\templates\fidpha\email\verify_body.html:69
+#: .\fidpha\templates\fidpha\login.html:100
+#: .\fidpha\templates\fidpha\setup_profile.html:114
+#: .\fidpha\templates\fidpha\verify_pending.html:65
+#: .\templates\registration\password_reset_complete.html:58
+#: .\templates\registration\password_reset_confirm.html:108
+#: .\templates\registration\password_reset_done.html:55
+#: .\templates\registration\password_reset_email_html.html:73
+#: .\templates\registration\password_reset_form.html:77
+msgid "Pharmacy Management System"
+msgstr "Système de gestion pharmaceutique"
+
+#: .\fidpha\templates\fidpha\email\verify_body.txt:3
+msgid "Click the link below to verify your email address:"
+msgstr "Cliquez sur le lien ci-dessous pour vérifier votre adresse email :"
+
+#: .\fidpha\templates\fidpha\email\verify_body.txt:9
+#: .\templates\registration\password_reset_email.html:11
+msgid "The WinInPharma team"
+msgstr "L'équipe WinInPharma"
+
+#: .\fidpha\templates\fidpha\email\verify_subject.txt:1
+msgid "WinInPharma — Verify your new email"
+msgstr "WinInPharma — Vérifiez votre nouvel email"
+
+#: .\fidpha\templates\fidpha\email\verify_subject.txt:1
+msgid "WinInPharma — Verify your email"
+msgstr "WinInPharma — Vérifiez votre email"
+
+#: .\fidpha\templates\fidpha\login.html:7
+msgid "Login"
+msgstr "Connexion"
+
+#: .\fidpha\templates\fidpha\login.html:22
+msgid "Pharmacy Management Portal"
+msgstr "Portail de gestion pharmaceutique"
+
+#: .\fidpha\templates\fidpha\login.html:41
+#: .\fidpha\templates\fidpha\pharmacy.html:56
+#: .\fidpha\templates\fidpha\profile.html:50
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+#: .\fidpha\templates\fidpha\login.html:44
+msgid "Enter your username"
+msgstr "Entrez votre nom d'utilisateur"
+
+#: .\fidpha\templates\fidpha\login.html:49
+msgid "Password"
+msgstr "Mot de passe"
+
+#: .\fidpha\templates\fidpha\login.html:52
+msgid "Enter your password"
+msgstr "Entrez votre mot de passe"
+
+#: .\fidpha\templates\fidpha\login.html:58
+msgid "Sign In"
+msgstr "Se connecter"
+
+#: .\fidpha\templates\fidpha\login.html:61
+msgid "Forgot your password?"
+msgstr "Mot de passe oublié ?"
+
+#: .\fidpha\templates\fidpha\login.html:66
+msgid "or"
+msgstr "ou"
+
+#: .\fidpha\templates\fidpha\login.html:78
+msgid "Continue with Google"
+msgstr "Continuer avec Google"
+
+#: .\fidpha\templates\fidpha\login.html:83
+#: .\templates\registration\password_reset_complete.html:41
+#: .\templates\registration\password_reset_confirm.html:91
+#: .\templates\registration\password_reset_done.html:38
+#: .\templates\registration\password_reset_form.html:60
+msgid "Light mode"
+msgstr "Mode clair"
+
+#: .\fidpha\templates\fidpha\login.html:83
+#: .\templates\registration\password_reset_complete.html:41
+#: .\templates\registration\password_reset_confirm.html:91
+#: .\templates\registration\password_reset_done.html:38
+#: .\templates\registration\password_reset_form.html:60
+msgid "Dark mode"
+msgstr "Mode sombre"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:34
+#: .\fidpha\templates\fidpha\profile.html:217
+msgid "Code"
+msgstr "Code"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:35
+msgid "Name"
+msgstr "Nom"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:36
+#: .\fidpha\templates\fidpha\profile.html:213
+msgid "City"
+msgstr "Ville"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:37
+msgid "Location"
+msgstr "Localisation"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:38
+msgid "Phone"
+msgstr "Téléphone"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:39
+#: .\fidpha\templates\fidpha\pharmacy.html:77
+#: .\fidpha\templates\fidpha\profile.html:80
+msgid "Email"
+msgstr "Email"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:49
+#: .\fidpha\templates\fidpha\profile.html:43
+msgid "Personal Information"
+msgstr "Informations personnelles"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:59
+#: .\fidpha\templates\fidpha\profile.html:60
+msgid "(cannot be changed)"
+msgstr "(ne peut pas être modifié)"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:64
+#: .\fidpha\templates\fidpha\profile.html:65
+#: .\fidpha\templates\fidpha\setup_profile.html:60
+msgid "First Name"
+msgstr "Prénom"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:65
+msgid "First name"
+msgstr "Prénom"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:70
+#: .\fidpha\templates\fidpha\profile.html:72
+#: .\fidpha\templates\fidpha\setup_profile.html:70
+msgid "Last Name"
+msgstr "Nom"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:71
+msgid "Last name"
+msgstr "Nom"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:79
+#: .\fidpha\templates\fidpha\profile.html:82
+msgid "Verified"
+msgstr "Vérifié"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:81
+#: .\fidpha\templates\fidpha\profile.html:84
+msgid "Not verified"
+msgstr "Non vérifié"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:87
+msgid "Email address"
+msgstr "Adresse email"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:90
+msgid "Changing your email will send a new verification link."
+msgstr "Modifier votre email enverra un nouveau lien de vérification."
+
+#: .\fidpha\templates\fidpha\pharmacy.html:92
+#: .\fidpha\templates\fidpha\profile.html:109
+msgid "Changing your email will require re-verification."
+msgstr "Modifier votre email nécessitera une nouvelle vérification."
+
+#: .\fidpha\templates\fidpha\pharmacy.html:97
+#: .\fidpha\templates\fidpha\profile.html:128
+msgid "Save Changes"
+msgstr "Enregistrer"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:106
+#: .\fidpha\templates\fidpha\profile.html:139
+msgid "Change Password"
+msgstr "Changer le mot de passe"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:113
+#: .\fidpha\templates\fidpha\profile.html:146
+msgid "Current Password"
+msgstr "Mot de passe actuel"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:114
+#: .\fidpha\templates\fidpha\profile.html:148
+msgid "Enter your current password"
+msgstr "Entrez votre mot de passe actuel"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:119
+#: .\fidpha\templates\fidpha\profile.html:154
+#: .\fidpha\templates\fidpha\setup_profile.html:80
+#: .\templates\registration\password_reset_confirm.html:7
+#: .\templates\registration\password_reset_confirm.html:50
+msgid "New Password"
+msgstr "Nouveau mot de passe"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:120
+#: .\fidpha\templates\fidpha\profile.html:156
+#: .\templates\registration\password_reset_confirm.html:53
+msgid "Enter new password"
+msgstr "Entrez le nouveau mot de passe"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:129
+#: .\fidpha\templates\fidpha\profile.html:166
+#: .\fidpha\templates\fidpha\setup_profile.html:91
+#: .\templates\registration\password_reset_confirm.html:56
+msgid "At least 8 characters"
+msgstr "Au moins 8 caractères"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:130
+#: .\fidpha\templates\fidpha\profile.html:167
+#: .\fidpha\templates\fidpha\setup_profile.html:92
+#: .\templates\registration\password_reset_confirm.html:57
+msgid "At least one uppercase letter"
+msgstr "Au moins une lettre majuscule"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:131
+#: .\fidpha\templates\fidpha\profile.html:168
+#: .\fidpha\templates\fidpha\setup_profile.html:93
+#: .\templates\registration\password_reset_confirm.html:58
+msgid "At least one number"
+msgstr "Au moins un chiffre"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:132
+#: .\fidpha\templates\fidpha\profile.html:169
+#: .\fidpha\templates\fidpha\setup_profile.html:94
+#: .\templates\registration\password_reset_confirm.html:59
+msgid "At least one special character"
+msgstr "Au moins un caractère spécial"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:136
+#: .\fidpha\templates\fidpha\profile.html:173
+#: .\templates\registration\password_reset_confirm.html:63
+msgid "Confirm New Password"
+msgstr "Confirmer le nouveau mot de passe"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:137
+#: .\fidpha\templates\fidpha\profile.html:175
+#: .\templates\registration\password_reset_confirm.html:66
+msgid "Confirm new password"
+msgstr "Confirmez le nouveau mot de passe"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:143
+#: .\fidpha\templates\fidpha\profile.html:196
+msgid "Update Password"
+msgstr "Mettre à jour le mot de passe"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:151
+#: .\fidpha\templates\fidpha\profile.html:226
+#: .\templates\registration\password_reset_confirm.html:114
+msgid "Passwords match"
+msgstr "Les mots de passe correspondent"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:152
+#: .\fidpha\templates\fidpha\profile.html:227
+#: .\templates\registration\password_reset_confirm.html:115
+msgid "Passwords don\\'t match"
+msgstr "Les mots de passe ne correspondent pas"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:153
+#: .\fidpha\templates\fidpha\profile.html:228
+#: .\fidpha\templates\fidpha\setup_profile.html:119
+#: .\templates\registration\password_reset_confirm.html:116
+msgid "Weak"
+msgstr "Faible"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:153
+#: .\fidpha\templates\fidpha\profile.html:228
+#: .\fidpha\templates\fidpha\setup_profile.html:119
+#: .\templates\registration\password_reset_confirm.html:116
+msgid "Fair"
+msgstr "Moyen"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:153
+#: .\fidpha\templates\fidpha\profile.html:228
+#: .\fidpha\templates\fidpha\setup_profile.html:119
+#: .\templates\registration\password_reset_confirm.html:116
+msgid "Good"
+msgstr "Bon"
+
+#: .\fidpha\templates\fidpha\pharmacy.html:153
+#: .\fidpha\templates\fidpha\profile.html:228
+#: .\fidpha\templates\fidpha\setup_profile.html:119
+#: .\templates\registration\password_reset_confirm.html:116
+msgid "Strong"
+msgstr "Fort"
+
+#: .\fidpha\templates\fidpha\profile.html:5
+#: .\fidpha\templates\fidpha\profile.html:6
+msgid "Profile"
+msgstr "Profil"
+
+#: .\fidpha\templates\fidpha\profile.html:67
+#: .\fidpha\templates\fidpha\setup_profile.html:65
+msgid "Enter your first name"
+msgstr "Entrez votre prénom"
+
+#: .\fidpha\templates\fidpha\profile.html:74
+#: .\fidpha\templates\fidpha\setup_profile.html:75
+msgid "Enter your last name"
+msgstr "Entrez votre nom"
+
+#: .\fidpha\templates\fidpha\profile.html:104
+#: .\fidpha\templates\fidpha\setup_profile.html:55
+#: .\templates\registration\password_reset_form.html:46
+msgid "Enter your email"
+msgstr "Entrez votre email"
+
+#: .\fidpha\templates\fidpha\profile.html:107
+msgid "Email not verified. Changing it will send a new verification link."
+msgstr "Email non vérifié. Le modifier enverra un nouveau lien de vérification."
+
+#: .\fidpha\templates\fidpha\profile.html:206
+msgid "Linked Account"
+msgstr "Compte lié"
+
+#: .\fidpha\templates\fidpha\sales.html:5
+#: .\fidpha\templates\fidpha\sales.html:6
+msgid "Points Breakdown"
+msgstr "Détail des points"
+
+#: .\fidpha\templates\fidpha\sales.html:84
+#: .\fidpha\templates\fidpha\sales.html:283
+msgid "Total"
+msgstr "Total"
+
+#: .\fidpha\templates\fidpha\sales.html:86
+msgid "all statuses"
+msgstr "tous statuts"
+
+#: .\fidpha\templates\fidpha\sales.html:108
+msgid "awaiting review"
+msgstr "en attente de révision"
+
+#: .\fidpha\templates\fidpha\sales.html:130
+#: .\fidpha\templates\fidpha\sales.html:284
+msgid "Monthly Acceptance"
+msgstr "Acceptation mensuelle"
+
+#: .\fidpha\templates\fidpha\sales.html:149
+msgid "History"
+msgstr "Historique"
+
+#: .\fidpha\templates\fidpha\sales.html:151
+msgid "accepted"
+msgstr "accepté"
+
+#: .\fidpha\templates\fidpha\sales.html:155
+#, python-format
+msgid "%(count)s row"
+msgid_plural "%(count)s rows"
+msgstr[0] "%(count)s ligne"
+msgstr[1] "%(count)s lignes"
+
+#: .\fidpha\templates\fidpha\sales.html:161
+msgid "All"
+msgstr "Tout"
+
+#: .\fidpha\templates\fidpha\sales.html:168
+#: .\fidpha\templates\fidpha\sales.html:174
+#: .\fidpha\templates\fidpha\sales.html:401
+msgid "All Contracts"
+msgstr "Tous les contrats"
+
+#: .\fidpha\templates\fidpha\sales.html:172
+msgid "Search contract..."
+msgstr "Rechercher un contrat..."
+
+#: .\fidpha\templates\fidpha\sales.html:183
+msgid "From date"
+msgstr "Date de début"
+
+#: .\fidpha\templates\fidpha\sales.html:185
+msgid "To date"
+msgstr "Date de fin"
+
+#: .\fidpha\templates\fidpha\sales.html:186
+msgid "Clear dates"
+msgstr "Effacer les dates"
+
+#: .\fidpha\templates\fidpha\sales.html:200
+msgid "Ext. Ref"
+msgstr "Réf. ext."
+
+#: .\fidpha\templates\fidpha\sales.html:239
+msgid "No sales match your filters."
+msgstr "Aucune vente ne correspond à vos filtres."
+
+#: .\fidpha\templates\fidpha\sales.html:254
+msgid "per page"
+msgstr "par page"
+
+#: .\fidpha\templates\fidpha\sales.html:261
+msgid "No sales yet"
+msgstr "Aucune vente pour l'instant"
+
+#: .\fidpha\templates\fidpha\sales.html:262
+msgid "Sales will appear here once your pharmacy submits data."
+msgstr "Les ventes apparaîtront ici une fois que votre pharmacie aura soumis des données."
+
+#: .\fidpha\templates\fidpha\sales.html:399
+msgid "result"
+msgstr "résultat"
+
+#: .\fidpha\templates\fidpha\sales.html:400
+msgid "results"
+msgstr "résultats"
+
+#: .\fidpha\templates\fidpha\setup_profile.html:7
+msgid "Setup Profile"
+msgstr "Configurer le profil"
+
+#: .\fidpha\templates\fidpha\setup_profile.html:20
+msgid "Complete your profile"
+msgstr "Complétez votre profil"
+
+#: .\fidpha\templates\fidpha\setup_profile.html:26
+msgid "Welcome! Please set up your email and personal info before continuing."
+msgstr "Bienvenue ! Veuillez configurer votre email et vos informations personnelles avant de continuer."
+
+#: .\fidpha\templates\fidpha\setup_profile.html:50
+#: .\templates\registration\password_reset_form.html:43
+msgid "Email Address"
+msgstr "Adresse email"
+
+#: .\fidpha\templates\fidpha\setup_profile.html:60
+#: .\fidpha\templates\fidpha\setup_profile.html:70
+#: .\fidpha\templates\fidpha\setup_profile.html:80
+msgid "(optional)"
+msgstr "(optionnel)"
+
+#: .\fidpha\templates\fidpha\setup_profile.html:84
+msgid "Leave blank to keep current password"
+msgstr "Laisser vide pour conserver le mot de passe actuel"
+
+#: .\fidpha\templates\fidpha\setup_profile.html:100
+msgid "Save & Send Verification Email"
+msgstr "Enregistrer et envoyer l'email de vérification"
+
+#: .\fidpha\templates\fidpha\setup_profile.html:107
+msgid "Do it later"
+msgstr "Le faire plus tard"
+
+#: .\fidpha\templates\fidpha\verify_pending.html:7
+msgid "Verify Email"
+msgstr "Vérifier l'email"
+
+#: .\fidpha\templates\fidpha\verify_pending.html:21
+msgid "Add your email"
+msgstr "Ajouter votre email"
+
+#: .\fidpha\templates\fidpha\verify_pending.html:21
+msgid "Check your email"
+msgstr "Vérifiez votre email"
+
+#: .\fidpha\templates\fidpha\verify_pending.html:30
+msgid "No email address found"
+msgstr "Aucune adresse email trouvée"
+
+#: .\fidpha\templates\fidpha\verify_pending.html:32
+msgid "You haven't added an email address yet. Please go to your profile and add one to receive a verification link."
+msgstr "Vous n'avez pas encore ajouté d'adresse email. Veuillez accéder à votre profil et en ajouter une pour recevoir un lien de vérification."
+
+#: .\fidpha\templates\fidpha\verify_pending.html:47
+msgid "Go to Profile"
+msgstr "Aller au profil"
+
+#: .\fidpha\templates\fidpha\verify_pending.html:53
+msgid "Verification email sent!"
+msgstr "Email de vérification envoyé !"
+
+#: .\fidpha\templates\fidpha\verify_pending.html:55
+msgid "We've sent a verification link to your email. Click the link to verify and access your dashboard."
+msgstr "Nous avons envoyé un lien de vérification à votre email. Cliquez sur le lien pour vérifier et accéder à votre tableau de bord."
+
+#: .\fidpha\templates\fidpha\verify_pending.html:58
+msgid "Didn't receive it?"
+msgstr "Vous ne l'avez pas reçu ?"
+
+#: .\fidpha\templates\fidpha\verify_pending.html:59
+msgid "Resend email"
+msgstr "Renvoyer l'email"
+
+#: .\templates\registration\password_reset_complete.html:7
+msgid "Password Reset Complete"
+msgstr "Réinitialisation du mot de passe terminée"
+
+#: .\templates\registration\password_reset_complete.html:22
+msgid "Password reset complete"
+msgstr "Réinitialisation terminée"
+
+#: .\templates\registration\password_reset_complete.html:29
+msgid "Password updated!"
+msgstr "Mot de passe mis à jour !"
+
+#: .\templates\registration\password_reset_complete.html:31
+msgid "Your password has been successfully reset. You can now log in with your new password."
+msgstr "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
+
+#: .\templates\registration\password_reset_complete.html:35
+#: .\templates\registration\password_reset_done.html:33
+#: .\templates\registration\password_reset_form.html:55
+msgid "Back to Login"
+msgstr "Retour à la connexion"
+
+#: .\templates\registration\password_reset_confirm.html:22
+msgid "Set new password"
+msgstr "Définir un nouveau mot de passe"
+
+#: .\templates\registration\password_reset_confirm.html:40
+msgid "Password strength"
+msgstr "Force du mot de passe"
+
+#: .\templates\registration\password_reset_confirm.html:73
+msgid "Set New Password"
+msgstr "Définir le nouveau mot de passe"
+
+#: .\templates\registration\password_reset_confirm.html:80
+msgid "Invalid or expired link"
+msgstr "Lien invalide ou expiré"
+
+#: .\templates\registration\password_reset_confirm.html:82
+msgid "This reset link is no longer valid. Please request a new one."
+msgstr "Ce lien de réinitialisation n'est plus valide. Veuillez en demander un nouveau."
+
+#: .\templates\registration\password_reset_confirm.html:84
+msgid "Request new link"
+msgstr "Demander un nouveau lien"
+
+#: .\templates\registration\password_reset_done.html:7
+msgid "Email Sent"
+msgstr "Email envoyé"
+
+#: .\templates\registration\password_reset_done.html:22
+msgid "Check your inbox"
+msgstr "Vérifiez votre boîte de réception"
+
+#: .\templates\registration\password_reset_done.html:29
+msgid "Email sent!"
+msgstr "Email envoyé !"
+
+#: .\templates\registration\password_reset_done.html:31
+msgid "We've sent a password reset link to your email. Check your inbox and follow the instructions."
+msgstr "Nous avons envoyé un lien de réinitialisation à votre email. Vérifiez votre boîte de réception et suivez les instructions."
+
+#: .\templates\registration\password_reset_email.html:2
+msgid "You're receiving this email because you requested a password reset for your user account at WinInPharma."
+msgstr "Vous recevez ce message car vous avez demandé une réinitialisation du mot de passe de votre compte sur WinInPharma."
+
+#: .\templates\registration\password_reset_email.html:4
+msgid "Please go to the following page and choose a new password:"
+msgstr "Veuillez vous rendre sur cette page et choisir un nouveau mot de passe :"
+
+#: .\templates\registration\password_reset_email.html:7
+#: .\templates\registration\password_reset_email_html.html:61
+msgid "In case you've forgotten, your username is:"
+msgstr "Au cas où vous l'auriez oublié, votre nom d'utilisateur est :"
+
+#: .\templates\registration\password_reset_email.html:9
+msgid "Thanks for using our site!"
+msgstr "Merci d'utiliser notre site !"
+
+#: .\templates\registration\password_reset_email_html.html:20
+#: .\templates\registration\password_reset_form.html:22
+msgid "Reset your password"
+msgstr "Réinitialisez votre mot de passe"
+
+#: .\templates\registration\password_reset_email_html.html:29
+msgid "You're receiving this email because you requested a password reset for your WinInPharma account."
+msgstr "Vous recevez ce message car vous avez demandé une réinitialisation du mot de passe de votre compte sur WinInPharma."
+
+#: .\templates\registration\password_reset_email_html.html:33
+msgid "Click the button below to choose a new password."
+msgstr "Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe."
+
+#: .\templates\registration\password_reset_email_html.html:42
+#: .\templates\registration\password_reset_form.html:7
+msgid "Reset Password"
+msgstr "Réinitialiser le mot de passe"
+
+#: .\templates\registration\password_reset_form.html:28
+msgid "Enter your email address and we'll send you a link to reset your password."
+msgstr "Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe."
+
+#: .\templates\registration\password_reset_form.html:35
+msgid "No account found with this email address."
+msgstr "Aucun compte trouvé avec cette adresse email."
+
+#: .\templates\registration\password_reset_form.html:51
+msgid "Send Reset Link"
+msgstr "Envoyer le lien de réinitialisation"

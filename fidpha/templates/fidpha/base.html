@@ -1,6 +1,6 @@
-{% load static %}
+{% load static %}{% load i18n %}
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="{{ LANGUAGE_CODE }}" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,31 +23,31 @@
             </div>
             <div>
                 <div class="sidebar-brand-text">WinInPharma</div>
-                <div class="sidebar-brand-sub">Pharmacy Portal</div>
+                <div class="sidebar-brand-sub">{% trans "Pharmacy Portal" %}</div>
             </div>
         </div>
 
         <nav class="sidebar-nav">
-            <div class="nav-section-title">Overview</div>
+            <div class="nav-section-title">{% trans "Overview" %}</div>
             <a href="/portal/dashboard/" class="nav-item {% block nav_dashboard %}{% endblock %}" onclick="closeSidebar()">
                 <span class="material-icons-round">home</span>
-                Dashboard
+                {% trans "Dashboard" %}
             </a>
 
-            <div class="nav-section-title" style="margin-top:14px;">My Program</div>
+            <div class="nav-section-title" style="margin-top:14px;">{% trans "My Program" %}</div>
             <a href="/portal/contracts/" class="nav-item {% block nav_contracts %}{% endblock %}" onclick="closeSidebar()">
                 <span class="material-icons-round">description</span>
-                Contract
+                {% trans "Contract" %}
             </a>
             <a href="/portal/sales/" class="nav-item {% block nav_sales %}{% endblock %}" onclick="closeSidebar()">
                 <span class="material-icons-round">stars</span>
-                Points
+                {% trans "Points" %}
             </a>
 
-            <div class="nav-section-title" style="margin-top:14px;">Account</div>
+            <div class="nav-section-title" style="margin-top:14px;">{% trans "Account" %}</div>
             <a href="/portal/pharmacy/" class="nav-item {% block nav_pharmacy %}{% endblock %}" onclick="closeSidebar()">
                 <span class="material-icons-round">local_pharmacy</span>
-                Pharmacy
+                {% trans "Pharmacy" %}
             </a>
         </nav>
         {% block nav_profile %}{% endblock %}
@@ -61,7 +61,7 @@
                 </div>
             </div>
             <div style="display:flex; gap:6px;">
-                <button onclick="toggleTheme()" title="Toggle theme" style="
+                <button onclick="toggleTheme()" title="{% trans "Toggle theme" %}" style="
                     display:flex; align-items:center; justify-content:center;
                     width:36px; height:36px; border-radius:8px;
                     border:1px solid var(--card-border); background:transparent;
@@ -69,6 +69,34 @@
                 ">
                     <span class="material-icons-round" style="font-size:18px;">contrast</span>
                 </button>
+                {% get_current_language as current_lang %}
+                {% if current_lang == "fr" %}
+                <form method="post" action="{% url 'set_language' %}" style="margin:0; flex-shrink:0;">
+                    {% csrf_token %}
+                    <input name="next" type="hidden" value="{{ request.path }}">
+                    <input name="language" type="hidden" value="en">
+                    <button type="submit" title="Switch to English" style="
+                        display:flex; align-items:center; justify-content:center;
+                        width:36px; height:36px; border-radius:8px;
+                        border:1px solid var(--card-border); background:transparent;
+                        color:var(--text-secondary); cursor:pointer; flex-shrink:0; transition:all 0.15s;
+                        font-size:0.7rem; font-weight:700; font-family:'Inter',sans-serif; letter-spacing:0.3px;
+                    ">EN</button>
+                </form>
+                {% else %}
+                <form method="post" action="{% url 'set_language' %}" style="margin:0; flex-shrink:0;">
+                    {% csrf_token %}
+                    <input name="next" type="hidden" value="{{ request.path }}">
+                    <input name="language" type="hidden" value="fr">
+                    <button type="submit" title="Passer en Français" style="
+                        display:flex; align-items:center; justify-content:center;
+                        width:36px; height:36px; border-radius:8px;
+                        border:1px solid var(--card-border); background:transparent;
+                        color:var(--text-secondary); cursor:pointer; flex-shrink:0; transition:all 0.15s;
+                        font-size:0.7rem; font-weight:700; font-family:'Inter',sans-serif; letter-spacing:0.3px;
+                    ">FR</button>
+                </form>
+                {% endif %}
                 <form method="POST" action="/portal/logout/" style="flex:1; margin:0;">
                     {% csrf_token %}
                     <button type="submit" style="
@@ -78,7 +106,7 @@
                         font-size:0.82rem; font-weight:600; font-family:'Inter',sans-serif; transition:all 0.15s;
                     ">
                         <span class="material-icons-round" style="font-size:16px;">logout</span>
-                        Log Out
+                        {% trans "Log Out" %}
                     </button>
                 </form>
             </div>
@@ -95,8 +123,8 @@
                     <span class="material-icons-round">menu</span>
                 </button>
                 <div>
-                    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
-                    <div class="topbar-breadcrumb">WinInPharma › <span>{% block page_breadcrumb %}Dashboard{% endblock %}</span></div>
+                    <div class="topbar-title">{% block page_title %}{% trans "Dashboard" %}{% endblock %}</div>
+                    <div class="topbar-breadcrumb">WinInPharma › <span>{% block page_breadcrumb %}{% trans "Dashboard" %}{% endblock %}</span></div>
                 </div>
             </div>
 

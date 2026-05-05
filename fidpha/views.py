@@ -10,9 +10,20 @@ from django.contrib.auth.models import User
 from .models import UserProfile, Contract
 import secrets
 from django.utils import timezone
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 from django.conf import settings
+
+
+def _send_verification_email(request, to_email, verify_url, is_new_email=False):
+    ctx = {"verify_url": verify_url, "is_new_email": is_new_email}
+    subject = render_to_string("fidpha/email/verify_subject.txt", ctx, request=request).strip()
+    text_body = render_to_string("fidpha/email/verify_body.txt", ctx, request=request)
+    html_body = render_to_string("fidpha/email/verify_body.html", ctx, request=request)
+    msg = EmailMultiAlternatives(subject, text_body, settings.DEFAULT_FROM_EMAIL, [to_email])
+    msg.attach_alternative(html_body, "text/html")
+    msg.send()
 
 
 def custom_login(request):
@@ -56,7 +67,7 @@ def custom_login(request):
 
 def custom_logout(request):
     logout(request)
-    messages.success(request, "You have been successfully signed out.")
+    messages.success(request, "Successfully signed out.")
     return redirect("/portal/login/")
 
 
@@ -101,13 +112,7 @@ def setup_profile(request):
 
             verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
             try:
-                send_mail(
-                    "WinInPharma — Verify your email",
-                    f"Click the link to verify your email: {verify_url}",
-                    settings.DEFAULT_FROM_EMAIL,
-                    [email],
-                    fail_silently=False,
-                )
+                _send_verification_email(request, email, verify_url)
                 request.user.email = email
                 request.user.save()
                 messages.success(request, "Verification email sent!")
@@ -162,13 +167,7 @@ def portal_profile(request):
 
                 verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
                 try:
-                    send_mail(
-                        "WinInPharma — Verify your new email",
-                        f"Click the link to verify your new email: {verify_url}",
-                        settings.DEFAULT_FROM_EMAIL,
-                        [email],
-                        fail_silently=False,
-                    )
+                    _send_verification_email(request, email, verify_url, is_new_email=True)
                     messages.success(request, "Verification email sent to your new address!")
                 except Exception as e:
                     messages.error(request, f"Failed to send email: {str(e)}")
@@ -263,13 +262,7 @@ def verify_pending(request):
 
     verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
     try:
-        send_mail(
-            "WinInPharma — Verify your email",
-            f"Click the link to verify your email: {verify_url}",
-            settings.DEFAULT_FROM_EMAIL,
-            [request.user.email],
-            fail_silently=False,
-        )
+        _send_verification_email(request, request.user.email, verify_url)
     except Exception as e:
         messages.error(request, f"Failed to send email: {str(e)}")
         return redirect("/portal/dashboard/")
@@ -985,6 +978,8 @@ class CustomPasswordResetForm(PasswordResetForm):
 class CustomPasswordResetView(PasswordResetView):
     form_class = CustomPasswordResetForm
     template_name = "registration/password_reset_form.html"
+    email_template_name = "registration/password_reset_email.html"
+    html_email_template_name = "registration/password_reset_email_html.html"
     success_url = reverse_lazy("password_reset_done")
 
     def form_invalid(self, form):

@@ -1,0 +1,10 @@
+{% load i18n %}{% autoescape off %}{% if is_new_email %}{% trans "You're receiving this email because you requested to change your email address on WinInPharma." %}{% else %}{% trans "You're receiving this email because you requested email verification for your WinInPharma account." %}{% endif %}
+
+{% trans "Click the link below to verify your email address:" %}
+
+{{ verify_url }}
+
+{% trans "This link expires after 24 hours. If you didn't request this, you can safely ignore this email." %}
+
+{% trans "The WinInPharma team" %}
+{% endautoescape %}
