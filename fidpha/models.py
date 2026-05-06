@@ -103,7 +103,7 @@ class Product(TraceableMixin, models.Model):
 
     code        = models.CharField(max_length=50, unique=True)
     designation = models.CharField(max_length=255)
-    ppv         = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    ppv         = models.DecimalField(max_digits=10, decimal_places=2)
     status      = models.CharField(max_length=10, choices=STATUS_CHOICES)
 
     class Meta:

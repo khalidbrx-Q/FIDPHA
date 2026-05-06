@@ -1,14 +1,15 @@
 from pathlib import Path
 from django.templatetags.static import static
 from django.urls import reverse_lazy
+from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-84==t^=mjl&51p8p)x)w%+=j=vd4=548f4q!c2snwih0a%qsnj"
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-84==t^=mjl&51p8p)x)w%+=j=vd4=548f4q!c2snwih0a%qsnj')
 
-DEBUG = False ################## CHANGE THIS TO False FOR PRODUCTION
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['*', 'khalidbrx.pythonanywhere.com']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*,khalidbrx.pythonanywhere.com', cast=Csv())
 
 INSTALLED_APPS = [
     "unfold",
@@ -79,9 +80,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'buarramoukhalid@gmail.com'
-EMAIL_HOST_PASSWORD = 'gbxz sdba xxxh meme'
-DEFAULT_FROM_EMAIL = 'WinInPharma <buarramoukhalid@gmail.com>'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='buarramoukhalid@gmail.com')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='WinInPharma <buarramoukhalid@gmail.com>')
 
 TEMPLATES = [
     {
