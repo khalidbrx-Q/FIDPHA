@@ -16,8 +16,11 @@ Author: FIDPHA Dev Team
 Last updated: April 2026
 """
 
-from fidpha.models import Account, Contract, Contract_Product, Product
+from decimal import Decimal, InvalidOperation
+
 from django.db.models import QuerySet
+
+from fidpha.models import Account, Contract, Contract_Product, Product
 
 
 # ---------------------------------------------------------------------------
@@ -267,3 +270,140 @@ def link_product_to_contract(
         product=product,
         external_designation=external_designation,
     )
+
+
+# ---------------------------------------------------------------------------
+# Product bulk import
+# ---------------------------------------------------------------------------
+
+def bulk_import_products(rows: list[dict], created_by) -> dict:
+    """
+    Bulk-create products from a list of row dicts.
+
+    Each dict must have keys: code, designation, ppv, status (optional).
+    Returns {"created": [Product, ...], "skipped": [{"row": dict, "reason": str}, ...]}.
+    """
+    created = []
+    skipped = []
+    seen_codes: set[str] = set()
+    existing_codes: set[str] = set(Product.objects.values_list("code", flat=True))
+    to_create: list[Product] = []
+
+    for row in rows:
+        code        = (row.get("code") or "").strip()
+        designation = (row.get("designation") or "").strip()
+        ppv_raw     = (row.get("ppv") or "").strip()
+        status_raw  = (row.get("status") or "").strip().lower()
+
+        if not code:
+            skipped.append({"row": row, "reason": "Missing code"})
+            continue
+        if not designation:
+            skipped.append({"row": row, "reason": "Missing designation"})
+            continue
+        if not ppv_raw:
+            skipped.append({"row": row, "reason": "Missing ppv"})
+            continue
+        try:
+            ppv = Decimal(ppv_raw)
+        except InvalidOperation:
+            skipped.append({"row": row, "reason": f"Invalid ppv '{ppv_raw}'"})
+            continue
+        if code in seen_codes:
+            skipped.append({"row": row, "reason": "Duplicate code in batch"})
+            continue
+        if code in existing_codes:
+            skipped.append({"row": row, "reason": "Code already exists"})
+            continue
+
+        if status_raw not in (Product.STATUS_ACTIVE, Product.STATUS_INACTIVE):
+            skipped.append({"row": row, "reason": f"Invalid status '{status_raw}' — must be 'active' or 'inactive'"})
+            continue
+        status = status_raw
+        seen_codes.add(code)
+        existing_codes.add(code)
+        to_create.append(Product(
+            code=code,
+            designation=designation,
+            ppv=ppv,
+            status=status,
+            created_by=created_by,
+            modified_by=created_by,
+        ))
+
+    if to_create:
+        created = Product.objects.bulk_create(to_create)
+
+    return {"created": created, "skipped": skipped}
+
+
+def bulk_link_products_to_contract(contract, rows: list[dict], created_by) -> dict:
+    """
+    Bulk-create Contract_Product links for an existing contract.
+
+    Each row must have: product_code, external_designation.
+    Optional: points_per_unit (default 1), target_quantity.
+    Returns {"created": [...], "skipped": [{"row": dict, "reason": str}]}.
+    """
+    created = []
+    skipped = []
+    seen_codes: set[str] = set()
+    already_linked: set[str] = set(
+        Contract_Product.objects.filter(contract=contract)
+        .values_list("product__code", flat=True)
+    )
+    to_create: list[Contract_Product] = []
+
+    for row in rows:
+        code      = (row.get("product_code")          or "").strip()
+        ext_desig = (row.get("external_designation")   or "").strip()
+        ppu_raw   = (row.get("points_per_unit")        or "1").strip()
+        tq_raw    = (row.get("target_quantity")        or "").strip()
+
+        if not code:
+            skipped.append({"row": row, "reason": "Missing product_code"})
+            continue
+        if not ext_desig:
+            skipped.append({"row": row, "reason": "Missing external_designation"})
+            continue
+        try:
+            ppu = Decimal(ppu_raw or "1")
+        except InvalidOperation:
+            skipped.append({"row": row, "reason": f"Invalid points_per_unit '{ppu_raw}'"})
+            continue
+        tq = None
+        if tq_raw:
+            try:
+                tq = int(tq_raw)
+            except ValueError:
+                skipped.append({"row": row, "reason": f"Invalid target_quantity '{tq_raw}'"})
+                continue
+        if code in seen_codes:
+            skipped.append({"row": row, "reason": "Duplicate product_code in batch"})
+            continue
+        if code in already_linked:
+            skipped.append({"row": row, "reason": "Product already linked to this contract"})
+            continue
+        try:
+            product = Product.objects.get(code=code)
+        except Product.DoesNotExist:
+            skipped.append({"row": row, "reason": f"Product code not found: {code}"})
+            continue
+        if contract.status == STATUS_ACTIVE and product.status != STATUS_ACTIVE:
+            skipped.append({"row": row, "reason": "Cannot link an inactive product to an active contract"})
+            continue
+
+        seen_codes.add(code)
+        already_linked.add(code)
+        to_create.append(Contract_Product(
+            contract=contract,
+            product=product,
+            external_designation=ext_desig,
+            points_per_unit=ppu,
+            target_quantity=tq,
+        ))
+
+    if to_create:
+        created = Contract_Product.objects.bulk_create(to_create)
+
+    return {"created": created, "skipped": skipped}

@@ -20,11 +20,32 @@
             <input type="text" id="accCity" placeholder="Filter by city…"
                    oninput="applyFilters()" autocomplete="off">
         </div>
-        {% if perms.fidpha.add_account %}
-        <a href="{% url 'control:accounts_create' %}" class="btn btn-primary" style="margin-left:auto; flex-shrink:0;">
-            <span class="material-icons-round">add</span> New Account
-        </a>
-        {% endif %}
+        <div style="margin-left:auto; display:flex; gap:8px; flex-shrink:0;">
+            {% if perms.fidpha.view_account %}
+            <div class="export-dropdown" id="exportDropdown">
+                <button class="btn btn-secondary" onclick="toggleExportMenu(event)">
+                    <span class="material-icons-round">download</span> Export
+                    <span class="material-icons-round" style="font-size:16px; margin-left:2px;">arrow_drop_down</span>
+                </button>
+                <div class="export-menu" id="exportMenu" style="display:none;">
+                    <a href="{% url 'control:accounts_export' %}?format=csv" class="export-menu-item">
+                        <span class="material-icons-round">description</span> CSV
+                    </a>
+                    <a href="{% url 'control:accounts_export' %}?format=xlsx" class="export-menu-item">
+                        <span class="material-icons-round">table_chart</span> Excel (.xlsx)
+                    </a>
+                    <a href="{% url 'control:accounts_export' %}?format=json" class="export-menu-item">
+                        <span class="material-icons-round">data_object</span> JSON
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            {% if perms.fidpha.add_account %}
+            <a href="{% url 'control:accounts_create' %}" class="btn btn-primary">
+                <span class="material-icons-round">add</span> New Account
+            </a>
+            {% endif %}
+        </div>
     </div>
     <!-- Row 2: pill filters + count + reset -->
     <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
@@ -152,6 +173,20 @@
 {% block extra_css %}
 <style>
     .content { padding-bottom: 0; }
+    .export-dropdown { position:relative; }
+    .export-menu {
+        position:absolute; top:calc(100% + 4px); right:0;
+        background:var(--card-bg); border:1px solid var(--card-border);
+        border-radius:8px; padding:4px; z-index:200;
+        box-shadow:0 8px 24px rgba(0,0,0,0.3); min-width:160px;
+    }
+    .export-menu-item {
+        display:flex; align-items:center; gap:8px; padding:8px 12px;
+        border-radius:6px; font-size:0.85rem; color:var(--text-primary);
+        text-decoration:none; white-space:nowrap;
+    }
+    .export-menu-item:hover { background:var(--sidebar-hover); }
+    .export-menu-item .material-icons-round { font-size:18px; color:var(--text-secondary); }
 
     .table-scroll-wrapper {
         max-height: calc(100vh - 210px);
@@ -208,6 +243,16 @@
 
 {% block extra_js %}
 <script>
+    function toggleExportMenu(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('exportMenu');
+        menu.style.display = menu.style.display === 'none' ? '' : 'none';
+    }
+    document.addEventListener('click', function() {
+        const menu = document.getElementById('exportMenu');
+        if (menu) menu.style.display = 'none';
+    });
+
     let fStatus = 'all', fPortal = 'all';
     const accCountEl = document.getElementById('accCount');
     const ACC_TOTAL  = accCountEl.textContent;

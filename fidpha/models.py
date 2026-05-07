@@ -204,11 +204,16 @@ class Contract(TraceableMixin, models.Model):
                     "Please deactivate it before creating a new one."
                 )
 
-        # Rule 6: cannot activate a contract if it has inactive products linked
+        # Rule 6: cannot activate a contract if it has inactive products linked.
+        # _pending_cp_deletes may be set by the edit view to exclude Contract_Product
+        # rows that are being deleted in the same submission (not yet gone from DB
+        # at validation time, so we must exclude them manually).
         if self.status == Contract.STATUS_ACTIVE and self.pk:
+            pending_deletes = getattr(self, '_pending_cp_deletes', set())
             inactive_links = (
                 Contract_Product.objects
                 .filter(contract=self, product__status=Product.STATUS_INACTIVE)
+                .exclude(pk__in=pending_deletes)
                 .select_related("product")
             )
             if inactive_links.exists():
