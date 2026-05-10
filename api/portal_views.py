@@ -82,15 +82,38 @@ class DashboardStatsView(APIView):
         now          = timezone.now()
         month_start  = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
+        if month_start.month == 1:
+            last_month_start = month_start.replace(year=month_start.year - 1, month=12)
+        else:
+            last_month_start = month_start.replace(month=month_start.month - 1)
+
+        window_30d = now - datetime.timedelta(days=30)
+
         total_points     = int(base_qs.aggregate(t=Sum("pts"))["t"] or 0)
         this_month_pts   = int(base_qs.filter(sale_datetime__gte=month_start).aggregate(t=Sum("pts"))["t"] or 0)
+        last_month_pts   = int(base_qs.filter(
+            sale_datetime__gte=last_month_start, sale_datetime__lt=month_start,
+        ).aggregate(t=Sum("pts"))["t"] or 0)
+
+        sale_qs          = Sale.objects.filter(contract_product__contract__account=account)
         this_month_units = int(
-            Sale.objects.filter(
-                contract_product__contract__account=account,
+            sale_qs.filter(status=Sale.STATUS_ACCEPTED, sale_datetime__gte=month_start)
+            .aggregate(t=Sum("quantity"))["t"] or 0
+        )
+        last_month_units = int(
+            sale_qs.filter(
                 status=Sale.STATUS_ACCEPTED,
-                sale_datetime__gte=month_start,
+                sale_datetime__gte=last_month_start, sale_datetime__lt=month_start,
             ).aggregate(t=Sum("quantity"))["t"] or 0
         )
+
+        recent_qs    = sale_qs.filter(sale_datetime__gte=window_30d)
+        accepted_30d = recent_qs.filter(status=Sale.STATUS_ACCEPTED).count()
+        rejected_30d = recent_qs.filter(status=Sale.STATUS_REJECTED).count()
+        pending_count = sale_qs.filter(status=Sale.STATUS_PENDING).count()
+        decided      = accepted_30d + rejected_30d
+        acceptance_rate = round(accepted_30d / decided * 100) if decided else None
+
         products_count  = base_qs.values("contract_product__product").distinct().count()
         contracts_count = account.contracts.count()
         active_contract = account.contracts.filter(status=Contract.STATUS_ACTIVE).first()
@@ -98,7 +121,16 @@ class DashboardStatsView(APIView):
         return Response({
             "total_points":      total_points,
             "this_month_points": this_month_pts,
+            "last_month_points": last_month_pts,
             "this_month_units":  this_month_units,
+            "last_month_units":  last_month_units,
+            "pending_count":     pending_count,
+            "acceptance_rate":   acceptance_rate,
+            "acceptance_stats": {
+                "accepted": accepted_30d,
+                "rejected": rejected_30d,
+                "pending":  pending_count,
+            },
             "products_count":    products_count,
             "contracts_count":   contracts_count,
             "active_contract": {
