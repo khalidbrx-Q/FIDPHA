@@ -11,6 +11,12 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*,khalidbrx.pythonanywhere.com', cast=Csv())
 
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174',
+    cast=Csv(),
+)
+
 INSTALLED_APPS = [
     "unfold",
     "unfold.contrib.filters",
