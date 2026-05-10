@@ -337,6 +337,22 @@ def bulk_import_products(rows: list[dict], created_by) -> dict:
     return {"created": created, "skipped": skipped}
 
 
+def get_account_points_queryset(account):
+    from sales.models import Sale
+    from django.db.models import F, ExpressionWrapper, FloatField
+    from django.db.models.functions import Round
+    return Sale.objects.filter(
+        contract_product__contract__account=account,
+        status=Sale.STATUS_ACCEPTED,
+        product_ppv__isnull=False,
+    ).annotate(
+        pts=Round(ExpressionWrapper(
+            F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
+            output_field=FloatField(),
+        ))
+    )
+
+
 def bulk_link_products_to_contract(contract, rows: list[dict], created_by) -> dict:
     """
     Bulk-create Contract_Product links for an existing contract.
