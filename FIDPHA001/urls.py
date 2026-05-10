@@ -19,6 +19,14 @@ def handler403(request, exception=None):
 handler403 = handler403
 
 
+def spa_view(request, subpath=""):
+    return render(request, "react/index.html")
+
+
+def staff_spa_view(request, subpath=""):
+    return render(request, "react/staff_index.html")
+
+
 
 
 
@@ -41,7 +49,16 @@ urlpatterns = [
     path("auth/", include("allauth.urls")),
     path("", lambda request: redirect("/portal/login/")),
 
+    path("i18n/", include("django.conf.urls.i18n")),
     path("api/v1/", include("api.urls")),
+    path("api/portal/", include("api.portal_urls")),
+    path("api/staff/", include("api.staff_urls")),
+
+    # SPA entry points — served once React bundles are built
+    path("app/", spa_view),
+    path("app/<path:subpath>", spa_view),
+    path("control-app/", staff_spa_view),
+    path("control-app/<path:subpath>", staff_spa_view),
 
     # Custom admin control panel — staff only, Django admin kept as fallback
     path("control/", include("control.urls")),

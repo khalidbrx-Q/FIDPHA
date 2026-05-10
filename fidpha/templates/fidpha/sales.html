@@ -1,8 +1,9 @@
 {% extends "fidpha/base.html" %}
+{% load i18n %}
 
 {% block nav_sales %}active{% endblock %}
-{% block page_title %}Sales{% endblock %}
-{% block page_breadcrumb %}Sales{% endblock %}
+{% block page_title %}{% trans "Points Breakdown" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Points Breakdown" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -34,6 +35,39 @@
         background:var(--content-bg); color:var(--text-secondary);
         font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;
     }
+    .ss-wrap { position:relative; }
+    .ss-btn {
+        display:inline-flex; align-items:center; gap:6px; position:relative;
+        padding:4px 28px 4px 8px; border-radius:8px;
+        border:1px solid var(--card-border); background:var(--content-bg);
+        color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif;
+        cursor:pointer; white-space:nowrap; min-width:130px; max-width:200px;
+        overflow:hidden; text-overflow:ellipsis; text-align:left; transition:border-color 0.15s;
+    }
+    .ss-btn:hover { border-color:var(--accent); }
+    .ss-btn .ss-arrow { position:absolute; right:5px; font-size:15px !important; pointer-events:none; opacity:0.55; }
+    .ss-panel {
+        display:none; position:absolute; top:calc(100% + 4px); left:0;
+        z-index:3000; background:var(--card-bg); border:1px solid var(--card-border);
+        border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.25);
+        min-width:200px; max-width:320px;
+    }
+    .ss-panel.open { display:block; }
+    .ss-search {
+        width:100%; padding:8px 10px; border:none;
+        border-bottom:1px solid var(--card-border);
+        background:transparent; color:var(--text-primary);
+        font-size:0.83rem; font-family:'Inter',sans-serif;
+        box-sizing:border-box; outline:none;
+    }
+    .ss-options { max-height:200px; overflow-y:auto; }
+    .ss-option {
+        padding:8px 12px; font-size:0.83rem; color:var(--text-primary);
+        cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .ss-option:hover { background:var(--sidebar-hover); }
+    .ss-option.ss-selected { color:var(--accent); font-weight:600; }
+    .ss-option.ss-hidden { display:none; }
 </style>
 {% endblock %}
 
@@ -47,9 +81,9 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">receipt_long</span>
         </div>
         <div>
-            <div class="stat-label">Total Sales</div>
+            <div class="stat-label">{% trans "Total" %}</div>
             <div class="stat-value">{{ total_count }}</div>
-            <div class="stat-sub">all statuses</div>
+            <div class="stat-sub">{% trans "all statuses" %}</div>
         </div>
     </div>
 
@@ -58,9 +92,9 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">check_circle</span>
         </div>
         <div>
-            <div class="stat-label">Accepted</div>
+            <div class="stat-label">{% trans "Accepted" %}</div>
             <div class="stat-value">{{ accepted_count }}</div>
-            <div class="stat-sub">sales</div>
+            <div class="stat-sub"></div>
         </div>
     </div>
 
@@ -69,9 +103,9 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">pending</span>
         </div>
         <div>
-            <div class="stat-label">Pending</div>
+            <div class="stat-label">{% trans "Pending" %}</div>
             <div class="stat-value">{{ pending_count }}</div>
-            <div class="stat-sub">awaiting review</div>
+            <div class="stat-sub">{% trans "awaiting review" %}</div>
         </div>
     </div>
 
@@ -80,9 +114,9 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">cancel</span>
         </div>
         <div>
-            <div class="stat-label">Rejected</div>
+            <div class="stat-label">{% trans "Rejected" %}</div>
             <div class="stat-value">{{ rejected_count }}</div>
-            <div class="stat-sub">sales</div>
+            <div class="stat-sub"></div>
         </div>
     </div>
 
@@ -93,13 +127,13 @@
 <div class="card" style="margin-bottom:20px;">
     <div class="card-header" style="flex-wrap:wrap; gap:6px;">
         <div class="card-header-icon"><span class="material-icons-round">bar_chart</span></div>
-        <div class="card-title" id="monthlyTitle">Monthly Sales</div>
+        <div class="card-title" id="monthlyTitle">{% trans "Monthly Acceptance" %}</div>
         <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
             <button id="monthlyBack" onclick="showMonthly()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+                <span class="material-icons-round" style="font-size:13px;">arrow_back</span> {% trans "Back" %}
             </button>
             <select id="yearSelect" onchange="setChartPeriod(this.value)" style="padding:3px 6px; border-radius:6px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                <option value="last12">Last 12 months</option>
+                <option value="last12">{% trans "Last 12 months" %}</option>
                 {% for yr in available_years_list %}<option value="{{ yr }}">{{ yr }}</option>{% endfor %}
             </select>
         </div>
@@ -112,33 +146,46 @@
 <div class="card">
     <div class="card-header" style="flex-wrap:wrap; gap:8px;">
         <div class="card-header-icon"><span class="material-icons-round">receipt_long</span></div>
-        <div class="card-title">Sales History</div>
-
+        <div class="card-title">{% trans "History" %}</div>
+        {% if total_count > 0 %}
+        <span style="font-size:0.78rem; color:var(--text-secondary); padding:3px 8px; border-radius:20px; border:1px solid var(--card-border); white-space:nowrap;">{% widthratio accepted_count total_count 100 %}% {% trans "accepted" %}</span>
+        {% endif %}
         <!-- Filters row -->
-        <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <div style="flex-basis:100%; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span id="salesCount" style="font-size:0.82rem; color:var(--text-secondary); white-space:nowrap;">{% blocktrans count count=all_sales|length %}{{ count }} row{% plural %}{{ count }} rows{% endblocktrans %}</span>
             <div style="position:relative;">
                 <span class="material-icons-round" style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-size:16px;">search</span>
-                <input type="text" id="salesSearch" placeholder="Search product..." oninput="filterSales()"
+                <input type="text" id="salesSearch" placeholder="{% trans "Search product..." %}" oninput="filterSales()"
                     style="padding:5px 10px 5px 28px; border-radius:8px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-primary); font-size:0.82rem; font-family:'Inter',sans-serif; width:190px;">
             </div>
-            <button class="fpill active" onclick="setSalesFilter('all',this)">All</button>
-            <button class="fpill" onclick="setSalesFilter('accepted',this)">Accepted</button>
-            <button class="fpill" onclick="setSalesFilter('rejected',this)">Rejected</button>
-            <button class="fpill" onclick="setSalesFilter('pending',this)">Pending</button>
+            <button class="fpill active" onclick="setSalesFilter('all',this)">{% trans "All" %}</button>
+            <button class="fpill" onclick="setSalesFilter('accepted',this)">{% trans "Accepted" %}</button>
+            <button class="fpill" onclick="setSalesFilter('rejected',this)">{% trans "Rejected" %}</button>
+            <button class="fpill" onclick="setSalesFilter('pending',this)">{% trans "Pending" %}</button>
             {% if pharmacy_contracts|length > 1 %}
-            <select id="contractFilter" onchange="filterSales()" style="padding:4px 8px; border-radius:8px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                <option value="">All Contracts</option>
-                {% for c in pharmacy_contracts %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}
-            </select>
+            <div class="ss-wrap" id="ctWrap">
+                <button class="ss-btn" onclick="toggleSs('ctWrap')">
+                    <span id="ctLabel">{% trans "All Contracts" %}</span>
+                    <span class="material-icons-round ss-arrow">expand_more</span>
+                </button>
+                <div class="ss-panel" id="ctPanel">
+                    <input class="ss-search" type="text" placeholder="{% trans "Search contract..." %}" oninput="filterSsOpts(this,'ctOptions')" autocomplete="off">
+                    <div class="ss-options" id="ctOptions">
+                        <div class="ss-option ss-selected" data-val="" onclick="pickContract('','{% trans "All Contracts" %}')">{% trans "All Contracts" %}</div>
+                        {% for c in pharmacy_contracts %}
+                        <div class="ss-option" data-val="{{ c.id }}" onclick="pickContract('{{ c.id }}','{{ c.title|escapejs }}')">{{ c.title }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
             {% endif %}
             <div style="width:1px; height:18px; background:var(--card-border); flex-shrink:0;"></div>
-            <input type="date" id="salesFrom" class="date-inp" onchange="filterSales()" title="From date">
+            <input type="date" id="salesFrom" class="date-inp" onchange="filterSales()" title="{% trans "From date" %}">
             <span style="font-size:0.75rem; color:var(--text-secondary);">→</span>
-            <input type="date" id="salesTo" class="date-inp" onchange="filterSales()" title="To date">
-            <button onclick="clearDates()" style="display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); cursor:pointer; transition:all 0.15s;" title="Clear dates">
+            <input type="date" id="salesTo" class="date-inp" onchange="filterSales()" title="{% trans "To date" %}">
+            <button onclick="clearDates()" style="display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); cursor:pointer; transition:all 0.15s;" title="{% trans "Clear dates" %}">
                 <span class="material-icons-round" style="font-size:15px;">close</span>
             </button>
-            <span id="salesCount" style="font-size:0.82rem; color:var(--text-secondary); white-space:nowrap; min-width:70px; text-align:right;">{{ all_sales|length }} sale{{ all_sales|length|pluralize }}</span>
         </div>
     </div>
 
@@ -147,14 +194,14 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Date</th>
-                    <th>Contract</th>
-                    <th>Product</th>
-                    <th>Ext. Ref</th>
+                    <th>{% trans "Date" %}</th>
+                    <th>{% trans "Contract" %}</th>
+                    <th>{% trans "Product" %}</th>
+                    <th>{% trans "Ext. Ref" %}</th>
                     <th style="text-align:center;">PPV</th>
-                    <th style="text-align:center;">Qty</th>
-                    <th style="text-align:center;">Points</th>
-                    <th style="text-align:center;">Status</th>
+                    <th style="text-align:center;">{% trans "Qty" %}</th>
+                    <th style="text-align:center;">{% trans "Points" %}</th>
+                    <th style="text-align:center;">{% trans "Status" %}</th>
                 </tr>
             </thead>
             <tbody id="salesBody">
@@ -179,9 +226,9 @@
                         {% endif %}
                     </td>
                     <td style="text-align:center;">
-                        {% if sale.status == "accepted" %}<span class="badge badge-success">Accepted</span>
-                        {% elif sale.status == "rejected" %}<span class="badge badge-danger">Rejected</span>
-                        {% else %}<span class="badge badge-warning">Pending</span>{% endif %}
+                        {% if sale.status == "accepted" %}<span class="badge badge-success">{% trans "Accepted" %}</span>
+                        {% elif sale.status == "rejected" %}<span class="badge badge-danger">{% trans "Rejected" %}</span>
+                        {% else %}<span class="badge badge-warning">{% trans "Pending" %}</span>{% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -189,7 +236,7 @@
         </table>
     </div>
     <div id="noSalesMsg" style="display:none; text-align:center; padding:24px; font-size:0.84rem; color:var(--text-secondary);">
-        No sales match your filters.
+        {% trans "No sales match your filters." %}
     </div>
 
     <!-- Pagination bar -->
@@ -197,22 +244,22 @@
         <span id="pgInfo" style="font-size:0.8rem; color:var(--text-secondary); white-space:nowrap;"></span>
         <div id="pgButtons" style="display:flex; align-items:center; gap:4px;"></div>
         <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:0.78rem; color:var(--text-secondary);">Show</span>
+            <span style="font-size:0.78rem; color:var(--text-secondary);">{% trans "Show" %}</span>
             <select class="pg-size" onchange="setPageSize(this.value)">
                 <option value="10" selected>10</option>
                 <option value="25">25</option>
                 <option value="50">50</option>
                 <option value="100">100</option>
             </select>
-            <span style="font-size:0.78rem; color:var(--text-secondary);">per page</span>
+            <span style="font-size:0.78rem; color:var(--text-secondary);">{% trans "per page" %}</span>
         </div>
     </div>
 
     {% else %}
     <div style="text-align:center; padding:48px 24px; color:var(--text-secondary);">
         <span class="material-icons-round" style="font-size:44px; opacity:0.35; display:block; margin-bottom:10px;">receipt_long</span>
-        <div style="font-weight:600; margin-bottom:4px;">No sales yet</div>
-        <div style="font-size:0.82rem;">Sales will appear here once your pharmacy submits data.</div>
+        <div style="font-weight:600; margin-bottom:4px;">{% trans "No sales yet" %}</div>
+        <div style="font-size:0.82rem;">{% trans "Sales will appear here once your pharmacy submits data." %}</div>
     </div>
     {% endif %}
 </div>
@@ -228,6 +275,13 @@
     var gridLine   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
     var axisLine   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
     var charts = [];
+
+    // i18n labels for chart series/legend
+    var LBL_ACCEPTED = '{% trans "Accepted" %}';
+    var LBL_PENDING  = '{% trans "Pending" %}';
+    var LBL_REJECTED = '{% trans "Rejected" %}';
+    var LBL_TOTAL    = '{% trans "Total" %}';
+    var LBL_MONTHLY  = '{% trans "Monthly Acceptance" %}';
 
     // ── Monthly chart with year selector + drill-down ──
     var last12 = {
@@ -249,11 +303,11 @@
 
     function stackedSeries(data, maxW) {
         return [
-            { name: 'Accepted', type: 'bar', stack: 'total', data: data.accepted, barMaxWidth: maxW,
+            { name: LBL_ACCEPTED, type: 'bar', stack: 'total', data: data.accepted, barMaxWidth: maxW,
               itemStyle: { color: '#22c55e' } },
-            { name: 'Pending',  type: 'bar', stack: 'total', data: data.pending,  barMaxWidth: maxW,
+            { name: LBL_PENDING,  type: 'bar', stack: 'total', data: data.pending,  barMaxWidth: maxW,
               itemStyle: { color: '#f59e0b' } },
-            { name: 'Rejected', type: 'bar', stack: 'total', data: data.rejected, barMaxWidth: maxW,
+            { name: LBL_REJECTED, type: 'bar', stack: 'total', data: data.rejected, barMaxWidth: maxW,
               itemStyle: { color: '#ef4444', borderRadius: [4, 4, 0, 0] } },
         ];
     }
@@ -269,13 +323,13 @@
                     params.forEach(function(p) {
                         s += p.marker + ' ' + p.seriesName + ': <b>' + p.value + '</b><br/>';
                     });
-                    s += '<span style="font-size:0.9em;color:#94a3b8;">Total: <b>' + total + '</b></span>';
+                    s += '<span style="font-size:0.9em;color:#94a3b8;">' + LBL_TOTAL + ': <b>' + total + '</b></span>';
                     return s;
                 }
             },
             legend: { top: 0, right: 0, icon: 'circle', itemWidth: 10, itemHeight: 10,
                 textStyle: { color: labelColor, fontSize: 11 },
-                data: ['Accepted', 'Pending', 'Rejected'] },
+                data: [LBL_ACCEPTED, LBL_PENDING, LBL_REJECTED] },
             grid: { left: 10, right: 10, top: 28, bottom: 0, containLabel: true },
             xAxis: { type: 'category', data: labels, axisTick: { show: false },
                 axisLine: { lineStyle: { color: axisLine } },
@@ -293,7 +347,7 @@
         var backBtn = document.getElementById('monthlyBack');
         if (backBtn) backBtn.style.display = 'none';
         var titleEl = document.getElementById('monthlyTitle');
-        if (titleEl) titleEl.textContent = chartPeriod === 'last12' ? 'Monthly Sales' : 'Monthly Sales · ' + chartPeriod;
+        if (titleEl) titleEl.textContent = chartPeriod === 'last12' ? LBL_MONTHLY : LBL_MONTHLY + ' · ' + chartPeriod;
         var opt = baseOption(data.labels, 8);
         opt.series = stackedSeries(data, 32);
         mc.setOption(opt, true);
@@ -309,7 +363,7 @@
         if (backBtn) backBtn.style.display = 'inline-flex';
         var parts = mk.split('-');
         var monthLabel = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1)
-            .toLocaleString('en-US', { month: 'long', year: 'numeric' });
+            .toLocaleString('{{ LANGUAGE_CODE }}', { month: 'long', year: 'numeric' });
         var titleEl = document.getElementById('monthlyTitle');
         if (titleEl) titleEl.textContent = monthLabel;
         var opt = baseOption(daily.labels, 20);
@@ -339,11 +393,50 @@
 }());
 </script>
 <script>
-    var salesFilter = 'all';
+    // i18n labels for JS-rendered text
+    var JS_SHOWING  = '{% trans "Showing" %}';
+    var JS_OF       = '{% trans "of" %}';
+    var JS_RESULT   = '{% trans "result" %}';
+    var JS_RESULTS  = '{% trans "results" %}';
+    var JS_ALL_CT   = '{% trans "All Contracts" %}';
+
+    var salesFilter      = 'all';
+    var selectedContract = '';
     var currentPage = 1;
     var pageSize    = 10;
     var countEl     = document.getElementById('salesCount');
     var TOTAL       = countEl ? countEl.textContent : '';
+
+    function toggleSs(wrapId) {
+        var panel = document.querySelector('#' + wrapId + ' .ss-panel');
+        var isOpen = panel.classList.contains('open');
+        closeAllSs();
+        if (!isOpen) {
+            panel.classList.add('open');
+            var si = panel.querySelector('.ss-search');
+            if (si) { si.value = ''; filterSsOpts(si, 'ctOptions'); si.focus(); }
+        }
+    }
+    function closeAllSs() {
+        document.querySelectorAll('.ss-panel.open').forEach(function(p) { p.classList.remove('open'); });
+    }
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.ss-wrap')) closeAllSs();
+    });
+    function filterSsOpts(input, optionsId) {
+        var q = input.value.toLowerCase();
+        var opts = document.getElementById(optionsId) ? document.getElementById(optionsId).querySelectorAll('.ss-option') : [];
+        opts.forEach(function(o) { o.classList.toggle('ss-hidden', q ? !o.textContent.toLowerCase().includes(q) : false); });
+    }
+    function pickContract(pk, name) {
+        selectedContract = pk;
+        document.getElementById('ctLabel').textContent = name || JS_ALL_CT;
+        var opts = document.getElementById('ctOptions');
+        if (opts) opts.querySelectorAll('.ss-option').forEach(function(o) { o.classList.toggle('ss-selected', o.dataset.val === pk); });
+        closeAllSs();
+        currentPage = 1;
+        filterSales();
+    }
 
     function setSalesFilter(val, btn) {
         salesFilter = val;
@@ -369,8 +462,7 @@
         var q        = (document.getElementById('salesSearch').value || '').toLowerCase().trim();
         var from     = document.getElementById('salesFrom').value || '';
         var to       = document.getElementById('salesTo').value   || '';
-        var cfEl     = document.getElementById('contractFilter');
-        var contract = cfEl ? cfEl.value : '';
+        var contract = selectedContract;
 
         var allRows = document.querySelectorAll('#salesBody tr');
         var matched = [];
@@ -397,7 +489,7 @@
 
         var filtered = q || salesFilter !== 'all' || from || to || contract;
         if (countEl) countEl.textContent = filtered
-            ? total + ' result' + (total === 1 ? '' : 's')
+            ? total + ' ' + (total === 1 ? JS_RESULT : JS_RESULTS)
             : TOTAL;
 
         var msg = document.getElementById('noSalesMsg');
@@ -413,7 +505,7 @@
         pg.style.display = 'flex';
 
         document.getElementById('pgInfo').textContent =
-            'Showing ' + (start + 1) + '–' + end + ' of ' + total;
+            JS_SHOWING + ' ' + (start + 1) + '–' + end + ' ' + JS_OF + ' ' + total;
 
         var btnContainer = document.getElementById('pgButtons');
         btnContainer.innerHTML = '';

@@ -8,10 +8,11 @@ Views call these functions and map the results to JSON responses.
 
 Critical points baked in:
   1. Race condition on last_sale_datetime  → select_for_update() inside atomic()
-  2. Duplicate / retry batches             → bulk_create(ignore_conflicts=True)
+  2. Duplicate / retry batches             → idempotency check on batch_id before processing
   3. Contract state change mid-sync        → contract re-validated inside atomic()
   4. Large batch sizes                     → MAX_BATCH_SIZE enforced before processing
   5. Validation atomicity                  → transaction.atomic() wraps full batch
+  6. Concurrent pending batches            → warnings[] field in success response
 
 Date validation rules:
   - sale_datetime must be STRICTLY AFTER contract.last_sale_datetime to be accepted;
@@ -25,11 +26,41 @@ import datetime
 from django.db import transaction
 from django.utils import timezone
 
+from django.apps import apps
+
 from fidpha.models import Contract, Contract_Product
 from fidpha.services import get_active_contract
 from sales.models import Sale, SaleImport
 
 MAX_BATCH_SIZE = 50000
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _response_from_existing_batch(batch_id: str) -> dict | None:
+    """Return the stored result for an already-processed batch, or None."""
+    rows = SaleImport.objects.filter(batch_id=batch_id)
+    if not rows.exists():
+        return None
+    total = rows.count()
+    rejected_rows = list(
+        rows.filter(status=SaleImport.STATUS_REJECTED)
+        .values_list("external_designation", "rejection_reason")
+    )
+    errors = [
+        {"index": i, "external_designation": ext, "reason": reason}
+        for i, (ext, reason) in enumerate(rejected_rows)
+    ]
+    return {
+        "batch_id": batch_id,
+        "received": total,
+        "accepted": total - len(rejected_rows),
+        "rejected": len(rejected_rows),
+        "errors":   errors,
+        "warnings": [],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -71,6 +102,11 @@ def submit_sales_batch(
         AccountNotFoundError:   If account_code doesn't match any account.
         ContractNotFoundError:  If account has no active contract.
     """
+    # Idempotency: if this batch_id was already processed, return stored result
+    existing = _response_from_existing_batch(batch_id)
+    if existing is not None:
+        return existing
+
     if len(sales_data) > MAX_BATCH_SIZE:
         raise BatchTooLargeError(
             f"Batch too large. Max {MAX_BATCH_SIZE} rows per request, "
@@ -96,7 +132,8 @@ def submit_sales_batch(
         contract = (
             Contract.objects
             .select_for_update()
-            .get(pk=contract.pk, status="active")
+            .select_related("account")
+            .get(pk=contract.pk, status=Contract.STATUS_ACTIVE)
         )
 
         # ── Stage 1: Insert all rows to SaleImport (status=pending) ──
@@ -216,6 +253,36 @@ def submit_sales_batch(
             ["status", "rejection_reason", "contract_product"],
         )
 
+        # ── Concurrent batch warning ──
+        # Warn if this account already has other batches awaiting staff review.
+        pending_batch_count = (
+            Sale.objects
+            .filter(contract_product__contract=contract, status=Sale.STATUS_PENDING)
+            .values("sale_import__batch_id")
+            .distinct()
+            .count()
+        )
+        warnings = []
+        if pending_batch_count > 0:
+            warnings.append({
+                "code":    "CONCURRENT_BATCH",
+                "message": (
+                    f"{pending_batch_count} other pending batch(es) already "
+                    "await staff review for this contract."
+                ),
+            })
+
+        # ── Auto-review: if enabled globally AND for this account, auto-accept ──
+        # Uses apps.get_model to avoid a hard circular import (control → sales).
+        SystemConfig = apps.get_model("control", "SystemConfig")
+        if SystemConfig.get().auto_review_enabled and contract.account.auto_review_enabled:
+            review_ts = timezone.now()
+            for sale in sales_to_create:
+                sale.status        = Sale.STATUS_ACCEPTED
+                sale.auto_reviewed = True
+                sale.reviewed_at   = review_ts
+                # reviewed_by stays None — system action, not a staff user
+
         # ── Stage 3: Write accepted rows to Sale ──
         if sales_to_create:
             Sale.objects.bulk_create(sales_to_create)
@@ -238,4 +305,5 @@ def submit_sales_batch(
         "accepted":  accepted_count,
         "rejected":  rejected_count,
         "errors":    errors,
+        "warnings":  warnings,
     }

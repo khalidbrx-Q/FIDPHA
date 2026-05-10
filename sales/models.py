@@ -137,12 +137,16 @@ class Sale(models.Model):
     status = models.CharField(
         max_length=10, choices=STATUS_CHOICES, default=STATUS_PENDING
     )
+    rejection_reason = models.CharField(max_length=500, blank=True, default="")
     reviewed_by = models.ForeignKey(
         User, null=True, blank=True,
         on_delete=models.SET_NULL,
         related_name="reviewed_sales",
     )
     reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    # ── Auto-review flag ──
+    auto_reviewed = models.BooleanField(default=False)
 
     # ── System ──
     created_at  = models.DateTimeField(auto_now_add=True)

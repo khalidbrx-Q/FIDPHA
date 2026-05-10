@@ -51,6 +51,7 @@ urlpatterns = [
 
     # Accounts
     path("accounts/", views.accounts_list, name="accounts_list"),
+    path("accounts/export/", views.accounts_export, name="accounts_export"),
     path("accounts/new/", views.accounts_create, name="accounts_create"),
     path("accounts/<int:pk>/", views.accounts_detail, name="accounts_detail"),
     path("accounts/<int:pk>/edit/", views.accounts_edit, name="accounts_edit"),
@@ -58,14 +59,19 @@ urlpatterns = [
 
     # Contracts
     path("contracts/", views.contracts_list, name="contracts_list"),
+    path("contracts/export/", views.contracts_export, name="contracts_export"),
     path("contracts/new/", views.contracts_create, name="contracts_create"),
     path("contracts/<int:pk>/", views.contracts_detail, name="contracts_detail"),
     path("contracts/<int:pk>/edit/", views.contracts_edit, name="contracts_edit"),
     path("contracts/<int:pk>/delete/", views.contracts_delete, name="contracts_delete"),
+    path("contracts/<int:pk>/import-products/", views.contracts_import_products, name="contracts_import_products"),
+    path("contracts/<int:pk>/unlink-product/<int:cp_pk>/", views.contracts_unlink_product, name="contracts_unlink_product"),
 
     # Products
     path("products/", views.products_list, name="products_list"),
     path("products/new/", views.products_create, name="products_create"),
+    path("products/import/", views.products_import, name="products_import"),
+    path("products/export/", views.products_export, name="products_export"),
     path("products/<int:pk>/", views.products_detail, name="products_detail"),
     path("products/<int:pk>/edit/", views.products_edit, name="products_edit"),
     path("products/<int:pk>/delete/", views.products_delete, name="products_delete"),
@@ -111,6 +117,9 @@ urlpatterns = [
 
     # Configuration — Site
     path("settings/site/", views.site_edit, name="site_edit"),
+
+    # Configuration — System
+    path("settings/system/", views.system_settings, name="system_settings"),
 
     # Sync Import Log (superuser debug)
     path("sync-log/", views.sync_log, name="sync_log"),

@@ -25,6 +25,9 @@
                 {% if account.pharmacy_portal %}
                     <span class="status-badge status-portal">Portal</span>
                 {% endif %}
+                {% if account.auto_review_enabled %}
+                    <span class="status-badge status-autoreview">Auto-Review</span>
+                {% endif %}
             </div>
             <div class="page-header-sub">{{ account.code }} · {{ account.city }}</div>
         </div>
@@ -66,11 +69,23 @@
             {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
         </span>
     </div>
-    <div class="info-row" style="border-bottom:none;">
+    <div class="info-row">
         <span class="info-key">Portal Access</span>
         <span class="info-val">
             {% if account.pharmacy_portal %}<span class="badge badge-active">Enabled</span>
             {% else %}<span class="badge badge-inactive">Disabled</span>{% endif %}
+        </span>
+    </div>
+    <div class="info-row" style="border-bottom:none;">
+        <span class="info-key">Auto-Review</span>
+        <span class="info-val">
+            {% if account.auto_review_enabled %}
+                <span class="badge badge-active">Enabled</span>
+                <span style="font-size:0.72rem;color:var(--text-secondary);margin-left:6px;">batches auto-accepted when global switch is on</span>
+            {% else %}
+                <span class="badge badge-inactive">Disabled</span>
+                <span style="font-size:0.72rem;color:var(--text-secondary);margin-left:6px;">manual review</span>
+            {% endif %}
         </span>
     </div>
 </div>
@@ -297,7 +312,8 @@
     }
     .status-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }
     .status-inactive { background:rgba(239,68,68,0.1);  color:#ef4444; }
-    .status-portal   { background:rgba(14,165,233,0.1); color:#0ea5e9; }
+    .status-portal     { background:rgba(14,165,233,0.1); color:#0ea5e9; }
+    .status-autoreview { background:rgba(168,85,247,0.1); color:#a855f7; }
 
     .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px; font-size:0.75rem; font-weight:600; white-space:nowrap; }
     .badge-active   { background:rgba(34,197,94,0.1);  color:#22c55e; }

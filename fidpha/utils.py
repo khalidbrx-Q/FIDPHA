@@ -1,20 +1,20 @@
 def accounts_badge(request):
     from fidpha.models import Account
-    active = Account.objects.filter(status='active').count()
+    active = Account.objects.filter(status=Account.STATUS_ACTIVE).count()
     total = Account.objects.count()
     return f"{active}/{total}"
 
 
 def contracts_badge(request):
     from fidpha.models import Contract
-    active = Contract.objects.filter(status='active').count()
+    active = Contract.objects.filter(status=Contract.STATUS_ACTIVE).count()
     total = Contract.objects.count()
     return f"{active}/{total}"
 
 
 def products_badge(request):
     from fidpha.models import Product
-    active = Product.objects.filter(status='active').count()
+    active = Product.objects.filter(status=Product.STATUS_ACTIVE).count()
     total = Product.objects.count()
     return f"{active}/{total}"
 

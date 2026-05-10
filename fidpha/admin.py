@@ -75,7 +75,7 @@ class UserProfileInline(StackedInline):
     def account_details(self, obj):
         if obj and obj.pk and obj.account:
             account = obj.account
-            status_color = "#22c55e" if account.status == "active" else "#ef4444"
+            status_color = "#22c55e" if account.status == Account.STATUS_ACTIVE else "#ef4444"
             portal_color = "#22c55e" if account.pharmacy_portal else "#ef4444"
             return format_html(
                 '''
@@ -120,7 +120,7 @@ class UserProfileInline(StackedInline):
                 account.email,
                 status_color, status_color, account.status.capitalize(),
                 portal_color, portal_color, "Enabled" if account.pharmacy_portal else "Disabled",
-                account.contracts.filter(status="active").count(),
+                account.contracts.filter(status=Contract.STATUS_ACTIVE).count(),
             )
         return format_html('<span style="color: #888;">—</span>')
 
@@ -204,7 +204,7 @@ class ContractAccountInline(TabularInline):
     contract_link.short_description = "Title"
 
     def contract_status(self, obj):
-        if obj.status == "active":
+        if obj.status == Contract.STATUS_ACTIVE:
             return format_html(
                 '<span style="background-color: rgba(34,197,94,0.15); color: #22c55e; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">✓ Active</span>'
             )
@@ -364,7 +364,7 @@ class ProductAdmin(ModelAdmin):
 
     @admin.action(description="✓ Activate selected products")
     def activate_products(self, request, queryset):
-        count = queryset.update(status="active")
+        count = queryset.update(status=Product.STATUS_ACTIVE)
         self.message_user(request, f"{count} product(s) activated successfully.")
 
     @admin.action(description="✗ Deactivate selected products")
@@ -374,13 +374,13 @@ class ProductAdmin(ModelAdmin):
         for product in queryset:
             active_contracts = Contract.objects.filter(
                 contract_product__product=product,
-                status="active"
+                status=Contract.STATUS_ACTIVE
             )
             if active_contracts.exists():
                 contract_titles = ", ".join(active_contracts.values_list("title", flat=True))
                 blocked.append(f"{product.designation} ({contract_titles})")
             else:
-                product.status = "inactive"
+                product.status = Product.STATUS_INACTIVE
                 product.save()
                 deactivated += 1
 
@@ -397,7 +397,7 @@ class ProductAdmin(ModelAdmin):
     def active_contracts_count(self, obj):
         count = Contract.objects.filter(
             contract_product__product=obj,
-            status="active"
+            status=Contract.STATUS_ACTIVE
         ).count()
         if count == 0:
             return format_html(
@@ -410,7 +410,7 @@ class ProductAdmin(ModelAdmin):
             )
 
     def status_toggle(self, obj):
-        if obj.status == "active":
+        if obj.status == Product.STATUS_ACTIVE:
             return format_html(
                 '<button type="button" '
                 'onclick="toggleProductStatus({}, \'inactive\')" '
@@ -432,7 +432,7 @@ class ProductAdmin(ModelAdmin):
         queryset, use_distinct = super().get_search_results(request, queryset, search_term)
         if "autocomplete" in request.path:
             import re
-            queryset = queryset.filter(status="active")
+            queryset = queryset.filter(status=Product.STATUS_ACTIVE)
             referer = request.META.get("HTTP_REFERER", "")
             match = re.search(r"/contract/(\d+)/change/", referer)
             if match:
@@ -450,7 +450,7 @@ class ProductAdmin(ModelAdmin):
         for product in queryset:
             active_contracts = Contract.objects.filter(
                 contract_product__product=product,
-                status="active"
+                status=Contract.STATUS_ACTIVE
             )
             if active_contracts.exists():
                 contract_titles = ", ".join(active_contracts.values_list("title", flat=True))
@@ -501,7 +501,7 @@ class ContractAdmin(ModelAdmin):
     def account_info(self, obj):
         if obj and obj.account:
             account = obj.account
-            status_color = "#22c55e" if account.status == "active" else "#ef4444"
+            status_color = "#22c55e" if account.status == Account.STATUS_ACTIVE else "#ef4444"
             portal_color = "#22c55e" if account.pharmacy_portal else "#ef4444"
             return format_html(
                 '''

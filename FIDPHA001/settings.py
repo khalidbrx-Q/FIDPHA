@@ -1,14 +1,15 @@
 from pathlib import Path
 from django.templatetags.static import static
 from django.urls import reverse_lazy
+from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-84==t^=mjl&51p8p)x)w%+=j=vd4=548f4q!c2snwih0a%qsnj"
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-84==t^=mjl&51p8p)x)w%+=j=vd4=548f4q!c2snwih0a%qsnj')
 
-DEBUG = True ################## CHANGE THIS TO False FOR PRODUCTION
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['*', 'khalidbrx.pythonanywhere.com']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*,khalidbrx.pythonanywhere.com', cast=Csv())
 
 INSTALLED_APPS = [
     "unfold",
@@ -37,6 +38,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -78,9 +80,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'buarramoukhalid@gmail.com'
-EMAIL_HOST_PASSWORD = 'gbxz sdba xxxh meme'
-DEFAULT_FROM_EMAIL = 'WinInPharma <buarramoukhalid@gmail.com>'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='buarramoukhalid@gmail.com')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='WinInPharma <buarramoukhalid@gmail.com>')
 
 TEMPLATES = [
     {
@@ -90,6 +92,7 @@ TEMPLATES = [
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
+                "django.template.context_processors.i18n",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
@@ -113,7 +116,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "en"
+LANGUAGES = [
+    ("en", "English"),
+    ("fr", "Français"),
+]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = 'Africa/Casablanca'
 USE_TZ = True
 USE_I18N = True
@@ -269,12 +277,10 @@ REST_FRAMEWORK = {
         "api.permissions.HasAPIToken",
     ],
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "api.throttles.APITokenThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
+        "api_token": "1000/hour",
     },
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
     "DEFAULT_VERSION": "v1",

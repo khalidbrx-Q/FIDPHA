@@ -14,12 +14,13 @@ Last updated: April 2026
 import json
 from datetime import timedelta
 
+from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator
-from django.db.models import Count, F, Q, Min, Max
+from django.db.models import Count, F, Q, Min, Max, Sum
 from django.db.models.functions import TruncDay, TruncHour
 from django.utils import timezone
 
@@ -31,6 +32,122 @@ from fidpha.models import Account, Contract, Contract_Product, Product, UserProf
 from api.models import APIToken, APITokenUsageLog
 from sales.models import Sale, SaleImport
 from .decorators import staff_required, perm_required, superuser_required
+from .models import SystemConfig
+
+
+def _export_response(rows, basename, fmt):
+    """Build a CSV / XLSX / JSON download response from a list of rows (first row = headers)."""
+    import csv, io, json, zipfile
+    from django.http import HttpResponse, StreamingHttpResponse
+
+    headers = rows[0]
+    data    = rows[1:]
+
+    if fmt == "json":
+        payload = [dict(zip(headers, row)) for row in data]
+        resp = HttpResponse(
+            json.dumps(payload, ensure_ascii=False, indent=2, default=str),
+            content_type="application/json",
+        )
+        resp["Content-Disposition"] = f'attachment; filename="{basename}.json"'
+        return resp
+
+    if fmt == "xlsx":
+        strings, strings_index = [], {}
+
+        def si(s):
+            s = str(s)
+            if s not in strings_index:
+                strings_index[s] = len(strings)
+                strings.append(s)
+            return strings_index[s]
+
+        def xe(s):
+            return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+        sheet_rows_xml = []
+        from decimal import Decimal as _Dec
+        for r_idx, row in enumerate(rows, 1):
+            cells = []
+            for c_idx, val in enumerate(row):
+                col = chr(ord('A') + c_idx)
+                ref = f"{col}{r_idx}"
+                if isinstance(val, (int, float, _Dec)) and not isinstance(val, bool):
+                    cells.append(f'<c r="{ref}"><v>{float(val)}</v></c>')
+                else:
+                    cells.append(f'<c r="{ref}" t="s"><v>{si(str(val))}</v></c>')
+            sheet_rows_xml.append(f'<row r="{r_idx}">{"".join(cells)}</row>')
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("[Content_Types].xml", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                '<Default Extension="xml" ContentType="application/xml"/>'
+                '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+                '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+                '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
+                '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+                '</Types>'
+            ))
+            zf.writestr("_rels/.rels", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+                '</Relationships>'
+            ))
+            zf.writestr("xl/workbook.xml", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                '<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>'
+                '</workbook>'
+            ))
+            zf.writestr("xl/_rels/workbook.xml.rels", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+                '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'
+                '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+                '</Relationships>'
+            ))
+            zf.writestr("xl/worksheets/sheet1.xml", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                f'<sheetData>{"".join(sheet_rows_xml)}</sheetData>'
+                '</worksheet>'
+            ))
+            ss = "".join(f'<si><t xml:space="preserve">{xe(s)}</t></si>' for s in strings)
+            zf.writestr("xl/sharedStrings.xml", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                f'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="{len(strings)}" uniqueCount="{len(strings)}">{ss}</sst>'
+            ))
+            zf.writestr("xl/styles.xml", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                '<fonts><font/></fonts><fills><fill/></fills><borders><border/></borders>'
+                '<cellStyleXfs><xf/></cellStyleXfs><cellXfs><xf/></cellXfs>'
+                '</styleSheet>'
+            ))
+        resp = HttpResponse(
+            buf.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        resp["Content-Disposition"] = f'attachment; filename="{basename}.xlsx"'
+        return resp
+
+    # default: csv
+    class Echo:
+        def write(self, value): return value
+
+    writer = csv.writer(Echo())
+    from django.http import StreamingHttpResponse
+    resp = StreamingHttpResponse(
+        (writer.writerow(row) for row in rows),
+        content_type="text/csv",
+    )
+    resp["Content-Disposition"] = f'attachment; filename="{basename}.csv"'
+    return resp
 
 
 def _log(user, obj, flag, message=""):
@@ -62,11 +179,11 @@ def dashboard(request):
         Rendered dashboard template with stats context.
     """
     stats = {
-        "accounts_active": Account.objects.filter(status="active").count(),
+        "accounts_active": Account.objects.filter(status=Account.STATUS_ACTIVE).count(),
         "accounts_total": Account.objects.count(),
-        "contracts_active": Contract.objects.filter(status="active").count(),
+        "contracts_active": Contract.objects.filter(status=Contract.STATUS_ACTIVE).count(),
         "contracts_total": Contract.objects.count(),
-        "products_active": Product.objects.filter(status="active").count(),
+        "products_active": Product.objects.filter(status=Product.STATUS_ACTIVE).count(),
         "products_total": Product.objects.count(),
         "users_total": User.objects.count(),
         "tokens_active": APIToken.objects.filter(is_active=True).count(),
@@ -114,6 +231,16 @@ _ROLE_ICONS = [
     ('group',               'Team'),
     ('assignment',          'Tasks'),
 ]
+
+# App labels excluded from the Roles permission form — framework internals or superuser-only
+_EXCLUDED_APPS: frozenset[str] = frozenset({
+    "authtoken",     # DRF token model — not used by this system
+    "contenttypes",  # Django framework internal
+    "sessions",      # Django framework internal
+    "account",       # allauth email/login internals — not meaningful for staff
+    "socialaccount", # OAuth management is superuser-only via settings pages
+    "sites",         # site config is superuser-only via settings page
+})
 
 # Human-readable labels for Django / third-party app labels
 _APP_FRIENDLY: dict[str, str] = {
@@ -188,6 +315,7 @@ def _grouped_permissions() -> list[dict]:
     perms = (
         Permission.objects
         .select_related("content_type")
+        .exclude(content_type__app_label__in=_EXCLUDED_APPS)
         .order_by("content_type__app_label", "content_type__model", "codename")
     )
     for perm in perms:
@@ -258,7 +386,10 @@ def roles_create(request):
         form = RoleForm(request.POST)
         if form.is_valid():
             role = form.save()
-            RoleProfile.objects.update_or_create(group=role, defaults={'icon': current_icon})
+            rp, _ = RoleProfile.objects.update_or_create(group=role, defaults={'icon': current_icon})
+            rp.created_by = request.user
+            rp.modified_by = request.user
+            rp.save()
             _log(request.user, role, ADDITION)
             messages.success(request, f"Role \"{role.name}\" created successfully.")
             return redirect("control:roles_list")
@@ -294,7 +425,9 @@ def roles_edit(request, pk: int):
         form = RoleForm(request.POST, instance=role)
         if form.is_valid():
             form.save()
-            RoleProfile.objects.update_or_create(group=role, defaults={'icon': submitted_icon})
+            rp, _ = RoleProfile.objects.update_or_create(group=role, defaults={'icon': submitted_icon})
+            rp.modified_by = request.user
+            rp.save()
             _log(request.user, role, CHANGE)
             messages.success(request, f"Role \"{role.name}\" updated successfully.")
             return redirect("control:roles_detail", pk=role.pk)
@@ -477,12 +610,23 @@ def users_detail(request, pk: int):
         .prefetch_related("socialtoken_set__app")
         .order_by("provider")
     )
+    user_ct = ContentType.objects.get_for_model(User)
+    user_logs = (
+        LogEntry.objects
+        .filter(content_type=user_ct, object_id=str(user.pk))
+        .select_related("user")
+        .order_by("action_time")
+    )
+    creation_log    = user_logs.filter(action_flag=ADDITION).first()
+    last_change_log = user_logs.filter(action_flag=CHANGE).last()
 
     ctx = {
         "u":               user,
         "utype":           utype,
         "profile":         profile,
         "social_accounts": social_accounts,
+        "creation_log":    creation_log,
+        "last_change_log": last_change_log,
     }
 
     return render(request, "control/users_detail.html", ctx)
@@ -592,8 +736,9 @@ def accounts_create(request):
                 pass
 
     return render(request, "control/accounts_form.html", {
-        "form":        form,
-        "page_action": "Create",
+        "form":               form,
+        "page_action":        "Create",
+        "global_auto_review": SystemConfig.get().auto_review_enabled,
     })
 
 
@@ -605,11 +750,11 @@ def accounts_detail(request, pk: int):
         pk=pk,
     )
     active_contract    = (account.contracts
-                          .filter(status="active")
+                          .filter(status=Contract.STATUS_ACTIVE)
                           .annotate(product_count=Count("products", distinct=True))
                           .first())
     inactive_contracts = (account.contracts
-                          .filter(status="inactive")
+                          .filter(status=Contract.STATUS_INACTIVE)
                           .annotate(product_count=Count("products", distinct=True))
                           .order_by("-end_date"))
     contract_count     = account.contracts.count()
@@ -650,11 +795,11 @@ def accounts_edit(request, pk: int):
         form = AccountForm(instance=account)
 
     active_contract    = (account.contracts
-                          .filter(status="active")
+                          .filter(status=Contract.STATUS_ACTIVE)
                           .annotate(product_count=Count("products", distinct=True))
                           .first())
     inactive_contracts = (account.contracts
-                          .exclude(status="active")
+                          .exclude(status=Contract.STATUS_ACTIVE)
                           .annotate(product_count=Count("products", distinct=True))
                           .order_by("-end_date"))
     contract_count     = account.contracts.count()
@@ -668,6 +813,7 @@ def accounts_edit(request, pk: int):
         "inactive_contracts": inactive_contracts,
         "contract_count":     contract_count,
         "portal_users":       portal_users,
+        "global_auto_review": SystemConfig.get().auto_review_enabled,
     })
 
 
@@ -676,7 +822,7 @@ def accounts_delete(request, pk: int):
     """Delete an account after confirmation."""
     account = get_object_or_404(Account, pk=pk)
     contract_count        = account.contracts.count()
-    active_contract_count = account.contracts.filter(status="active").count()
+    active_contract_count = account.contracts.filter(status=Contract.STATUS_ACTIVE).count()
     user_count            = account.users.count()
 
     if request.method == "POST":
@@ -749,8 +895,8 @@ def _available_products(contract=None):
     Already-linked products for the given contract are excluded (they show via
     the existing formset rows).
     """
-    allow_inactive = contract is not None and contract.status == "inactive"
-    qs = Product.objects.all() if allow_inactive else Product.objects.filter(status="active")
+    allow_inactive = contract is not None and contract.status == Contract.STATUS_INACTIVE
+    qs = Product.objects.all() if allow_inactive else Product.objects.filter(status=Product.STATUS_ACTIVE)
     if contract:
         linked = Contract_Product.objects.filter(contract=contract).values_list("product_id", flat=True)
         qs = qs.exclude(pk__in=linked)
@@ -769,7 +915,7 @@ def _patch_freed_product_queryset(formset, available, data):
         if data.get(f"{f.prefix}-DELETE") and f.instance.product_id
     }
     if freed_pks:
-        freed_qs = Product.objects.filter(pk__in=freed_pks, status="active")
+        freed_qs = Product.objects.filter(pk__in=freed_pks, status=Product.STATUS_ACTIVE)
         extended  = (available | freed_qs).distinct()
         for f in formset.extra_forms:
             f.fields["product"].queryset = extended.order_by("designation")
@@ -1036,7 +1182,7 @@ def contracts_create(request):
         "page_action":   "Create",
         "cp_prefix":     _CP_PREFIX,
         "products_json": json.dumps([
-            {"id": p.pk, "label": p.designation, "active": p.status == "active"}
+            {"id": p.pk, "label": p.designation, "active": p.status == Product.STATUS_ACTIVE, "code": p.code}
             for p in Product.objects.order_by("designation")
         ]),
     })
@@ -1053,6 +1199,20 @@ def contracts_edit(request, pk: int):
         form    = ContractForm(request.POST, instance=contract)
         formset = ContractProductFormSet(request.POST, instance=contract, prefix=_CP_PREFIX, form_kwargs=fkwargs)
         _patch_freed_product_queryset(formset, available, request.POST)
+        # Tell contract.clean() which Contract_Product rows are being deleted so it
+        # can exclude them from the inactive-product check (they're still in DB at
+        # validation time, before formset.save() runs).
+        total = int(request.POST.get(f"{_CP_PREFIX}-TOTAL_FORMS", 0))
+        pending_deletes = set()
+        for i in range(total):
+            pk_raw  = request.POST.get(f"{_CP_PREFIX}-{i}-id", "")
+            del_raw = request.POST.get(f"{_CP_PREFIX}-{i}-DELETE", "")
+            if pk_raw and del_raw:
+                try:
+                    pending_deletes.add(int(pk_raw))
+                except (ValueError, TypeError):
+                    pass
+        contract._pending_cp_deletes = pending_deletes
         if form.is_valid() and formset.is_valid():
             contract = form.save(commit=False)
             contract.modified_by = request.user
@@ -1084,7 +1244,7 @@ def contracts_edit(request, pk: int):
         "page_action":   "Edit",
         "cp_prefix":     _CP_PREFIX,
         "products_json": json.dumps([
-            {"id": p.pk, "label": p.designation, "active": p.status == "active"}
+            {"id": p.pk, "label": p.designation, "active": p.status == Product.STATUS_ACTIVE, "code": p.code}
             for p in Product.objects.order_by("designation")
         ]),
     })
@@ -1114,6 +1274,52 @@ def contracts_delete(request, pk: int):
         "sale_count":    sale_count,
         "has_sales":     has_sales,
     })
+
+
+@perm_required('fidpha.change_contract')
+def contracts_import_products(request, pk: int):
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    contract = get_object_or_404(Contract, pk=pk)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    rows = data.get("rows", [])
+    if not isinstance(rows, list):
+        return JsonResponse({"error": "rows must be a list"}, status=400)
+
+    from fidpha.services import bulk_link_products_to_contract
+    result = bulk_link_products_to_contract(contract, rows, created_by=request.user)
+
+    for cp in result["created"]:
+        _log(request.user, cp, ADDITION, "bulk file import")
+
+    return JsonResponse({
+        "created": len(result["created"]),
+        "skipped": [
+            {
+                "product_code":        s["row"].get("product_code", ""),
+                "external_designation": s["row"].get("external_designation", ""),
+                "points_per_unit":     s["row"].get("points_per_unit", ""),
+                "target_quantity":     s["row"].get("target_quantity", ""),
+                "reason":              s["reason"],
+            }
+            for s in result["skipped"]
+        ],
+    })
+
+
+@perm_required('fidpha.change_contract')
+def contracts_unlink_product(request, pk: int, cp_pk: int):
+    """Immediately remove a single product link from a contract."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    contract = get_object_or_404(Contract, pk=pk)
+    cp       = get_object_or_404(Contract_Product, pk=cp_pk, contract=contract)
+    _log(request.user, cp, DELETION)
+    cp.delete()
+    return JsonResponse({'ok': True})
 
 
 # ---------------------------------------------------------------------------
@@ -1225,7 +1431,7 @@ def products_delete(request, pk: int):
     product = get_object_or_404(Product, pk=pk)
     contract_count        = Contract_Product.objects.filter(product=product).count()
     active_contract_count = Contract_Product.objects.filter(
-        product=product, contract__status="active"
+        product=product, contract__status=Contract.STATUS_ACTIVE
     ).count()
 
     if request.method == "POST":
@@ -1239,6 +1445,102 @@ def products_delete(request, pk: int):
         "product":              product,
         "contract_count":       contract_count,
         "active_contract_count": active_contract_count,
+    })
+
+
+@perm_required('fidpha.view_product')
+def products_export(request):
+    fmt      = request.GET.get("format", "csv").lower()
+    basename = f"products_{timezone.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    rows = [["code", "designation", "ppv", "status"]] + [
+        [p.code, p.designation, p.ppv, p.status]
+        for p in Product.objects.all().order_by("designation").iterator()
+    ]
+    return _export_response(rows, basename, fmt)
+
+
+@perm_required('fidpha.view_account')
+def accounts_export(request):
+    fmt      = request.GET.get("format", "csv").lower()
+    basename = f"accounts_{timezone.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    rows = [["code", "name", "city", "location", "phone", "email", "status", "pharmacy_portal", "auto_review_enabled"]] + [
+        [a.code, a.name, a.city, a.location, a.phone, a.email, a.status,
+         "yes" if a.pharmacy_portal else "no",
+         "yes" if a.auto_review_enabled else "no"]
+        for a in Account.objects.all().order_by("name").iterator()
+    ]
+    return _export_response(rows, basename, fmt)
+
+
+@perm_required('fidpha.view_contract')
+def contracts_export(request):
+    fmt      = request.GET.get("format", "csv").lower()
+    basename = f"contracts_{timezone.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    qs = (
+        Contract.objects
+        .select_related("account")
+        .prefetch_related("contract_product_set__product")
+        .order_by("-status", "account__name", "title")
+    )
+    headers = [
+        "title", "account_code", "account_name", "start_date", "end_date", "status",
+        "product_code", "product_designation", "product_ppv",
+        "external_designation", "points_per_unit", "target_quantity",
+    ]
+    rows = [headers]
+    for c in qs:
+        contract_base = [
+            c.title, c.account.code, c.account.name,
+            c.start_date.strftime("%Y-%m-%d") if c.start_date else "",
+            c.end_date.strftime("%Y-%m-%d")   if c.end_date   else "",
+            c.status,
+        ]
+        cps = list(c.contract_product_set.all())
+        if cps:
+            for cp in cps:
+                rows.append(contract_base + [
+                    cp.product.code,
+                    cp.product.designation,
+                    cp.product.ppv,
+                    cp.external_designation,
+                    cp.points_per_unit,
+                    cp.target_quantity if cp.target_quantity is not None else "",
+                ])
+        else:
+            rows.append(contract_base + ["", "", "", "", "", ""])
+    return _export_response(rows, basename, fmt)
+
+
+@perm_required('fidpha.add_product')
+def products_import(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    rows = data.get("rows", [])
+    if not isinstance(rows, list):
+        return JsonResponse({"error": "rows must be a list"}, status=400)
+
+    from fidpha.services import bulk_import_products
+    result = bulk_import_products(rows, created_by=request.user)
+
+    for product in result["created"]:
+        _log(request.user, product, ADDITION, "bulk CSV import")
+
+    return JsonResponse({
+        "created": len(result["created"]),
+        "skipped": [
+            {
+                "code":        s["row"].get("code", ""),
+                "designation": s["row"].get("designation", ""),
+                "ppv":         s["row"].get("ppv", ""),
+                "status":      s["row"].get("status", ""),
+                "reason":      s["reason"],
+            }
+            for s in result["skipped"]
+        ],
     })
 
 
@@ -1485,6 +1787,22 @@ def site_edit(request):
 
 
 # ===========================================================================
+# Configuration — System
+# ===========================================================================
+
+@superuser_required
+def system_settings(request):
+    config = SystemConfig.get()
+    if request.method == "POST":
+        config.auto_review_enabled    = request.POST.get("auto_review_enabled") == "1"
+        config.auto_review_updated_by = request.user
+        config.save()
+        messages.success(request, "System configuration updated.")
+        return redirect("control:system_settings")
+    return render(request, "control/system_settings.html", {"config": config})
+
+
+# ===========================================================================
 # Sales Review
 # ===========================================================================
 
@@ -1616,6 +1934,10 @@ def sales_api_batches_v2(request):
             "ppv_mismatch":    b["ppv_mismatch"],
             "sale_date_min":   b["sale_date_min"].strftime("%Y-%m-%dT%H:%M:%S") if b["sale_date_min"] else None,
             "sale_date_max":   b["sale_date_max"].strftime("%Y-%m-%dT%H:%M:%S") if b["sale_date_max"] else None,
+            "rejection_rate":  (
+                round(b["rejected"] * 100 / (b["accepted"] + b["rejected"]))
+                if (b["accepted"] + b["rejected"]) > 0 else -1
+            ),
         })
 
     total_pages = max(1, (total_count + per_page - 1) // per_page)
@@ -1687,6 +2009,8 @@ def sales_api_batches(request):
 @perm_required('sales.view_sale')
 def sales_api_sales(request):
     from django.http import JsonResponse
+    from django.db.models import ExpressionWrapper, FloatField
+    from django.db.models.functions import Round
     contract_pk = request.GET.get("contract", "")
     batch_id    = request.GET.get("batch", "").strip()
     if not contract_pk or not batch_id:
@@ -1698,15 +2022,18 @@ def sales_api_sales(request):
             sale_import__batch_id=batch_id,
         )
         .select_related("contract_product__product", "sale_import", "reviewed_by")
+        .annotate(pts=Round(ExpressionWrapper(
+            F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
+            output_field=FloatField(),
+        )))
         .order_by("sale_datetime")
     )
     data   = []
-    counts = {"pending": 0, "accepted": 0, "rejected": 0}
+    counts = {"pending": 0, "accepted": 0, "rejected": 0, "total_pts": 0}
     for s in qs:
         contract_ppv = s.contract_product.product.ppv
-        factor       = s.contract_product.points_per_unit
-        points       = round(float(contract_ppv) * float(factor) * s.quantity) if contract_ppv else 0
         ppv_mismatch = (contract_ppv is not None and s.ppv != contract_ppv)
+        pts = int(s.pts or 0)
         data.append({
             "pk":               s.pk,
             "product":          s.contract_product.product.designation,
@@ -1717,15 +2044,19 @@ def sales_api_sales(request):
             "ppv":              str(s.ppv) if s.ppv else "—",
             "contract_ppv":     str(contract_ppv) if contract_ppv else None,
             "ppv_mismatch":     ppv_mismatch,
-            "points":           points,
+            "points":           pts,
             "status":           s.status,
             "reviewed_by":      (
                 s.reviewed_by.get_full_name() or s.reviewed_by.username
                 if s.reviewed_by else None
             ),
             "reviewed_at":      s.reviewed_at.strftime("%d %b %Y, %H:%M") if s.reviewed_at else None,
+            "import_received_at": s.sale_import.received_at.strftime("%d %b %Y, %H:%M") if s.sale_import and s.sale_import.received_at else None,
+            "sale_created_at":  s.created_at.strftime("%d %b %Y, %H:%M") if s.created_at else None,
         })
         counts[s.status] = counts.get(s.status, 0) + 1
+        if s.status == Sale.STATUS_ACCEPTED:
+            counts["total_pts"] += pts
     return JsonResponse({"sales": data, "counts": counts})
 
 
@@ -1936,14 +2267,18 @@ def sales_bulk_update(request):
         return JsonResponse({"ok": False}, status=405)
     raw_pks = request.POST.get("pks", "")
     status  = request.POST.get("status", "")
+    reason  = request.POST.get("reason", "").strip()
     pks     = [int(p) for p in raw_pks.split(",") if p.strip().isdigit()]
     if status not in (Sale.STATUS_ACCEPTED, Sale.STATUS_REJECTED) or not pks:
         return JsonResponse({"ok": False, "error": "Invalid request"}, status=400)
-    Sale.objects.filter(pk__in=pks).update(
-        status=status,
-        reviewed_by=request.user,
-        reviewed_at=timezone.now(),
-    )
+    update_fields = {
+        "status":      status,
+        "reviewed_by": request.user,
+        "reviewed_at": timezone.now(),
+    }
+    if status == Sale.STATUS_REJECTED and reason:
+        update_fields["rejection_reason"] = reason
+    Sale.objects.filter(pk__in=pks).update(**update_fields)
     return JsonResponse({"ok": True, "updated": len(pks)})
 
 

@@ -163,6 +163,7 @@ body {
     margin-top: 24px;
     font-size: 0.78rem;
     color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 .login-divider {

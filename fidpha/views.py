@@ -7,12 +7,23 @@ from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
 from django.urls import reverse_lazy
 from django.contrib.auth.models import User
-from .models import UserProfile
+from .models import UserProfile, Contract
 import secrets
 from django.utils import timezone
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 from django.conf import settings
+
+
+def _send_verification_email(request, to_email, verify_url, is_new_email=False):
+    ctx = {"verify_url": verify_url, "is_new_email": is_new_email}
+    subject = render_to_string("fidpha/email/verify_subject.txt", ctx, request=request).strip()
+    text_body = render_to_string("fidpha/email/verify_body.txt", ctx, request=request)
+    html_body = render_to_string("fidpha/email/verify_body.html", ctx, request=request)
+    msg = EmailMultiAlternatives(subject, text_body, settings.DEFAULT_FROM_EMAIL, [to_email])
+    msg.attach_alternative(html_body, "text/html")
+    msg.send()
 
 
 def custom_login(request):
@@ -56,7 +67,7 @@ def custom_login(request):
 
 def custom_logout(request):
     logout(request)
-    messages.success(request, "You have been successfully signed out.")
+    messages.success(request, "Successfully signed out.")
     return redirect("/portal/login/")
 
 
@@ -101,13 +112,7 @@ def setup_profile(request):
 
             verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
             try:
-                send_mail(
-                    "WinInPharma — Verify your email",
-                    f"Click the link to verify your email: {verify_url}",
-                    settings.DEFAULT_FROM_EMAIL,
-                    [email],
-                    fail_silently=False,
-                )
+                _send_verification_email(request, email, verify_url)
                 request.user.email = email
                 request.user.save()
                 messages.success(request, "Verification email sent!")
@@ -162,13 +167,7 @@ def portal_profile(request):
 
                 verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
                 try:
-                    send_mail(
-                        "WinInPharma — Verify your new email",
-                        f"Click the link to verify your new email: {verify_url}",
-                        settings.DEFAULT_FROM_EMAIL,
-                        [email],
-                        fail_silently=False,
-                    )
+                    _send_verification_email(request, email, verify_url, is_new_email=True)
                     messages.success(request, "Verification email sent to your new address!")
                 except Exception as e:
                     messages.error(request, f"Failed to send email: {str(e)}")
@@ -263,13 +262,7 @@ def verify_pending(request):
 
     verify_url = f"{request.scheme}://{request.get_host()}/portal/verify-email/{token}/"
     try:
-        send_mail(
-            "WinInPharma — Verify your email",
-            f"Click the link to verify your email: {verify_url}",
-            settings.DEFAULT_FROM_EMAIL,
-            [request.user.email],
-            fail_silently=False,
-        )
+        _send_verification_email(request, request.user.email, verify_url)
     except Exception as e:
         messages.error(request, f"Failed to send email: {str(e)}")
         return redirect("/portal/dashboard/")
@@ -318,16 +311,17 @@ def portal_dashboard(request):
 
     account = profile.account
 
-    base_qs = Sale.objects.filter(
-        contract_product__contract__account=account,
-        status=Sale.STATUS_ACCEPTED,
-        product_ppv__isnull=False,
-    ).annotate(
-        pts=Round(ExpressionWrapper(
-            F("quantity") * F("product_ppv") * F("contract_product__points_per_unit"),
+    def _pts_qs(extra_filter):
+        return Sale.objects.filter(
+            status=Sale.STATUS_ACCEPTED,
+            product_ppv__isnull=False,
+            **extra_filter,
+        ).annotate(pts=Round(ExpressionWrapper(
+            F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
             output_field=FloatField(),
-        ))
-    )
+        )))
+
+    base_qs = _pts_qs({"contract_product__contract__account": account})
 
     total_points = int(base_qs.aggregate(total=Sum("pts"))["total"] or 0)
 
@@ -416,14 +410,16 @@ def portal_dashboard(request):
 
     # ── Unified daily drill (all time) keyed by YYYY-MM ──
     d_pts_all    = defaultdict(dict)
+    d_prods_all  = defaultdict(dict)
     d_units_all  = defaultdict(dict)
     d_batches_all = defaultdict(dict)
 
     for r in (
         base_qs.annotate(day=TruncDay("sale_datetime"))
-        .values("day").annotate(total=Sum("pts")).order_by("day")
+        .values("day").annotate(total=Sum("pts"), unique_products=Count("contract_product__product", distinct=True)).order_by("day")
     ):
         d_pts_all[r["day"].strftime("%Y-%m")][r["day"].day] = int(r["total"] or 0)
+        d_prods_all[r["day"].strftime("%Y-%m")][r["day"].day] = r["unique_products"]
 
     for r in (
         Sale.objects.filter(contract_product__contract__account=account, status=Sale.STATUS_ACCEPTED)
@@ -448,6 +444,7 @@ def portal_dashboard(request):
         n = calendar.monthrange(yr, mo)[1]
         chart_daily_drill[mk]  = {"n": n,
             "pts":     [d_pts_all[mk].get(d, 0) for d in range(1, n+1)],
+            "prods":   [d_prods_all[mk].get(d, 0) for d in range(1, n+1)],
             "units":   [d_units_all[mk].get(d, 0) for d in range(1, n+1)]}
         chart_submit_drill[mk] = {"n": n,
             "batches": [d_batches_all[mk].get(d, 0) for d in range(1, n+1)]}
@@ -521,19 +518,12 @@ def portal_dashboard(request):
             sale_datetime__gte=month_start,
         ).aggregate(t=Sum("quantity"))["t"] or 0
     )
-    active_contract = account.contracts.filter(status="active").first()
+    active_contract = account.contracts.filter(status=Contract.STATUS_ACTIVE).first()
     total_products_count = base_qs.values("contract_product__product").distinct().count()
     total_contracts_count = account.contracts.count()
     recent_sales = (
-        Sale.objects
-        .filter(contract_product__contract__account=account)
+        _pts_qs({"contract_product__contract__account": account})
         .select_related("contract_product__product", "contract_product__contract")
-        .annotate(
-            pts=Round(ExpressionWrapper(
-                F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
-                output_field=FloatField(),
-            ))
-        )
         .order_by("-sale_datetime")[:5]
     )
 
@@ -599,7 +589,7 @@ def portal_contracts(request):
     from django.db.models.functions import Round, TruncMonth, TruncDay
 
     account = profile.account
-    active_contract = account.contracts.filter(status="active").first()
+    active_contract = account.contracts.filter(status=Contract.STATUS_ACTIVE).first()
 
     def _pts_qs(extra_filter):
         return (
@@ -675,7 +665,7 @@ def portal_contracts(request):
 
     # ── Past contracts ──
     past_contracts = []
-    for old in account.contracts.exclude(status="active").order_by("-end_date"):
+    for old in account.contracts.exclude(status=Contract.STATUS_ACTIVE).order_by("-end_date"):
         units = int(
             Sale.objects.filter(contract_product__contract=old)
             .aggregate(t=Sum("quantity"))["t"] or 0
@@ -816,17 +806,6 @@ def portal_contracts(request):
 # Sales / Loyalty
 # -----------------------
 
-def _calculate_points(quantity, ppv, factor=1):
-    """
-    Points rule: round(ppv × quantity × factor).
-    factor comes from Contract_Product.points_per_unit (default 1 = 1 pt/MAD).
-    ppv is taken from the Product table, not from the sale record.
-    Returns 0 if ppv is None.
-    """
-    if ppv is None:
-        return 0
-    return round(float(ppv) * quantity * float(factor))
-
 
 @login_required(login_url="/portal/login/")
 def portal_sales(request):
@@ -848,22 +827,21 @@ def portal_sales(request):
     from sales.models import Sale
 
     account = profile.account
+
     all_sales = (
         Sale.objects
         .filter(contract_product__contract__account=account)
         .select_related("contract_product__product", "contract_product__contract")
-        .annotate(
-            points=Round(ExpressionWrapper(
-                F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
-                output_field=FloatField(),
-            ))
-        )
+        .annotate(points=Round(ExpressionWrapper(
+            F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
+            output_field=FloatField(),
+        )))
         .order_by("-sale_datetime")
     )
 
     accepted_count = all_sales.filter(status=Sale.STATUS_ACCEPTED).count()
-    rejected_count = all_sales.filter(status="rejected").count()
-    pending_count  = all_sales.exclude(status=Sale.STATUS_ACCEPTED).exclude(status="rejected").count()
+    rejected_count = all_sales.filter(status=Sale.STATUS_REJECTED).count()
+    pending_count  = all_sales.exclude(status=Sale.STATUS_ACCEPTED).exclude(status=Sale.STATUS_REJECTED).count()
     total_count    = accepted_count + pending_count + rejected_count
 
     # ── Last 12 months ──
@@ -890,7 +868,7 @@ def portal_sales(request):
     for r in monthly_qs:
         mk = r["month"].strftime("%Y-%m")
         if r["status"] == Sale.STATUS_ACCEPTED: m_acc[mk] += r["cnt"]
-        elif r["status"] == "rejected":         m_rej[mk] += r["cnt"]
+        elif r["status"] == Sale.STATUS_REJECTED:         m_rej[mk] += r["cnt"]
         else:                                   m_pend[mk] += r["cnt"]
 
     sales_month_keys     = [d.strftime("%Y-%m") for d in month_dates]
@@ -924,7 +902,7 @@ def portal_sales(request):
         for r in yr_qs:
             mk = r["month"].strftime("%Y-%m")
             if r["status"] == Sale.STATUS_ACCEPTED: ya[mk] += r["cnt"]
-            elif r["status"] == "rejected":         yr_rej[mk] += r["cnt"]
+            elif r["status"] == Sale.STATUS_REJECTED:         yr_rej[mk] += r["cnt"]
             else:                                   yp[mk] += r["cnt"]
         years_data[str(yr)] = {
             "keys":     [d.strftime("%Y-%m") for d in yr_months],
@@ -949,7 +927,7 @@ def portal_sales(request):
         if mk not in daily_map:
             daily_map[mk] = {"acc": {}, "rej": {}, "pend": {}}
         if r["status"] == Sale.STATUS_ACCEPTED: bucket = "acc"
-        elif r["status"] == "rejected":         bucket = "rej"
+        elif r["status"] == Sale.STATUS_REJECTED:         bucket = "rej"
         else:                                   bucket = "pend"
         daily_map[mk][bucket][d_int] = daily_map[mk][bucket].get(d_int, 0) + r["cnt"]
 
@@ -1000,6 +978,8 @@ class CustomPasswordResetForm(PasswordResetForm):
 class CustomPasswordResetView(PasswordResetView):
     form_class = CustomPasswordResetForm
     template_name = "registration/password_reset_form.html"
+    email_template_name = "registration/password_reset_email.html"
+    html_email_template_name = "registration/password_reset_email_html.html"
     success_url = reverse_lazy("password_reset_done")
 
     def form_invalid(self, form):

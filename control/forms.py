@@ -43,7 +43,7 @@ class AccountForm(forms.ModelForm):
     class Meta:
         model  = Account
         fields = ['code', 'name', 'city', 'location', 'phone',
-                  'email', 'pharmacy_portal', 'status']
+                  'email', 'pharmacy_portal', 'auto_review_enabled', 'status']
         widgets = {
             'location': forms.Textarea(attrs={'rows': 3}),
         }
@@ -179,7 +179,7 @@ class ContractProductForm(forms.ModelForm):
         base_qs = (
             self.available_products
             if self.available_products is not None
-            else Product.objects.filter(status='active')
+            else Product.objects.all()
         )
         if self.instance and self.instance.pk:
             # Existing row — always include the currently linked product so it
@@ -192,7 +192,7 @@ class ContractProductForm(forms.ModelForm):
 
         self.fields['product'].queryset = qs
         self.fields['product'].label_from_instance = lambda obj: (
-            f"{obj.designation} [Inactive]" if obj.status == "inactive" else obj.designation
+            f"{obj.designation} [Inactive]" if obj.status == Product.STATUS_INACTIVE else obj.designation
         )
 
     def validate_unique(self):
@@ -463,12 +463,12 @@ class UserForm(forms.Form):
             # with only user set, hitting the NOT NULL constraint on account_id.
             defaults = {"account": data["account"]}
             if actor:
-                # On edit, always stamp modified_by; on create, also stamp created_by.
                 existing = UserProfile.objects.filter(user=user).exists()
                 if existing:
                     defaults["modified_by"] = actor
                 else:
                     defaults["created_by"] = actor
+                    defaults["modified_by"] = actor
             profile, _ = UserProfile.objects.update_or_create(
                 user=user,
                 defaults=defaults,

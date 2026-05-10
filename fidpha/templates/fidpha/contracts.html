@@ -1,8 +1,9 @@
 {% extends "fidpha/base.html" %}
+{% load i18n %}
 
 {% block nav_contracts %}active{% endblock %}
-{% block page_title %}Contract{% endblock %}
-{% block page_breadcrumb %}Contract{% endblock %}
+{% block page_title %}{% trans "Contract" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Contract" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -38,7 +39,7 @@
     <div style="display:flex; align-items:center; gap:12px;">
         <span class="material-icons-round" style="font-size:24px; color:#22c55e; flex-shrink:0;">verified</span>
         <div>
-            <div style="font-size:0.72rem; color:#22c55e; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:2px;">Active Contract</div>
+            <div style="font-size:0.72rem; color:#22c55e; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:2px;">{% trans "Active Contract" %}</div>
             <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">{{ active_contract.title }}</div>
             {% if active_contract.designation %}
             <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">{{ active_contract.designation }}</div>
@@ -58,9 +59,9 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">emoji_events</span>
         </div>
         <div>
-            <div class="stat-label">Points Earned</div>
+            <div class="stat-label">{% trans "Points Earned" %}</div>
             <div class="stat-value">{{ active_total_points }}</div>
-            <div class="stat-sub">this contract</div>
+            <div class="stat-sub">{% trans "this contract" %}</div>
         </div>
     </div>
 
@@ -69,9 +70,9 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">medication</span>
         </div>
         <div>
-            <div class="stat-label">Products in Contract</div>
+            <div class="stat-label">{% trans "Products in Contract" %}</div>
             <div class="stat-value">{{ active_products_count }}</div>
-            <div class="stat-sub">total referenced</div>
+            <div class="stat-sub">{% trans "total referenced" %}</div>
         </div>
     </div>
 
@@ -80,9 +81,9 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">star</span>
         </div>
         <div>
-            <div class="stat-label">Products with Points</div>
+            <div class="stat-label">{% trans "Products with Points" %}</div>
             <div class="stat-value">{{ active_products_with_points }}</div>
-            <div class="stat-sub">generating points</div>
+            <div class="stat-sub">{% trans "generating points" %}</div>
         </div>
     </div>
 
@@ -93,14 +94,14 @@
 <div class="card" style="margin-bottom:20px;">
     <div class="card-header">
         <div class="card-header-icon"><span class="material-icons-round">medication</span></div>
-        <div class="card-title">Products</div>
+        <div class="card-title">{% trans "Products" %}</div>
         <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
             <div style="position:relative;">
                 <span class="material-icons-round" style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-size:16px;">search</span>
-                <input type="text" id="prodSearch" placeholder="Search product..." oninput="filterProds()"
+                <input type="text" id="prodSearch" placeholder="{% trans "Search product..." %}" oninput="filterProds()"
                     style="padding:5px 10px 5px 28px; border-radius:8px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-primary); font-size:0.82rem; font-family:'Inter',sans-serif; width:180px;">
             </div>
-            <span style="font-size:0.78rem; color:var(--text-secondary);">Show</span>
+            <span style="font-size:0.78rem; color:var(--text-secondary);">{% trans "Show" %}</span>
             <select onchange="setProdPageSize(this.value)" style="padding:3px 6px; border-radius:7px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;">
                 <option value="5">5</option>
                 <option value="10" selected>10</option>
@@ -113,19 +114,18 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Product</th>
-                    <th>External Ref</th>
-                    <th style="text-align:center;">Units Sold</th>
-                    <th style="text-align:center;">Accepted Units</th>
-                    <th style="text-align:center;">Points Earned</th>
-                    <th style="text-align:center;">Status</th>
+                    <th>{% trans "Product" %}</th>
+                    <th>{% trans "External Ref" %}</th>
+                    <th style="text-align:center;">{% trans "Units Sold" %}</th>
+                    <th style="text-align:center;">{% trans "Accepted Units" %}</th>
+                    <th style="text-align:center;">{% trans "Points Earned" %}</th>
+                    <th style="text-align:center;">{% trans "Status" %}</th>
                 </tr>
             </thead>
             <tbody id="prodTbody">
                 {% for item in products_data %}
                 <tr data-search="{{ item.cp.product.designation|lower }} {{ item.cp.product.code|lower }} {{ item.cp.external_designation|lower }}">
                     <td style="font-weight:500;">{{ item.cp.product.designation }}</td>
-                    <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ item.cp.product.code }}</td>
                     <td style="font-family:monospace; font-size:0.8rem; color:var(--text-secondary);">{{ item.cp.external_designation }}</td>
                     <td style="text-align:center;">{{ item.units_sold }}</td>
                     <td style="text-align:center; color:#22c55e; font-weight:600;">{{ item.accepted_units }}</td>
@@ -137,14 +137,14 @@
                     </td>
                     <td style="text-align:center;">
                         {% if item.cp.product.status == "active" %}
-                            <span class="badge badge-success">Active</span>
+                            <span class="badge badge-success">{% trans "Active" %}</span>
                         {% else %}
-                            <span class="badge badge-danger">Inactive</span>
+                            <span class="badge badge-danger">{% trans "Inactive" %}</span>
                         {% endif %}
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:20px;">No products in this contract.</td></tr>
+                <tr><td colspan="6" style="text-align:center; color:var(--text-secondary); padding:20px;">{% trans "No products in this contract." %}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -160,11 +160,11 @@
     <div class="card" style="flex:1.5; min-width:300px;">
         <div class="card-header" style="flex-wrap:wrap; gap:6px;">
             <div class="card-header-icon"><span class="material-icons-round">trending_up</span></div>
-            <div class="card-title">Monthly Trend</div>
+            <div class="card-title">{% trans "Monthly Trend" %}</div>
             <span id="trend-drill-info" style="font-size:0.78rem; color:var(--text-secondary); margin-left:4px;"></span>
             <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
                 <button id="trend-drill-back" onclick="trendDrillBack()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> {% trans "Back" %}
                 </button>
                 <span style="font-size:0.78rem; color:var(--text-secondary);">{{ chart_period_label }}</span>
             </div>
@@ -176,9 +176,9 @@
     <div class="card" style="flex:1; min-width:260px;">
         <div class="card-header">
             <div class="card-header-icon"><span class="material-icons-round">bar_chart</span></div>
-            <div class="card-title">Points by Product</div>
+            <div class="card-title">{% trans "Points by Product" %}</div>
             <span id="product-chart-month-label" style="margin-left:8px; font-size:0.78rem; color:var(--gold);"></span>
-            <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">Active contract</div>
+            <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">{% trans "Active contract" %}</div>
         </div>
         <div id="productChart" style="height:240px;"></div>
     </div>
@@ -190,8 +190,8 @@
 <div class="card" style="display:flex; align-items:center; gap:16px; border-left:4px solid var(--card-border); margin-bottom:20px;">
     <span class="material-icons-round" style="font-size:32px; color:var(--text-secondary); flex-shrink:0;">info</span>
     <div>
-        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;">No active contract</div>
-        <div style="font-size:0.84rem; color:var(--text-secondary);">You don't have an active contract at the moment. Your past contracts are shown below.</div>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;">{% trans "No active contract" %}</div>
+        <div style="font-size:0.84rem; color:var(--text-secondary);">{% trans "You don't have an active contract at the moment. Your inactive contracts are shown below." %}</div>
     </div>
 </div>
 {% endif %}
@@ -201,8 +201,8 @@
 <div class="card" style="margin-bottom:20px;">
     <div class="card-header">
         <div class="card-header-icon"><span class="material-icons-round">assignment</span></div>
-        <div class="card-title">Points per Contract</div>
-        <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">All contracts</div>
+        <div class="card-title">{% trans "Points per Contract" %}</div>
+        <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">{% trans "All contracts" %}</div>
     </div>
     <div id="contractChart" style="height:220px;"></div>
 </div>
@@ -212,7 +212,7 @@
 {% if past_contracts %}
 <div style="font-size:0.78rem; color:var(--text-secondary); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
     <span class="material-icons-round" style="font-size:14px;">history</span>
-    Past Contracts
+    {% trans "Inactive Contracts" %}
 </div>
 
 <div id="pastContractsList" style="display:flex; flex-direction:column; gap:8px;">
@@ -227,21 +227,21 @@
         </div>
         <div style="display:flex; align-items:center; gap:28px; flex-shrink:0;">
             <div style="text-align:center;">
-                <div style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px;">Products</div>
+                <div style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px;">{% trans "Products" %}</div>
                 <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary);">{{ item.product_count }}</div>
             </div>
             <div style="text-align:center;">
-                <div style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px;">Units Sold</div>
+                <div style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px;">{% trans "Units Sold" %}</div>
                 <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary);">{{ item.total_units }}</div>
             </div>
             <div style="text-align:center;">
-                <div style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px;">Points</div>
+                <div style="font-size:0.68rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px;">{% trans "Points" %}</div>
                 <div style="font-size:0.9rem; font-weight:700; color:var(--text-primary);">
                     <span class="material-icons-round" style="font-size:12px; color:#f59e0b; vertical-align:middle;">star</span>
                     {{ item.total_points }}
                 </div>
             </div>
-            <span class="badge badge-warning">Inactive</span>
+            <span class="badge badge-warning">{% trans "Inactive" %}</span>
         </div>
     </div>
     {% endfor %}
@@ -251,7 +251,7 @@
     <span id="pastPgInfo" style="font-size:0.8rem; color:var(--text-secondary);"></span>
     <div id="pastPgButtons" style="display:flex; align-items:center; gap:4px;"></div>
     <div style="display:flex; align-items:center; gap:6px;">
-        <span style="font-size:0.78rem; color:var(--text-secondary);">Show</span>
+        <span style="font-size:0.78rem; color:var(--text-secondary);">{% trans "Show" %}</span>
         <select onchange="setPastPageSize(this.value)" style="padding:3px 6px; border-radius:7px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;">
             <option value="3">3</option>
             <option value="5" selected>5</option>
@@ -263,6 +263,10 @@
 {% endif %}
 
 <script>
+// ── i18n labels ──
+var JS_SHOWING = '{% trans "Showing" %}';
+var JS_OF      = '{% trans "of" %}';
+
 // ── Products table pagination ──
 var prodPage     = 1;
 var prodPageSize = 10;
@@ -297,7 +301,7 @@ function renderProdPagination(total, pages, start, end) {
     if (total <= prodPageSize) { pg.style.display = 'none'; return; }
     pg.style.display = 'flex';
     document.getElementById('prodPgInfo').textContent =
-        'Showing ' + (start + 1) + '–' + end + ' of ' + total;
+        JS_SHOWING + ' ' + (start + 1) + '–' + end + ' ' + JS_OF + ' ' + total;
     var bc = document.getElementById('prodPgButtons');
     bc.innerHTML = '';
     function mkBtn(label, page, disabled, active) {
@@ -370,7 +374,7 @@ function renderPastPagination(total, pages, start, end) {
     if (total <= pastPageSize) { pg.style.display = 'none'; return; }
     pg.style.display = 'flex';
     document.getElementById('pastPgInfo').textContent =
-        'Showing ' + (start + 1) + '–' + end + ' of ' + total;
+        JS_SHOWING + ' ' + (start + 1) + '–' + end + ' ' + JS_OF + ' ' + total;
     var bc = document.getElementById('pastPgButtons');
     bc.innerHTML = '';
     function mkBtn(label, page, disabled, active) {
@@ -418,6 +422,13 @@ function setPastPageSize(val) {
     var gridLine   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
     var axisLine   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
 
+    // i18n labels for chart series/legend
+    var LBL_POINTS = '{% trans "Points" %}';
+    var LBL_UPRODS = '{% trans "Unique Products" %}';
+    var LBL_DAY    = '{% trans "Day" %}';
+    var LBL_PTS    = '{% trans "pts" %}';
+    var LBL_PRODS_UNIT = '{% trans "products" %}';
+
     var monthLabels      = {{ chart_month_labels|safe }};
     var monthKeys        = {{ chart_month_keys|safe }};
     var monthPts         = {{ chart_month_pts|safe }};
@@ -449,13 +460,13 @@ function setPastPageSize(val) {
                 formatter: function(params) {
                     var out = '<b>' + params[0].axisValue + '</b><br/>';
                     params.forEach(function(p) {
-                        var unit = p.seriesName === 'Points' ? ' pts' : ' products';
+                        var unit = p.seriesName === LBL_POINTS ? ' ' + LBL_PTS : ' ' + LBL_PRODS_UNIT;
                         out += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>' + unit + '<br/>';
                     });
                     return out;
                 }
             },
-            legend: { data: ['Points', 'Unique Products'], top: 0, left: 'center',
+            legend: { data: [LBL_POINTS, LBL_UPRODS], top: 0, left: 'center',
                 textStyle: { color: labelColor, fontSize: 11 }, icon: 'circle', itemWidth: 8, itemHeight: 8 },
             grid: { left: 10, right: 10, top: 32, bottom: 4, containLabel: true },
             xAxis: { type: 'category', data: monthLabels, axisLine: { lineStyle: { color: axisLine } },
@@ -463,18 +474,18 @@ function setPastPageSize(val) {
                     rotate: monthLabels.length > 6 ? 30 : 0,
                     interval: monthLabels.length > 24 ? 1 : 0 } },
             yAxis: [
-                { type: 'value', name: 'Points', nameTextStyle: { color: labelColor, fontSize: 10 },
+                { type: 'value', name: LBL_POINTS, nameTextStyle: { color: labelColor, fontSize: 10 },
                   splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
                   axisLabel: { color: labelColor, fontSize: 10,
                       formatter: function(v) { return v >= 1000 ? (v/1000).toFixed(0)+'k' : v; } } },
-                { type: 'value', name: 'Products', nameTextStyle: { color: labelColor, fontSize: 10 },
+                { type: 'value', name: LBL_UPRODS, nameTextStyle: { color: labelColor, fontSize: 10 },
                   splitLine: { show: false }, axisLabel: { color: labelColor, fontSize: 10 }, minInterval: 1 },
             ],
             series: [
-                { name: 'Points',          type: 'bar', yAxisIndex: 0, data: monthPts,   barMaxWidth: 22,
+                { name: LBL_POINTS, type: 'bar', yAxisIndex: 0, data: monthPts,   barMaxWidth: 22,
                   itemStyle: { borderRadius: [4,4,0,0], color: gradV('#f59e0b','rgba(245,158,11,0.18)') },
                   emphasis: { itemStyle: { color: gradV('#fbbf24','rgba(245,158,11,0.38)') } } },
-                { name: 'Unique Products', type: 'bar', yAxisIndex: 1, data: monthProds, barMaxWidth: 18,
+                { name: LBL_UPRODS, type: 'bar', yAxisIndex: 1, data: monthProds, barMaxWidth: 18,
                   itemStyle: { borderRadius: [3,3,0,0], color: '#22c55e' },
                   emphasis: { itemStyle: { color: '#4ade80' } } },
             ],
@@ -486,32 +497,32 @@ function setPastPageSize(val) {
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
                 formatter: function(params) {
-                    var out = '<b>Day ' + params[0].axisValue + '</b><br/>';
+                    var out = '<b>' + LBL_DAY + ' ' + params[0].axisValue + '</b><br/>';
                     params.forEach(function(p) {
-                        var unit = p.seriesName === 'Points' ? ' pts' : ' products';
+                        var unit = p.seriesName === LBL_POINTS ? ' ' + LBL_PTS : ' ' + LBL_PRODS_UNIT;
                         out += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>' + unit + '<br/>';
                     });
                     return out;
                 }
             },
-            legend: { data: ['Points', 'Unique Products'], top: 0, left: 'center',
+            legend: { data: [LBL_POINTS, LBL_UPRODS], top: 0, left: 'center',
                 textStyle: { color: labelColor, fontSize: 11 }, icon: 'circle', itemWidth: 8, itemHeight: 8 },
             grid: { left: 10, right: 10, top: 32, bottom: 4, containLabel: true },
             xAxis: { type: 'category', data: daysArray(n), axisLine: { lineStyle: { color: axisLine } },
                 axisTick: { show: false }, axisLabel: { color: labelColor, fontSize: 10, rotate: 0,
                     interval: n > 20 ? 4 : n > 10 ? 1 : 0 } },
             yAxis: [
-                { type: 'value', name: 'Points', nameTextStyle: { color: labelColor, fontSize: 10 },
+                { type: 'value', name: LBL_POINTS, nameTextStyle: { color: labelColor, fontSize: 10 },
                   splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
                   axisLabel: { color: labelColor, fontSize: 10,
                       formatter: function(v) { return v >= 1000 ? (v/1000).toFixed(0)+'k' : v; } } },
-                { type: 'value', name: 'Products', nameTextStyle: { color: labelColor, fontSize: 10 },
+                { type: 'value', name: LBL_UPRODS, nameTextStyle: { color: labelColor, fontSize: 10 },
                   splitLine: { show: false }, axisLabel: { color: labelColor, fontSize: 10 }, minInterval: 1 },
             ],
             series: [
-                { name: 'Points',          type: 'bar', yAxisIndex: 0, data: dd.pts,   barMaxWidth: 22,
+                { name: LBL_POINTS, type: 'bar', yAxisIndex: 0, data: dd.pts,   barMaxWidth: 22,
                   itemStyle: { borderRadius: [4,4,0,0], color: gradV('#f59e0b','rgba(245,158,11,0.18)') } },
-                { name: 'Unique Products', type: 'bar', yAxisIndex: 1, data: dd.prods, barMaxWidth: 18,
+                { name: LBL_UPRODS, type: 'bar', yAxisIndex: 1, data: dd.prods, barMaxWidth: 18,
                   itemStyle: { borderRadius: [3,3,0,0], color: '#22c55e' } },
             ],
         };
@@ -560,7 +571,7 @@ function setPastPageSize(val) {
         return {
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
-                formatter: function (p) { return '<b>' + p[0].name + '</b><br/>' + p[0].value.toLocaleString() + ' pts'; }
+                formatter: function (p) { return '<b>' + p[0].name + '</b><br/>' + p[0].value.toLocaleString() + ' ' + LBL_PTS; }
             },
             grid: { left: 10, right: nP > showP ? 130 : 110, top: 10, bottom: 16, containLabel: true },
             xAxis: { type: 'value', splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
@@ -573,7 +584,7 @@ function setPastPageSize(val) {
                 type: 'bar', data: data.slice().reverse(), barMaxWidth: 28,
                 itemStyle: { borderRadius: [0,4,4,0], color: gradH('#f59e0b','rgba(245,158,11,0.18)') },
                 label: { show: true, position: 'right', color: labelColor, fontSize: 11,
-                    formatter: function (p) { return p.value > 0 ? p.value.toLocaleString() + ' pts' : '—'; } },
+                    formatter: function (p) { return p.value > 0 ? p.value.toLocaleString() + ' ' + LBL_PTS : '—'; } },
             }],
             dataZoom: nP > showP ? [{ type: 'slider', yAxisIndex: 0, start: pStart, end: 100,
                 width: 16, right: 4, fillerColor: 'rgba(245,158,11,0.2)', borderColor: axisLine,
@@ -596,7 +607,7 @@ function setPastPageSize(val) {
         cc.setOption({
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
-                formatter: function (p) { return '<b>' + p[0].name + '</b><br/>' + p[0].value.toLocaleString() + ' pts'; }
+                formatter: function (p) { return '<b>' + p[0].name + '</b><br/>' + p[0].value.toLocaleString() + ' ' + LBL_PTS; }
             },
             grid: { left: 10, right: nC > showC ? 130 : 110, top: 10, bottom: 16, containLabel: true },
             xAxis: { type: 'value', splitLine: { lineStyle: { color: gridLine, type: 'dashed' } },
@@ -608,7 +619,7 @@ function setPastPageSize(val) {
                 type: 'bar', data: contractChartData, barMaxWidth: 28,
                 itemStyle: { borderRadius: [0,4,4,0], color: gradH('#8b5cf6','rgba(139,92,246,0.18)') },
                 label: { show: true, position: 'right', color: labelColor, fontSize: 11,
-                    formatter: function (p) { return p.value > 0 ? p.value.toLocaleString() + ' pts' : '—'; } },
+                    formatter: function (p) { return p.value > 0 ? p.value.toLocaleString() + ' ' + LBL_PTS : '—'; } },
             }],
             dataZoom: nC > showC ? [{ type: 'slider', yAxisIndex: 0, start: cStart, end: 100,
                 width: 16, right: 4, fillerColor: 'rgba(139,92,246,0.2)', borderColor: axisLine,

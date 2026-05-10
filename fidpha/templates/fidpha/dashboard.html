@@ -1,8 +1,9 @@
 {% extends "fidpha/base.html" %}
+{% load i18n %}
 
 {% block nav_dashboard %}active{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
-{% block page_breadcrumb %}Dashboard{% endblock %}
+{% block page_title %}{% trans "Dashboard" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Dashboard" %}{% endblock %}
 
 {% block content %}
 
@@ -10,10 +11,10 @@
 <div style="background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); border-radius:10px; padding:12px 16px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
     <div style="display:flex; align-items:center; gap:10px;">
         <span class="material-icons-round" style="color:#f59e0b; font-size:20px;">warning</span>
-        <span style="font-size:0.88rem; color:#f59e0b; font-weight:500;">Your email is not verified. Verify it to unlock Google login and password recovery.</span>
+        <span style="font-size:0.88rem; color:#f59e0b; font-weight:500;">{% trans "Your email is not verified. Verify it to unlock Google login and password recovery." %}</span>
     </div>
     <a href="/portal/verify-pending/?from=button" style="background:#f59e0b; color:#000; padding:6px 14px; border-radius:6px; font-size:0.82rem; font-weight:600; text-decoration:none; white-space:nowrap; display:flex; align-items:center; gap:4px;">
-        <span class="material-icons-round" style="font-size:16px;">verified</span>Verify now
+        <span class="material-icons-round" style="font-size:16px;">verified</span>{% trans "Verify now" %}
     </a>
 </div>
 {% endif %}
@@ -40,9 +41,9 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">emoji_events</span>
         </div>
         <div>
-            <div class="stat-label">Total Points</div>
+            <div class="stat-label">{% trans "Total Points" %}</div>
             <div class="stat-value">{{ total_points_display }}</div>
-            <div class="stat-sub">all-time accumulated</div>
+            <div class="stat-sub">{% trans "all-time accumulated" %}</div>
         </div>
     </div>
 
@@ -51,9 +52,9 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">star</span>
         </div>
         <div>
-            <div class="stat-label">This Month</div>
+            <div class="stat-label">{% trans "This Month" %}</div>
             <div class="stat-value">{{ this_month_pts }}</div>
-            <div class="stat-sub">pts · {{ this_month_units }} unit{{ this_month_units|pluralize }}</div>
+            <div class="stat-sub">pts · {{ this_month_units }} {% blocktrans count count=this_month_units %}unit{% plural %}units{% endblocktrans %}</div>
         </div>
     </div>
 
@@ -62,9 +63,9 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">category</span>
         </div>
         <div>
-            <div class="stat-label">Total Products</div>
+            <div class="stat-label">{% trans "Total Products" %}</div>
             <div class="stat-value">{{ total_products_count }}</div>
-            <div class="stat-sub">unique products with points</div>
+            <div class="stat-sub">{% trans "unique products with points" %}</div>
         </div>
     </div>
 
@@ -73,12 +74,12 @@
             <span class="material-icons-round" style="font-size:22px; color:white;">description</span>
         </div>
         <div style="min-width:0;">
-            <div class="stat-label">Active Contract</div>
+            <div class="stat-label">{% trans "Active Contract" %}</div>
             <div class="stat-value" style="font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                {% if active_contract %}{{ active_contract.title }}{% else %}None{% endif %}
+                {% if active_contract %}{{ active_contract.title }}{% else %}{% trans "None" %}{% endif %}
             </div>
             <div class="stat-sub">
-                {% if active_contract %}ends {{ active_contract.end_date|date:"d M Y" }}{% else %}no active contract{% endif %}
+                {% if active_contract %}{% blocktrans with date=active_contract.end_date|date:"d M Y" %}ends {{ date }}{% endblocktrans %}{% else %}{% trans "no active contract" %}{% endif %}
             </div>
         </div>
     </div>
@@ -91,14 +92,14 @@
     <div class="card">
         <div class="card-header" style="flex-wrap:wrap; gap:6px;">
             <div class="card-header-icon"><span class="material-icons-round">bar_chart</span></div>
-            <div class="card-title" id="monthly-title">Monthly Overview</div>
+            <div class="card-title" id="monthly-title">{% trans "Monthly Overview" %}</div>
             <span id="monthly-drill-info" style="font-size:0.78rem; color:var(--text-secondary); margin-left:4px;"></span>
             <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
                 <button id="monthly-drill-back" onclick="monthlyDrillBack()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> {% trans "Back" %}
                 </button>
                 <select id="barYearSelect" onchange="setBarPeriod(this.value)" style="padding:3px 6px; border-radius:6px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                    <option value="last12">Last 12 months</option>
+                    <option value="last12">{% trans "Last 12 months" %}</option>
                     {% for yr in dash_years_list %}<option value="{{ yr }}">{{ yr }}</option>{% endfor %}
                 </select>
             </div>
@@ -109,8 +110,8 @@
     <div class="card">
         <div class="card-header">
             <div class="card-header-icon"><span class="material-icons-round">grid_view</span></div>
-            <div class="card-title">Top Products</div>
-            <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">all-time · top 30</div>
+            <div class="card-title">{% trans "Top Products" %}</div>
+            <div style="margin-left:auto; font-size:0.78rem; color:var(--text-secondary);">{% trans "all-time · top 30" %}</div>
         </div>
         <div id="productsChart" style="height:260px;"></div>
     </div>
@@ -123,10 +124,10 @@
     <div class="card">
         <div class="card-header" style="flex-wrap:wrap; gap:6px;">
             <div class="card-header-icon"><span class="material-icons-round">show_chart</span></div>
-            <div class="card-title">Cumulative Points</div>
+            <div class="card-title">{% trans "Cumulative Points" %}</div>
             <div style="margin-left:auto;">
                 <select id="cumulYearSelect" onchange="setCumulPeriod(this.value)" style="padding:3px 6px; border-radius:6px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                    <option value="last12">Last 12 months</option>
+                    <option value="last12">{% trans "Last 12 months" %}</option>
                     {% for yr in dash_years_list %}<option value="{{ yr }}">{{ yr }}</option>{% endfor %}
                 </select>
             </div>
@@ -137,14 +138,14 @@
     <div class="card">
         <div class="card-header" style="flex-wrap:wrap; gap:6px;">
             <div class="card-header-icon"><span class="material-icons-round">upload_file</span></div>
-            <div class="card-title" id="submit-title">Submission Frequency</div>
+            <div class="card-title" id="submit-title">{% trans "Submission Frequency" %}</div>
             <span id="submit-drill-info" style="font-size:0.78rem; color:var(--text-secondary); margin-left:4px;"></span>
             <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
                 <button id="submit-drill-back" onclick="submitDrillBack()" style="display:none; align-items:center; gap:3px; padding:3px 8px; border-radius:6px; border:1px solid var(--card-border); background:transparent; color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> {% trans "Back" %}
                 </button>
                 <select id="submitYearSelect" onchange="setSubmitPeriod(this.value)" style="padding:3px 6px; border-radius:6px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.75rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                    <option value="last12">Last 12 months</option>
+                    <option value="last12">{% trans "Last 12 months" %}</option>
                     {% for yr in dash_years_list %}<option value="{{ yr }}">{{ yr }}</option>{% endfor %}
                 </select>
             </div>
@@ -158,20 +159,20 @@
 <div class="card">
     <div class="card-header">
         <div class="card-header-icon"><span class="material-icons-round">receipt_long</span></div>
-        <div class="card-title">Recent Sales</div>
-        <a href="/portal/sales/" style="margin-left:auto; font-size:0.82rem; color:var(--accent); text-decoration:none; font-weight:500;">View all →</a>
+        <div class="card-title">{% trans "Recent Accepted" %}</div>
+        <a href="/portal/sales/" style="margin-left:auto; font-size:0.82rem; color:var(--accent); text-decoration:none; font-weight:500;">{% trans "View all" %} →</a>
     </div>
     {% if recent_sales %}
     <table class="table">
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Contract</th>
-                <th>Product</th>
-                <th style="text-align:center;">Qty</th>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Contract" %}</th>
+                <th>{% trans "Product" %}</th>
+                <th style="text-align:center;">{% trans "Qty" %}</th>
                 <th style="text-align:center;">PPV</th>
-                <th style="text-align:center;">Points</th>
-                <th style="text-align:center;">Status</th>
+                <th style="text-align:center;">{% trans "Points" %}</th>
+                <th style="text-align:center;">{% trans "Status" %}</th>
             </tr>
         </thead>
         <tbody>
@@ -190,16 +191,16 @@
                     {% else %}<span style="opacity:0.35;">—</span>{% endif %}
                 </td>
                 <td style="text-align:center;">
-                    {% if sale.status == "accepted" %}<span class="badge badge-success">Accepted</span>
-                    {% elif sale.status == "rejected" %}<span class="badge badge-danger">Rejected</span>
-                    {% else %}<span class="badge badge-warning">Pending</span>{% endif %}
+                    {% if sale.status == "accepted" %}<span class="badge badge-success">{% trans "Accepted" %}</span>
+                    {% elif sale.status == "rejected" %}<span class="badge badge-danger">{% trans "Rejected" %}</span>
+                    {% else %}<span class="badge badge-warning">{% trans "Pending" %}</span>{% endif %}
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p style="text-align:center; color:var(--text-secondary); padding:24px 0; font-size:0.88rem;">No sales recorded yet.</p>
+    <p style="text-align:center; color:var(--text-secondary); padding:24px 0; font-size:0.88rem;">{% trans "No recorded yet." %}</p>
     {% endif %}
 </div>
 
@@ -216,6 +217,14 @@
     var bgColor    = isDark ? '#0f172a' : '#f1f5f9';
     var palette    = ['#1b679b','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#14b8a6','#a855f7',
                       '#3b82f6','#84cc16','#f43f5e','#0ea5e9','#d946ef','#fb923c','#34d399','#fbbf24','#818cf8','#e879f9'];
+
+    // ── i18n labels ──
+    var LBL_POINTS   = '{% trans "Points" %}';
+    var LBL_PRODUCTS = '{% trans "Products" %}';
+    var LBL_DAY      = '{% trans "Day" %}';
+    var LBL_BATCH    = '{% trans "batch" %}';
+    var LBL_BATCHES  = '{% trans "batches" %}';
+    var LBL_NO_DATA  = '{% trans "No accepted data yet" %}';
 
     // ── Static data ──
     var last12 = {
@@ -285,13 +294,13 @@
                 formatter: function(params) {
                     var s = '<b>' + params[0].axisValue + '</b><br/>';
                     params.forEach(function(p) {
-                        var unit = p.seriesName === 'Points' ? ' pts' : ' products';
+                        var unit = p.seriesName === LBL_POINTS ? ' pts' : ' ' + LBL_PRODUCTS.toLowerCase();
                         s += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>' + unit + '<br/>';
                     });
                     return s;
                 }
             },
-            legend: { data: ['Points', 'Products'], top: 2, textStyle: { color: labelColor, fontSize: 10 } },
+            legend: { data: [LBL_POINTS, LBL_PRODUCTS], top: 2, textStyle: { color: labelColor, fontSize: 10 } },
             grid: { left: 10, right: 10, top: 32, bottom: 52, containLabel: true },
             xAxis: xCat(data.labels),
             yAxis: [
@@ -302,10 +311,10 @@
                   minInterval: 1 },
             ],
             series: [
-                { name: 'Points',   type: 'bar', yAxisIndex: 0, data: data.pts, barMaxWidth: 22,
+                { name: LBL_POINTS, type: 'bar', yAxisIndex: 0, data: data.pts, barMaxWidth: 22,
                   itemStyle: { borderRadius: [4,4,0,0], color: gradV('#3b9fd4','rgba(27,103,155,0.18)') },
                   emphasis: { itemStyle: { color: gradV('#60c0f0','rgba(27,103,155,0.38)') } } },
-                { name: 'Products', type: 'bar', yAxisIndex: 1, data: prods, barMaxWidth: 18,
+                { name: LBL_PRODUCTS, type: 'bar', yAxisIndex: 1, data: prods, barMaxWidth: 18,
                   itemStyle: { borderRadius: [3,3,0,0], color: '#22c55e' },
                   emphasis: { itemStyle: { color: '#4ade80' } } },
             ],
@@ -316,18 +325,31 @@
             backgroundColor: 'transparent',
             tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
                 formatter: function(params) {
-                    return '<b>Day ' + params[0].axisValue + '</b><br/>' +
-                           params[0].marker + ' Points: <b>' + params[0].value.toLocaleString() + '</b> pts<br/>';
+                    var s = '<b>' + LBL_DAY + ' ' + params[0].axisValue + '</b><br/>';
+                    params.forEach(function(p) {
+                        var unit = p.seriesName === LBL_POINTS ? ' pts' : ' ' + LBL_PRODUCTS.toLowerCase();
+                        s += p.marker + ' ' + p.seriesName + ': <b>' + p.value.toLocaleString() + '</b>' + unit + '<br/>';
+                    });
+                    return s;
                 }
             },
-            legend: { data: ['Points'], top: 2, textStyle: { color: labelColor, fontSize: 10 } },
+            legend: { data: [LBL_POINTS, LBL_PRODUCTS], top: 2, textStyle: { color: labelColor, fontSize: 10 } },
             grid: { left: 10, right: 10, top: 32, bottom: 52, containLabel: true },
             xAxis: xCat(daysArray(dd.n), 0),
-            yAxis: [ yVal({ name: 'Points', nameTextStyle: { color: labelColor, fontSize: 9 } }) ],
+            yAxis: [
+                yVal({ name: 'Points', nameTextStyle: { color: labelColor, fontSize: 9 } }),
+                { type: 'value', name: 'Products', splitLine: { show: false },
+                  nameTextStyle: { color: labelColor, fontSize: 9 },
+                  axisLabel: { color: labelColor, fontSize: 9, formatter: function(v){ return v; } },
+                  minInterval: 1 },
+            ],
             series: [
-                { name: 'Points', type: 'bar', yAxisIndex: 0, data: dd.pts, barMaxWidth: 26,
+                { name: LBL_POINTS, type: 'bar', yAxisIndex: 0, data: dd.pts,   barMaxWidth: 22,
                   itemStyle: { borderRadius: [4,4,0,0], color: gradV('#3b9fd4','rgba(27,103,155,0.18)') },
                   emphasis: { itemStyle: { color: gradV('#60c0f0','rgba(27,103,155,0.38)') } } },
+                { name: LBL_PRODUCTS, type: 'bar', yAxisIndex: 1, data: dd.prods, barMaxWidth: 18,
+                  itemStyle: { borderRadius: [3,3,0,0], color: '#22c55e' },
+                  emphasis: { itemStyle: { color: '#4ade80' } } },
             ],
         };
     }
@@ -356,28 +378,41 @@
         barChartInst.setOption(buildMonthlyOpt(getBarData()), true);
     };
 
-    // ── 2. Top Products Treemap (unchanged) ──
-    var productTreeData = productLabels.length
-        ? productLabels.map(function (l, i) { return { name: l, value: productData[i] }; })
-        : [{ name: 'No data', value: 1 }];
-    mkChart('productsChart', {
-        backgroundColor: 'transparent', color: palette,
-        tooltip: { formatter: function (p) { return '<b>' + p.name + '</b><br/>' + p.value.toLocaleString() + ' pts'; } },
-        series: [{
-            type: 'treemap', data: productTreeData, roam: false, breadcrumb: { show: false }, visibleMin: 50,
-            label: {
-                show: true, position: 'inside',
-                formatter: function (p) { return '{nm|' + p.name + '}\n{val|' + p.value.toLocaleString() + ' pts}'; },
-                rich: {
-                    nm:  { fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.92)', fontFamily: 'Inter, sans-serif', overflow: 'truncate' },
-                    val: { fontSize: 9,  color: 'rgba(255,255,255,0.70)', fontFamily: 'Inter, sans-serif' },
-                },
-            },
-            levels: [{ itemStyle: { borderWidth: 3, borderColor: bgColor, gapWidth: 3 } }],
-            itemStyle: { borderWidth: 0 },
-            emphasis: { itemStyle: { shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.4)' } },
-        }],
-    });
+    // ── 2. Top Products Treemap ──
+    var productsEl = document.getElementById('productsChart');
+    if (productsEl) {
+        if (productLabels.length) {
+            mkChart('productsChart', {
+                backgroundColor: 'transparent', color: palette,
+                tooltip: { formatter: function (p) { return '<b>' + p.name + '</b><br/>' + p.value.toLocaleString() + ' pts'; } },
+                series: [{
+                    type: 'treemap',
+                    data: productLabels.map(function (l, i) { return { name: l, value: productData[i] }; }),
+                    roam: false, breadcrumb: { show: false }, visibleMin: 50,
+                    label: {
+                        show: true, position: 'inside',
+                        formatter: function (p) { return '{nm|' + p.name + '}\n{val|' + p.value.toLocaleString() + ' pts}'; },
+                        rich: {
+                            nm:  { fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.92)', fontFamily: 'Inter, sans-serif', overflow: 'truncate' },
+                            val: { fontSize: 9,  color: 'rgba(255,255,255,0.70)', fontFamily: 'Inter, sans-serif' },
+                        },
+                    },
+                    levels: [{ itemStyle: { borderWidth: 3, borderColor: bgColor, gapWidth: 3 } }],
+                    itemStyle: { borderWidth: 0 },
+                    emphasis: { itemStyle: { shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.4)' } },
+                }],
+            });
+        } else {
+            productsEl.style.display = 'flex';
+            productsEl.style.flexDirection = 'column';
+            productsEl.style.alignItems = 'center';
+            productsEl.style.justifyContent = 'center';
+            productsEl.style.gap = '8px';
+            productsEl.innerHTML =
+                '<span class="material-icons-round" style="font-size:36px;opacity:0.25;color:var(--text-secondary);">grid_view</span>' +
+                '<span style="font-size:0.83rem;color:var(--text-secondary);opacity:0.6;">' + LBL_NO_DATA + '</span>';
+        }
+    }
 
     // ── 3. Cumulative Points ──
     function buildCumulOpt(data) {
@@ -409,7 +444,7 @@
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
             formatter: function (p) {
                 var v = p[0].value;
-                return '<b>' + p[0].axisValue + '</b><br/>' + p[0].marker + ' ' + v + (v === 1 ? ' batch' : ' batches');
+                return '<b>' + p[0].axisValue + '</b><br/>' + p[0].marker + ' ' + v + (v === 1 ? ' ' + LBL_BATCH : ' ' + LBL_BATCHES);
             }
         },
         grid: grid12, xAxis: xCat(last12.labels), yAxis: submitYAxis,

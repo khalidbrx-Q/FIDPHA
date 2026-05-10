@@ -23,11 +23,105 @@
     </div>
     <span id="prodCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ products|length }} product{{ products|length|pluralize }}</span>
     <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear</button>
-    {% if perms.fidpha.add_product %}
-    <a href="{% url 'control:products_create' %}" class="btn btn-primary" style="margin-left:auto;">
-        <span class="material-icons-round">add</span> New Product
-    </a>
-    {% endif %}
+    <div style="margin-left:auto; display:flex; gap:8px;">
+        {% if perms.fidpha.view_product %}
+        <div class="export-dropdown" id="exportDropdown">
+            <button class="btn btn-secondary" onclick="toggleExportMenu(event)">
+                <span class="material-icons-round">download</span> Export
+                <span class="material-icons-round" style="font-size:16px; margin-left:2px;">arrow_drop_down</span>
+            </button>
+            <div class="export-menu" id="exportMenu" style="display:none;">
+                <a href="{% url 'control:products_export' %}?format=csv" class="export-menu-item">
+                    <span class="material-icons-round">description</span> CSV
+                </a>
+                <a href="{% url 'control:products_export' %}?format=xlsx" class="export-menu-item">
+                    <span class="material-icons-round">table_chart</span> Excel (.xlsx)
+                </a>
+                <a href="{% url 'control:products_export' %}?format=json" class="export-menu-item">
+                    <span class="material-icons-round">data_object</span> JSON
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        {% if perms.fidpha.add_product %}
+        <button class="btn btn-secondary" onclick="openCsvModal()">
+            <span class="material-icons-round">upload_file</span> Import
+        </button>
+        <a href="{% url 'control:products_create' %}" class="btn btn-primary">
+            <span class="material-icons-round">add</span> New Product
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- CSV Import Modal -->
+<div id="csvModal" class="modal-backdrop" style="display:none;" onclick="closeCsvModal()">
+    <div class="modal-box" onclick="event.stopPropagation()" style="max-width:840px; width:95%;">
+
+        <!-- Step 1: file picker -->
+        <div id="csvStep1">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                <span class="material-icons-round" style="font-size:28px; color:var(--accent);">upload_file</span>
+                <div>
+                    <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">Import Products from CSV</div>
+                    <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:3px;">Accepted: <code>.csv</code>, <code>.xlsx</code>, <code>.xls</code>, <code>.json</code> — required fields: <code>code</code>, <code>designation</code>, <code>ppv</code>, <code>status</code></div>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
+                <input type="file" id="csvFileInput" accept=".csv,.xlsx,.xls,.json" onchange="handleCsvFile(event)" style="display:none;">
+                <label for="csvFileInput" class="btn btn-secondary" style="cursor:pointer;">
+                    <span class="material-icons-round">folder_open</span> Choose File
+                </label>
+                <span id="csvFileName" style="font-size:0.83rem; color:var(--text-secondary);">No file chosen</span>
+            </div>
+            <div id="csvParseError" style="display:none; color:#ef4444; font-size:0.82rem; margin-top:10px;"></div>
+        </div>
+
+        <!-- Step 2: editable preview -->
+        <div id="csvStep2" style="display:none;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary);">
+                    Preview — <span id="csvRowCount">0</span> product<span id="csvRowPlural">s</span>
+                </div>
+                <button onclick="csvBackToStep1()" style="font-size:0.78rem; background:none; border:none; color:var(--accent); cursor:pointer; font-family:'Inter',sans-serif; padding:0;">← Back</button>
+            </div>
+            <div style="max-height:360px; overflow-y:auto; border:1px solid var(--card-border); border-radius:8px;">
+                <table style="width:100%; border-collapse:collapse;" id="csvPreviewTable">
+                    <thead>
+                        <tr>
+                            <th class="csv-th">Code</th>
+                            <th class="csv-th">Designation</th>
+                            <th class="csv-th" style="width:90px;">PPV</th>
+                            <th class="csv-th" style="width:100px;">Status</th>
+                            <th id="csvReasonTh" class="csv-th" style="display:none; color:#f59e0b;">Skip reason</th>
+                            <th class="csv-th" style="width:36px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="csvPreviewBody"></tbody>
+                </table>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:16px; align-items:center;">
+                <button class="btn btn-primary" id="csvConfirmBtn" onclick="submitCsvImport()">
+                    <span class="material-icons-round">upload</span> Import <span id="csvConfirmCount">0</span> products
+                </button>
+                <button class="btn btn-secondary" onclick="closeCsvModal()">Cancel</button>
+                <span id="csvSubmitError" style="display:none; color:#ef4444; font-size:0.82rem;"></span>
+            </div>
+        </div>
+
+        <!-- Step 3: result -->
+        <div id="csvStep3" style="display:none;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                <span class="material-icons-round" style="font-size:28px; color:#22c55e;">check_circle</span>
+                <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">Import Complete</div>
+            </div>
+            <div id="csvResultBody"></div>
+            <div style="margin-top:16px;">
+                <button class="btn btn-primary" onclick="closeCsvModal(); location.reload();">Done</button>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <div class="card" style="padding:0; overflow:hidden;">
@@ -158,12 +252,334 @@
         color:var(--text-secondary); cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.15s;
     }
     .reset-btn:hover { border-color:#ef4444; color:#ef4444; }
+
+    /* Export dropdown */
+    .export-dropdown { position:relative; }
+    .export-menu {
+        position:absolute; top:calc(100% + 4px); right:0;
+        background:var(--card-bg); border:1px solid var(--card-border);
+        border-radius:8px; padding:4px; z-index:200;
+        box-shadow:0 8px 24px rgba(0,0,0,0.3); min-width:160px;
+    }
+    .export-menu-item {
+        display:flex; align-items:center; gap:8px;
+        padding:8px 12px; border-radius:6px; font-size:0.85rem;
+        color:var(--text-primary); text-decoration:none; white-space:nowrap;
+    }
+    .export-menu-item:hover { background:var(--sidebar-hover); }
+    .export-menu-item .material-icons-round { font-size:18px; color:var(--text-secondary); }
+
+    /* CSV import modal */
+    .modal-backdrop {
+        position:fixed; inset:0; background:rgba(0,0,0,0.5);
+        display:flex; align-items:center; justify-content:center; z-index:1000;
+    }
+    .modal-box {
+        background:var(--card-bg); border:1px solid var(--card-border);
+        border-radius:12px; padding:24px;
+        box-shadow:0 20px 60px rgba(0,0,0,0.4);
+    }
+    .csv-th {
+        text-align:left; font-size:0.73rem; font-weight:600;
+        color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px;
+        padding:8px 10px; border-bottom:1px solid var(--card-border);
+        background:var(--card-bg); position:sticky; top:0; z-index:1;
+    }
+    .csv-td { padding:5px 4px; border-bottom:1px solid var(--card-border); }
+    .csv-input {
+        width:100%; padding:4px 6px; font-size:0.83rem; font-family:'Inter',sans-serif;
+        background:var(--input-bg, var(--sidebar-hover)); border:1px solid var(--card-border);
+        border-radius:4px; color:var(--text-primary); box-sizing:border-box;
+    }
+    .csv-input:focus { outline:none; border-color:var(--accent); }
+    .csv-remove-btn {
+        background:none; border:none; cursor:pointer; color:var(--text-secondary);
+        padding:2px; display:flex; align-items:center; transition:color 0.15s;
+    }
+    .csv-remove-btn:hover { color:#ef4444; }
 </style>
 {% endblock %}
 
 
 {% block extra_js %}
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
+    const CSRF = "{{ csrf_token }}";
+    const IMPORT_URL = "{% url 'control:products_import' %}";
+    let pendingRetryRows = [];
+    let retryMode = false;
+
+    /* ── CSV Import Modal ─────────────────────────────────── */
+
+    function toggleExportMenu(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('exportMenu');
+        menu.style.display = menu.style.display === 'none' ? '' : 'none';
+    }
+    document.addEventListener('click', function() {
+        const menu = document.getElementById('exportMenu');
+        if (menu) menu.style.display = 'none';
+    });
+
+    function openCsvModal() {
+        document.getElementById('csvModal').style.display = 'flex';
+    }
+
+    function closeCsvModal() {
+        document.getElementById('csvModal').style.display = 'none';
+        document.getElementById('csvStep1').style.display = '';
+        document.getElementById('csvStep2').style.display = 'none';
+        document.getElementById('csvStep3').style.display = 'none';
+        document.getElementById('csvParseError').style.display = 'none';
+        document.getElementById('csvFileInput').value = '';
+        document.getElementById('csvFileName').textContent = 'No file chosen';
+        document.getElementById('csvPreviewBody').innerHTML = '';
+        document.getElementById('csvConfirmBtn').disabled = false;
+        document.getElementById('csvSubmitError').style.display = 'none';
+        retryMode = false;
+        document.getElementById('csvReasonTh').style.display = 'none';
+    }
+
+    function csvBackToStep1() {
+        document.getElementById('csvStep2').style.display = 'none';
+        document.getElementById('csvStep1').style.display = '';
+        document.getElementById('csvFileInput').value = '';
+        document.getElementById('csvFileName').textContent = 'No file chosen';
+    }
+
+    function parseCsvText(text) {
+        const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim() !== '');
+        if (lines.length < 2) return { error: 'CSV must have a header row and at least one data row.' };
+
+        function parseLine(line) {
+            const out = []; let cur = '', inQ = false;
+            for (let i = 0; i < line.length; i++) {
+                const c = line[i];
+                if (inQ) {
+                    if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+                    else if (c === '"') inQ = false;
+                    else cur += c;
+                } else {
+                    if (c === '"') inQ = true;
+                    else if (c === ',') { out.push(cur.trim()); cur = ''; }
+                    else cur += c;
+                }
+            }
+            out.push(cur.trim());
+            return out;
+        }
+
+        const hdrs = parseLine(lines[0]).map(h => h.toLowerCase().replace(/['"]/g, '').trim());
+        const ci = { code: hdrs.indexOf('code'), desig: hdrs.indexOf('designation'), ppv: hdrs.indexOf('ppv'), st: hdrs.indexOf('status') };
+        if (ci.code < 0 || ci.desig < 0 || ci.ppv < 0 || ci.st < 0)
+            return { error: 'CSV must have columns: code, designation, ppv, status.' };
+
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+            const c = parseLine(lines[i]);
+            rows.push({
+                code:        (c[ci.code]  || '').trim(),
+                designation: (c[ci.desig] || '').trim(),
+                ppv:         (c[ci.ppv]   || '').trim(),
+                status:      (c[ci.st] || '').trim().toLowerCase(),
+            });
+        }
+        return { rows };
+    }
+
+    function parseJSON(text) {
+        let data;
+        try { data = JSON.parse(text); } catch(e) {
+            return { error: 'Invalid JSON — could not parse the file.' };
+        }
+        if (!Array.isArray(data)) return { error: 'JSON must be an array of objects: [{code, designation, ppv, status}, ...]' };
+        if (data.length === 0) return { error: 'JSON array is empty.' };
+        const rows = data.map(obj => {
+            const lookup = {};
+            Object.keys(obj).forEach(k => { lookup[k.toLowerCase()] = obj[k]; });
+            return {
+                code:        String(lookup['code']        ?? '').trim(),
+                designation: String(lookup['designation'] ?? '').trim(),
+                ppv:         String(lookup['ppv']         ?? '').trim(),
+                status:      String(lookup['status']      ?? '').trim().toLowerCase(),
+            };
+        });
+        const first = rows[0];
+        if (!first.code && !first.designation && !first.ppv && !first.status)
+            return { error: 'JSON objects must have keys: code, designation, ppv, status.' };
+        return { rows };
+    }
+
+    function parseExcel(arrayBuffer) {
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (data.length < 2) return { error: 'File must have a header row and at least one data row.' };
+        const hdrs = data[0].map(h => String(h).toLowerCase().trim());
+        const ci = { code: hdrs.indexOf('code'), desig: hdrs.indexOf('designation'), ppv: hdrs.indexOf('ppv'), st: hdrs.indexOf('status') };
+        if (ci.code < 0 || ci.desig < 0 || ci.ppv < 0 || ci.st < 0)
+            return { error: 'File must have columns: code, designation, ppv, status.' };
+        const rows = [];
+        for (let i = 1; i < data.length; i++) {
+            const c = data[i];
+            if (c.every(cell => cell === '' || cell === null || cell === undefined)) continue;
+            rows.push({
+                code:        String(c[ci.code]  || '').trim(),
+                designation: String(c[ci.desig] || '').trim(),
+                ppv:         String(c[ci.ppv]   || '').trim(),
+                status:      String(c[ci.st]    || '').trim().toLowerCase(),
+            });
+        }
+        return { rows };
+    }
+
+    function handleCsvFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        document.getElementById('csvFileName').textContent = file.name;
+
+        const ext = file.name.toLowerCase().split('.').pop();
+        const errEl = document.getElementById('csvParseError');
+
+        if (!['csv', 'xlsx', 'xls', 'json'].includes(ext)) {
+            errEl.textContent = `"${file.name}" is not supported. Please upload a .csv, .xlsx, .xls, or .json file.`;
+            errEl.style.display = 'block';
+            document.getElementById('csvFileInput').value = '';
+            document.getElementById('csvFileName').textContent = 'No file chosen';
+            return;
+        }
+        errEl.style.display = 'none';
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            let result;
+            if (ext === 'csv')  result = parseCsvText(e.target.result);
+            else if (ext === 'json') result = parseJSON(e.target.result);
+            else result = parseExcel(e.target.result);
+            if (result.error) {
+                errEl.textContent = result.error;
+                errEl.style.display = 'block';
+                return;
+            }
+            buildPreview(result.rows);
+        };
+        if (['csv', 'json'].includes(ext)) reader.readAsText(file);
+        else reader.readAsArrayBuffer(file);
+    }
+
+    function buildPreview(rows) {
+        retryMode = rows.some(r => r.reason);
+        document.getElementById('csvReasonTh').style.display = retryMode ? '' : 'none';
+        const tbody = document.getElementById('csvPreviewBody');
+        tbody.innerHTML = '';
+        rows.forEach(row => tbody.appendChild(buildRow(row)));
+        updateCsvCount();
+        document.getElementById('csvStep1').style.display = 'none';
+        document.getElementById('csvStep2').style.display = '';
+    }
+
+    function buildRow(row) {
+        const tr = document.createElement('tr');
+        const reasonCell = retryMode
+            ? `<td class="csv-td" style="font-size:0.78rem; color:#f59e0b; white-space:nowrap;">${esc(row.reason || '')}</td>`
+            : '';
+        tr.innerHTML =
+            `<td class="csv-td"><input class="csv-input" value="${esc(row.code)}"></td>` +
+            `<td class="csv-td"><input class="csv-input" value="${esc(row.designation)}"></td>` +
+            `<td class="csv-td"><input class="csv-input" value="${esc(row.ppv)}" style="text-align:right;"></td>` +
+            `<td class="csv-td">
+                <select class="csv-input">
+                    <option value="active"${row.status==='active'?' selected':''}>Active</option>
+                    <option value="inactive"${row.status==='inactive'?' selected':''}>Inactive</option>
+                </select>
+             </td>` +
+            reasonCell +
+            `<td class="csv-td" style="text-align:center;">
+                <button class="csv-remove-btn" onclick="removeRow(this)" title="Remove row">
+                    <span class="material-icons-round" style="font-size:18px;">close</span>
+                </button>
+             </td>`;
+        return tr;
+    }
+
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+    function removeRow(btn) {
+        btn.closest('tr').remove();
+        updateCsvCount();
+    }
+
+    function updateCsvCount() {
+        const n = document.getElementById('csvPreviewBody').querySelectorAll('tr').length;
+        document.getElementById('csvRowCount').textContent = n;
+        document.getElementById('csvRowPlural').textContent = n === 1 ? '' : 's';
+        document.getElementById('csvConfirmCount').textContent = n;
+    }
+
+    function submitCsvImport() {
+        const rows = [];
+        document.querySelectorAll('#csvPreviewBody tr').forEach(tr => {
+            const inputs = tr.querySelectorAll('input, select');
+            rows.push({
+                code:        inputs[0].value.trim(),
+                designation: inputs[1].value.trim(),
+                ppv:         inputs[2].value.trim(),
+                status:      inputs[3].value,
+            });
+        });
+        if (!rows.length) return;
+
+        const btn = document.getElementById('csvConfirmBtn');
+        const errEl = document.getElementById('csvSubmitError');
+        btn.disabled = true;
+        errEl.style.display = 'none';
+
+        fetch(IMPORT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ rows }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            let html = `<p style="font-size:0.9rem; color:var(--text-primary); margin-bottom:12px;">
+                <strong style="color:#22c55e;">${data.created}</strong> product${data.created === 1 ? '' : 's'} created successfully.
+            </p>`;
+            if (data.skipped && data.skipped.length) {
+                pendingRetryRows = data.skipped.map(s => ({
+                    code: s.code, designation: s.designation, ppv: s.ppv, status: s.status, reason: s.reason,
+                }));
+                html += `<p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px;">Skipped ${data.skipped.length} row${data.skipped.length === 1 ? '' : 's'}:</p>`;
+                html += '<ul style="font-size:0.82rem; color:var(--text-secondary); margin:0 0 16px; padding-left:18px;">';
+                data.skipped.forEach(s => {
+                    html += `<li style="margin-bottom:4px;"><span class="code-chip">${s.code || '—'}</span> — ${s.reason}</li>`;
+                });
+                html += '</ul>';
+                html += `<button class="btn btn-secondary" onclick="retrySkipped()">
+                    <span class="material-icons-round">edit</span> Fix &amp; retry ${data.skipped.length} skipped row${data.skipped.length === 1 ? '' : 's'}
+                </button>`;
+            } else {
+                pendingRetryRows = [];
+            }
+            document.getElementById('csvResultBody').innerHTML = html;
+            document.getElementById('csvStep2').style.display = 'none';
+            document.getElementById('csvStep3').style.display = '';
+        })
+        .catch(() => {
+            btn.disabled = false;
+            errEl.textContent = 'Import failed. Please try again.';
+            errEl.style.display = 'inline';
+        });
+    }
+
+    function retrySkipped() {
+        document.getElementById('csvStep3').style.display = 'none';
+        document.getElementById('csvConfirmBtn').disabled = false;
+        document.getElementById('csvSubmitError').style.display = 'none';
+        buildPreview(pendingRetryRows);
+    }
+
+    /* ── Product filter / search ──────────────────────────── */
+
     let fStatus = 'all';
     const prodCountEl   = document.getElementById('prodCount');
     const PROD_TOTAL    = prodCountEl.textContent;
