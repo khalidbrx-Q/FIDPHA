@@ -1,319 +1,60 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: #f1f5f9;
-  color: #1e293b;
-  min-height: 100vh;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
 }
 
-/* ── Layout ── */
-.layout {
-  display: flex;
-  min-height: 100vh;
-}
-
-.sidebar {
-  width: 220px;
-  flex-shrink: 0;
-  background: #1e293b;
-  display: flex;
-  flex-direction: column;
-  padding: 24px 0;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-}
-
-.sidebar-brand {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: #f8fafc;
-  letter-spacing: .08em;
-  padding: 0 20px 28px;
-  border-bottom: 1px solid #334155;
-  margin-bottom: 12px;
-}
-
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 2px;
-  padding: 0 10px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  color: #94a3b8;
-  text-decoration: none;
-  font-size: .88rem;
-  font-weight: 500;
-  transition: background .15s, color .15s;
-}
-
-.nav-item:hover  { background: #334155; color: #f1f5f9; }
-.nav-item.active { background: #1d4ed8; color: #fff; }
-
-.nav-icon { font-size: 1rem; width: 20px; text-align: center; }
-
-.sidebar-logout {
-  margin: 12px 10px 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: .88rem;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-  transition: background .15s, color .15s;
-}
-
-.sidebar-logout:hover { background: #334155; color: #f87171; }
-
-.main-content {
-  flex: 1;
-  min-width: 0;
-  padding: 32px 28px;
-}
-
-.dashboard {
-  max-width: 1100px;
-}
-
-.dashboard h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 24px;
-  color: #0f172a;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-@media (max-width: 600px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-.stat-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.08);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1d4ed8;
-}
-
-.stat-label {
-  font-size: .8rem;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-}
-
-/* ── Contracts ── */
-.contracts-page h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 24px;
-  color: #0f172a;
-}
-
-.contracts-table-wrap {
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.08);
-  overflow-x: auto;
-}
-
-.contracts-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: .875rem;
-}
-
-.contracts-table th {
-  text-align: left;
-  padding: 12px 16px;
-  font-size: .7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: #64748b;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.contracts-table td {
-  padding: 13px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
-}
-
-.contracts-table tbody tr:last-child td { border-bottom: none; }
-.contracts-table tbody tr:hover { background: #f8fafc; }
-.contracts-table tr.row-active td { background: #eff6ff; }
-
-.td-title  { font-weight: 600; color: #1e293b; }
-.td-points { font-weight: 700; color: #1d4ed8; }
-
-.badge-status {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: .7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-.badge-status.active   { background: #dcfce7; color: #16a34a; }
-.badge-status.inactive { background: #f1f5f9; color: #64748b; }
-
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 20px;
-  font-size: .85rem;
-  color: #64748b;
-}
-
-.pagination button {
-  padding: 6px 14px;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  cursor: pointer;
-  font-size: .85rem;
-  color: #334155;
-}
-.pagination button:hover:not(:disabled) { background: #f1f5f9; }
-.pagination button:disabled { opacity: .4; cursor: default; }
-
-/* ── Points ── */
-.points-page h1,
-.pharmacy-page h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 24px;
-  color: #0f172a;
-}
-
-.filters-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  gap: 4px;
-}
-
-.filter-btn {
-  padding: 6px 14px;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  color: #64748b;
-  font-size: .82rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all .15s;
-}
-.filter-btn:hover  { background: #f1f5f9; }
-.filter-btn.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
-
-.filter-input {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  font-size: .85rem;
-  color: #1e293b;
-  outline: none;
-  min-width: 200px;
-}
-.filter-input:focus { border-color: #1d4ed8; }
-
-.table-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 16px;
-  font-size: .82rem;
-  color: #64748b;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-/* ── Pharmacy ── */
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-}
-
-.info-card {
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.08);
-  overflow: hidden;
-}
-
-.info-card-title {
-  padding: 14px 20px;
-  font-size: .75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: #64748b;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.info-rows { display: flex; flex-direction: column; }
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 11px 20px;
-  border-bottom: 1px solid #f8fafc;
-  font-size: .875rem;
-}
-.info-row:last-child { border-bottom: none; }
-
-.info-label { color: #94a3b8; font-size: .8rem; }
-.info-value { color: #1e293b; font-weight: 500; }
-
-.page-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 60vh;
-  font-size: 1rem;
-  color: #64748b;
-}
-
-.page-state.error { color: #dc2626; }
-
-#root {
-  display: flex;
-  min-height: 100vh;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  }
 }
