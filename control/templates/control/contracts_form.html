@@ -1066,7 +1066,8 @@
         const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim() !== '');
         if (lines.length < 2) return { error: 'CSV must have a header row and at least one data row.' };
 
-        const sep = lines[0].includes(';') ? ';' : ',';
+        const h = lines[0].replace(/"[^"]*"/g, '');
+        const sep = (h.match(/;/g)||[]).length >= (h.match(/,/g)||[]).length ? ';' : ',';
 
         function parseLine(line) {
             const out = []; let cur = '', inQ = false;
