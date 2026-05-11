@@ -103,7 +103,7 @@ The platform has three user-facing layers:
 
 ```bash
 git clone https://github.com/khalidbrx-Q/FIDPHA.git
-cd FIDPHA/FIDPHA001
+cd FIDPHA
 python -m venv .venv
 
 # Windows
@@ -116,7 +116,7 @@ pip install -r requirements.txt
 
 ### 4.3 Environment Variables
 
-Create a `.env` file in `FIDPHA001/` (same folder as `manage.py`):
+Create a `.env` file in `FIDPHA/` (same folder as `manage.py`):
 
 ```
 SECRET_KEY=your-secret-key
@@ -434,7 +434,7 @@ Then go to **Web tab → Reload**.
 
 ```bash
 git clone https://github.com/khalidbrx-Q/FIDPHA.git
-cd FIDPHA/FIDPHA001
+cd FIDPHA
 mkvirtualenv fidpha --python=python3.12
 pip install -r requirements.txt
 python manage.py migrate
@@ -449,7 +449,7 @@ Configure the web app (Web tab → Manual configuration → Python 3.12):
 ```python
 import sys, os
 
-path = '/home/khalidbrx/FIDPHA/FIDPHA001'
+path = '/home/khalidbrx/FIDPHA'
 if path not in sys.path:
     sys.path.insert(0, path)
 
@@ -463,7 +463,7 @@ application = get_wsgi_application()
 
 | URL | Directory |
 |---|---|
-| `/static/` | `/home/khalidbrx/FIDPHA/FIDPHA001/staticfiles` |
+| `/static/` | `/home/khalidbrx/FIDPHA/staticfiles` |
 
 **Virtualenv:** `/home/khalidbrx/.virtualenvs/fidpha`
 
@@ -484,58 +484,57 @@ In control panel → Social Apps → update domain and OAuth credentials.
 ## 11. Project Structure
 
 ```
-FIDPHA001/                          ← git root
+FIDPHA/                             ← git root (manage.py is here)
 ├── CLAUDE.md                       ← development rules and decisions
 ├── ARCHITECTURE.md                 ← deep technical reference
-└── FIDPHA001/                      ← Django source
-    ├── manage.py
-    ├── db.sqlite3                  ← SQLite database (dev only, gitignored)
-    ├── requirements.txt
-    ├── FIDPHA001/                  ← Django project package
-    │   ├── settings.py
-    │   ├── urls.py                 ← root URL configuration
-    │   ├── wsgi.py
-    │   └── test_runner.py
-    ├── fidpha/                     ← core app (models, portal views, services)
-    │   ├── models.py               ← Account, UserProfile, Product, Contract, Contract_Product
-    │   ├── views.py                ← portal views (dashboard, contracts, sales, pharmacy)
-    │   ├── services.py             ← business logic (get_active_contract, bulk_import_products, ...)
-    │   ├── adapters.py             ← Google OAuth adapter
-    │   ├── urls.py                 ← /portal/* routes
-    │   ├── static/fidpha/css/
-    │   │   ├── portal.css          ← shared CSS (portal + control panel)
-    │   │   └── login.css
-    │   └── templates/fidpha/       ← portal HTML templates + email templates
-    ├── api/                        ← REST API layer
-    │   ├── models.py               ← APIToken, APITokenUsageLog
-    │   ├── authentication.py       ← SHA-256 token authentication
-    │   ├── views.py                ← /api/v1/ endpoints
-    │   ├── portal_views.py         ← /api/portal/ endpoints (React pharmacy portal)
-    │   ├── staff_views.py          ← /api/staff/ endpoints (React control panel)
-    │   ├── serializers.py          ← DRF serializers for portal + staff APIs
-    │   ├── permissions.py          ← HasAPIToken, PortalSessionPermission, StaffSessionPermission
-    │   └── throttles.py            ← per-token rate limiting
-    ├── sales/                      ← ingestion + sale storage
-    │   ├── models.py               ← SaleImport (raw), Sale (validated + points)
-    │   └── services.py             ← submit_sales_batch() — single ingestion entry point
-    ├── control/                    ← staff control panel
-    │   ├── models.py               ← SystemConfig (global settings)
-    │   ├── views.py                ← all control panel views (CRUD + sales review)
-    │   ├── forms.py                ← all forms and formsets
-    │   ├── decorators.py           ← @staff_required, @perm_required, @superuser_required
-    │   └── templates/control/      ← control panel HTML templates
-    ├── locale/fr/LC_MESSAGES/      ← French translations (.po source + .mo compiled)
-    ├── static/                     ← global static (admin.css, admin JS)
-    ├── templates/
-    │   ├── registration/           ← password reset templates
-    │   └── react/                  ← SPA shell templates (index.html, staff_index.html)
-    └── frontend/                   ← React SPA (feature/react-ui branch only)
-        ├── src/
-        │   ├── api/client.js       ← fetch wrapper (session + CSRF)
-        │   ├── components/Layout.jsx
-        │   └── pages/              ← Dashboard, Contracts, Points, Pharmacy
-        ├── vite.config.js
-        └── package.json
+├── manage.py
+├── db.sqlite3                      ← SQLite database (dev only, gitignored)
+├── requirements.txt
+├── FIDPHA001/                      ← Django project package
+│   ├── settings.py
+│   ├── urls.py                     ← root URL configuration
+│   ├── wsgi.py
+│   └── test_runner.py
+├── fidpha/                         ← core app (models, portal views, services)
+│   ├── models.py                   ← Account, UserProfile, Product, Contract, Contract_Product
+│   ├── views.py                    ← portal views (dashboard, contracts, sales, pharmacy)
+│   ├── services.py                 ← business logic (get_active_contract, bulk_import_products, ...)
+│   ├── adapters.py                 ← Google OAuth adapter
+│   ├── urls.py                     ← /portal/* routes
+│   ├── static/fidpha/css/
+│   │   ├── portal.css              ← shared CSS (portal + control panel)
+│   │   └── login.css
+│   └── templates/fidpha/           ← portal HTML templates + email templates
+├── api/                            ← REST API layer
+│   ├── models.py                   ← APIToken, APITokenUsageLog
+│   ├── authentication.py           ← SHA-256 token authentication
+│   ├── views.py                    ← /api/v1/ endpoints
+│   ├── portal_views.py             ← /api/portal/ endpoints (React pharmacy portal)
+│   ├── staff_views.py              ← /api/staff/ endpoints (React control panel)
+│   ├── serializers.py              ← DRF serializers for portal + staff APIs
+│   ├── permissions.py              ← HasAPIToken, PortalSessionPermission, StaffSessionPermission
+│   └── throttles.py                ← per-token rate limiting
+├── sales/                          ← ingestion + sale storage
+│   ├── models.py                   ← SaleImport (raw), Sale (validated + points)
+│   └── services.py                 ← submit_sales_batch() — single ingestion entry point
+├── control/                        ← staff control panel
+│   ├── models.py                   ← SystemConfig (global settings)
+│   ├── views.py                    ← all control panel views (CRUD + sales review)
+│   ├── forms.py                    ← all forms and formsets
+│   ├── decorators.py               ← @staff_required, @perm_required, @superuser_required
+│   └── templates/control/          ← control panel HTML templates
+├── locale/fr/LC_MESSAGES/          ← French translations (.po source + .mo compiled)
+├── static/                         ← global static (admin.css, admin JS)
+├── templates/
+│   ├── registration/               ← password reset templates
+│   └── react/                      ← SPA shell templates (index.html, staff_index.html)
+└── frontend/                       ← React SPA (feature/react-ui branch only)
+    ├── src/
+    │   ├── api/client.js           ← fetch wrapper (session + CSRF)
+    │   ├── components/Layout.jsx
+    │   └── pages/                  ← Dashboard, Contracts, Points, Pharmacy
+    ├── vite.config.js
+    └── package.json
 ```
 
 ---
@@ -650,7 +649,7 @@ La plateforme comporte trois couches orientées utilisateur :
 
 ```bash
 git clone https://github.com/khalidbrx-Q/FIDPHA.git
-cd FIDPHA/FIDPHA001
+cd FIDPHA
 python -m venv .venv
 
 # Windows
@@ -663,7 +662,7 @@ pip install -r requirements.txt
 
 ### 4.3 Variables d'Environnement
 
-Créer un fichier `.env` dans `FIDPHA001/` (même dossier que `manage.py`) :
+Créer un fichier `.env` dans `FIDPHA/` (même dossier que `manage.py`) :
 
 ```
 SECRET_KEY=votre-secret-key
@@ -964,7 +963,7 @@ Puis aller dans l'onglet **Web → Reload**.
 
 ```bash
 git clone https://github.com/khalidbrx-Q/FIDPHA.git
-cd FIDPHA/FIDPHA001
+cd FIDPHA
 mkvirtualenv fidpha --python=python3.12
 pip install -r requirements.txt
 python manage.py migrate
@@ -979,7 +978,7 @@ Configurer l'application web (onglet Web → Configuration manuelle → Python 3
 ```python
 import sys, os
 
-path = '/home/khalidbrx/FIDPHA/FIDPHA001'
+path = '/home/khalidbrx/FIDPHA'
 if path not in sys.path:
     sys.path.insert(0, path)
 
@@ -993,7 +992,7 @@ application = get_wsgi_application()
 
 | URL | Répertoire |
 |---|---|
-| `/static/` | `/home/khalidbrx/FIDPHA/FIDPHA001/staticfiles` |
+| `/static/` | `/home/khalidbrx/FIDPHA/staticfiles` |
 
 **Virtualenv :** `/home/khalidbrx/.virtualenvs/fidpha`
 
@@ -1014,58 +1013,57 @@ Dans le panneau de contrôle → Applications Sociales → mettre à jour le dom
 ## 11. Structure du Projet
 
 ```
-FIDPHA001/                          ← racine git
+FIDPHA/                             ← racine git (manage.py est ici)
 ├── CLAUDE.md                       ← règles et décisions de développement
 ├── ARCHITECTURE.md                 ← référence technique approfondie
-└── FIDPHA001/                      ← code source Django
-    ├── manage.py
-    ├── db.sqlite3                  ← base SQLite (dev uniquement, gitignored)
-    ├── requirements.txt
-    ├── FIDPHA001/                  ← package projet Django
-    │   ├── settings.py
-    │   ├── urls.py                 ← configuration URL racine
-    │   ├── wsgi.py
-    │   └── test_runner.py
-    ├── fidpha/                     ← app principale (modèles, vues portail, services)
-    │   ├── models.py               ← Account, UserProfile, Product, Contract, Contract_Product
-    │   ├── views.py                ← vues portail (dashboard, contrats, ventes, pharmacie)
-    │   ├── services.py             ← logique métier (get_active_contract, bulk_import_products, ...)
-    │   ├── adapters.py             ← adaptateur Google OAuth
-    │   ├── urls.py                 ← routes /portal/*
-    │   ├── static/fidpha/css/
-    │   │   ├── portal.css          ← CSS partagé (portail + panneau de contrôle)
-    │   │   └── login.css
-    │   └── templates/fidpha/       ← templates HTML portail + templates emails
-    ├── api/                        ← couche API REST
-    │   ├── models.py               ← APIToken, APITokenUsageLog
-    │   ├── authentication.py       ← authentification par token SHA-256
-    │   ├── views.py                ← endpoints /api/v1/
-    │   ├── portal_views.py         ← endpoints /api/portal/ (portail React pharmacie)
-    │   ├── staff_views.py          ← endpoints /api/staff/ (panneau React staff)
-    │   ├── serializers.py          ← sérialiseurs DRF pour les APIs portail et staff
-    │   ├── permissions.py          ← HasAPIToken, PortalSessionPermission, StaffSessionPermission
-    │   └── throttles.py            ← limitation de débit par token
-    ├── sales/                      ← ingestion et stockage des ventes
-    │   ├── models.py               ← SaleImport (brut), Sale (validé + points)
-    │   └── services.py             ← submit_sales_batch() — point d'entrée unique d'ingestion
-    ├── control/                    ← panneau de contrôle staff
-    │   ├── models.py               ← SystemConfig (paramètres globaux)
-    │   ├── views.py                ← toutes les vues du panneau (CRUD + revue des ventes)
-    │   ├── forms.py                ← tous les formulaires et formsets
-    │   ├── decorators.py           ← @staff_required, @perm_required, @superuser_required
-    │   └── templates/control/      ← templates HTML du panneau de contrôle
-    ├── locale/fr/LC_MESSAGES/      ← traductions françaises (.po source + .mo compilé)
-    ├── static/                     ← statiques globaux (admin.css, JS admin)
-    ├── templates/
-    │   ├── registration/           ← templates réinitialisation mot de passe
-    │   └── react/                  ← templates shell SPA (index.html, staff_index.html)
-    └── frontend/                   ← SPA React (branche feature/react-ui uniquement)
-        ├── src/
-        │   ├── api/client.js       ← wrapper fetch (session + CSRF)
-        │   ├── components/Layout.jsx
-        │   └── pages/              ← Dashboard, Contracts, Points, Pharmacy
-        ├── vite.config.js
-        └── package.json
+├── manage.py
+├── db.sqlite3                      ← base SQLite (dev uniquement, gitignored)
+├── requirements.txt
+├── FIDPHA001/                      ← package projet Django
+│   ├── settings.py
+│   ├── urls.py                     ← configuration URL racine
+│   ├── wsgi.py
+│   └── test_runner.py
+├── fidpha/                         ← app principale (modèles, vues portail, services)
+│   ├── models.py                   ← Account, UserProfile, Product, Contract, Contract_Product
+│   ├── views.py                    ← vues portail (dashboard, contrats, ventes, pharmacie)
+│   ├── services.py                 ← logique métier (get_active_contract, bulk_import_products, ...)
+│   ├── adapters.py                 ← adaptateur Google OAuth
+│   ├── urls.py                     ← routes /portal/*
+│   ├── static/fidpha/css/
+│   │   ├── portal.css              ← CSS partagé (portail + panneau de contrôle)
+│   │   └── login.css
+│   └── templates/fidpha/           ← templates HTML portail + templates emails
+├── api/                            ← couche API REST
+│   ├── models.py                   ← APIToken, APITokenUsageLog
+│   ├── authentication.py           ← authentification par token SHA-256
+│   ├── views.py                    ← endpoints /api/v1/
+│   ├── portal_views.py             ← endpoints /api/portal/ (portail React pharmacie)
+│   ├── staff_views.py              ← endpoints /api/staff/ (panneau React staff)
+│   ├── serializers.py              ← sérialiseurs DRF pour les APIs portail et staff
+│   ├── permissions.py              ← HasAPIToken, PortalSessionPermission, StaffSessionPermission
+│   └── throttles.py                ← limitation de débit par token
+├── sales/                          ← ingestion et stockage des ventes
+│   ├── models.py                   ← SaleImport (brut), Sale (validé + points)
+│   └── services.py                 ← submit_sales_batch() — point d'entrée unique d'ingestion
+├── control/                        ← panneau de contrôle staff
+│   ├── models.py                   ← SystemConfig (paramètres globaux)
+│   ├── views.py                    ← toutes les vues du panneau (CRUD + revue des ventes)
+│   ├── forms.py                    ← tous les formulaires et formsets
+│   ├── decorators.py               ← @staff_required, @perm_required, @superuser_required
+│   └── templates/control/          ← templates HTML du panneau de contrôle
+├── locale/fr/LC_MESSAGES/          ← traductions françaises (.po source + .mo compilé)
+├── static/                         ← statiques globaux (admin.css, JS admin)
+├── templates/
+│   ├── registration/               ← templates réinitialisation mot de passe
+│   └── react/                      ← templates shell SPA (index.html, staff_index.html)
+└── frontend/                       ← SPA React (branche feature/react-ui uniquement)
+    ├── src/
+    │   ├── api/client.js           ← wrapper fetch (session + CSRF)
+    │   ├── components/Layout.jsx
+    │   └── pages/                  ← Dashboard, Contracts, Points, Pharmacy
+    ├── vite.config.js
+    └── package.json
 ```
 
 ---
