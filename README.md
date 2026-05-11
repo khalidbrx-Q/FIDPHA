@@ -485,8 +485,6 @@ In control panel → Social Apps → update domain and OAuth credentials.
 
 ```
 FIDPHA/                             ← git root (manage.py is here)
-├── CLAUDE.md                       ← development rules and decisions
-├── ARCHITECTURE.md                 ← deep technical reference
 ├── manage.py
 ├── db.sqlite3                      ← SQLite database (dev only, gitignored)
 ├── requirements.txt
@@ -1014,8 +1012,6 @@ Dans le panneau de contrôle → Applications Sociales → mettre à jour le dom
 
 ```
 FIDPHA/                             ← racine git (manage.py est ici)
-├── CLAUDE.md                       ← règles et décisions de développement
-├── ARCHITECTURE.md                 ← référence technique approfondie
 ├── manage.py
 ├── db.sqlite3                      ← base SQLite (dev uniquement, gitignored)
 ├── requirements.txt
