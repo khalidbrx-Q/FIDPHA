@@ -4,824 +4,454 @@
 
 <a name="english"></a>
 
-# FIDPHA — Pharmacy Management System
+# WinInPharma — Pharmacy Loyalty Platform
 
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
-2. [Environment Setup](#2-environment-setup)
-3. [Django Project Setup](#3-django-project-setup)
-4. [Database & Models](#4-database--models)
-5. [Admin Panel](#5-admin-panel)
-6. [Authentication System](#6-authentication-system)
-7. [Pharmacy Portal](#7-pharmacy-portal)
-8. [API](#8-api)
-9. [Deployment](#9-deployment)
-10. [Project Structure](#10-project-structure)
+2. [How It Works](#2-how-it-works)
+3. [Tech Stack](#3-tech-stack)
+4. [Local Setup](#4-local-setup)
+5. [Pharmacy Portal](#5-pharmacy-portal)
+6. [Staff Control Panel](#6-staff-control-panel)
+7. [Public API](#7-public-api)
+8. [Sales Ingestion Pipeline](#8-sales-ingestion-pipeline)
+9. [Authentication & Permissions](#9-authentication--permissions)
+10. [Deployment](#10-deployment)
+11. [Project Structure](#11-project-structure)
 
 ---
 
 ## 1. Project Overview
 
-FIDPHA is a pharmacy management web application built with Django. It allows administrators to manage pharmacy accounts, contracts, and products through a polished admin interface, while providing pharmacy users with a dedicated portal to view their account information and contracts.
+**WinInPharma** is a pharmacy loyalty management platform built with Django. It connects a pharmaceutical company (the operator) with its pharmacy network through a points-based incentive system.
+
+Pharmacies submit their daily sales data via an API. Each sale is validated against an active contract and earns the pharmacy a number of loyalty points, calculated from a per-product multiplier defined in the contract. Pharmacies log into a dedicated portal to track their points, view their contracts, and monitor their sales history. The operator's staff manage everything from a custom control panel.
 
 ### Key Features
 
-- Custom Django admin with Unfold theme
-- Role-based access (superuser, staff, pharmacy users)
-- Google OAuth login
-- Email verification system
-- Password reset via email
-- Pharmacy portal dashboard with dark/light mode
-- REST-ready API with token authentication
-- Deployed on PythonAnywhere via GitHub
+| Feature | Description |
+|---|---|
+| Pharmacy portal | 4-page dashboard: stats + charts, contracts, points breakdown, account info |
+| Staff control panel | Full CRUD for accounts, contracts, products, users, tokens; sales review workflow |
+| Public REST API | Token-authenticated API for pharmacy machines to submit sales and query contracts |
+| Points system | Per-product multiplier × quantity × PPV snapshot; computed server-side only |
+| Auto-review | Configurable global + per-account automatic acceptance of valid sales |
+| Sales ingestion | Batch pipeline with idempotency, race protection, concurrent batch warnings |
+| Google OAuth | Pharmacy and staff users can log in with Google |
+| Email system | HTML verification emails, password reset, WinInPharma branding |
+| French i18n | Portal available in French (EN/FR toggle) |
+| Audit trail | Every staff action logged via Django LogEntry; visible on control panel dashboard |
+| CSV / Excel import | Bulk product import and contract product import via file upload |
 
-### Tech Stack
+---
 
-| Component | Technology |
-|-----------|------------|
+## 2. How It Works
+
+The platform has three user-facing layers:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        WinInPharma                              │
+├─────────────────┬───────────────────────┬───────────────────────┤
+│  Pharmacy Portal│   Staff Control Panel │    Public REST API     │
+│  /portal/       │   /control/           │    /api/v1/            │
+│                 │                       │                        │
+│  Session auth   │   Session auth        │   Token auth           │
+│  Pharmacy users │   Staff / superusers  │   Pharmacy machines    │
+│                 │                       │   (external software)  │
+└─────────────────┴───────────────────────┴───────────────────────┘
+```
+
+**Typical flow:**
+
+1. Operator staff creates an Account (pharmacy) and assigns it an active Contract with products and point multipliers.
+2. The pharmacy's software submits daily sales via `POST /api/v1/sales/` using a token.
+3. The ingestion pipeline validates each row: checks the product is in the active contract, verifies the datetime, snapshots the PPV, and computes points.
+4. Staff review pending sales in the control panel (accept / reject with reason / bulk actions). Auto-review can be enabled to skip this step.
+5. The pharmacy's portal user logs in and sees their points, contract details, and charts.
+
+---
+
+## 3. Tech Stack
+
+| Concern | Choice |
+|---|---|
 | Backend | Python 3.12, Django 5.2 |
-| Admin Theme | django-unfold 0.87.0 |
-| Authentication | django-allauth |
-| Database | SQLite (development), upgradeable to MySQL |
-| Deployment | PythonAnywhere + GitHub |
-
-### Live Demo
-
-🌐 [khalidbrx.pythonanywhere.com](https://khalidbrx.pythonanywhere.com)
+| Database | SQLite (dev) — upgradeable |
+| REST API | Django REST Framework (partial adoption — no viewsets/routers) |
+| Authentication | django-allauth (Google OAuth + email/password) |
+| Admin theme | django-unfold (dormant — replaced by control panel) |
+| Frontend | Vanilla JS + ECharts (CDN) + Material Icons + Inter font |
+| CSS | Single `portal.css` shared by portal and control panel |
+| Email | Gmail SMTP — `EmailMultiAlternatives` (HTML + text) |
+| i18n | Django i18n + GNU gettext, `locale/fr/` |
+| Deployment | PythonAnywhere + GitHub (PR-based workflow) |
+| React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (in progress, `feature/react-ui`) |
 
 ---
 
-## 2. Environment Setup
+## 4. Local Setup
 
-### 2.1 Install Python
+### 4.1 Prerequisites
 
-Download and install Python 3.12 from [python.org](https://www.python.org/downloads/).
+- Python 3.12
+- Git
+- GNU gettext (for translation compilation — Windows: `C:\Program Files\gettext-iconv\bin`)
 
-Verify installation:
-```bash
-python --version
-# Python 3.12.x
-```
-
-### 2.2 Install PyCharm
-
-Download PyCharm Community Edition from [jetbrains.com/pycharm](https://www.jetbrains.com/pycharm/).
-
-### 2.3 Create Project Directory
+### 4.2 Clone & Install
 
 ```bash
-mkdir FIDPHA001
-cd FIDPHA001
-```
-
-### 2.4 Create Virtual Environment
-
-```bash
+git clone https://github.com/khalidbrx-Q/FIDPHA.git
+cd FIDPHA/FIDPHA001
 python -m venv .venv
-```
 
-Activate it:
-
-**Windows:**
-```bash
+# Windows
 .venv\Scripts\activate
-```
-
-**Mac/Linux:**
-```bash
+# Mac/Linux
 source .venv/bin/activate
+
+pip install -r requirements.txt
 ```
 
-### 2.5 Install Django and Required Packages
+### 4.3 Environment Variables
 
-```bash
-pip install django
-pip install django-unfold
-pip install django-allauth
-pip install requests
-pip install PyJWT
-pip install cryptography
+Create a `.env` file in `FIDPHA001/` (same folder as `manage.py`):
+
+```
+SECRET_KEY=your-secret-key
+DEBUG=True
+EMAIL_HOST_USER=your@gmail.com
+EMAIL_HOST_PASSWORD=your-gmail-app-password
+DEFAULT_FROM_EMAIL=WinInPharma <your@gmail.com>
 ```
 
----
-
-## 3. Django Project Setup
-
-### 3.1 Create Django Project
-
-```bash
-django-admin startproject FIDPHA001 .
-```
-
-### 3.2 Create Django App
-
-```bash
-python manage.py startapp fidpha
-```
-
-### 3.3 Register App in settings.py
-
-```python
-INSTALLED_APPS = [
-    "unfold",
-    "unfold.contrib.filters",
-    "unfold.contrib.forms",
-    "fidpha.apps.FidphaConfig",
-    "django.contrib.admin",
-    # ... other apps
-]
-```
-
-### 3.4 Configure Timezone
-
-```python
-TIME_ZONE = 'Africa/Casablanca'
-USE_TZ = True
-```
-
-### 3.5 Run Initial Migrations and Create Superuser
+### 4.4 Initialize the Database
 
 ```bash
 python manage.py migrate
 python manage.py createsuperuser
+python manage.py compilemessages   # compile French translations
 python manage.py runserver
 ```
 
-Visit `http://127.0.0.1:8000` in your browser.
+Visit `http://127.0.0.1:8000` — you will be redirected to `/portal/login/`.
+
+Log in with your superuser account to access the control panel at `/control/`.
 
 ---
 
-## 4. Database & Models
+## 5. Pharmacy Portal
 
-### 4.1 Models Overview
+The portal is the pharmacy-facing interface. Only users with `Account.pharmacy_portal = True` can access it.
 
-| Model | Description |
-|-------|-------------|
-| Account | Represents a pharmacy with contact info and portal access |
-| UserProfile | Links a Django User to an Account with email verification |
-| Product | A pharmaceutical product with internal code and designation |
-| Contract | A time-bound contract between FIDPHA and a pharmacy |
-| Contract_Product | Junction table linking products to contracts |
+### Pages
 
-### 4.2 Relations
+| Page | URL | Description |
+|---|---|---|
+| Dashboard | `/portal/dashboard/` | KPI cards (points, units, contracts, pending sales) + 4 ECharts charts (monthly trend, cumulative, units, top products) |
+| Contracts | `/portal/contracts/` | Active contract products table + monthly trend chart with daily drill-down + cross-chart filter |
+| Points | `/portal/sales/` | Full sales table with status filter, product search, acceptance rate, year selector |
+| Pharmacy | `/portal/pharmacy/` | Account info, edit profile, change password, email verification status |
 
-- **Account → Contract**: OneToMany (one account, many contracts)
-- **Account → User**: OneToMany via UserProfile (one account, many users)
-- **Contract → Product**: ManyToMany via Contract_Product
-- `Contract_Product` carries an `external_designation` attribute
-
-### 4.3 Business Rules
-
-| Rule | Description |
-|------|-------------|
-| 1 | One account can have only one active contract at a time |
-| 2 | Cannot deactivate a product linked to an active contract |
-| 3 | Cannot deactivate an account with active contracts |
-| 4 | Only users with pharmacy_portal=True can access the portal |
-| 5 | Contract start_date must be <= end_date |
-| 6 | external_designation maps internal products to pharmacy naming |
-
-### 4.4 models.py
-
-```python
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.contrib.auth.models import User
-
-
-class Account(models.Model):
-    STATUS_CHOICES = [("active", "Active"), ("inactive", "Inactive")]
-    code = models.CharField(max_length=50, unique=True)
-    name = models.CharField(max_length=255)
-    city = models.CharField(max_length=100)
-    location = models.TextField()
-    phone = models.CharField(max_length=50)
-    email = models.EmailField()
-    pharmacy_portal = models.BooleanField(default=False)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
-
-    class Meta:
-        db_table = "Account"
-
-    def __str__(self):
-        return f"[{self.code}] {self.name} - {self.city}"
-
-    def clean(self):
-        if self.status == "inactive" and self.pk:
-            if self.contracts.filter(status="active").exists():
-                raise ValidationError(
-                    "Cannot deactivate this account because it has active contracts."
-                )
-
-
-class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="users")
-    email_verified = models.BooleanField(default=False)
-    verification_token = models.CharField(max_length=64, blank=True, null=True)
-    token_created_at = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        db_table = "UserProfile"
-
-    def __str__(self):
-        return f"{self.user.username} → {self.account.name}"
-
-
-class Product(models.Model):
-    STATUS_CHOICES = [("active", "Active"), ("inactive", "Inactive")]
-    code = models.CharField(max_length=50, unique=True)
-    designation = models.CharField(max_length=255)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
-
-    class Meta:
-        db_table = "Product"
-
-    def __str__(self):
-        return self.designation
-
-    def clean(self):
-        if self.status == "inactive" and self.pk:
-            if Contract_Product.objects.filter(
-                product=self, contract__status="active"
-            ).exists():
-                raise ValidationError(
-                    "Cannot deactivate this product because it is in active contracts."
-                )
-
-
-class Contract(models.Model):
-    STATUS_CHOICES = [("active", "Active"), ("inactive", "Inactive")]
-    title = models.CharField(max_length=255)
-    designation = models.TextField()
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="contracts")
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
-    products = models.ManyToManyField(Product, through="Contract_Product", related_name="contracts")
-
-    class Meta:
-        db_table = "Contract"
-
-    def __str__(self):
-        return self.title
-
-    def clean(self):
-        if self.start_date and self.end_date:
-            if self.start_date > self.end_date:
-                raise ValidationError("Start date must be before or equal to end date.")
-        if self.status == "active" and self.account_id:
-            active = Contract.objects.filter(account=self.account, status="active")
-            if self.pk:
-                active = active.exclude(pk=self.pk)
-            if active.exists():
-                raise ValidationError("This account already has an active contract.")
-
-
-class Contract_Product(models.Model):
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    external_designation = models.CharField(max_length=255)
-
-    class Meta:
-        db_table = "Contract_Product"
-        unique_together = ("contract", "product")
-
-    def __str__(self):
-        return f"{self.contract} - {self.product}"
-```
-
-### 4.5 Run Migrations
-
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
----
-
-## 5. Admin Panel
-
-### 5.1 Unfold Theme Setup
-
-Add to `INSTALLED_APPS` before `django.contrib.admin`:
-
-```python
-INSTALLED_APPS = [
-    "unfold",
-    "unfold.contrib.filters",
-    "unfold.contrib.forms",
-    "fidpha.apps.FidphaConfig",
-    "django.contrib.admin",
-]
-```
-
-Add Unfold configuration to `settings.py`:
-
-```python
-from django.templatetags.static import static
-from django.urls import reverse_lazy
-
-UNFOLD = {
-    "SITE_TITLE": "FIDPHA Admin",
-    "SITE_HEADER": "FIDPHA",
-    "COLORS": {
-        "primary": {
-            "600": "27 103 155",
-        },
-    },
-    "SIDEBAR": {
-        "show_search": True,
-        "navigation": [
-            {
-                "title": "FIDPHA",
-                "icon": "local_pharmacy",
-                "items": [
-                    {
-                        "title": "Accounts",
-                        "icon": "store",
-                        "link": reverse_lazy("admin:fidpha_account_changelist"),
-                        "badge": "fidpha.utils.accounts_badge",
-                    },
-                ],
-            },
-        ],
-    },
-}
-```
-
-### 5.2 Key Admin Enhancements
-
-| Feature | Description |
-|---------|-------------|
-| Auto-generate codes | Generate Account codes with one click via JS button |
-| Inline contracts | Scrollable contract list inside Account detail page |
-| Inline users | Only shows available non-staff users in Account page |
-| Account details | Full account info shown inside User and Contract pages |
-| Product counter | Number of products shown per contract in list view |
-| Sidebar badges | Shows active/total counts for Accounts, Contracts, Products |
-| Password strength | Live strength indicator when creating/changing passwords |
-| Staff toggle | Profile inline hides automatically for staff users |
-| Email status | Verification badge shown next to email field in User page |
-
-### 5.3 utils.py (Sidebar Badges)
-
-```python
-def accounts_badge(request):
-    from fidpha.models import Account
-    active = Account.objects.filter(status='active').count()
-    total = Account.objects.count()
-    return f"{active}/{total}"
-
-def contracts_badge(request):
-    from fidpha.models import Contract
-    active = Contract.objects.filter(status='active').count()
-    total = Contract.objects.count()
-    return f"{active}/{total}"
-
-def products_badge(request):
-    from fidpha.models import Product
-    active = Product.objects.filter(status='active').count()
-    total = Product.objects.count()
-    return f"{active}/{total}"
-
-def users_badge(request):
-    from django.contrib.auth.models import User
-    return User.objects.count()
-```
-
----
-
-## 6. Authentication System
-
-### 6.1 Login Flow
+### Authentication Flow
 
 ```
 User visits / → redirected to /portal/login/
 ↓
-Login page (username + password OR Google)
+Enters credentials (or signs in with Google)
 ↓
-Staff user → /admin/
-Non-staff user → check pharmacy_portal → /portal/dashboard/
+Staff user → /control/
+Portal user (pharmacy_portal=True) → /portal/dashboard/
 ```
 
-### 6.2 Settings for Allauth
+### Email Verification
 
-```python
-INSTALLED_APPS += [
-    "django.contrib.sites",
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.google",
-]
-
-SITE_ID = 1
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-]
-SOCIALACCOUNT_AUTO_SIGNUP = False
-SOCIALACCOUNT_ADAPTER = "fidpha.adapters.FIDPHASocialAccountAdapter"
-ACCOUNT_ADAPTER = "fidpha.adapters.FIDPHAAccountAdapter"
-```
-
-### 6.3 Google OAuth Setup
-
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create a new project
-3. Go to **APIs & Services** → **OAuth consent screen** → External
-4. Go to **Credentials** → **Create OAuth Client ID** → Web Application
-5. Add authorized origins: `http://127.0.0.1:8000`
-6. Add redirect URI: `http://127.0.0.1:8000/auth/google/login/callback/`
-7. In Django admin → **Social Applications** → Add Google credentials
-8. In Django admin → **Sites** → set domain to `127.0.0.1:8000`
-
-### 6.4 Email Configuration (Gmail SMTP)
-
-```python
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'your_email@gmail.com'
-EMAIL_HOST_PASSWORD = 'your_app_password'
-```
-
-> To get an app password: Google Account → Security → 2-Step Verification → App Passwords
-
-### 6.5 Email Verification Flow
+New pharmacy users must verify their email before accessing the portal:
 
 ```
-New user logs in for first time
-↓
-Redirected to /portal/setup-profile/
-↓
-User enters email (+ optional name, password)
-↓
-Verification email sent with token link (expires in 24h)
-↓
-User clicks link → email_verified = True
-↓
-User can now access dashboard and use Google login
+First login → /portal/setup-profile/ (enter email + optional name/password)
+→ Verification email sent (24h token)
+→ User clicks link → email_verified = True → full portal access
 ```
 
-### 6.6 Password Reset Flow
+### Points Formula
+
+Points are always computed server-side using this formula:
 
 ```
-User clicks "Forgot password?" on login page
-↓
-Enters email → system validates email exists
-↓
-Reset email sent with secure token link (expires in 24h)
-↓
-User clicks link → enters new password
-↓
-Password strength enforced (8+ chars, uppercase, number, special char)
-↓
-Redirected to login page
+points = round(quantity × Sale.product_ppv × Contract_Product.points_per_unit)
 ```
 
-### 6.7 urls.py
-
-```python
-urlpatterns = [
-    path("admin/login/", RedirectView.as_view(url="/portal/login/")),
-    path("admin/logout/", fidpha_views.custom_logout),
-    path("admin/", admin.site.urls),
-    path("accounts/password_reset/", CustomPasswordResetView.as_view()),
-    path("accounts/reset/<uidb64>/<token>/", CustomPasswordResetConfirmView.as_view()),
-    path("accounts/", include("django.contrib.auth.urls")),
-    path("portal/", include("fidpha.urls")),
-    path("auth/", include("allauth.urls")),
-    path("", lambda request: redirect("/portal/login/")),
-]
-```
+- `Sale.product_ppv` is a snapshot of `Product.ppv` taken at the moment of ingestion.
+- This value is frozen — it never changes even if the catalog price changes later.
+- The frontend only displays — it never recomputes.
 
 ---
 
-## 7. Pharmacy Portal
+## 6. Staff Control Panel
 
-### 7.1 Portal URLs
+The control panel at `/control/` replaces Django admin entirely. It is accessible to `is_staff=True` users. Superusers have full access; regular staff see only what their permissions allow.
 
-```python
-# fidpha/urls.py
-urlpatterns = [
-    path("login/", views.custom_login, name="login"),
-    path("dashboard/", views.portal_dashboard, name="dashboard"),
-    path("setup-profile/", views.setup_profile, name="setup_profile"),
-    path("verify-pending/", views.verify_pending, name="verify_pending"),
-    path("verify-email/<str:token>/", views.verify_email, name="verify_email"),
-    path("profile/", views.portal_profile, name="profile"),
-    path("profile/password/", views.portal_profile_password, name="profile_password"),
-    path("logout/", views.custom_logout, name="logout"),
-]
+### Modules
+
+| Module | URL | What you can do |
+|---|---|---|
+| Dashboard | `/control/` | Activity feed (25 most recent actions), quick stats |
+| Roles | `/control/roles/` | Create/edit Django Groups with icon and permissions |
+| Users | `/control/users/` | Create/edit superusers, staff, and portal (pharmacy) users |
+| Accounts | `/control/accounts/` | Full CRUD for pharmacies; auto-generate account codes |
+| Contracts | `/control/contracts/` | Full CRUD; inline product management with CSV/Excel/JSON import modal; trend charts |
+| Products | `/control/products/` | Full CRUD; bulk CSV import (`/control/products/import/`) |
+| API Tokens | `/control/tokens/` | Create tokens (shown once, stored as SHA-256 hash); revoke/reactivate; 30-day usage chart |
+| Sales Review | `/control/sales/` | Batch list, inline sale expansion, accept/reject with reason, bulk actions, CSV export |
+| System Settings | `/control/settings/system/` | Global auto-review toggle (superuser only) |
+| Social / Sites | `/control/settings/social-apps/` etc. | Google OAuth app config, Django Sites (superuser only) |
+
+### Sales Review Workflow
+
+```
+Pharmacy submits sales via API
+       ↓
+Sales land in the database with status=PENDING
+       ↓
+Staff opens /control/sales/ → selects a batch → reviews individual rows
+       ↓
+Accept → status=ACCEPTED, points counted
+Reject → status=REJECTED, rejection_reason recorded
+       ↓
+Or: enable Auto-Review (global + per-account) to skip manual review
 ```
 
-### 7.2 Dashboard Features
+### Auto-Review
 
-- Pharmacy information (name, city, phone, email, status)
-- Active and total contracts count
-- All linked contracts with products table
-- Email verification warning banner (if not verified)
-- Dark/light mode toggle
-- Collapsible sidebar with profile link
+Two switches must both be ON for auto-review to activate:
 
-### 7.3 Profile Page Features
+1. **Global**: `SystemConfig.auto_review_enabled` (set in System Settings)
+2. **Per-account**: `Account.auto_review_enabled` (set in Account edit form)
 
-- View username (read-only, cannot be changed)
-- Edit first name, last name, email
-- Email verification status badge
-- Change password (requires current password + new + confirmation)
-- Password strength indicator with live checklist
-- Linked account information
+When both are ON, valid sales are automatically accepted on ingestion. `Sale.auto_reviewed = True` marks these rows; `reviewed_by` remains None.
 
-### 7.4 Portal Templates
+### Contract Products Import
 
-| Template | Purpose |
-|----------|---------|
-| base.html | Sidebar, topbar, theme toggle — extended by all portal pages |
-| dashboard.html | Pharmacy info, contracts, and product tables |
-| profile.html | User profile editor with password change |
-| login.html | Login page with Google OAuth button |
-| setup_profile.html | First-time email and profile setup |
-| verify_pending.html | Waiting for email verification confirmation |
+Inside the contract edit form, staff can import products via a modal:
+
+- Supported formats: **CSV** (comma or semicolon separated), **Excel** (.xlsx / .xls), **JSON**
+- Shows an editable preview before adding rows to the formset
+- Skipped rows are shown with the skip reason and a "Fix & retry" option
+- Available in Edit mode only (requires `change_contract` permission)
 
 ---
 
-## 8. API
+## 7. Public API
 
-### 8.1 Overview
+The public API at `/api/v1/` is consumed by external pharmacy software (not browsers). Every request must include a valid API token.
 
-FIDPHA exposes a REST API built with Django REST Framework. It uses custom token-based authentication — tokens are standalone (not linked to any user) and are managed by the super admin.
+### Authentication
 
-### 8.2 Authentication
-
-All API requests must include a valid token in the `Authorization` header:
-Authorization: Token YOUR_TOKEN_HERE
-
-Tokens are created and managed in the admin panel under **API → API Tokens**.
-
-### 8.3 Setup
-
-**Step 1 — Install Django REST Framework:**
-```bash
-pip install djangorestframework
+```
+Authorization: Token YOUR_RAW_TOKEN
 ```
 
-**Step 2 — Create the API app:**
-```bash
-python manage.py startapp api
-```
+Tokens are created in the control panel (`/control/tokens/`). The raw token is shown **once** at creation; it is stored as a SHA-256 hash — it cannot be recovered later.
 
-**Step 3 — Add to INSTALLED_APPS in settings.py:**
-```python
-INSTALLED_APPS = [
-    ...
-    "rest_framework",
-    "api",
-]
-```
-
-**Step 4 — Create the following files inside the `api` app:**
-
-| File | Purpose |
-|------|---------|
-| `api/models.py` | APIToken model |
-| `api/authentication.py` | Custom token authentication class |
-| `api/permissions.py` | Custom permission class |
-| `api/views.py` | API views and custom exception handler |
-| `api/urls.py` | API URL routes |
-| `api/admin.py` | Admin configuration for token management |
-
-**Step 5 — Run migrations:**
-```bash
-python manage.py makemigrations api
-python manage.py migrate
-```
-
-**Step 6 — Add API URLs in main urls.py:**
-```python
-path("api/v1/", include("api.urls")),
-```
-
-### 8.4 Token Management
-
-| Feature | Description |
-|---------|-------------|
-| Create token | Super admin creates a token with a name/description |
-| Copy token | Copy button available in admin list and detail page |
-| Revoke token | Set `is_active = False` to revoke access |
-| Usage tracking | `last_used_at` and `usage_count` updated on every request |
-
-### 8.5 Endpoints
+### Endpoints
 
 #### GET /api/v1/contract/active/
 
-Returns the active contract for a given pharmacy.
+Returns the active contract for a given pharmacy account.
 
-**Query Parameters:**
+**Query parameter:** `account_code` (required)
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| account_code | Yes | The pharmacy account code (e.g. `PH-XXXXX`) |
-
-**Request Example:**
-```bash
-curl -H "Authorization: Token YOUR_TOKEN_HERE" \
-     "https://khalidbrx.pythonanywhere.com/api/v1/contract/active/?account_code=PH-XXXXX"
-```
-
-**Success Response (200 OK):**
+**Success response (200):**
 ```json
 {
     "status": "success",
-    "timestamp": "2026-04-13T14:30:00Z",
+    "timestamp": "2026-05-11T10:00:00Z",
     "contract": {
         "id": 1,
         "pharmacy": "PHARMACY SAADA",
-        "account_code": "PH-XXXXX",
-        "start_date": "2026-04-07",
-        "end_date": "2026-05-07",
+        "account_code": "PH-00001",
+        "start_date": "2026-04-01T00:00:00Z",
+        "end_date": "2026-06-30T23:59:59Z",
         "products": [
             {
                 "product_id": 1,
-                "internal_code": "PROD001",
-                "external_designation": "DOLI1000"
+                "internal_code": "MED-001",
+                "external_designation": "DOLI1000",
+                "points_per_unit": "1.50",
+                "target_quantity": 200
             }
         ]
     }
 }
 ```
 
-**Error Responses:**
+#### POST /api/v1/sales/
 
-| HTTP Code | Error Code | Description |
-|-----------|------------|-------------|
-| 400 | MISSING_PARAMETER | account_code parameter is missing |
-| 401 | INVALID_TOKEN | Token is missing or invalid |
-| 404 | ACCOUNT_NOT_FOUND | No account found with given code |
-| 404 | CONTRACT_NOT_FOUND | No active contract found for account |
-| 500 | SERVER_ERROR | Internal server error |
+Submits a batch of sales records.
 
-**Error Response Example:**
+**Request body:**
 ```json
 {
-    "status": "error",
-    "timestamp": "2026-04-13T14:30:00Z",
-    "error": {
-        "code": "CONTRACT_NOT_FOUND",
-        "message": "No active contract found for account PH-XXXXX"
-    }
-}
-```
-
-### 8.6 Python Usage Example
-
-```python
-import requests
-
-API_BASE_URL = "https://khalidbrx.pythonanywhere.com/api/v1"
-API_TOKEN = "YOUR_TOKEN_HERE"
-ACCOUNT_CODE = "PH-XXXXX"
-
-headers = {
-    "Authorization": f"Token {API_TOKEN}",
-    "Content-Type": "application/json"
-}
-
-def get_active_contract(account_code):
-    url = f"{API_BASE_URL}/contract/active/"
-    params = {"account_code": account_code}
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        return response.json()
-    except Exception as e:
-        return e
-
-if __name__ == "__main__":
-    print(get_active_contract(ACCOUNT_CODE))
-```
-
-### 8.7 Settings
-
-```python
-INSTALLED_APPS += [
-    "rest_framework",
-    "api",
-]
-
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "api.authentication.APITokenAuthentication",
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "api.permissions.HasAPIToken",
-    ],
-    "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
-    ],
-    "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
-    },
-    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
-    "DEFAULT_VERSION": "v1",
-    "ALLOWED_VERSIONS": ["v1"],
-    "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
-    ],
-    "EXCEPTION_HANDLER": "api.views.custom_exception_handler",
-}
-
-if DEBUG:
-    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] += [
-        "rest_framework.renderers.BrowsableAPIRenderer",
+    "account_code": "PH-00001",
+    "batch_id": "unique-batch-uuid",
+    "sales": [
+        {
+            "external_designation": "DOLI1000",
+            "sale_datetime": "2026-05-10T14:00:00",
+            "creation_datetime": "2026-05-10T14:01:00",
+            "quantity": 10,
+            "ppv": 12.50
+        }
     ]
+}
 ```
 
+**Success response (200):**
+```json
+{
+    "status": "success",
+    "accepted": 8,
+    "rejected": 2,
+    "pending": 0,
+    "warnings": [],
+    "rejections": [
+        {
+            "row": 3,
+            "reason": "sale_datetime is not within contract period"
+        }
+    ]
+}
+```
+
+**Error codes:**
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `INVALID_TOKEN` | 401 | Token missing or inactive |
+| `MISSING_FIELD` | 400 | Required field absent |
+| `ACCOUNT_NOT_FOUND` | 404 | No account with that code |
+| `CONTRACT_NOT_FOUND` | 404 | No active contract for account |
+| `BATCH_TOO_LARGE` | 400 | Batch exceeds 50,000 rows |
+| `SERVER_ERROR` | 500 | Internal error |
+
+### Rate Limiting
+
+1,000 requests per hour per token. Throttle scope: `api_token` (keyed on token PK).
 
 ---
 
-## 9. Deployment
+## 8. Sales Ingestion Pipeline
 
-### 9.1 Prepare for Deployment
+When `POST /api/v1/sales/` is called, `submit_sales_batch()` in `sales/services.py` runs:
 
-Update `settings.py`:
+1. **Idempotency check** — if `batch_id` already exists, return the stored result immediately (safe retries).
+2. **Batch size check** — reject if > 50,000 rows.
+3. **Atomic transaction** with `select_for_update()` on the contract:
+   - Bulk-insert all rows into `SaleImport` (status=pending).
+   - Validate each row (product in contract? datetime valid? quantity/ppv positive?).
+   - If auto-review is enabled for this account: auto-accept valid rows.
+   - Bulk-create accepted `Sale` rows with PPV snapshot.
+   - Update `Contract.last_sale_datetime`.
+4. **Concurrent batch warning** — if other pending batches exist for the same contract, a `CONCURRENT_BATCH` warning is included in the response.
 
-```python
-DEBUG = False
-ALLOWED_HOSTS = ['*', 'yourusername.pythonanywhere.com']
-STATIC_ROOT = BASE_DIR / "staticfiles"
+**Per-row rejection reasons (in order):**
+- Product not in active contract
+- `sale_datetime.date() >= today` (no same-day or future sales)
+- `sale_datetime <= contract.last_sale_datetime` (boundary exclusive)
+- `creation_datetime` out of range
+- `sale_datetime` outside contract period
+- `quantity <= 0` or `ppv <= 0`
+
+---
+
+## 9. Authentication & Permissions
+
+### User Types
+
+| Type | Django flags | Logs into | Can access |
+|---|---|---|---|
+| **Superuser** | `is_superuser=True, is_staff=True` | `/control/` | Everything, including system settings |
+| **Staff** | `is_staff=True` | `/control/` | Modules allowed by their Role (Group permissions) |
+| **Portal user** | no flags + `UserProfile` linked to `Account` | `/portal/` | Own pharmacy data only |
+
+### Roles & Permissions
+
+Staff permissions are managed through Django Groups (called "Roles" in the control panel). Each role has an icon and a set of Django permissions. Staff users are assigned to one or more roles — they can only access the control panel modules covered by their permissions.
+
+### Google OAuth
+
+- Pharmacy and staff users can sign in with Google.
+- Google login **does not create new accounts** — the user must already exist in the system.
+- The same access rules apply: `pharmacy_portal=True` for portal users, `is_staff=True` for staff.
+
+---
+
+## 10. Deployment
+
+### 10.1 Branch Strategy
+
+| Branch | Purpose |
+|---|---|
+| `main` | Production — deployed to PythonAnywhere |
+| `develop` | Active backend development |
+| `feature/react-ui` | React SPA (in progress — not merged to main) |
+| `feature/i18n` | French translations for control panel (in progress) |
+
+### 10.2 Merging to Main (via GitHub PR)
+
+Never merge locally. Always use a GitHub Pull Request:
+
+```
+git push origin develop
+→ Open PR on GitHub (develop → main)
+→ REPO REVIEWER routine fires (automated security + bug scan)
+→ Read the review report
+→ Click "Merge pull request" on GitHub
 ```
 
-### 9.2 Create .gitignore
+The **REPO REVIEWER** is a Claude Code routine that automatically reviews every PR diff for security vulnerabilities and bugs, then posts a verdict comment on the PR.
 
-```
-__pycache__/
-*.py[cod]
-.venv/
-db.sqlite3
-staticfiles/
-*.log
-.idea/
-.env
-```
+### 10.3 Updating PythonAnywhere
 
-### 9.3 Generate requirements.txt
+After merging to `main`, open a Bash console on PythonAnywhere:
 
-```bash
-pip freeze > requirements.txt
-```
-
-### 9.4 Push to GitHub
-
-```bash
-git init
-git add .
-git commit -m "initial commit"
-git remote add origin https://github.com/yourusername/FIDPHA.git
-git push -u origin main
-```
-
-### 9.5 Deploy on PythonAnywhere
-
-**Step 1 — Clone repository:**
-```bash
-git clone https://github.com/yourusername/FIDPHA.git
-```
-
-**Step 2 — Create virtual environment:**
-```bash
-mkvirtualenv fidpha --python=python3.12
-```
-
-**Step 3 — Install dependencies:**
 ```bash
 cd FIDPHA
+workon fidpha
+git checkout -- .           # discard any local server edits
+git pull origin main
 pip install -r requirements.txt
-```
-
-**Step 4 — Set up database and static files:**
-```bash
 python manage.py migrate
-python manage.py collectstatic
-python manage.py createsuperuser
+python manage.py collectstatic --noinput
+python manage.py compilemessages
 ```
 
-**Step 5 — Configure Web App on PythonAnywhere dashboard:**
+Then go to **Web tab → Reload**.
 
-Go to **Web** tab → **Add new web app** → Manual configuration → Python 3.12
+### 10.4 First-Time PythonAnywhere Setup
 
-Set the WSGI file content:
+```bash
+git clone https://github.com/khalidbrx-Q/FIDPHA.git
+cd FIDPHA/FIDPHA001
+mkvirtualenv fidpha --python=python3.12
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic --noinput
+python manage.py createsuperuser
+python manage.py compilemessages
+```
+
+Configure the web app (Web tab → Manual configuration → Python 3.12):
+
+**WSGI file:**
 ```python
 import sys, os
 
-path = '/home/yourusername/FIDPHA'
+path = '/home/khalidbrx/FIDPHA/FIDPHA001'
 if path not in sys.path:
-    sys.path.append(path)
+    sys.path.insert(0, path)
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'FIDPHA001.settings'
 
@@ -829,92 +459,88 @@ from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
 ```
 
-Set virtualenv to: `/home/yourusername/.virtualenvs/fidpha`
-
-Set static files:
+**Static files:**
 
 | URL | Directory |
-|-----|-----------|
-| `/static/` | `/home/yourusername/FIDPHA/staticfiles` |
+|---|---|
+| `/static/` | `/home/khalidbrx/FIDPHA/FIDPHA001/staticfiles` |
 
-**Step 6 — Click Reload**
+**Virtualenv:** `/home/khalidbrx/.virtualenvs/fidpha`
 
-### 9.6 Update After Changes
+### 10.5 Google OAuth for Production
 
-On local machine:
-```bash
-git add .
-git commit -m "your message"
-git push
-```
+In Google Cloud Console:
+- Authorized origin: `https://khalidbrx.pythonanywhere.com`
+- Redirect URI: `https://khalidbrx.pythonanywhere.com/auth/google/login/callback/`
 
-On PythonAnywhere:
-```bash
-cd FIDPHA
-git pull
-python manage.py migrate        # only if models changed
-python manage.py collectstatic  # only if static files changed
-```
+In control panel → Social Apps → update domain and OAuth credentials.
 
-Then click **Reload** on the Web tab.
+### Live Demo
 
-### 9.7 Configure Google OAuth for Production
-
-In Google Cloud Console add:
-- Authorized origins: `https://yourusername.pythonanywhere.com`
-- Redirect URI: `https://yourusername.pythonanywhere.com/auth/google/login/callback/`
-
-In Django admin → **Sites** → change domain to `yourusername.pythonanywhere.com`
-
-In Django admin → **Social Applications** → add a new Google app with your Client ID and Secret.
+🌐 [khalidbrx.pythonanywhere.com](https://khalidbrx.pythonanywhere.com)
 
 ---
 
-## 10. Project Structure
+## 11. Project Structure
 
 ```
-FIDPHA001/                          ← Project root
-├── .gitignore
-├── manage.py
-├── requirements.txt
-├── static/                         ← Global static files
-│   ├── admin.css                   ← Custom admin CSS
-│   └── admin/
-│       ├── account_form.js         ← Admin JS (generate code button)
-│       └── user_form.js            ← Admin JS (password strength, staff toggle)
-├── templates/                      ← Global templates
-│   └── registration/               ← Password reset templates
-├── FIDPHA001/                      ← Django project settings
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-└── fidpha/                         ← Main Django app
-    ├── migrations/
-    ├── static/fidpha/
-    │   ├── css/
-    │   │   ├── portal.css          ← Portal styles
-    │   │   └── login.css           ← Login page styles
-    │   └── js/
-    │       └── portal.js           ← Portal JavaScript
-    ├── templates/fidpha/
-    │   ├── base.html               ← Base portal template
-    │   ├── dashboard.html          ← Pharmacy dashboard
-    │   ├── profile.html            ← User profile editor
-    │   ├── login.html              ← Login page
-    │   ├── setup_profile.html      ← First-time profile setup
-    │   └── verify_pending.html     ← Email verification pending
-    ├── adapters.py                 ← Allauth social account adapters
-    ├── admin.py                    ← Admin panel configuration
-    ├── apps.py
-    ├── models.py                   ← Database models
-    ├── urls.py                     ← Portal URL routes
-    ├── utils.py                    ← Sidebar badge helpers
-    └── views.py                    ← Portal views and auth logic
+FIDPHA001/                          ← git root
+├── CLAUDE.md                       ← development rules and decisions
+├── ARCHITECTURE.md                 ← deep technical reference
+└── FIDPHA001/                      ← Django source
+    ├── manage.py
+    ├── db.sqlite3                  ← SQLite database (dev only, gitignored)
+    ├── requirements.txt
+    ├── FIDPHA001/                  ← Django project package
+    │   ├── settings.py
+    │   ├── urls.py                 ← root URL configuration
+    │   ├── wsgi.py
+    │   └── test_runner.py
+    ├── fidpha/                     ← core app (models, portal views, services)
+    │   ├── models.py               ← Account, UserProfile, Product, Contract, Contract_Product
+    │   ├── views.py                ← portal views (dashboard, contracts, sales, pharmacy)
+    │   ├── services.py             ← business logic (get_active_contract, bulk_import_products, ...)
+    │   ├── adapters.py             ← Google OAuth adapter
+    │   ├── urls.py                 ← /portal/* routes
+    │   ├── static/fidpha/css/
+    │   │   ├── portal.css          ← shared CSS (portal + control panel)
+    │   │   └── login.css
+    │   └── templates/fidpha/       ← portal HTML templates + email templates
+    ├── api/                        ← REST API layer
+    │   ├── models.py               ← APIToken, APITokenUsageLog
+    │   ├── authentication.py       ← SHA-256 token authentication
+    │   ├── views.py                ← /api/v1/ endpoints
+    │   ├── portal_views.py         ← /api/portal/ endpoints (React pharmacy portal)
+    │   ├── staff_views.py          ← /api/staff/ endpoints (React control panel)
+    │   ├── serializers.py          ← DRF serializers for portal + staff APIs
+    │   ├── permissions.py          ← HasAPIToken, PortalSessionPermission, StaffSessionPermission
+    │   └── throttles.py            ← per-token rate limiting
+    ├── sales/                      ← ingestion + sale storage
+    │   ├── models.py               ← SaleImport (raw), Sale (validated + points)
+    │   └── services.py             ← submit_sales_batch() — single ingestion entry point
+    ├── control/                    ← staff control panel
+    │   ├── models.py               ← SystemConfig (global settings)
+    │   ├── views.py                ← all control panel views (CRUD + sales review)
+    │   ├── forms.py                ← all forms and formsets
+    │   ├── decorators.py           ← @staff_required, @perm_required, @superuser_required
+    │   └── templates/control/      ← control panel HTML templates
+    ├── locale/fr/LC_MESSAGES/      ← French translations (.po source + .mo compiled)
+    ├── static/                     ← global static (admin.css, admin JS)
+    ├── templates/
+    │   ├── registration/           ← password reset templates
+    │   └── react/                  ← SPA shell templates (index.html, staff_index.html)
+    └── frontend/                   ← React SPA (feature/react-ui branch only)
+        ├── src/
+        │   ├── api/client.js       ← fetch wrapper (session + CSRF)
+        │   ├── components/Layout.jsx
+        │   └── pages/              ← Dashboard, Contracts, Points, Pharmacy
+        ├── vite.config.js
+        └── package.json
 ```
 
 ---
 
-*FIDPHA Documentation — April 2026*
+*WinInPharma Documentation — May 2026*
 
 ---
 ---
@@ -925,751 +551,437 @@ FIDPHA001/                          ← Project root
 
 <a name="français"></a>
 
-# FIDPHA — Système de Gestion des Pharmacies
+# WinInPharma — Plateforme de Fidélisation des Pharmacies
 
 ## Table des Matières
 
-1. [Aperçu du Projet](#1-aperçu-du-projet)
-2. [Configuration de l'Environnement](#2-configuration-de-lenvironnement)
-3. [Configuration du Projet Django](#3-configuration-du-projet-django)
-4. [Base de Données & Modèles](#4-base-de-données--modèles)
-5. [Panneau d'Administration](#5-panneau-dadministration)
-6. [Système d'Authentification](#6-système-dauthentification)
-7. [Portail Pharmacie](#7-portail-pharmacie)
-8. [API](#8-api)
-9. [Déploiement](#9-déploiement)
-10. [Structure du Projet](#10-structure-du-projet)
+1. [Présentation du Projet](#1-présentation-du-projet)
+2. [Fonctionnement](#2-fonctionnement)
+3. [Stack Technique](#3-stack-technique)
+4. [Installation Locale](#4-installation-locale)
+5. [Portail Pharmacie](#5-portail-pharmacie)
+6. [Panneau de Contrôle Staff](#6-panneau-de-contrôle-staff)
+7. [API Publique](#7-api-publique)
+8. [Pipeline d'Ingestion des Ventes](#8-pipeline-dingestion-des-ventes)
+9. [Authentification & Permissions](#9-authentification--permissions)
+10. [Déploiement](#10-déploiement)
+11. [Structure du Projet](#11-structure-du-projet)
 
 ---
 
-## 1. Aperçu du Projet
+## 1. Présentation du Projet
 
-FIDPHA est une application web de gestion des pharmacies construite avec Django. Elle permet aux administrateurs de gérer les comptes pharmacies, les contrats et les produits via une interface d'administration soignée, tout en offrant aux utilisateurs pharmacie un portail dédié pour consulter leurs informations et leurs contrats.
+**WinInPharma** est une plateforme de gestion de la fidélisation des pharmacies construite avec Django. Elle connecte une entreprise pharmaceutique (l'opérateur) à son réseau de pharmacies via un système d'incitation basé sur des points.
+
+Les pharmacies soumettent leurs ventes quotidiennes via une API. Chaque vente est validée par rapport à un contrat actif et rapporte à la pharmacie un certain nombre de points de fidélité, calculés à partir d'un multiplicateur par produit défini dans le contrat. Les pharmacies se connectent à un portail dédié pour suivre leurs points, consulter leurs contrats et voir l'historique de leurs ventes. Le personnel de l'opérateur gère tout depuis un panneau de contrôle personnalisé.
 
 ### Fonctionnalités Clés
 
-- Interface d'administration Django personnalisée avec le thème Unfold
-- Accès basé sur les rôles (superutilisateur, staff, utilisateurs pharmacie)
-- Connexion Google OAuth
-- Système de vérification d'email
-- Réinitialisation du mot de passe par email
-- Tableau de bord du portail pharmacie avec mode sombre/clair
-- API REST avec authentification par token
-- Déployé sur PythonAnywhere via GitHub
+| Fonctionnalité | Description |
+|---|---|
+| Portail pharmacie | 4 pages : statistiques + graphiques, contrats, détail des points, infos compte |
+| Panneau de contrôle staff | CRUD complet : comptes, contrats, produits, utilisateurs, tokens ; revue des ventes |
+| API REST publique | API par token pour que les logiciels des pharmacies soumettent des ventes et interrogent les contrats |
+| Système de points | Multiplicateur par produit × quantité × snapshot PPV ; calculé côté serveur uniquement |
+| Auto-révision | Acceptation automatique configurable (global + par compte) des ventes valides |
+| Ingestion des ventes | Pipeline par lots avec idempotence, protection aux conditions de course, avertissements de lots concurrents |
+| Google OAuth | Connexion avec Google pour les pharmacies et le personnel |
+| Système d'email | Emails HTML de vérification, réinitialisation de mot de passe, branding WinInPharma |
+| i18n Français | Portail disponible en français (bascule FR/EN) |
+| Piste d'audit | Chaque action staff enregistrée via Django LogEntry ; visible sur le tableau de bord |
+| Import CSV / Excel | Import en masse de produits et de produits de contrats par fichier |
 
-### Stack Technique
+---
 
-| Composant | Technologie |
-|-----------|-------------|
+## 2. Fonctionnement
+
+La plateforme comporte trois couches orientées utilisateur :
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        WinInPharma                              │
+├─────────────────┬───────────────────────┬───────────────────────┤
+│ Portail Pharma  │ Panneau Contrôle Staff│    API REST Publique   │
+│  /portal/       │   /control/           │    /api/v1/            │
+│                 │                       │                        │
+│  Auth session   │   Auth session        │   Auth par token       │
+│  Utilisateurs   │   Staff / superusers  │   Logiciels pharmacie  │
+│  pharmacie      │                       │   (logiciels externes) │
+└─────────────────┴───────────────────────┴───────────────────────┘
+```
+
+**Flux typique :**
+
+1. Le staff crée un Compte (pharmacie) et lui assigne un Contrat actif avec des produits et des multiplicateurs de points.
+2. Le logiciel de la pharmacie soumet les ventes quotidiennes via `POST /api/v1/sales/` avec un token.
+3. Le pipeline valide chaque ligne : vérifie que le produit est dans le contrat actif, contrôle la date, prend un snapshot du PPV et calcule les points.
+4. Le staff examine les ventes en attente dans le panneau de contrôle (accepter / rejeter avec motif / actions groupées). L'auto-révision peut être activée pour ignorer cette étape.
+5. L'utilisateur portail de la pharmacie se connecte et consulte ses points, ses contrats et ses graphiques.
+
+---
+
+## 3. Stack Technique
+
+| Concern | Choix |
+|---|---|
 | Backend | Python 3.12, Django 5.2 |
-| Thème Admin | django-unfold 0.87.0 |
-| Authentification | django-allauth |
-| Base de données | SQLite (développement), évolutif vers MySQL |
-| Déploiement | PythonAnywhere + GitHub |
-
-### Démo en Ligne
-
-🌐 [khalidbrx.pythonanywhere.com](https://khalidbrx.pythonanywhere.com)
+| Base de données | SQLite (dev) — évolutif |
+| API REST | Django REST Framework (adoption partielle — pas de viewsets/routers) |
+| Authentification | django-allauth (Google OAuth + email/mot de passe) |
+| Thème admin | django-unfold (inactif — remplacé par le panneau de contrôle) |
+| Frontend | JS vanilla + ECharts (CDN) + Material Icons + Inter |
+| CSS | `portal.css` unique partagé portail et panneau de contrôle |
+| Email | Gmail SMTP — `EmailMultiAlternatives` (HTML + texte) |
+| i18n | Django i18n + GNU gettext, `locale/fr/` |
+| Déploiement | PythonAnywhere + GitHub (workflow par PR) |
+| React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (en cours, `feature/react-ui`) |
 
 ---
 
-## 2. Configuration de l'Environnement
+## 4. Installation Locale
 
-### 2.1 Installer Python
+### 4.1 Prérequis
 
-Téléchargez et installez Python 3.12 depuis [python.org](https://www.python.org/downloads/).
+- Python 3.12
+- Git
+- GNU gettext (pour compiler les traductions — Windows : `C:\Program Files\gettext-iconv\bin`)
 
-Vérifiez l'installation :
-```bash
-python --version
-# Python 3.12.x
-```
-
-### 2.2 Installer PyCharm
-
-Téléchargez PyCharm Community Edition depuis [jetbrains.com/pycharm](https://www.jetbrains.com/pycharm/).
-
-### 2.3 Créer le Répertoire du Projet
+### 4.2 Cloner & Installer
 
 ```bash
-mkdir FIDPHA001
-cd FIDPHA001
-```
-
-### 2.4 Créer un Environnement Virtuel
-
-```bash
+git clone https://github.com/khalidbrx-Q/FIDPHA.git
+cd FIDPHA/FIDPHA001
 python -m venv .venv
-```
 
-Activez-le :
-
-**Windows :**
-```bash
+# Windows
 .venv\Scripts\activate
-```
-
-**Mac/Linux :**
-```bash
+# Mac/Linux
 source .venv/bin/activate
+
+pip install -r requirements.txt
 ```
 
-### 2.5 Installer Django et les Packages Requis
+### 4.3 Variables d'Environnement
 
-```bash
-pip install django
-pip install django-unfold
-pip install django-allauth
-pip install requests
-pip install PyJWT
-pip install cryptography
+Créer un fichier `.env` dans `FIDPHA001/` (même dossier que `manage.py`) :
+
+```
+SECRET_KEY=votre-secret-key
+DEBUG=True
+EMAIL_HOST_USER=votre@gmail.com
+EMAIL_HOST_PASSWORD=votre-mot-de-passe-application
+DEFAULT_FROM_EMAIL=WinInPharma <votre@gmail.com>
 ```
 
----
-
-## 3. Configuration du Projet Django
-
-### 3.1 Créer le Projet Django
-
-```bash
-django-admin startproject FIDPHA001 .
-```
-
-### 3.2 Créer l'Application Django
-
-```bash
-python manage.py startapp fidpha
-```
-
-### 3.3 Enregistrer l'Application dans settings.py
-
-```python
-INSTALLED_APPS = [
-    "unfold",
-    "unfold.contrib.filters",
-    "unfold.contrib.forms",
-    "fidpha.apps.FidphaConfig",
-    "django.contrib.admin",
-    # ... autres apps
-]
-```
-
-### 3.4 Configurer le Fuseau Horaire
-
-```python
-TIME_ZONE = 'Africa/Casablanca'
-USE_TZ = True
-```
-
-### 3.5 Lancer les Migrations Initiales et Créer un Superutilisateur
+### 4.4 Initialiser la Base de Données
 
 ```bash
 python manage.py migrate
 python manage.py createsuperuser
+python manage.py compilemessages   # compiler les traductions françaises
 python manage.py runserver
 ```
 
-Visitez `http://127.0.0.1:8000` dans votre navigateur.
+Visitez `http://127.0.0.1:8000` — vous serez redirigé vers `/portal/login/`.
+
+Connectez-vous avec votre compte superuser pour accéder au panneau de contrôle `/control/`.
 
 ---
 
-## 4. Base de Données & Modèles
+## 5. Portail Pharmacie
 
-### 4.1 Aperçu des Modèles
+Le portail est l'interface destinée aux pharmacies. Seuls les utilisateurs avec `Account.pharmacy_portal = True` peuvent y accéder.
 
-| Modèle | Description |
-|--------|-------------|
-| Account | Représente une pharmacie avec ses informations de contact |
-| UserProfile | Lie un Utilisateur Django à un Compte avec vérification email |
-| Product | Un produit pharmaceutique avec code interne et désignation |
-| Contract | Un contrat limité dans le temps entre FIDPHA et une pharmacie |
-| Contract_Product | Table de jonction liant les produits aux contrats |
+### Pages
 
-### 4.2 Relations
+| Page | URL | Description |
+|---|---|---|
+| Tableau de bord | `/portal/dashboard/` | KPI (points, unités, contrats, ventes en attente) + 4 graphiques ECharts |
+| Contrats | `/portal/contracts/` | Tableau des produits du contrat actif + graphique mensuel avec drill-down quotidien |
+| Points | `/portal/sales/` | Tableau complet des ventes avec filtre de statut, recherche de produit, taux d'acceptation, sélecteur d'année |
+| Pharmacie | `/portal/pharmacy/` | Infos compte, modifier le profil, changer le mot de passe, statut de vérification email |
 
-- **Account → Contract** : OneToMany (un compte, plusieurs contrats)
-- **Account → User** : OneToMany via UserProfile (un compte, plusieurs utilisateurs)
-- **Contract → Product** : ManyToMany via Contract_Product
-- `Contract_Product` porte un attribut `external_designation`
+### Flux d'Authentification
 
-### 4.3 Règles Métier
-
-| Règle | Description |
-|-------|-------------|
-| 1 | Un compte ne peut avoir qu'un seul contrat actif à la fois |
-| 2 | Impossible de désactiver un produit lié à un contrat actif |
-| 3 | Impossible de désactiver un compte avec des contrats actifs |
-| 4 | Seuls les utilisateurs avec pharmacy_portal=True peuvent accéder au portail |
-| 5 | La date de début du contrat doit être <= à la date de fin |
-| 6 | external_designation mappe les produits internes au nommage de la pharmacie |
-
-### 4.4 models.py
-
-```python
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.contrib.auth.models import User
-
-
-class Account(models.Model):
-    STATUS_CHOICES = [("active", "Actif"), ("inactive", "Inactif")]
-    code = models.CharField(max_length=50, unique=True)
-    name = models.CharField(max_length=255)
-    city = models.CharField(max_length=100)
-    location = models.TextField()
-    phone = models.CharField(max_length=50)
-    email = models.EmailField()
-    pharmacy_portal = models.BooleanField(default=False)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
-
-    class Meta:
-        db_table = "Account"
-
-    def __str__(self):
-        return f"[{self.code}] {self.name} - {self.city}"
-
-    def clean(self):
-        # Règle 3 : impossible de désactiver un compte avec des contrats actifs
-        if self.status == "inactive" and self.pk:
-            if self.contracts.filter(status="active").exists():
-                raise ValidationError(
-                    "Impossible de désactiver ce compte car il a des contrats actifs."
-                )
-
-
-class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="users")
-    email_verified = models.BooleanField(default=False)
-    verification_token = models.CharField(max_length=64, blank=True, null=True)
-    token_created_at = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        db_table = "UserProfile"
-
-    def __str__(self):
-        return f"{self.user.username} → {self.account.name}"
-
-
-class Product(models.Model):
-    STATUS_CHOICES = [("active", "Actif"), ("inactive", "Inactif")]
-    code = models.CharField(max_length=50, unique=True)
-    designation = models.CharField(max_length=255)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
-
-    class Meta:
-        db_table = "Product"
-
-    def __str__(self):
-        return self.designation
-
-    def clean(self):
-        # Règle 2 : impossible de désactiver un produit dans un contrat actif
-        if self.status == "inactive" and self.pk:
-            if Contract_Product.objects.filter(
-                product=self, contract__status="active"
-            ).exists():
-                raise ValidationError(
-                    "Impossible de désactiver ce produit car il est dans des contrats actifs."
-                )
-
-
-class Contract(models.Model):
-    STATUS_CHOICES = [("active", "Actif"), ("inactive", "Inactif")]
-    title = models.CharField(max_length=255)
-    designation = models.TextField()
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="contracts")
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
-    products = models.ManyToManyField(Product, through="Contract_Product", related_name="contracts")
-
-    class Meta:
-        db_table = "Contract"
-
-    def __str__(self):
-        return self.title
-
-    def clean(self):
-        # Règle 5 : date début <= date fin
-        if self.start_date and self.end_date:
-            if self.start_date > self.end_date:
-                raise ValidationError("La date de début doit être avant ou égale à la date de fin.")
-        # Règle 1 : un seul contrat actif par compte
-        if self.status == "active" and self.account_id:
-            active = Contract.objects.filter(account=self.account, status="active")
-            if self.pk:
-                active = active.exclude(pk=self.pk)
-            if active.exists():
-                raise ValidationError("Ce compte a déjà un contrat actif.")
-
-
-class Contract_Product(models.Model):
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    external_designation = models.CharField(max_length=255)
-
-    class Meta:
-        db_table = "Contract_Product"
-        unique_together = ("contract", "product")
-
-    def __str__(self):
-        return f"{self.contract} - {self.product}"
+```
+Utilisateur visite / → redirigé vers /portal/login/
+↓
+Saisit ses identifiants (ou se connecte avec Google)
+↓
+Utilisateur staff → /control/
+Utilisateur portail (pharmacy_portal=True) → /portal/dashboard/
 ```
 
-### 4.5 Lancer les Migrations
+### Vérification Email
 
-```bash
-python manage.py makemigrations
-python manage.py migrate
+Les nouveaux utilisateurs pharmacie doivent vérifier leur email avant d'accéder au portail :
+
 ```
+Première connexion → /portal/setup-profile/ (saisie email + nom/mot de passe optionnels)
+→ Email de vérification envoyé (token valable 24h)
+→ Clic sur le lien → email_verified = True → accès complet au portail
+```
+
+### Formule des Points
+
+Les points sont toujours calculés côté serveur avec cette formule :
+
+```
+points = round(quantité × Sale.product_ppv × Contract_Product.points_per_unit)
+```
+
+- `Sale.product_ppv` est un snapshot de `Product.ppv` pris au moment de l'ingestion.
+- Cette valeur est figée — elle ne change jamais même si le prix catalogue évolue.
+- Le frontend affiche uniquement — il ne recalcule jamais.
 
 ---
 
-## 5. Panneau d'Administration
+## 6. Panneau de Contrôle Staff
 
-### 5.1 Configuration du Thème Unfold
+Le panneau de contrôle `/control/` remplace complètement Django admin. Il est accessible aux utilisateurs `is_staff=True`. Les superutilisateurs ont un accès total ; le staff classique voit uniquement ce que ses permissions autorisent.
 
-Ajoutez à `INSTALLED_APPS` avant `django.contrib.admin` :
+### Modules
 
-```python
-INSTALLED_APPS = [
-    "unfold",
-    "unfold.contrib.filters",
-    "unfold.contrib.forms",
-    "fidpha.apps.FidphaConfig",
-    "django.contrib.admin",
-]
+| Module | URL | Ce que vous pouvez faire |
+|---|---|---|
+| Tableau de bord | `/control/` | Fil d'activité (25 dernières actions), statistiques rapides |
+| Rôles | `/control/roles/` | Créer/modifier des groupes Django avec icône et permissions |
+| Utilisateurs | `/control/users/` | Créer/modifier superusers, staff et utilisateurs portail |
+| Comptes | `/control/accounts/` | CRUD complet pour les pharmacies ; génération automatique de codes |
+| Contrats | `/control/contracts/` | CRUD complet ; gestion inline des produits avec modal d'import CSV/Excel/JSON |
+| Produits | `/control/products/` | CRUD complet ; import CSV en masse |
+| Tokens API | `/control/tokens/` | Créer des tokens (affichés une fois, stockés en SHA-256) ; révoquer/réactiver |
+| Revue des ventes | `/control/sales/` | Liste des lots, expansion inline, accepter/rejeter avec motif, actions groupées, export CSV |
+| Paramètres système | `/control/settings/system/` | Bascule auto-révision globale (superuser uniquement) |
+| Social / Sites | `/control/settings/social-apps/` etc. | Config OAuth Google, Django Sites (superuser uniquement) |
+
+### Workflow de Revue des Ventes
+
+```
+La pharmacie soumet des ventes via l'API
+       ↓
+Les ventes arrivent en base avec status=PENDING
+       ↓
+Le staff ouvre /control/sales/ → sélectionne un lot → examine les lignes
+       ↓
+Accepter → status=ACCEPTED, points comptabilisés
+Rejeter → status=REJECTED, motif de rejet enregistré
+       ↓
+Ou : activer l'Auto-Révision (global + par compte) pour ignorer la revue manuelle
 ```
 
-### 5.2 Améliorations Clés de l'Admin
+### Auto-Révision
 
-| Fonctionnalité | Description |
-|----------------|-------------|
-| Génération automatique de codes | Génère des codes Compte en un clic via un bouton JS |
-| Contrats inline | Liste scrollable de contrats dans la page de détail du Compte |
-| Utilisateurs inline | Affiche uniquement les utilisateurs non-staff disponibles |
-| Détails du compte | Informations complètes du compte dans les pages Utilisateur et Contrat |
-| Compteur de produits | Nombre de produits affiché par contrat dans la liste |
-| Badges de la barre latérale | Affiche les comptages actif/total pour Comptes, Contrats, Produits |
-| Force du mot de passe | Indicateur en temps réel lors de la création/modification de mots de passe |
-| Bascule staff | L'inline du profil se cache automatiquement pour les utilisateurs staff |
-| Statut email | Badge de vérification affiché à côté du champ email dans la page Utilisateur |
+Deux interrupteurs doivent être tous les deux activés :
+
+1. **Global** : `SystemConfig.auto_review_enabled` (dans Paramètres Système)
+2. **Par compte** : `Account.auto_review_enabled` (dans le formulaire d'édition du compte)
+
+Quand les deux sont actifs, les ventes valides sont automatiquement acceptées à l'ingestion. `Sale.auto_reviewed = True` marque ces lignes ; `reviewed_by` reste None.
+
+### Import de Produits dans un Contrat
+
+Dans le formulaire d'édition du contrat, le staff peut importer des produits via un modal :
+
+- Formats supportés : **CSV** (séparateur virgule ou point-virgule), **Excel** (.xlsx / .xls), **JSON**
+- Affiche un aperçu modifiable avant d'ajouter les lignes au formset
+- Les lignes ignorées sont affichées avec le motif et un bouton "Corriger & réessayer"
+- Disponible en mode Édition uniquement (nécessite la permission `change_contract`)
 
 ---
 
-## 6. Système d'Authentification
+## 7. API Publique
 
-### 6.1 Flux de Connexion
+L'API publique `/api/v1/` est consommée par les logiciels externes des pharmacies (pas les navigateurs). Chaque requête doit inclure un token API valide.
 
-```
-L'utilisateur visite / → redirigé vers /portal/login/
-↓
-Page de connexion (nom d'utilisateur + mot de passe OU Google)
-↓
-Utilisateur staff → /admin/
-Utilisateur non-staff → vérification pharmacy_portal → /portal/dashboard/
-```
-
-### 6.2 Configuration d'Allauth
-
-```python
-INSTALLED_APPS += [
-    "django.contrib.sites",
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.google",
-]
-
-SITE_ID = 1
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-]
-SOCIALACCOUNT_AUTO_SIGNUP = False
-SOCIALACCOUNT_ADAPTER = "fidpha.adapters.FIDPHASocialAccountAdapter"
-ACCOUNT_ADAPTER = "fidpha.adapters.FIDPHAAccountAdapter"
-```
-
-### 6.3 Configuration Google OAuth
-
-1. Aller sur [console.cloud.google.com](https://console.cloud.google.com)
-2. Créer un nouveau projet
-3. Aller dans **APIs & Services** → **Écran de consentement OAuth** → Externe
-4. Aller dans **Identifiants** → **Créer un identifiant OAuth** → Application Web
-5. Ajouter les origines autorisées : `http://127.0.0.1:8000`
-6. Ajouter l'URI de redirection : `http://127.0.0.1:8000/auth/google/login/callback/`
-7. Dans l'admin Django → **Applications Sociales** → Ajouter les identifiants Google
-8. Dans l'admin Django → **Sites** → Définir le domaine sur `127.0.0.1:8000`
-
-### 6.4 Configuration Email (Gmail SMTP)
-
-```python
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'votre_email@gmail.com'
-EMAIL_HOST_PASSWORD = 'votre_mot_de_passe_application'
-```
-
-> Pour obtenir un mot de passe d'application : Compte Google → Sécurité → Validation en 2 étapes → Mots de passe des applications
-
-### 6.5 Flux de Vérification Email
+### Authentification
 
 ```
-Nouvel utilisateur se connecte pour la première fois
-↓
-Redirigé vers /portal/setup-profile/
-↓
-L'utilisateur saisit son email (+ nom/prénom et mot de passe optionnels)
-↓
-Email de vérification envoyé avec lien token (expire en 24h)
-↓
-L'utilisateur clique le lien → email_verified = True
-↓
-L'utilisateur peut accéder au tableau de bord et utiliser Google login
+Authorization: Token VOTRE_TOKEN_BRUT
 ```
 
-### 6.6 Flux de Réinitialisation du Mot de Passe
+Les tokens sont créés dans le panneau de contrôle (`/control/tokens/`). Le token brut est affiché **une seule fois** à la création ; il est stocké sous forme de hash SHA-256 — il ne peut pas être récupéré ensuite.
 
-```
-L'utilisateur clique "Mot de passe oublié ?" sur la page de connexion
-↓
-Saisit son email → le système vérifie que l'email existe
-↓
-Email de réinitialisation envoyé avec lien sécurisé (expire en 24h)
-↓
-L'utilisateur clique le lien → saisit un nouveau mot de passe
-↓
-Force du mot de passe imposée (8+ caractères, majuscule, chiffre, caractère spécial)
-↓
-Redirigé vers la page de connexion
-```
-
----
-
-## 7. Portail Pharmacie
-
-### 7.1 URLs du Portail
-
-```python
-# fidpha/urls.py
-urlpatterns = [
-    path("login/", views.custom_login, name="login"),
-    path("dashboard/", views.portal_dashboard, name="dashboard"),
-    path("setup-profile/", views.setup_profile, name="setup_profile"),
-    path("verify-pending/", views.verify_pending, name="verify_pending"),
-    path("verify-email/<str:token>/", views.verify_email, name="verify_email"),
-    path("profile/", views.portal_profile, name="profile"),
-    path("profile/password/", views.portal_profile_password, name="profile_password"),
-    path("logout/", views.custom_logout, name="logout"),
-]
-```
-
-### 7.2 Fonctionnalités du Tableau de Bord
-
-- Informations pharmacie (nom, ville, téléphone, email, statut)
-- Comptage des contrats actifs et total
-- Tous les contrats liés avec tableau de produits
-- Bannière d'avertissement de vérification email (si non vérifié)
-- Bascule mode sombre/clair
-- Barre latérale rétractable avec lien profil
-
-### 7.3 Fonctionnalités de la Page Profil
-
-- Voir le nom d'utilisateur (lecture seule, non modifiable)
-- Modifier prénom, nom, email
-- Badge de statut de vérification email
-- Changer le mot de passe (requiert mot de passe actuel + nouveau + confirmation)
-- Indicateur de force du mot de passe avec checklist en temps réel
-- Informations du compte lié
-
-### 7.4 Templates du Portail
-
-| Template | Rôle |
-|----------|------|
-| base.html | Barre latérale, barre supérieure, bascule thème — étendu par toutes les pages |
-| dashboard.html | Infos pharmacie, contrats et tableaux de produits |
-| profile.html | Éditeur de profil utilisateur avec changement de mot de passe |
-| login.html | Page de connexion avec bouton Google OAuth |
-| setup_profile.html | Configuration du profil lors de la première connexion |
-| verify_pending.html | En attente de confirmation de vérification email |
-
----
-
-## 8. API
-
-### 8.1 Aperçu
-
-FIDPHA expose une API REST construite avec Django REST Framework. Elle utilise une authentification par token personnalisée — les tokens sont indépendants (non liés à un utilisateur) et gérés par le super administrateur.
-
-### 8.2 Authentification
-
-Toutes les requêtes API doivent inclure un token valide dans l'en-tête `Authorization` :
-Authorization: Token VOTRE_TOKEN_ICI
-
-Les tokens sont créés et gérés dans le panneau d'administration sous **API → API Tokens**.
-
-### 8.3 Installation
-
-**Étape 1 — Installer Django REST Framework :**
-```bash
-pip install djangorestframework
-```
-
-**Étape 2 — Créer l'application API :**
-```bash
-python manage.py startapp api
-```
-
-**Étape 3 — Ajouter à INSTALLED_APPS dans settings.py :**
-```python
-INSTALLED_APPS = [
-    ...
-    "rest_framework",
-    "api",
-]
-```
-
-**Étape 4 — Créer les fichiers suivants dans l'application `api` :**
-
-| Fichier | Rôle |
-|---------|------|
-| `api/models.py` | Modèle APIToken |
-| `api/authentication.py` | Classe d'authentification par token personnalisée |
-| `api/permissions.py` | Classe de permission personnalisée |
-| `api/views.py` | Vues API et gestionnaire d'exceptions personnalisé |
-| `api/urls.py` | Routes URL de l'API |
-| `api/admin.py` | Configuration admin pour la gestion des tokens |
-
-**Étape 5 — Lancer les migrations :**
-```bash
-python manage.py makemigrations api
-python manage.py migrate
-```
-
-**Étape 6 — Ajouter les URLs API dans le urls.py principal :**
-```python
-path("api/v1/", include("api.urls")),
-```
-
-### 8.4 Gestion des Tokens
-
-| Fonctionnalité | Description |
-|----------------|-------------|
-| Créer un token | Le super admin crée un token avec un nom/description |
-| Copier le token | Bouton de copie disponible dans la liste et la page de détail |
-| Révoquer le token | Définir `is_active = False` pour révoquer l'accès |
-| Suivi d'utilisation | `last_used_at` et `usage_count` mis à jour à chaque requête |
-
-### 8.5 Endpoints
+### Endpoints
 
 #### GET /api/v1/contract/active/
 
-Retourne le contrat actif pour une pharmacie donnée.
+Retourne le contrat actif d'un compte pharmacie donné.
 
-**Paramètres de requête :**
+**Paramètre :** `account_code` (obligatoire)
 
-| Paramètre | Requis | Description |
-|-----------|--------|-------------|
-| account_code | Oui | Le code du compte pharmacie (ex. `PH-XXXXX`) |
-
-**Exemple de requête :**
-```bash
-curl -H "Authorization: Token VOTRE_TOKEN_ICI" \
-     "https://khalidbrx.pythonanywhere.com/api/v1/contract/active/?account_code=PH-XXXXX"
-```
-
-**Réponse succès (200 OK) :**
+**Réponse succès (200) :**
 ```json
 {
     "status": "success",
-    "timestamp": "2026-04-13T14:30:00Z",
+    "timestamp": "2026-05-11T10:00:00Z",
     "contract": {
         "id": 1,
         "pharmacy": "PHARMACY SAADA",
-        "account_code": "PH-XXXXX",
-        "start_date": "2026-04-07",
-        "end_date": "2026-05-07",
+        "account_code": "PH-00001",
+        "start_date": "2026-04-01T00:00:00Z",
+        "end_date": "2026-06-30T23:59:59Z",
         "products": [
             {
                 "product_id": 1,
-                "internal_code": "PROD001",
-                "external_designation": "DOLI1000"
+                "internal_code": "MED-001",
+                "external_designation": "DOLI1000",
+                "points_per_unit": "1.50",
+                "target_quantity": 200
             }
         ]
     }
 }
 ```
 
-**Réponses d'erreur :**
+#### POST /api/v1/sales/
 
-| Code HTTP | Code Erreur | Description |
-|-----------|-------------|-------------|
-| 400 | MISSING_PARAMETER | Paramètre account_code manquant |
-| 401 | INVALID_TOKEN | Token manquant ou invalide |
-| 404 | ACCOUNT_NOT_FOUND | Aucun compte trouvé avec ce code |
-| 404 | CONTRACT_NOT_FOUND | Aucun contrat actif trouvé pour ce compte |
-| 500 | SERVER_ERROR | Erreur interne du serveur |
+Soumet un lot de ventes.
 
-**Exemple de réponse d'erreur :**
+**Corps de la requête :**
 ```json
 {
-    "status": "error",
-    "timestamp": "2026-04-13T14:30:00Z",
-    "error": {
-        "code": "CONTRACT_NOT_FOUND",
-        "message": "No active contract found for account PH-XXXXX"
-    }
-}
-```
-
-### 8.6 Exemple d'Utilisation Python
-
-```python
-import requests
-
-API_BASE_URL = "https://khalidbrx.pythonanywhere.com/api/v1"
-API_TOKEN = "VOTRE_TOKEN_ICI"
-ACCOUNT_CODE = "PH-XXXXX"
-
-headers = {
-    "Authorization": f"Token {API_TOKEN}",
-    "Content-Type": "application/json"
-}
-
-def get_active_contract(account_code):
-    url = f"{API_BASE_URL}/contract/active/"
-    params = {"account_code": account_code}
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        return response.json()
-    except Exception as e:
-        return e
-
-if __name__ == "__main__":
-    print(get_active_contract(ACCOUNT_CODE))
-```
-
-### 8.7 Configuration
-
-```python
-INSTALLED_APPS += [
-    "rest_framework",
-    "api",
-]
-
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "api.authentication.APITokenAuthentication",
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "api.permissions.HasAPIToken",
-    ],
-    "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
-    ],
-    "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
-    },
-    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
-    "DEFAULT_VERSION": "v1",
-    "ALLOWED_VERSIONS": ["v1"],
-    "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
-    ],
-    "EXCEPTION_HANDLER": "api.views.custom_exception_handler",
-}
-
-if DEBUG:
-    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] += [
-        "rest_framework.renderers.BrowsableAPIRenderer",
+    "account_code": "PH-00001",
+    "batch_id": "uuid-unique-du-lot",
+    "sales": [
+        {
+            "external_designation": "DOLI1000",
+            "sale_datetime": "2026-05-10T14:00:00",
+            "creation_datetime": "2026-05-10T14:01:00",
+            "quantity": 10,
+            "ppv": 12.50
+        }
     ]
+}
 ```
+
+**Codes d'erreur :**
+
+| Code | HTTP | Signification |
+|---|---|---|
+| `INVALID_TOKEN` | 401 | Token absent ou inactif |
+| `MISSING_FIELD` | 400 | Champ requis absent |
+| `ACCOUNT_NOT_FOUND` | 404 | Aucun compte avec ce code |
+| `CONTRACT_NOT_FOUND` | 404 | Aucun contrat actif pour ce compte |
+| `BATCH_TOO_LARGE` | 400 | Lot dépassant 50 000 lignes |
+| `SERVER_ERROR` | 500 | Erreur interne |
+
+### Limite de Débit
+
+1 000 requêtes par heure par token. Scope du throttle : `api_token` (clé = PK du token).
 
 ---
 
-## 9. Déploiement
+## 8. Pipeline d'Ingestion des Ventes
 
-### 9.1 Préparer le Déploiement
+Lors d'un appel `POST /api/v1/sales/`, `submit_sales_batch()` dans `sales/services.py` s'exécute :
 
-Mettre à jour `settings.py` :
+1. **Vérification d'idempotence** — si `batch_id` existe déjà, retourner le résultat stocké immédiatement (retries sécurisés).
+2. **Vérification de taille** — rejet si > 50 000 lignes.
+3. **Transaction atomique** avec `select_for_update()` sur le contrat :
+   - Insertion en masse de toutes les lignes dans `SaleImport` (status=pending).
+   - Validation de chaque ligne (produit dans le contrat ? date valide ? quantité/ppv positifs ?).
+   - Si l'auto-révision est activée pour ce compte : acceptation automatique des lignes valides.
+   - Création en masse des lignes `Sale` acceptées avec snapshot PPV.
+   - Mise à jour de `Contract.last_sale_datetime`.
+4. **Avertissement lot concurrent** — si d'autres lots en attente existent pour le même contrat, un avertissement `CONCURRENT_BATCH` est inclus dans la réponse.
 
-```python
-DEBUG = False
-ALLOWED_HOSTS = ['*', 'votrenom.pythonanywhere.com']
-STATIC_ROOT = BASE_DIR / "staticfiles"
+**Motifs de rejet par ligne (dans l'ordre) :**
+- Produit absent du contrat actif
+- `sale_datetime.date() >= aujourd'hui` (pas de ventes le jour même ou dans le futur)
+- `sale_datetime <= contract.last_sale_datetime` (borne exclusive)
+- `creation_datetime` hors plage
+- `sale_datetime` hors période du contrat
+- `quantity <= 0` ou `ppv <= 0`
+
+---
+
+## 9. Authentification & Permissions
+
+### Types d'Utilisateurs
+
+| Type | Flags Django | Se connecte à | Peut accéder à |
+|---|---|---|---|
+| **Superuser** | `is_superuser=True, is_staff=True` | `/control/` | Tout, y compris les paramètres système |
+| **Staff** | `is_staff=True` | `/control/` | Modules autorisés par son Rôle (permissions de groupe) |
+| **Utilisateur portail** | pas de flags + `UserProfile` lié à un `Account` | `/portal/` | Ses propres données pharmacie uniquement |
+
+### Rôles & Permissions
+
+Les permissions du staff sont gérées via les groupes Django (appelés "Rôles" dans le panneau de contrôle). Chaque rôle a une icône et un ensemble de permissions Django. Les utilisateurs staff sont assignés à un ou plusieurs rôles — ils n'accèdent qu'aux modules couverts par leurs permissions.
+
+### Google OAuth
+
+- Les utilisateurs pharmacie et staff peuvent se connecter avec Google.
+- La connexion Google **ne crée pas de nouveaux comptes** — l'utilisateur doit déjà exister dans le système.
+- Les mêmes règles d'accès s'appliquent : `pharmacy_portal=True` pour les utilisateurs portail, `is_staff=True` pour le staff.
+
+---
+
+## 10. Déploiement
+
+### 10.1 Stratégie de Branches
+
+| Branche | Rôle |
+|---|---|
+| `main` | Production — déployée sur PythonAnywhere |
+| `develop` | Développement backend actif |
+| `feature/react-ui` | SPA React (en cours — non mergée sur main) |
+| `feature/i18n` | Traductions françaises du panneau de contrôle (en cours) |
+
+### 10.2 Merger sur Main (via GitHub PR)
+
+Ne jamais merger localement. Toujours passer par une Pull Request GitHub :
+
+```
+git push origin develop
+→ Ouvrir une PR sur GitHub (develop → main)
+→ La routine REPO REVIEWER se déclenche (analyse automatique de sécurité + bugs)
+→ Lire le rapport de revue
+→ Cliquer "Merge pull request" sur GitHub
 ```
 
-### 9.2 Créer .gitignore
+Le **REPO REVIEWER** est une routine Claude Code qui analyse automatiquement chaque diff de PR pour détecter les vulnérabilités de sécurité et les bugs, puis publie un commentaire de verdict sur la PR.
 
-```
-__pycache__/
-*.py[cod]
-.venv/
-db.sqlite3
-staticfiles/
-*.log
-.idea/
-.env
-```
+### 10.3 Mettre à Jour PythonAnywhere
 
-### 9.3 Générer requirements.txt
+Après avoir mergé sur `main`, ouvrir une console Bash sur PythonAnywhere :
 
-```bash
-pip freeze > requirements.txt
-```
-
-### 9.4 Pousser sur GitHub
-
-```bash
-git init
-git add .
-git commit -m "commit initial"
-git remote add origin https://github.com/votrenom/FIDPHA.git
-git push -u origin main
-```
-
-### 9.5 Déployer sur PythonAnywhere
-
-**Étape 1 — Cloner le dépôt :**
-```bash
-git clone https://github.com/votrenom/FIDPHA.git
-```
-
-**Étape 2 — Créer l'environnement virtuel :**
-```bash
-mkvirtualenv fidpha --python=python3.12
-```
-
-**Étape 3 — Installer les dépendances :**
 ```bash
 cd FIDPHA
+workon fidpha
+git checkout -- .           # annuler les modifications locales du serveur
+git pull origin main
 pip install -r requirements.txt
-```
-
-**Étape 4 — Configurer la base de données et les fichiers statiques :**
-```bash
 python manage.py migrate
-python manage.py collectstatic
-python manage.py createsuperuser
+python manage.py collectstatic --noinput
+python manage.py compilemessages
 ```
 
-**Étape 5 — Configurer l'application Web sur le tableau de bord PythonAnywhere :**
+Puis aller dans l'onglet **Web → Reload**.
 
-Aller dans l'onglet **Web** → **Ajouter une nouvelle application web** → Configuration manuelle → Python 3.12
+### 10.4 Installation Initiale sur PythonAnywhere
 
-Contenu du fichier WSGI :
+```bash
+git clone https://github.com/khalidbrx-Q/FIDPHA.git
+cd FIDPHA/FIDPHA001
+mkvirtualenv fidpha --python=python3.12
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic --noinput
+python manage.py createsuperuser
+python manage.py compilemessages
+```
+
+Configurer l'application web (onglet Web → Configuration manuelle → Python 3.12) :
+
+**Fichier WSGI :**
 ```python
 import sys, os
 
-path = '/home/votrenom/FIDPHA'
+path = '/home/khalidbrx/FIDPHA/FIDPHA001'
 if path not in sys.path:
-    sys.path.append(path)
+    sys.path.insert(0, path)
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'FIDPHA001.settings'
 
@@ -1677,89 +989,85 @@ from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
 ```
 
-Virtualenv : `/home/votrenom/.virtualenvs/fidpha`
-
-Fichiers statiques :
+**Fichiers statiques :**
 
 | URL | Répertoire |
-|-----|------------|
-| `/static/` | `/home/votrenom/FIDPHA/staticfiles` |
+|---|---|
+| `/static/` | `/home/khalidbrx/FIDPHA/FIDPHA001/staticfiles` |
 
-**Étape 6 — Cliquer sur Reload**
+**Virtualenv :** `/home/khalidbrx/.virtualenvs/fidpha`
 
-### 9.6 Mettre à Jour Après des Modifications
+### 10.5 Google OAuth pour la Production
 
-Sur la machine locale :
-```bash
-git add .
-git commit -m "description des modifications"
-git push
-```
+Dans Google Cloud Console :
+- Origine autorisée : `https://khalidbrx.pythonanywhere.com`
+- URI de redirection : `https://khalidbrx.pythonanywhere.com/auth/google/login/callback/`
 
-Sur PythonAnywhere :
-```bash
-cd FIDPHA
-git pull
-python manage.py migrate        # uniquement si les modèles ont changé
-python manage.py collectstatic  # uniquement si les fichiers statiques ont changé
-```
+Dans le panneau de contrôle → Applications Sociales → mettre à jour le domaine et les identifiants OAuth.
 
-Puis cliquer sur **Reload** dans l'onglet Web.
+### Démo en Ligne
 
-### 9.7 Configurer Google OAuth pour la Production
-
-Dans Google Cloud Console ajouter :
-- Origines autorisées : `https://votrenom.pythonanywhere.com`
-- URI de redirection : `https://votrenom.pythonanywhere.com/auth/google/login/callback/`
-
-Dans l'admin Django → **Sites** → changer le domaine en `votrenom.pythonanywhere.com`
-
-Dans l'admin Django → **Applications Sociales** → ajouter une nouvelle app Google avec votre Client ID et Secret.
+🌐 [khalidbrx.pythonanywhere.com](https://khalidbrx.pythonanywhere.com)
 
 ---
 
-## 10. Structure du Projet
+## 11. Structure du Projet
 
 ```
-FIDPHA001/                          ← Racine du projet
-├── .gitignore
-├── manage.py
-├── requirements.txt
-├── static/                         ← Fichiers statiques globaux
-│   ├── admin.css                   ← CSS admin personnalisé
-│   └── admin/
-│       ├── account_form.js         ← JS admin (bouton génération code)
-│       └── user_form.js            ← JS admin (force mot de passe, bascule staff)
-├── templates/                      ← Templates globaux
-│   └── registration/               ← Templates réinitialisation mot de passe
-├── FIDPHA001/                      ← Paramètres du projet Django
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-└── fidpha/                         ← Application Django principale
-    ├── migrations/
-    ├── static/fidpha/
-    │   ├── css/
-    │   │   ├── portal.css          ← Styles du portail
-    │   │   └── login.css           ← Styles de la page de connexion
-    │   └── js/
-    │       └── portal.js           ← JavaScript du portail
-    ├── templates/fidpha/
-    │   ├── base.html               ← Template de base du portail
-    │   ├── dashboard.html          ← Tableau de bord pharmacie
-    │   ├── profile.html            ← Éditeur de profil utilisateur
-    │   ├── login.html              ← Page de connexion
-    │   ├── setup_profile.html      ← Configuration profil première connexion
-    │   └── verify_pending.html     ← Vérification email en attente
-    ├── adapters.py                 ← Adaptateurs allauth
-    ├── admin.py                    ← Configuration du panneau d'administration
-    ├── apps.py
-    ├── models.py                   ← Modèles de base de données
-    ├── urls.py                     ← Routes URL du portail
-    ├── utils.py                    ← Fonctions helpers pour les badges
-    └── views.py                    ← Vues du portail et logique d'authentification
+FIDPHA001/                          ← racine git
+├── CLAUDE.md                       ← règles et décisions de développement
+├── ARCHITECTURE.md                 ← référence technique approfondie
+└── FIDPHA001/                      ← code source Django
+    ├── manage.py
+    ├── db.sqlite3                  ← base SQLite (dev uniquement, gitignored)
+    ├── requirements.txt
+    ├── FIDPHA001/                  ← package projet Django
+    │   ├── settings.py
+    │   ├── urls.py                 ← configuration URL racine
+    │   ├── wsgi.py
+    │   └── test_runner.py
+    ├── fidpha/                     ← app principale (modèles, vues portail, services)
+    │   ├── models.py               ← Account, UserProfile, Product, Contract, Contract_Product
+    │   ├── views.py                ← vues portail (dashboard, contrats, ventes, pharmacie)
+    │   ├── services.py             ← logique métier (get_active_contract, bulk_import_products, ...)
+    │   ├── adapters.py             ← adaptateur Google OAuth
+    │   ├── urls.py                 ← routes /portal/*
+    │   ├── static/fidpha/css/
+    │   │   ├── portal.css          ← CSS partagé (portail + panneau de contrôle)
+    │   │   └── login.css
+    │   └── templates/fidpha/       ← templates HTML portail + templates emails
+    ├── api/                        ← couche API REST
+    │   ├── models.py               ← APIToken, APITokenUsageLog
+    │   ├── authentication.py       ← authentification par token SHA-256
+    │   ├── views.py                ← endpoints /api/v1/
+    │   ├── portal_views.py         ← endpoints /api/portal/ (portail React pharmacie)
+    │   ├── staff_views.py          ← endpoints /api/staff/ (panneau React staff)
+    │   ├── serializers.py          ← sérialiseurs DRF pour les APIs portail et staff
+    │   ├── permissions.py          ← HasAPIToken, PortalSessionPermission, StaffSessionPermission
+    │   └── throttles.py            ← limitation de débit par token
+    ├── sales/                      ← ingestion et stockage des ventes
+    │   ├── models.py               ← SaleImport (brut), Sale (validé + points)
+    │   └── services.py             ← submit_sales_batch() — point d'entrée unique d'ingestion
+    ├── control/                    ← panneau de contrôle staff
+    │   ├── models.py               ← SystemConfig (paramètres globaux)
+    │   ├── views.py                ← toutes les vues du panneau (CRUD + revue des ventes)
+    │   ├── forms.py                ← tous les formulaires et formsets
+    │   ├── decorators.py           ← @staff_required, @perm_required, @superuser_required
+    │   └── templates/control/      ← templates HTML du panneau de contrôle
+    ├── locale/fr/LC_MESSAGES/      ← traductions françaises (.po source + .mo compilé)
+    ├── static/                     ← statiques globaux (admin.css, JS admin)
+    ├── templates/
+    │   ├── registration/           ← templates réinitialisation mot de passe
+    │   └── react/                  ← templates shell SPA (index.html, staff_index.html)
+    └── frontend/                   ← SPA React (branche feature/react-ui uniquement)
+        ├── src/
+        │   ├── api/client.js       ← wrapper fetch (session + CSRF)
+        │   ├── components/Layout.jsx
+        │   └── pages/              ← Dashboard, Contracts, Points, Pharmacy
+        ├── vite.config.js
+        └── package.json
 ```
 
 ---
 
-*Documentation FIDPHA — Avril 2026*
+*Documentation WinInPharma — Mai 2026*
