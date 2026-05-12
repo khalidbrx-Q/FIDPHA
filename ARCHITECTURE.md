@@ -454,8 +454,8 @@ Production hardening (when user requests): env-var secrets, restricted ALLOWED_H
 
 ### Unit Tests
 - `FIDPHA001/test_runner.py` defines `LoggingTestRunner` — appends to `test_log.txt`.
-- `tests.py` files exist as stubs in api/sales/fidpha/control; substantial unit tests live in `tests/unit/` (313 tests, all passing).
-- Run: `python manage.py test tests.unit` (from `FIDPHA001/FIDPHA001/`)
+- Unit tests live in each app's `tests.py` (`api/`, `fidpha/`, `sales/`, `control/`) — 313 tests, all passing.
+- Run: `python manage.py test api fidpha sales control` (from `FIDPHA001/FIDPHA001/`)
 
 ### E2E Tests (Playwright)
 - **Status: Done** — 22 tests across 8 files, all passing.

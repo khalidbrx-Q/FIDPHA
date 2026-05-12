@@ -138,8 +138,8 @@ python manage.py runserver
 
 **Run tests:**
 ```bash
-python manage.py test tests.unit   # 313 unit tests
-pytest tests/e2e/ -v               # 22 Playwright E2E tests (requires a running server)
+python manage.py test api fidpha sales control   # 313 unit tests
+pytest tests/e2e/ -v                            # 22 Playwright E2E tests (local only, requires browser)
 ```
 
 Visit `http://127.0.0.1:8000` — you will be redirected to `/portal/login/`.
@@ -537,8 +537,7 @@ FIDPHA/                             ← git root (manage.py is here)
 │   ├── registration/               ← password reset templates
 │   └── react/                      ← SPA shell templates (index.html, staff_index.html)
 ├── tests/
-│   ├── unit/                       ← 313 unit tests (python manage.py test tests.unit)
-│   └── e2e/                        ← 22 Playwright E2E tests (pytest tests/e2e/ -v)
+│   └── e2e/                        ← 22 Playwright E2E tests (pytest tests/e2e/ -v, local only)
 └── frontend/                       ← React SPA (feature/react-ui branch only)
     ├── src/
     │   ├── api/client.js           ← fetch wrapper (session + CSRF)
@@ -695,8 +694,8 @@ python manage.py runserver
 
 **Lancer les tests :**
 ```bash
-python manage.py test tests.unit   # 313 tests unitaires
-pytest tests/e2e/ -v               # 22 tests E2E Playwright (nécessite un serveur en cours)
+python manage.py test api fidpha sales control   # 313 tests unitaires
+pytest tests/e2e/ -v                            # 22 tests E2E Playwright (local uniquement, nécessite un navigateur)
 ```
 
 Visitez `http://127.0.0.1:8000` — vous serez redirigé vers `/portal/login/`.
@@ -1077,8 +1076,7 @@ FIDPHA/                             ← racine git (manage.py est ici)
 │   ├── registration/               ← templates réinitialisation mot de passe
 │   └── react/                      ← templates shell SPA (index.html, staff_index.html)
 ├── tests/
-│   ├── unit/                       ← 313 tests unitaires (python manage.py test tests.unit)
-│   └── e2e/                        ← 22 tests E2E Playwright (pytest tests/e2e/ -v)
+│   └── e2e/                        ← 22 tests E2E Playwright (pytest tests/e2e/ -v, local uniquement)
 └── frontend/                       ← SPA React (branche feature/react-ui uniquement)
     ├── src/
     │   ├── api/client.js           ← wrapper fetch (session + CSRF)
