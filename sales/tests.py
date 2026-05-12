@@ -52,8 +52,8 @@ def make_account(code="PH-TEST", status=STATUS_ACTIVE):
     )
 
 
-def make_product(code="PROD-001", designation="Doliprane 1000", status=STATUS_ACTIVE):
-    return Product.objects.create(code=code, designation=designation, status=status)
+def make_product(code="PROD-001", designation="Doliprane 1000", status=STATUS_ACTIVE, ppv="12.50"):
+    return Product.objects.create(code=code, designation=designation, status=status, ppv=ppv)
 
 
 def make_contract(account, status=STATUS_ACTIVE, days_back=3, days_ahead=30):

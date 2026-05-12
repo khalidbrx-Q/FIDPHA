@@ -35,6 +35,7 @@ from api.models import APIToken
 from fidpha.models import Account, Contract, Contract_Product, Product
 from fidpha.services import STATUS_ACTIVE, STATUS_INACTIVE
 from sales.models import Sale, SaleImport
+from sales.services import MAX_BATCH_SIZE
 
 _USING_SQLITE = settings.DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3"
 
@@ -52,8 +53,8 @@ def make_account(code="PH-TEST", name="Test Pharmacy", status=STATUS_ACTIVE):
     )
 
 
-def make_product(code="PROD-001", designation="Doliprane 1000", status=STATUS_ACTIVE):
-    return Product.objects.create(code=code, designation=designation, status=status)
+def make_product(code="PROD-001", designation="Doliprane 1000", status=STATUS_ACTIVE, ppv="12.50"):
+    return Product.objects.create(code=code, designation=designation, status=status, ppv=ppv)
 
 
 def make_contract(account, status=STATUS_ACTIVE, days_back=3, days_ahead=30):
@@ -401,11 +402,11 @@ class SalesSubmitViewTests(TestCase):
         self.assertEqual(self._post(self._valid_payload(rows=[row])).status_code, 400)
 
     def test_returns_400_when_batch_too_large(self):
-        rows = [make_sale_row("DOLI1000")] * 5001
+        rows = [make_sale_row("DOLI1000")] * (MAX_BATCH_SIZE + 1)
         self.assertEqual(self._post(self._valid_payload(rows=rows)).status_code, 400)
 
     def test_400_batch_too_large_has_correct_error_code(self):
-        rows = [make_sale_row("DOLI1000")] * 5001
+        rows = [make_sale_row("DOLI1000")] * (MAX_BATCH_SIZE + 1)
         data = self._post(self._valid_payload(rows=rows)).json()
         self.assertEqual(data["error"]["code"], "BATCH_TOO_LARGE")
 
@@ -1501,6 +1502,7 @@ class PharmacySyncCycleE2ETest(TestCase):
                 code=f"BULK-{i:04d}",
                 designation=f"Bulk Product {i:04d}",
                 status=STATUS_ACTIVE,
+                ppv="12.50",
             )
             for i in range(N)
         ])

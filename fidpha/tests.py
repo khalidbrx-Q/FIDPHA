@@ -42,6 +42,8 @@ from fidpha.services import (
     get_available_products_for_contract,
     get_active_contracts_for_product,
     link_product_to_contract,
+    bulk_import_products,
+    bulk_link_products_to_contract,
 )
 
 
@@ -74,12 +76,14 @@ def make_product(
     code: str = "PROD-001",
     designation: str = "Doliprane 1000",
     status: str = STATUS_ACTIVE,
+    ppv: str = "12.50",
 ) -> Product:
     """Create and return a minimal valid Product instance."""
     return Product.objects.create(
         code=code,
         designation=designation,
         status=status,
+        ppv=ppv,
     )
 
 
@@ -896,3 +900,306 @@ class ProductToggleApiTests(AdminApiTestBase):
         """A non-existent product ID must return 404."""
         response = self._toggle(999999, STATUS_INACTIVE)
         self.assertEqual(response.status_code, 404)
+
+
+# ===========================================================================
+# SERVICE TESTS — bulk_import_products()
+# ===========================================================================
+
+
+class BulkImportProductsTests(TestCase):
+    """
+    Tests for bulk_import_products(rows, created_by).
+
+    Verifies the skip/create logic: missing fields, duplicate codes,
+    already-existing codes, invalid ppv, invalid status.
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="staff", password="pass", is_staff=True
+        )
+
+    def _row(self, code="P-001", designation="Product 001",
+             ppv="12.50", status="active"):
+        return {"code": code, "designation": designation,
+                "ppv": ppv, "status": status}
+
+    # ── Happy path ──
+
+    def test_creates_product_from_valid_row(self):
+        result = bulk_import_products([self._row()], created_by=self.user)
+        self.assertEqual(len(result["created"]), 1)
+        self.assertEqual(len(result["skipped"]), 0)
+        self.assertTrue(Product.objects.filter(code="P-001").exists())
+
+    def test_created_product_has_correct_fields(self):
+        bulk_import_products([self._row(code="P-002", ppv="15.00", status="inactive")],
+                             created_by=self.user)
+        p = Product.objects.get(code="P-002")
+        self.assertEqual(str(p.ppv), "15.00")
+        self.assertEqual(p.status, STATUS_INACTIVE)
+
+    def test_returns_created_list_with_product_instances(self):
+        result = bulk_import_products([self._row()], created_by=self.user)
+        self.assertIsInstance(result["created"][0], Product)
+
+    def test_creates_multiple_products_in_one_call(self):
+        rows = [self._row(code=f"P-{i:03d}", designation=f"Product {i}") for i in range(5)]
+        result = bulk_import_products(rows, created_by=self.user)
+        self.assertEqual(len(result["created"]), 5)
+        self.assertEqual(Product.objects.count(), 5)
+
+    # ── Skip — missing fields ──
+
+    def test_skips_row_with_missing_code(self):
+        row = self._row()
+        del row["code"]
+        result = bulk_import_products([row], created_by=self.user)
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Missing code", result["skipped"][0]["reason"])
+
+    def test_skips_row_with_empty_code(self):
+        result = bulk_import_products([self._row(code="")], created_by=self.user)
+        self.assertEqual(len(result["skipped"]), 1)
+
+    def test_skips_row_with_missing_designation(self):
+        row = self._row()
+        del row["designation"]
+        result = bulk_import_products([row], created_by=self.user)
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Missing designation", result["skipped"][0]["reason"])
+
+    def test_skips_row_with_missing_ppv(self):
+        row = self._row()
+        del row["ppv"]
+        result = bulk_import_products([row], created_by=self.user)
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Missing ppv", result["skipped"][0]["reason"])
+
+    # ── Skip — invalid values ──
+
+    def test_skips_row_with_invalid_ppv(self):
+        result = bulk_import_products(
+            [self._row(ppv="not-a-number")], created_by=self.user
+        )
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Invalid ppv", result["skipped"][0]["reason"])
+
+    def test_skips_row_with_invalid_status(self):
+        result = bulk_import_products(
+            [self._row(status="unknown")], created_by=self.user
+        )
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Invalid status", result["skipped"][0]["reason"])
+
+    # ── Skip — duplicates ──
+
+    def test_skips_duplicate_code_within_same_batch(self):
+        rows = [self._row(code="P-DUP"), self._row(code="P-DUP", designation="Second")]
+        result = bulk_import_products(rows, created_by=self.user)
+        self.assertEqual(len(result["created"]), 1)
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Duplicate", result["skipped"][0]["reason"])
+
+    def test_skips_code_that_already_exists_in_db(self):
+        Product.objects.create(
+            code="P-EXIST", designation="Existing", status=STATUS_ACTIVE, ppv="12.50"
+        )
+        result = bulk_import_products(
+            [self._row(code="P-EXIST")], created_by=self.user
+        )
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("already exists", result["skipped"][0]["reason"])
+
+    # ── Mixed batch ──
+
+    def test_mixed_batch_counts_are_correct(self):
+        rows = [
+            self._row(code="P-GOOD"),
+            self._row(code="P-BAD", ppv="notanumber"),
+            self._row(code="P-GOOD2"),
+        ]
+        result = bulk_import_products(rows, created_by=self.user)
+        self.assertEqual(len(result["created"]), 2)
+        self.assertEqual(len(result["skipped"]), 1)
+
+
+# ===========================================================================
+# SERVICE TESTS — bulk_link_products_to_contract()
+# ===========================================================================
+
+
+class BulkLinkProductsToContractTests(TestCase):
+    """
+    Tests for bulk_link_products_to_contract(contract, rows, created_by).
+
+    Verifies: happy path, skips on missing fields, invalid numeric values,
+    duplicate product codes in batch, already-linked products,
+    non-existent product codes.
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="staff", password="pass", is_staff=True
+        )
+        account = Account.objects.create(
+            code="PH-BLK", name="Bulk Test Pharmacy",
+            city="Casablanca", location="123 Test",
+            phone="0600000000", email="bulk@test.ma",
+            pharmacy_portal=True, status=STATUS_ACTIVE,
+        )
+        now = timezone.now()
+        self.contract = Contract.objects.create(
+            title="Bulk Contract", designation="Test",
+            start_date=now, end_date=now + timedelta(days=30),
+            account=account, status=STATUS_INACTIVE,
+        )
+        self.product = Product.objects.create(
+            code="BLK-001", designation="Bulk Product", status=STATUS_ACTIVE, ppv="12.50"
+        )
+
+    def _row(self, product_code="BLK-001", external_designation="EXT-001",
+             points_per_unit="1", target_quantity=""):
+        return {
+            "product_code":         product_code,
+            "external_designation": external_designation,
+            "points_per_unit":      points_per_unit,
+            "target_quantity":      target_quantity,
+        }
+
+    # ── Happy path ──
+
+    def test_links_product_to_contract(self):
+        result = bulk_link_products_to_contract(
+            self.contract, [self._row()], created_by=self.user
+        )
+        self.assertEqual(len(result["created"]), 1)
+        self.assertEqual(len(result["skipped"]), 0)
+        self.assertTrue(
+            Contract_Product.objects.filter(
+                contract=self.contract, product=self.product
+            ).exists()
+        )
+
+    def test_external_designation_stored_correctly(self):
+        bulk_link_products_to_contract(
+            self.contract, [self._row(external_designation="MY-EXT")],
+            created_by=self.user,
+        )
+        cp = Contract_Product.objects.get(contract=self.contract, product=self.product)
+        self.assertEqual(cp.external_designation, "MY-EXT")
+
+    def test_points_per_unit_stored_correctly(self):
+        bulk_link_products_to_contract(
+            self.contract, [self._row(points_per_unit="2.5")],
+            created_by=self.user,
+        )
+        cp = Contract_Product.objects.get(contract=self.contract, product=self.product)
+        self.assertEqual(float(cp.points_per_unit), 2.5)
+
+    def test_target_quantity_stored_when_provided(self):
+        bulk_link_products_to_contract(
+            self.contract, [self._row(target_quantity="100")],
+            created_by=self.user,
+        )
+        cp = Contract_Product.objects.get(contract=self.contract, product=self.product)
+        self.assertEqual(cp.target_quantity, 100)
+
+    def test_target_quantity_is_none_when_omitted(self):
+        bulk_link_products_to_contract(
+            self.contract, [self._row(target_quantity="")],
+            created_by=self.user,
+        )
+        cp = Contract_Product.objects.get(contract=self.contract, product=self.product)
+        self.assertIsNone(cp.target_quantity)
+
+    # ── Skip — missing fields ──
+
+    def test_skips_row_with_missing_product_code(self):
+        result = bulk_link_products_to_contract(
+            self.contract, [self._row(product_code="")],
+            created_by=self.user,
+        )
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Missing product_code", result["skipped"][0]["reason"])
+
+    def test_skips_row_with_missing_external_designation(self):
+        result = bulk_link_products_to_contract(
+            self.contract, [self._row(external_designation="")],
+            created_by=self.user,
+        )
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Missing external_designation", result["skipped"][0]["reason"])
+
+    # ── Skip — invalid numeric values ──
+
+    def test_skips_row_with_invalid_points_per_unit(self):
+        result = bulk_link_products_to_contract(
+            self.contract, [self._row(points_per_unit="abc")],
+            created_by=self.user,
+        )
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Invalid points_per_unit", result["skipped"][0]["reason"])
+
+    def test_skips_row_with_invalid_target_quantity(self):
+        result = bulk_link_products_to_contract(
+            self.contract, [self._row(target_quantity="abc")],
+            created_by=self.user,
+        )
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Invalid target_quantity", result["skipped"][0]["reason"])
+
+    # ── Skip — product not found ──
+
+    def test_skips_row_with_unknown_product_code(self):
+        result = bulk_link_products_to_contract(
+            self.contract, [self._row(product_code="DOES-NOT-EXIST")],
+            created_by=self.user,
+        )
+        self.assertEqual(len(result["skipped"]), 1)
+
+    # ── Skip — already linked ──
+
+    def test_skips_already_linked_product(self):
+        Contract_Product.objects.create(
+            contract=self.contract,
+            product=self.product,
+            external_designation="EXT-001",
+        )
+        result = bulk_link_products_to_contract(
+            self.contract, [self._row()], created_by=self.user,
+        )
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("already linked", result["skipped"][0]["reason"])
+
+    # ── Skip — duplicate within batch ──
+
+    def test_skips_duplicate_product_code_within_batch(self):
+        rows = [
+            self._row(product_code="BLK-001", external_designation="EXT-A"),
+            self._row(product_code="BLK-001", external_designation="EXT-B"),
+        ]
+        result = bulk_link_products_to_contract(
+            self.contract, rows, created_by=self.user,
+        )
+        self.assertEqual(len(result["created"]), 1)
+        self.assertEqual(len(result["skipped"]), 1)
+        self.assertIn("Duplicate", result["skipped"][0]["reason"])
+
+    # ── Mixed batch ──
+
+    def test_mixed_batch_creates_valid_skips_invalid(self):
+        p2 = Product.objects.create(
+            code="BLK-002", designation="Product 2", status=STATUS_ACTIVE, ppv="12.50"
+        )
+        rows = [
+            self._row(product_code="BLK-001", external_designation="EXT-001"),
+            self._row(product_code="BLK-002", external_designation="EXT-002"),
+            self._row(product_code="MISSING",  external_designation="EXT-003"),
+        ]
+        result = bulk_link_products_to_contract(
+            self.contract, rows, created_by=self.user,
+        )
+        self.assertEqual(len(result["created"]), 2)
+        self.assertEqual(len(result["skipped"]), 1)
