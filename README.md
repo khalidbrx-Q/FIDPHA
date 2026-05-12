@@ -43,6 +43,7 @@ Pharmacies submit their daily sales data via an API. Each sale is validated agai
 | French i18n | Portal available in French (EN/FR toggle) |
 | Audit trail | Every staff action logged via Django LogEntry; visible on control panel dashboard |
 | CSV / Excel import | Bulk product import and contract product import via file upload |
+| Automated testing | 313 unit tests + 22 Playwright E2E tests covering all major flows |
 
 ---
 
@@ -133,6 +134,12 @@ python manage.py migrate
 python manage.py createsuperuser
 python manage.py compilemessages   # compile French translations
 python manage.py runserver
+```
+
+**Run tests:**
+```bash
+python manage.py test tests.unit   # 313 unit tests
+pytest tests/e2e/ -v               # 22 Playwright E2E tests (requires a running server)
 ```
 
 Visit `http://127.0.0.1:8000` — you will be redirected to `/portal/login/`.
@@ -529,6 +536,9 @@ FIDPHA/                             ← git root (manage.py is here)
 ├── templates/
 │   ├── registration/               ← password reset templates
 │   └── react/                      ← SPA shell templates (index.html, staff_index.html)
+├── tests/
+│   ├── unit/                       ← 313 unit tests (python manage.py test tests.unit)
+│   └── e2e/                        ← 22 Playwright E2E tests (pytest tests/e2e/ -v)
 └── frontend/                       ← React SPA (feature/react-ui branch only)
     ├── src/
     │   ├── api/client.js           ← fetch wrapper (session + CSRF)
@@ -590,6 +600,7 @@ Les pharmacies soumettent leurs ventes quotidiennes via une API. Chaque vente es
 | i18n Français | Portail disponible en français (bascule FR/EN) |
 | Piste d'audit | Chaque action staff enregistrée via Django LogEntry ; visible sur le tableau de bord |
 | Import CSV / Excel | Import en masse de produits et de produits de contrats par fichier |
+| Tests automatisés | 313 tests unitaires + 22 tests E2E Playwright couvrant tous les flux principaux |
 
 ---
 
@@ -680,6 +691,12 @@ python manage.py migrate
 python manage.py createsuperuser
 python manage.py compilemessages   # compiler les traductions françaises
 python manage.py runserver
+```
+
+**Lancer les tests :**
+```bash
+python manage.py test tests.unit   # 313 tests unitaires
+pytest tests/e2e/ -v               # 22 tests E2E Playwright (nécessite un serveur en cours)
 ```
 
 Visitez `http://127.0.0.1:8000` — vous serez redirigé vers `/portal/login/`.
@@ -1059,6 +1076,9 @@ FIDPHA/                             ← racine git (manage.py est ici)
 ├── templates/
 │   ├── registration/               ← templates réinitialisation mot de passe
 │   └── react/                      ← templates shell SPA (index.html, staff_index.html)
+├── tests/
+│   ├── unit/                       ← 313 tests unitaires (python manage.py test tests.unit)
+│   └── e2e/                        ← 22 tests E2E Playwright (pytest tests/e2e/ -v)
 └── frontend/                       ← SPA React (branche feature/react-ui uniquement)
     ├── src/
     │   ├── api/client.js           ← wrapper fetch (session + CSRF)

@@ -452,16 +452,42 @@ Production hardening (when user requests): env-var secrets, restricted ALLOWED_H
 
 ## 13. Testing
 
+### Unit Tests
 - `FIDPHA001/test_runner.py` defines `LoggingTestRunner` — appends to `test_log.txt`.
-- `tests.py` files exist as empty stubs in api/sales/fidpha/control. One ad-hoc `robot_test.py` at `FIDPHA001/`.
-- Playwright E2E (pytest-playwright) is **planned not started** — see memory `project_playwright_e2e.md`.
+- `tests.py` files exist as stubs in api/sales/fidpha/control; substantial unit tests live in `tests/unit/` (313 tests, all passing).
+- Run: `python manage.py test tests.unit` (from `FIDPHA001/FIDPHA001/`)
+
+### E2E Tests (Playwright)
+- **Status: Done** — 22 tests across 8 files, all passing.
+- Framework: `pytest-playwright` + `pytest-django`. Lives at `tests/e2e/`.
+- `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `tests/e2e/conftest.py` (required for Playwright + Django live server).
+- Run: `pytest tests/e2e/ -v` (from `FIDPHA001/FIDPHA001/`)
+
+| File | Tests | What's covered |
+|---|---|---|
+| `test_auth.py` | 4 | Login redirect (staff + portal), wrong-password error, logout |
+| `test_portal.py` | 4 | Portal login → dashboard, stat cards, sales page, pharmacy name |
+| `test_sales_review.py` | 4 | Batch list loads, accept sale, reject sale, accepted row leaves pending queue |
+| `test_control_accounts.py` | 2 | Accounts list loads, create account → lands on detail page |
+| `test_control_products.py` | 2 | Products list loads, create product → redirects to list with row |
+| `test_control_contracts.py` | 2 | Contracts list loads, create contract → lands on detail page |
+| `test_control_settings.py` | 2 | System settings page loads, toggle auto-review persists to DB |
+| `test_control_tokens.py` | 2 | Tokens list loads, create token → plain value revealed in banner |
+
+**Gotchas for future test authoring:**
+- Sales list is a JS SPA — batches load via fetch into `#blRows`; sales table only appears inside a modal after clicking a batch row.
+- Choices.js selects need `select_option(value, force=True)` to bypass visibility checks.
+- `datetime-local` inputs require `"YYYY-MM-DDTHH:MM"` format (not `"YYYY-MM-DD"`).
+- Base template renders nav links twice (desktop + mobile) → use `.first` on nav link locators.
+- Language-switcher `[type=submit]` conflicts → always use `#submitBtn` for form submit buttons.
+- `UserProfile` has no auto-creation signal — `UserProfile.objects.create(...)` explicitly in fixtures.
+- `Contract.clean()` enforces one active contract per account — contract create tests need a fresh account.
 
 ---
 
 ## 14. Pending Work
 
 - Apple OAuth provider.
-- Playwright E2E testing (pytest-playwright).
 - Token detail page enhancements (usage chart; `APITokenUsageLog` model already in place).
 - French translation of control panel templates (`control/templates/control/`) + language toggle in topbar — portal done; control panel pending on `feature/i18n`.
 - Sales Review UX backlog (remaining items).

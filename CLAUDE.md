@@ -146,6 +146,8 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | API token auth | `api/authentication.py` |
 | Control decorators | `control/decorators.py` |
 | Global config | `control/models.py` `SystemConfig.get()` |
+| E2E tests | `tests/e2e/` — 22 tests, 8 files |
+| Unit tests | `tests/unit/` — 313 tests |
 
 ---
 
@@ -157,6 +159,8 @@ python manage.py migrate            # apply migrations
 python manage.py makemigrations     # create new migration
 python manage.py compilemessages    # compile French translations
 python manage.py collectstatic      # collect static files
+python manage.py test tests.unit    # run unit tests (313 tests)
+pytest tests/e2e/ -v                # run E2E Playwright tests (22 tests)
 ```
 
 ---
