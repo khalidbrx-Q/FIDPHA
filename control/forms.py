@@ -494,7 +494,6 @@ class ProductForm(forms.ModelForm):
         self.fields['code'].widget.attrs.update({'class': 'form-input', 'autocomplete': 'off'})
         self.fields['designation'].widget.attrs.update({'class': 'form-input', 'autocomplete': 'off'})
         self.fields['ppv'].widget.attrs.update({'class': 'form-input', 'autocomplete': 'off', 'placeholder': '0.00'})
-        self.fields['ppv'].required = False
         self.fields['status'].widget.attrs.update({'class': 'form-input'})
 
     def clean_code(self):
