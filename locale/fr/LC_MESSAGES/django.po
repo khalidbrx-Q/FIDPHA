@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WinInPharma 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-15 18:34+0100\n"
+"POT-Creation-Date: 2026-05-15 20:31+0100\n"
 "PO-Revision-Date: 2026-05-04 23:42+0100\n"
 "Last-Translator: WinInPharma\n"
 "Language-Team: French\n"
@@ -15,11 +15,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: .\control\models.py:22
-msgid "Maximum sale rows accepted per API batch (1–100,000)."
+msgid ""
+"Phone number prefix not recognised. Select a country prefix from the list."
+msgstr ""
+"Préfixe de numéro de téléphone non reconnu. Veuillez sélectionner un "
+"indicatif pays dans la liste."
+
+#, fuzzy
+#| msgid "Maximum sale rows accepted per API batch (1–100,000)."
+msgid "Maximum sale rows accepted per API batch (1–100,000). 0 = no limit."
 msgstr "Nombre maximum de lignes de vente acceptées par lot API (1–100 000)."
 
-#: .\control\models.py:28
 msgid ""
 "Reject rows where submitted PPV deviates more than this % from the catalogue "
 "PPV. Leave blank to disable."
@@ -27,171 +33,91 @@ msgstr ""
 "Rejeter les lignes dont le PPV soumis s'écarte de plus de ce % du PPV "
 "catalogue. Laisser vide pour désactiver."
 
-#: .\control\models.py:36
-msgid "Rejection rate % above which a yellow warning badge is shown (1–99)."
+#, fuzzy
+#| msgid "Rejection rate % above which a yellow warning badge is shown (1–99)."
+msgid ""
+"Rejection rate % above which a yellow warning badge is shown (1–99). 0 = "
+"disabled."
 msgstr ""
 "Taux de rejet % au-delà duquel un badge d’avertissement jaune s’affiche (1–"
 "99).Taux de rejet % au-delà duquel un badge d’avertissement jaune s’affiche "
 "(1–99)."
 
-#: .\control\models.py:40
+#, fuzzy
+#| msgid ""
+#| "Rejection rate % above which a red danger badge is shown (must exceed "
+#| "warn threshold)."
 msgid ""
 "Rejection rate % above which a red danger badge is shown (must exceed warn "
-"threshold)."
+"threshold). 0 = disabled."
 msgstr ""
 "Taux de rejet % au-delà duquel un badge danger rouge s'affiche (doit "
 "dépasser le seuil d'avertissement)."
 
-#: .\control\models.py:46
-msgid "Maximum API requests per token per hour (1–10,000)."
+#, fuzzy
+#| msgid "Maximum API requests per token per hour (1–10,000)."
+msgid "Maximum API requests per token per hour (1–10,000). 0 = unlimited."
 msgstr "Nombre maximum de requêtes API par jeton par heure (1–10 000)."
 
-#: .\control\models.py:71
 msgid "Must be between 1 and 100,000, or 0 for no limit."
 msgstr "Doit être compris entre 1 et 100 000, ou 0 pour sans limite."
 
-#: .\control\models.py:76
 msgid "Must be between 0.01 and 100."
 msgstr "Doit être compris entre 0,01 et 100."
 
-#: .\control\models.py:83
 msgid "Must be between 1 and 99, or 0 to disable."
 msgstr "Doit être compris entre 1 et 99, ou 0 pour désactiver."
 
-#: .\control\models.py:85
 msgid "Must be between 1 and 100, or 0 to disable."
 msgstr "Doit être compris entre 1 et 100, ou 0 pour désactiver."
 
-#: .\control\models.py:93
 msgid "Danger threshold must be strictly greater than the warn threshold."
 msgstr ""
 "Le seuil de danger doit être strictement supérieur au seuil d’avertissement."
 
-#: .\control\models.py:99
 msgid "Must be between 1 and 10,000, or 0 for no limit."
 msgstr "Doit être compris entre 1 et 10 000, ou 0 pour illimité."
 
-#: .\control\templates\control\403.html:4
-#: .\control\templates\control\403.html:11
 msgid "Access Denied"
 msgstr "Accès refusé"
 
-#: .\control\templates\control\403.html:13
 msgid "You don't have permission to access this page."
 msgstr "Vous n'avez pas la permission d'accéder à cette page."
 
-#: .\control\templates\control\403.html:14
 msgid "Contact a superuser to request access."
 msgstr "Contactez un super-administrateur pour demander l'accès."
 
-#: .\control\templates\control\403.html:17
-#: .\control\templates\control\coming_soon.html:18
 msgid "Back to Dashboard"
 msgstr "Retour au tableau de bord"
 
-#: .\control\templates\control\accounts_confirm_delete.html:4
-#: .\control\templates\control\accounts_confirm_delete.html:16
 msgid "Delete Account"
 msgstr "Supprimer le compte"
 
-#: .\control\templates\control\accounts_confirm_delete.html:6
-#: .\control\templates\control\accounts_detail.html:6
-#: .\control\templates\control\accounts_form.html:6
-#: .\control\templates\control\accounts_list.html:4
-#: .\control\templates\control\accounts_list.html:5
-#: .\control\templates\control\base.html:526
-#: .\control\templates\control\dashboard.html:19
 msgid "Accounts"
 msgstr "Comptes"
 
-#: .\control\templates\control\accounts_confirm_delete.html:8
-#: .\control\templates\control\accounts_detail.html:47
-#: .\control\templates\control\accounts_list.html:143
-#: .\control\templates\control\contracts_confirm_delete.html:8
-#: .\control\templates\control\contracts_detail.html:46
-#: .\control\templates\control\contracts_list.html:150
-#: .\control\templates\control\products_confirm_delete.html:7
-#: .\control\templates\control\products_detail.html:41
-#: .\control\templates\control\products_list.html:180
-#: .\control\templates\control\roles_confirm_delete.html:7
-#: .\control\templates\control\roles_detail.html:37
-#: .\control\templates\control\roles_list.html:73
-#: .\control\templates\control\social_apps_confirm_delete.html:8
-#: .\control\templates\control\social_apps_detail.html:33
-#: .\control\templates\control\social_apps_list.html:53
-#: .\control\templates\control\tokens_confirm_delete.html:7
-#: .\control\templates\control\tokens_detail.html:109
-#: .\control\templates\control\tokens_list.html:145
-#: .\control\templates\control\users_confirm_delete.html:7
-#: .\control\templates\control\users_detail.html:35
-#: .\control\templates\control\users_detail.html:139
-#: .\control\templates\control\users_list.html:127
-#: .\control\templates\control\users_list.html:257
 msgid "Delete"
 msgstr "Supprimer"
 
-#: .\control\templates\control\accounts_confirm_delete.html:17
-#: .\control\templates\control\contracts_confirm_delete.html:17
-#: .\control\templates\control\roles_confirm_delete.html:16
-#: .\control\templates\control\users_confirm_delete.html:16
 msgid "This action cannot be undone"
 msgstr "Cette action est irréversible"
 
-#: .\control\templates\control\accounts_confirm_delete.html:20
-#: .\control\templates\control\accounts_detail.html:38
-#: .\control\templates\control\accounts_form.html:25
-#: .\control\templates\control\accounts_form.html:29
-#: .\control\templates\control\contracts_confirm_delete.html:20
-#: .\control\templates\control\contracts_detail.html:37
-#: .\control\templates\control\contracts_detail.html:150
-#: .\control\templates\control\contracts_form.html:47
-#: .\control\templates\control\contracts_form.html:51
-#: .\control\templates\control\contracts_form.html:263
-#: .\control\templates\control\products_confirm_delete.html:19
-#: .\control\templates\control\products_detail.html:32
-#: .\control\templates\control\products_form.html:24
-#: .\control\templates\control\products_list.html:87
-#: .\control\templates\control\roles_confirm_delete.html:20
-#: .\control\templates\control\roles_detail.html:28
-#: .\control\templates\control\roles_form.html:25
-#: .\control\templates\control\roles_form.html:29
-#: .\control\templates\control\social_apps_detail.html:27
-#: .\control\templates\control\social_apps_form.html:22
-#: .\control\templates\control\tokens_confirm_delete.html:19
-#: .\control\templates\control\tokens_detail.html:70
-#: .\control\templates\control\tokens_form.html:19
-#: .\control\templates\control\users_confirm_delete.html:20
-#: .\control\templates\control\users_detail.html:33
-#: .\control\templates\control\users_detail.html:136
-#: .\control\templates\control\users_form.html:22
-#: .\fidpha\templates\fidpha\contracts.html:167
-#: .\fidpha\templates\fidpha\dashboard.html:99
-#: .\fidpha\templates\fidpha\dashboard.html:145
-#: .\fidpha\templates\fidpha\sales.html:133
 msgid "Back"
 msgstr "Retour"
 
-#: .\control\templates\control\accounts_confirm_delete.html:29
-#: .\control\templates\control\contracts_confirm_delete.html:34
-#: .\control\templates\control\roles_confirm_delete.html:29
-#: .\control\templates\control\social_apps_confirm_delete.html:23
-#: .\control\templates\control\users_confirm_delete.html:29
 #, python-format
 msgid "Delete \"%(name)s\"?"
 msgstr "Supprimer \"%(name)s\" ?"
 
-#: .\control\templates\control\accounts_confirm_delete.html:35
 #, python-format
 msgid "This account has <strong>%(count)s active contract</strong>."
 msgid_plural "This account has <strong>%(count)s active contracts</strong>."
 msgstr[0] "Ce compte possède <strong>%(count)s contrat actif</strong>."
 msgstr[1] "Ce compte possède <strong>%(count)s contrats actifs</strong>."
 
-#: .\control\templates\control\accounts_confirm_delete.html:36
 msgid "Deleting it will permanently remove those contracts."
 msgstr "Sa suppression entraînera la suppression définitive de ces contrats."
 
-#: .\control\templates\control\accounts_confirm_delete.html:42
 #, python-format
 msgid ""
 "<strong>%(count)s contract</strong> linked to this account will be "
@@ -206,7 +132,6 @@ msgstr[1] ""
 "<strong>%(count)s contrats</strong> liés à ce compte seront définitivement "
 "supprimés."
 
-#: .\control\templates\control\accounts_confirm_delete.html:48
 #, python-format
 msgid ""
 "<strong>%(count)s portal user</strong> will lose their account link (their "
@@ -217,494 +142,172 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: .\control\templates\control\accounts_confirm_delete.html:54
 msgid "This account has no linked contracts or users."
 msgstr "Ce compte n'a aucun contrat ou utilisateur lié."
 
-#: .\control\templates\control\accounts_confirm_delete.html:59
 msgid "The account record and all associated data will be permanently removed."
 msgstr ""
 "Le compte et toutes les données associées seront définitivement supprimés."
 
-#: .\control\templates\control\accounts_confirm_delete.html:69
 msgid "Yes, delete account"
 msgstr "Oui, supprimer le compte"
 
-#: .\control\templates\control\accounts_confirm_delete.html:71
-#: .\control\templates\control\accounts_form.html:150
-#: .\control\templates\control\accounts_form.html:152
-#: .\control\templates\control\contracts_confirm_delete.html:82
-#: .\control\templates\control\contracts_form.html:33
-#: .\control\templates\control\contracts_form.html:284
-#: .\control\templates\control\contracts_form.html:330
-#: .\control\templates\control\contracts_form.html:332
-#: .\control\templates\control\products_confirm_delete.html:62
-#: .\control\templates\control\products_form.html:79
-#: .\control\templates\control\products_list.html:108
-#: .\control\templates\control\roles_confirm_delete.html:50
-#: .\control\templates\control\roles_form.html:149
-#: .\control\templates\control\sales_list.html:227
-#: .\control\templates\control\social_apps_confirm_delete.html:36
-#: .\control\templates\control\social_apps_form.html:107
-#: .\control\templates\control\tokens_confirm_delete.html:56
-#: .\control\templates\control\tokens_detail.html:22
-#: .\control\templates\control\tokens_detail.html:58
-#: .\control\templates\control\tokens_form.html:54
-#: .\control\templates\control\tokens_list.html:19
-#: .\control\templates\control\users_confirm_delete.html:68
-#: .\control\templates\control\users_form.html:249
 msgid "Cancel"
 msgstr "Annuler"
 
-#: .\control\templates\control\accounts_detail.html:22
-#: .\control\templates\control\accounts_detail.html:69
-#: .\control\templates\control\accounts_detail.html:189
-#: .\control\templates\control\accounts_detail.html:233
-#: .\control\templates\control\accounts_form.html:260
-#: .\control\templates\control\accounts_form.html:308
-#: .\control\templates\control\accounts_list.html:57
-#: .\control\templates\control\accounts_list.html:104
-#: .\control\templates\control\contracts_detail.html:22
-#: .\control\templates\control\contracts_detail.html:84
-#: .\control\templates\control\contracts_detail.html:189
-#: .\control\templates\control\contracts_detail.html:231
-#: .\control\templates\control\contracts_list.html:55
-#: .\control\templates\control\contracts_list.html:115
-#: .\control\templates\control\products_confirm_delete.html:31
-#: .\control\templates\control\products_detail.html:22
-#: .\control\templates\control\products_detail.html:61
-#: .\control\templates\control\products_detail.html:89
-#: .\control\templates\control\products_detail.html:137
-#: .\control\templates\control\products_list.html:21
-#: .\control\templates\control\products_list.html:155
-#: .\control\templates\control\roles_detail.html:68
-#: .\control\templates\control\sales_list.html:774
-#: .\control\templates\control\tokens_confirm_delete.html:31
-#: .\control\templates\control\tokens_detail.html:39
-#: .\control\templates\control\tokens_list.html:63
-#: .\control\templates\control\tokens_list.html:102
-#: .\control\templates\control\users_detail.html:26
-#: .\control\templates\control\users_detail.html:50
-#: .\control\templates\control\users_detail.html:64
-#: .\control\templates\control\users_detail.html:127
-#: .\control\templates\control\users_detail.html:154
-#: .\control\templates\control\users_form.html:112
-#: .\control\templates\control\users_list.html:61
-#: .\control\templates\control\users_list.html:116
-#: .\control\templates\control\users_list.html:190
-#: .\control\templates\control\users_list.html:246
-#: .\fidpha\templates\fidpha\contracts.html:140
-#: .\fidpha\templates\fidpha\pharmacy.html:30
 msgid "Active"
 msgstr "Actif"
 
-#: .\control\templates\control\accounts_detail.html:24
-#: .\control\templates\control\accounts_detail.html:70
-#: .\control\templates\control\accounts_detail.html:160
-#: .\control\templates\control\accounts_detail.html:190
-#: .\control\templates\control\accounts_detail.html:235
-#: .\control\templates\control\accounts_form.html:261
-#: .\control\templates\control\accounts_form.html:310
-#: .\control\templates\control\accounts_list.html:58
-#: .\control\templates\control\accounts_list.html:106
-#: .\control\templates\control\contracts_detail.html:24
-#: .\control\templates\control\contracts_detail.html:85
-#: .\control\templates\control\contracts_detail.html:190
-#: .\control\templates\control\contracts_detail.html:233
-#: .\control\templates\control\contracts_list.html:56
-#: .\control\templates\control\contracts_list.html:117
-#: .\control\templates\control\products_confirm_delete.html:32
-#: .\control\templates\control\products_detail.html:24
-#: .\control\templates\control\products_detail.html:63
-#: .\control\templates\control\products_detail.html:90
-#: .\control\templates\control\products_detail.html:139
-#: .\control\templates\control\products_list.html:22
-#: .\control\templates\control\products_list.html:157
-#: .\control\templates\control\roles_detail.html:70
-#: .\control\templates\control\users_detail.html:27
-#: .\control\templates\control\users_detail.html:51
-#: .\control\templates\control\users_detail.html:65
-#: .\control\templates\control\users_detail.html:129
-#: .\control\templates\control\users_detail.html:155
-#: .\control\templates\control\users_list.html:62
-#: .\control\templates\control\users_list.html:116
-#: .\control\templates\control\users_list.html:191
-#: .\control\templates\control\users_list.html:246
-#: .\fidpha\templates\fidpha\contracts.html:142
-#: .\fidpha\templates\fidpha\contracts.html:244
-#: .\fidpha\templates\fidpha\pharmacy.html:31
 msgid "Inactive"
 msgstr "Inactif"
 
-#: .\control\templates\control\accounts_detail.html:27
-#: .\control\templates\control\accounts_list.html:84
-#: .\control\templates\control\users_detail.html:25
 msgid "Portal"
 msgstr "Portail"
 
-#: .\control\templates\control\accounts_detail.html:30
-#: .\control\templates\control\accounts_detail.html:81
 msgid "Auto-Review"
 msgstr "Révision automatique"
 
-#: .\control\templates\control\accounts_detail.html:41
-#: .\control\templates\control\accounts_list.html:133
-#: .\control\templates\control\contracts_detail.html:40
-#: .\control\templates\control\contracts_list.html:138
-#: .\control\templates\control\products_detail.html:35
-#: .\control\templates\control\products_list.html:170
-#: .\control\templates\control\roles_detail.html:31
-#: .\control\templates\control\roles_list.html:63
-#: .\control\templates\control\users_detail.html:137
 msgid "Clone"
 msgstr "Dupliquer"
 
-#: .\control\templates\control\accounts_detail.html:44
-#: .\control\templates\control\accounts_list.html:138
-#: .\control\templates\control\contracts_detail.html:43
-#: .\control\templates\control\contracts_list.html:144
-#: .\control\templates\control\products_detail.html:38
-#: .\control\templates\control\products_list.html:175
-#: .\control\templates\control\roles_detail.html:34
-#: .\control\templates\control\roles_list.html:68
-#: .\control\templates\control\social_apps_detail.html:30
-#: .\control\templates\control\social_apps_list.html:50
-#: .\control\templates\control\users_detail.html:34
-#: .\control\templates\control\users_detail.html:138
-#: .\control\templates\control\users_list.html:124
-#: .\control\templates\control\users_list.html:254
 msgid "Edit"
 msgstr "Modifier"
 
-#: .\control\templates\control\accounts_detail.html:56
-#: .\control\templates\control\users_detail.html:41
-#: .\control\templates\control\users_detail.html:145
 msgid "Account Information"
 msgstr "Informations sur le compte"
 
-#: .\control\templates\control\accounts_detail.html:57
-#: .\control\templates\control\accounts_form.html:54
-#: .\control\templates\control\accounts_list.html:80
-#: .\control\templates\control\products_detail.html:50
-#: .\control\templates\control\products_form.html:47
-#: .\control\templates\control\products_list.html:93
-#: .\control\templates\control\products_list.html:134
-#: .\fidpha\templates\fidpha\pharmacy.html:34
-#: .\fidpha\templates\fidpha\profile.html:217
 msgid "Code"
 msgstr "Code"
 
-#: .\control\templates\control\accounts_detail.html:58
-#: .\control\templates\control\accounts_form.html:60
-#: .\control\templates\control\accounts_list.html:81
-#: .\control\templates\control\roles_list.html:31
-#: .\control\templates\control\social_apps_detail.html:47
-#: .\control\templates\control\social_apps_form.html:49
-#: .\control\templates\control\social_apps_list.html:26
-#: .\control\templates\control\tokens_form.html:30
-#: .\control\templates\control\tokens_list.html:81
-#: .\control\templates\control\users_detail.html:59
-#: .\fidpha\templates\fidpha\pharmacy.html:35
 msgid "Name"
 msgstr "Nom"
 
-#: .\control\templates\control\accounts_detail.html:59
-#: .\control\templates\control\accounts_form.html:68
-#: .\control\templates\control\accounts_list.html:82
-#: .\control\templates\control\users_list.html:206
-#: .\fidpha\templates\fidpha\pharmacy.html:36
-#: .\fidpha\templates\fidpha\profile.html:213
 msgid "City"
 msgstr "Ville"
 
-#: .\control\templates\control\accounts_detail.html:60
-#: .\control\templates\control\accounts_form.html:73
-#: .\control\templates\control\users_detail.html:68
-#: .\fidpha\templates\fidpha\pharmacy.html:38
 msgid "Phone"
 msgstr "Téléphone"
 
-#: .\control\templates\control\accounts_detail.html:61
-#: .\control\templates\control\accounts_form.html:84
-#: .\control\templates\control\users_detail.html:44
-#: .\control\templates\control\users_detail.html:148
-#: .\control\templates\control\users_form.html:83
-#: .\control\templates\control\users_list.html:207
-#: .\fidpha\templates\fidpha\pharmacy.html:39
-#: .\fidpha\templates\fidpha\pharmacy.html:77
-#: .\fidpha\templates\fidpha\profile.html:80
 msgid "Email"
 msgstr "Email"
 
-#: .\control\templates\control\accounts_detail.html:63
-#: .\fidpha\templates\fidpha\pharmacy.html:37
 msgid "Location"
 msgstr "Localisation"
 
-#: .\control\templates\control\accounts_detail.html:67
-#: .\control\templates\control\accounts_form.html:101
-#: .\control\templates\control\accounts_list.html:83
-#: .\control\templates\control\contracts_detail.html:82
-#: .\control\templates\control\contracts_detail.html:215
-#: .\control\templates\control\contracts_form.html:123
-#: .\control\templates\control\contracts_list.html:81
-#: .\control\templates\control\products_detail.html:58
-#: .\control\templates\control\products_detail.html:104
-#: .\control\templates\control\products_form.html:53
-#: .\control\templates\control\products_list.html:96
-#: .\control\templates\control\products_list.html:137
-#: .\control\templates\control\sales_list.html:1077
-#: .\control\templates\control\sync_log.html:256
-#: .\control\templates\control\sync_log.html:357
-#: .\control\templates\control\tokens_list.html:83
-#: .\control\templates\control\users_detail.html:48
-#: .\control\templates\control\users_detail.html:62
-#: .\control\templates\control\users_detail.html:152
-#: .\control\templates\control\users_list.html:78
-#: .\control\templates\control\users_list.html:208
-#: .\fidpha\templates\fidpha\contracts.html:122
-#: .\fidpha\templates\fidpha\dashboard.html:175
-#: .\fidpha\templates\fidpha\sales.html:204
 msgid "Status"
 msgstr "Statut"
 
-#: .\control\templates\control\accounts_detail.html:74
 msgid "Portal Access"
 msgstr "Accès portail"
 
-#: .\control\templates\control\accounts_detail.html:76
-#: .\control\templates\control\accounts_detail.html:84
-#: .\control\templates\control\users_detail.html:70
 msgid "Enabled"
 msgstr "Activé"
 
-#: .\control\templates\control\accounts_detail.html:77
-#: .\control\templates\control\accounts_detail.html:87
-#: .\control\templates\control\system_settings.html:120
-#: .\control\templates\control\users_detail.html:70
 msgid "Disabled"
 msgstr "Désactivé"
 
-#: .\control\templates\control\accounts_detail.html:85
 msgid "batches auto-accepted when global switch is on"
 msgstr "lots auto-acceptés quand le commutateur global est activé"
 
-#: .\control\templates\control\accounts_detail.html:88
 msgid "manual review"
 msgstr "révision manuelle"
 
-#: .\control\templates\control\accounts_detail.html:99
-#: .\control\templates\control\accounts_form.html:165
-#: .\control\templates\control\accounts_list.html:85
-#: .\control\templates\control\base.html:533
-#: .\control\templates\control\contracts_confirm_delete.html:6
-#: .\control\templates\control\contracts_detail.html:6
-#: .\control\templates\control\contracts_form.html:6
-#: .\control\templates\control\contracts_list.html:4
-#: .\control\templates\control\contracts_list.html:5
-#: .\control\templates\control\dashboard.html:36
-#: .\control\templates\control\products_list.html:138
 msgid "Contracts"
 msgstr "Contrats"
 
-#: .\control\templates\control\accounts_detail.html:106
-#: .\control\templates\control\accounts_form.html:176
-#: .\fidpha\templates\fidpha\contracts.html:42
-#: .\fidpha\templates\fidpha\dashboard.html:77
 msgid "Active Contract"
 msgstr "Contrat actif"
 
-#: .\control\templates\control\accounts_detail.html:121
-#: .\control\templates\control\accounts_detail.html:157
-#: .\control\templates\control\accounts_form.html:191
-#: .\control\templates\control\accounts_form.html:227
 msgid "not synced"
 msgstr "non synchronisé"
 
-#: .\control\templates\control\accounts_detail.html:132
-#: .\control\templates\control\accounts_form.html:202
-#: .\fidpha\templates\fidpha\contracts.html:215
 msgid "Inactive Contracts"
 msgstr "Contrats inactifs"
 
-#: .\control\templates\control\accounts_detail.html:137
 msgid "Search inactive contracts…"
 msgstr "Rechercher les contrats inactifs…"
 
-#: .\control\templates\control\accounts_detail.html:165
 msgid "No inactive contracts match your search."
 msgstr "Aucun contrat inactif ne correspond à votre recherche."
 
-#: .\control\templates\control\accounts_detail.html:173
 msgid "No contracts linked to this account."
 msgstr "Aucun contrat lié à ce compte."
 
-#: .\control\templates\control\accounts_detail.html:184
-#: .\control\templates\control\accounts_form.html:254
-#: .\control\templates\control\users_list.html:13
-#: .\control\templates\control\users_list.html:156
 msgid "Portal Users"
 msgstr "Utilisateurs du portail"
 
-#: .\control\templates\control\accounts_detail.html:188
-#: .\control\templates\control\accounts_form.html:259
-#: .\control\templates\control\accounts_list.html:56
-#: .\control\templates\control\accounts_list.html:64
-#: .\control\templates\control\contracts_detail.html:188
-#: .\control\templates\control\contracts_list.html:54
-#: .\control\templates\control\contracts_list.html:62
-#: .\control\templates\control\products_detail.html:88
-#: .\control\templates\control\products_list.html:20
-#: .\control\templates\control\sales_list.html:105
-#: .\control\templates\control\sales_list.html:1045
-#: .\control\templates\control\sync_log.html:258
-#: .\control\templates\control\tokens_list.html:62
-#: .\control\templates\control\users_list.html:46
-#: .\control\templates\control\users_list.html:60
-#: .\control\templates\control\users_list.html:189
-#: .\fidpha\templates\fidpha\sales.html:161
 msgid "All"
 msgstr "Tout"
 
-#: .\control\templates\control\accounts_detail.html:198
-#: .\control\templates\control\accounts_form.html:273
-#: .\control\templates\control\roles_detail.html:53
 msgid "Search users…"
 msgstr "Rechercher des utilisateurs…"
 
-#: .\control\templates\control\accounts_detail.html:222
 msgid "Email verified"
 msgstr "Email vérifié"
 
-#: .\control\templates\control\accounts_detail.html:224
 msgid "Email not verified"
 msgstr "Email non vérifié"
 
-#: .\control\templates\control\accounts_detail.html:228
 #, python-format
 msgid "Last login %(date)s"
 msgstr "Dernière connexion le %(date)s"
 
-#: .\control\templates\control\accounts_detail.html:241
-#: .\control\templates\control\accounts_form.html:316
-#: .\control\templates\control\roles_detail.html:76
 msgid "No users match your search."
 msgstr "Aucun utilisateur ne correspond à votre recherche."
 
-#: .\control\templates\control\accounts_detail.html:247
-#: .\control\templates\control\accounts_form.html:322
 msgid "No portal users linked to this account."
 msgstr "Aucun utilisateur du portail lié à ce compte."
 
-#: .\control\templates\control\accounts_detail.html:254
-#: .\control\templates\control\contracts_detail.html:260
-#: .\control\templates\control\products_detail.html:160
-#: .\control\templates\control\roles_detail.html:113
-#: .\control\templates\control\users_detail.html:83
-#: .\control\templates\control\users_detail.html:244
 msgid "Traceability"
 msgstr "Traçabilité"
 
-#: .\control\templates\control\accounts_detail.html:256
-#: .\control\templates\control\contracts_detail.html:262
-#: .\control\templates\control\products_detail.html:162
-#: .\control\templates\control\roles_detail.html:115
-#: .\control\templates\control\tokens_detail.html:152
-#: .\control\templates\control\tokens_list.html:86
-#: .\control\templates\control\users_detail.html:85
-#: .\control\templates\control\users_detail.html:246
 msgid "Created"
 msgstr "Créé"
 
-#: .\control\templates\control\accounts_detail.html:260
-#: .\control\templates\control\accounts_detail.html:271
 #, python-format
 msgid " by %(user)s"
 msgstr " par %(user)s"
 
-#: .\control\templates\control\accounts_detail.html:262
-#: .\control\templates\control\accounts_detail.html:273
-#: .\control\templates\control\contracts_detail.html:268
-#: .\control\templates\control\contracts_detail.html:279
-#: .\control\templates\control\products_detail.html:168
-#: .\control\templates\control\products_detail.html:179
-#: .\control\templates\control\roles_detail.html:121
-#: .\control\templates\control\roles_detail.html:132
-#: .\control\templates\control\users_detail.html:91
-#: .\control\templates\control\users_detail.html:102
-#: .\control\templates\control\users_detail.html:252
 msgid "no user recorded"
 msgstr "aucun utilisateur enregistré"
 
-#: .\control\templates\control\accounts_detail.html:267
-#: .\control\templates\control\contracts_detail.html:273
-#: .\control\templates\control\products_detail.html:173
-#: .\control\templates\control\roles_detail.html:126
-#: .\control\templates\control\users_detail.html:96
-#: .\control\templates\control\users_detail.html:257
 msgid "Last Modified"
 msgstr "Dernière modification"
 
-#: .\control\templates\control\accounts_form.html:4
-#: .\control\templates\control\accounts_form.html:18
-#: .\control\templates\control\accounts_form.html:147
-#: .\control\templates\control\contracts_detail.html:58
-#: .\control\templates\control\contracts_form.html:92
-#: .\control\templates\control\products_detail.html:101
-#: .\control\templates\control\sales_list.html:63
-#: .\control\templates\control\sales_list.html:160
-#: .\control\templates\control\users_list.html:205
-#: .\fidpha\templates\fidpha\base.html:47
-#: .\fidpha\templates\fidpha\pharmacy.html:5
-#: .\fidpha\templates\fidpha\pharmacy.html:6
 msgid "Account"
 msgstr "Compte"
 
-#: .\control\templates\control\accounts_form.html:20
-#: .\control\templates\control\roles_form.html:20
-#: .\control\templates\control\social_apps_form.html:18
-#: .\control\templates\control\users_form.html:17
 #, python-format
 msgid "Editing \"%(name)s\""
 msgstr "Modification de \"%(name)s\""
 
-#: .\control\templates\control\accounts_form.html:20
 msgid "Add a new pharmacy account"
 msgstr "Ajouter un nouveau compte pharmacie"
 
-#: .\control\templates\control\accounts_form.html:50
 msgid "Account Details"
 msgstr "Détails du compte"
 
-#: .\control\templates\control\accounts_form.html:57
 msgid "Unique identifier, e.g. \\"
 msgstr "Identifiant unique, ex. \\"
 
-#: .\control\templates\control\accounts_form.html:90
 msgid "Location / Address"
 msgstr "Localisation / Adresse"
 
-#: .\control\templates\control\accounts_form.html:98
 msgid "Settings"
 msgstr "Paramètres"
 
-#: .\control\templates\control\accounts_form.html:104
 msgid "Inactive accounts cannot be linked to new contracts."
 msgstr "Les comptes inactifs ne peuvent pas être liés à de nouveaux contrats."
 
-#: .\control\templates\control\accounts_form.html:114
 msgid "Pharmacy Portal Access"
 msgstr "Accès au portail pharmacie"
 
-#: .\control\templates\control\accounts_form.html:115
 msgid "Allow this account's users to log in to the portal"
 msgstr "Autoriser les utilisateurs de ce compte à se connecter au portail"
 
-#: .\control\templates\control\accounts_form.html:128
 msgid "Auto-Review Sales"
 msgstr "Révision automatique des ventes"
 
-#: .\control\templates\control\accounts_form.html:131
 msgid ""
 "Batches from this account are accepted automatically without staff review. "
 "Leave off for manual oversight."
@@ -712,325 +315,164 @@ msgstr ""
 "Les lots de ce compte sont acceptés automatiquement sans révision du "
 "personnel. Désactivez pour une supervision manuelle."
 
-#: .\control\templates\control\accounts_form.html:133
 msgid "Global auto-review is <strong>OFF</strong>. Enable it in"
 msgstr ""
 "La révision automatique globale est <strong>DÉSACTIVÉE</strong>. Activez-la "
 "dans"
 
-#: .\control\templates\control\accounts_form.html:134
-#: .\control\templates\control\system_settings.html:4
-#: .\control\templates\control\system_settings.html:12
 msgid "System Settings"
 msgstr "Paramètres système"
 
-#: .\control\templates\control\accounts_form.html:135
 msgid "to unlock this toggle."
 msgstr "pour déverrouiller ce commutateur."
 
-#: .\control\templates\control\accounts_form.html:168
-#: .\control\templates\control\contracts_list.html:45
-#: .\control\templates\control\contracts_list.html:171
-#: .\control\templates\control\dashboard.html:123
 msgid "New Contract"
 msgstr "Nouveau contrat"
 
-#: .\control\templates\control\accounts_form.html:207
-#: .\control\templates\control\sync_log.html:281
 msgid "Search contracts…"
 msgstr "Rechercher des contrats…"
 
-#: .\control\templates\control\accounts_form.html:235
-#: .\control\templates\control\products_detail.html:147
 msgid "No contracts match your search."
 msgstr "Aucun contrat ne correspond à votre recherche."
 
-#: .\control\templates\control\accounts_form.html:243
 msgid "No contracts yet. Create one from the"
 msgstr "Aucun contrat pour l'instant. Créez-en un depuis la"
 
-#: .\control\templates\control\accounts_form.html:243
 msgid "contracts page"
 msgstr "page des contrats"
 
-#: .\control\templates\control\accounts_form.html:265
-#: .\control\templates\control\dashboard.html:135
-#: .\control\templates\control\users_list.html:28
-#: .\control\templates\control\users_list.html:141
-#: .\control\templates\control\users_list.html:161
-#: .\control\templates\control\users_list.html:271
 msgid "New User"
 msgstr "Nouvel utilisateur"
 
-#: .\control\templates\control\accounts_form.html:297
-#: .\control\templates\control\users_form.html:86
-#: .\control\templates\control\users_list.html:241
-#: .\fidpha\templates\fidpha\pharmacy.html:79
-#: .\fidpha\templates\fidpha\profile.html:82
 msgid "Verified"
 msgstr "Vérifié"
 
-#: .\control\templates\control\accounts_form.html:299
-#: .\control\templates\control\users_form.html:88
-#: .\control\templates\control\users_list.html:243
-#: .\fidpha\templates\fidpha\pharmacy.html:81
-#: .\fidpha\templates\fidpha\profile.html:84
 msgid "Not verified"
 msgstr "Non vérifié"
 
-#: .\control\templates\control\accounts_form.html:323
 msgid "Assign users from the"
 msgstr "Assignez des utilisateurs depuis la"
 
-#: .\control\templates\control\accounts_form.html:323
 msgid "user creation page"
 msgstr "page de création d'utilisateur"
 
-#: .\control\templates\control\accounts_list.html:16
 msgid "Search by name or code…"
 msgstr "Rechercher par nom ou code…"
 
-#: .\control\templates\control\accounts_list.html:21
-#: .\control\templates\control\contracts_list.html:20
-#: .\control\templates\control\users_list.html:180
 msgid "Filter by city…"
 msgstr "Filtrer par ville…"
 
-#: .\control\templates\control\accounts_list.html:28
-#: .\control\templates\control\contracts_list.html:27
-#: .\control\templates\control\products_list.html:31
-#: .\control\templates\control\sales_list.html:134
 msgid "Export"
 msgstr "Exporter"
 
-#: .\control\templates\control\accounts_list.html:46
-#: .\control\templates\control\accounts_list.html:164
-#: .\control\templates\control\dashboard.html:117
 msgid "New Account"
 msgstr "Nouveau compte"
 
-#: .\control\templates\control\accounts_list.html:54
-#: .\control\templates\control\contracts_list.html:52
-#: .\control\templates\control\products_confirm_delete.html:30
-#: .\control\templates\control\products_detail.html:86
-#: .\control\templates\control\products_list.html:18
-#: .\control\templates\control\tokens_confirm_delete.html:30
-#: .\control\templates\control\tokens_list.html:60
-#: .\control\templates\control\users_list.html:58
-#: .\control\templates\control\users_list.html:187
 msgid "Status:"
 msgstr "Statut :"
 
-#: .\control\templates\control\accounts_list.html:62
 msgid "Portal:"
 msgstr "Portail :"
 
-#: .\control\templates\control\accounts_list.html:65
 msgid "Has Portal"
 msgstr "A un portail"
 
-#: .\control\templates\control\accounts_list.html:66
 msgid "No Portal"
 msgstr "Sans portail"
 
-#: .\control\templates\control\accounts_list.html:70
-#: .\control\templates\control\contracts_list.html:68
-#: .\control\templates\control\sales_list.html:173
 msgid "Clear filters"
 msgstr "Réinitialiser les filtres"
 
-#: .\control\templates\control\accounts_list.html:86
-#: .\control\templates\control\base.html:514
-#: .\control\templates\control\dashboard.html:70
-#: .\control\templates\control\users_confirm_delete.html:6
-#: .\control\templates\control\users_detail.html:6
-#: .\control\templates\control\users_form.html:6
-#: .\control\templates\control\users_list.html:4
-#: .\control\templates\control\users_list.html:5
 msgid "Users"
 msgstr "Utilisateurs"
 
-#: .\control\templates\control\accounts_list.html:111
 msgid "Has portal access"
 msgstr "A accès au portail"
 
-#: .\control\templates\control\accounts_list.html:113
 msgid "No portal access"
 msgstr "Pas d'accès au portail"
 
-#: .\control\templates\control\accounts_list.html:155
 msgid "No accounts match your filters."
 msgstr "Aucun compte ne correspond à vos filtres."
 
-#: .\control\templates\control\accounts_list.html:160
 msgid "No accounts yet"
 msgstr "Aucun compte pour l'instant"
 
-#: .\control\templates\control\accounts_list.html:161
 msgid "Add a pharmacy account to get started."
 msgstr "Ajoutez un compte pharmacie pour commencer."
 
-#: .\control\templates\control\base.html:485
-#: .\control\templates\control\base.html:666
 msgid "Control Panel"
 msgstr "Panneau de contrôle"
 
-#: .\control\templates\control\base.html:493
-#: .\fidpha\templates\fidpha\base.html:31
 msgid "Overview"
 msgstr "Aperçu"
 
-#: .\control\templates\control\base.html:497
-#: .\control\templates\control\base.html:664
-#: .\control\templates\control\base.html:666
-#: .\control\templates\control\dashboard.html:4
-#: .\control\templates\control\dashboard.html:5
-#: .\fidpha\templates\fidpha\base.html:34
-#: .\fidpha\templates\fidpha\base.html:126
-#: .\fidpha\templates\fidpha\base.html:127
-#: .\fidpha\templates\fidpha\dashboard.html:5
-#: .\fidpha\templates\fidpha\dashboard.html:6
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
-#: .\control\templates\control\base.html:502
 msgid "Authentication"
 msgstr "Authentification"
 
-#: .\control\templates\control\base.html:507
-#: .\control\templates\control\roles_confirm_delete.html:6
-#: .\control\templates\control\roles_detail.html:6
-#: .\control\templates\control\roles_form.html:6
-#: .\control\templates\control\roles_list.html:4
-#: .\control\templates\control\roles_list.html:5
 msgid "Roles"
 msgstr "Rôles"
 
-#: .\control\templates\control\base.html:540
-#: .\control\templates\control\contracts_detail.html:183
-#: .\control\templates\control\contracts_form.html:132
-#: .\control\templates\control\contracts_list.html:82
-#: .\control\templates\control\dashboard.html:53
-#: .\control\templates\control\products_confirm_delete.html:6
-#: .\control\templates\control\products_detail.html:6
-#: .\control\templates\control\products_form.html:6
-#: .\control\templates\control\products_list.html:4
-#: .\control\templates\control\products_list.html:5
-#: .\fidpha\templates\fidpha\contracts.html:97
-#: .\fidpha\templates\fidpha\contracts.html:230
-#: .\fidpha\templates\fidpha\dashboard.html:223
 msgid "Products"
 msgstr "Produits"
 
-#: .\control\templates\control\base.html:547
-#: .\control\templates\control\sales_list.html:162
 msgid "Sales"
 msgstr "Ventes"
 
-#: .\control\templates\control\base.html:558
-#: .\control\templates\control\dashboard.html:87
-#: .\control\templates\control\tokens_confirm_delete.html:6
-#: .\control\templates\control\tokens_detail.html:6
-#: .\control\templates\control\tokens_form.html:6
-#: .\control\templates\control\tokens_list.html:4
-#: .\control\templates\control\tokens_list.html:5
 msgid "API Tokens"
 msgstr "Jetons API"
 
-#: .\control\templates\control\base.html:564
-#: .\control\templates\control\site_edit.html:5
-#: .\control\templates\control\social_accounts_list.html:5
-#: .\control\templates\control\social_apps_list.html:5
-#: .\control\templates\control\system_settings.html:5
 msgid "Configuration"
 msgstr "Configuration"
 
-#: .\control\templates\control\base.html:568
-#: .\control\templates\control\social_apps_confirm_delete.html:6
-#: .\control\templates\control\social_apps_detail.html:6
-#: .\control\templates\control\social_apps_form.html:6
-#: .\control\templates\control\social_apps_list.html:4
-#: .\control\templates\control\social_apps_list.html:5
-#: .\control\templates\control\social_apps_list.html:12
 msgid "Social Applications"
 msgstr "Applications sociales"
 
-#: .\control\templates\control\base.html:573
-#: .\control\templates\control\social_accounts_list.html:4
-#: .\control\templates\control\social_accounts_list.html:5
-#: .\control\templates\control\social_accounts_list.html:12
 msgid "Social Accounts"
 msgstr "Comptes sociaux"
 
-#: .\control\templates\control\base.html:578
-#: .\control\templates\control\site_edit.html:5
 msgid "Site"
 msgstr "Site"
 
-#: .\control\templates\control\base.html:583
-#: .\control\templates\control\system_settings.html:5
 msgid "System"
 msgstr "Système"
 
-#: .\control\templates\control\base.html:588
-#: .\control\templates\control\sync_log.html:4
-#: .\control\templates\control\sync_log.html:5
-#: .\control\templates\control\sync_log.html:237
 msgid "Sync Import Log"
 msgstr "Journal d'import"
 
-#: .\control\templates\control\base.html:606
 msgid "Toggle Theme"
 msgstr "Changer le thème"
 
-#: .\control\templates\control\base.html:634
-#: .\fidpha\templates\fidpha\base.html:109
 msgid "Log Out"
 msgstr "Déconnexion"
 
-#: .\control\templates\control\base.html:643
-#: .\control\templates\control\users_detail.html:122
-#: .\control\templates\control\users_detail.html:161
-#: .\control\templates\control\users_form.html:41
-#: .\control\templates\control\users_list.html:48
-#: .\control\templates\control\users_list.html:102
 msgid "Superuser"
 msgstr "Super-administrateur"
 
-#: .\control\templates\control\base.html:643
-#: .\control\templates\control\users_detail.html:124
-#: .\control\templates\control\users_form.html:50
-#: .\control\templates\control\users_list.html:51
-#: .\control\templates\control\users_list.html:104
 msgid "Staff"
 msgstr "Personnel"
 
-#: .\control\templates\control\coming_soon.html:4
-#: .\control\templates\control\coming_soon.html:5
 msgid "Coming Soon"
 msgstr "Bientôt disponible"
 
-#: .\control\templates\control\coming_soon.html:11
 msgid "This section is being built"
 msgstr "Cette section est en cours de développement"
 
-#: .\control\templates\control\coming_soon.html:14
 msgid "It will be available in the next part of the control panel rollout."
 msgstr ""
 "Elle sera disponible dans la prochaine partie du déploiement du panneau de "
 "contrôle."
 
-#: .\control\templates\control\contracts_confirm_delete.html:4
-#: .\control\templates\control\contracts_confirm_delete.html:16
 msgid "Delete Contract"
 msgstr "Supprimer le contrat"
 
-#: .\control\templates\control\contracts_confirm_delete.html:32
 #, python-format
 msgid "Cannot delete \"%(name)s\""
 msgstr "Impossible de supprimer \"%(name)s\""
 
-#: .\control\templates\control\contracts_confirm_delete.html:42
 #, python-format
 msgid ""
 "This contract has <strong>%(count)s sale record%(count|pluralize)s</strong> "
@@ -1039,13 +481,11 @@ msgstr ""
 "Ce contrat possède <strong>%(count)s enregistrement%(count|pluralize)s de "
 "vente</strong> lié(s)."
 
-#: .\control\templates\control\contracts_confirm_delete.html:43
 msgid "Deleting it would destroy pharmacy sales history, which is not allowed."
 msgstr ""
 "Sa suppression détruirait l'historique des ventes de la pharmacie, ce qui "
 "n'est pas autorisé."
 
-#: .\control\templates\control\contracts_confirm_delete.html:46
 msgid ""
 "To delete this contract you must first remove all associated sales data. "
 "Contact your database administrator if this is required."
@@ -1054,7 +494,6 @@ msgstr ""
 "de vente associées. Contactez votre administrateur de base de données si "
 "nécessaire."
 
-#: .\control\templates\control\contracts_confirm_delete.html:53
 #, python-format
 msgid ""
 "<strong>%(count)s product link%(count|pluralize)s</strong> will be "
@@ -1063,177 +502,105 @@ msgstr ""
 "<strong>%(count)s lien%(count|pluralize)s produit</strong> sera/seront "
 "définitivement supprimé(s)."
 
-#: .\control\templates\control\contracts_confirm_delete.html:59
 msgid "This contract has no linked products or sales records."
 msgstr "Ce contrat n'a aucun produit ou enregistrement de vente lié."
 
-#: .\control\templates\control\contracts_confirm_delete.html:64
 msgid "The contract record will be permanently removed. This cannot be undone."
 msgstr ""
 "L'enregistrement du contrat sera définitivement supprimé. Cette action est "
 "irréversible."
 
-#: .\control\templates\control\contracts_confirm_delete.html:75
 msgid "Go back"
 msgstr "Retour"
 
-#: .\control\templates\control\contracts_confirm_delete.html:80
 msgid "Yes, delete contract"
 msgstr "Oui, supprimer le contrat"
 
-#: .\control\templates\control\contracts_detail.html:55
 msgid "Contract Information"
 msgstr "Informations sur le contrat"
 
-#: .\control\templates\control\contracts_detail.html:56
-#: .\control\templates\control\contracts_form.html:86
-#: .\control\templates\control\contracts_list.html:78
 msgid "Title"
 msgstr "Titre"
 
-#: .\control\templates\control\contracts_detail.html:70
-#: .\control\templates\control\contracts_list.html:80
-#: .\control\templates\control\products_detail.html:103
 msgid "Period"
 msgstr "Période"
 
-#: .\control\templates\control\contracts_detail.html:89
-#: .\control\templates\control\contracts_form.html:99
 msgid "Description"
 msgstr "Description"
 
-#: .\control\templates\control\contracts_detail.html:99
-#: .\control\templates\control\contracts_form.html:307
 msgid "Sales Sync"
 msgstr "Synchronisation des ventes"
 
-#: .\control\templates\control\contracts_detail.html:103
 msgid "Review Sales"
 msgstr "Réviser les ventes"
 
-#: .\control\templates\control\contracts_detail.html:108
 msgid "Sales Recorded"
 msgstr "Ventes enregistrées"
 
-#: .\control\templates\control\contracts_detail.html:113
-#: .\control\templates\control\social_apps_detail.html:72
 msgid "None yet"
 msgstr "Aucune pour l'instant"
 
-#: .\control\templates\control\contracts_detail.html:118
-#: .\control\templates\control\contracts_form.html:310
 msgid "Last Sale Date"
 msgstr "Date de dernière vente"
 
-#: .\control\templates\control\contracts_detail.html:128
-#: .\control\templates\control\contracts_form.html:315
-#: .\control\templates\control\contracts_list.html:83
 msgid "Last Sync"
 msgstr "Dernière sync."
 
-#: .\control\templates\control\contracts_detail.html:133
-#: .\control\templates\control\contracts_list.html:64
 msgid "Never synced"
 msgstr "Jamais synchronisé"
 
-#: .\control\templates\control\contracts_detail.html:147
 msgid "Trend"
 msgstr "Tendance"
 
-#: .\control\templates\control\contracts_detail.html:156
 msgid "Points & products by month"
 msgstr "Points & produits par mois"
 
-#: .\control\templates\control\contracts_detail.html:159
-#: .\fidpha\templates\fidpha\dashboard.html:102
-#: .\fidpha\templates\fidpha\dashboard.html:130
-#: .\fidpha\templates\fidpha\dashboard.html:148
-#: .\fidpha\templates\fidpha\sales.html:136
 msgid "Last 12 months"
 msgstr "12 derniers mois"
 
-#: .\control\templates\control\contracts_detail.html:168
-#: .\fidpha\templates\fidpha\contracts.html:179
 msgid "Points by Product"
 msgstr "Points par produit"
 
-#: .\control\templates\control\contracts_detail.html:194
 msgid "Manage"
 msgstr "Gérer"
 
-#: .\control\templates\control\contracts_detail.html:202
 msgid "Search products…"
 msgstr "Rechercher des produits…"
 
-#: .\control\templates\control\contracts_detail.html:210
-#: .\control\templates\control\contracts_form.html:157
-#: .\control\templates\control\contracts_form.html:191
-#: .\control\templates\control\products_form.html:4
-#: .\control\templates\control\products_form.html:18
-#: .\control\templates\control\sales_list.html:1072
-#: .\fidpha\templates\fidpha\contracts.html:117
-#: .\fidpha\templates\fidpha\dashboard.html:171
-#: .\fidpha\templates\fidpha\sales.html:199
 msgid "Product"
 msgstr "Produit"
 
-#: .\control\templates\control\contracts_detail.html:211
 msgid "Internal Code"
 msgstr "Code interne"
 
-#: .\control\templates\control\contracts_detail.html:212
-#: .\control\templates\control\contracts_form.html:161
-#: .\control\templates\control\contracts_form.html:195
-#: .\control\templates\control\contracts_form.html:270
 msgid "External Designation"
 msgstr "Désignation externe"
 
-#: .\control\templates\control\contracts_detail.html:213
-#: .\control\templates\control\products_list.html:136
-#: .\control\templates\control\sales_list.html:1075
-#: .\control\templates\control\sync_log.html:356
 msgid "PPV"
 msgstr "PPV"
 
-#: .\control\templates\control\contracts_detail.html:214
 msgid "Factor"
 msgstr "Facteur"
 
-#: .\control\templates\control\contracts_detail.html:242
 msgid "No products match your search."
 msgstr "Aucun produit ne correspond à votre recherche."
 
-#: .\control\templates\control\contracts_detail.html:248
 msgid "No products linked to this contract."
 msgstr "Aucun produit lié à ce contrat."
 
-#: .\control\templates\control\contracts_detail.html:250
 msgid "Edit the contract"
 msgstr "Modifier le contrat"
 
-#: .\control\templates\control\contracts_detail.html:250
 msgid "to add products."
 msgstr "pour ajouter des produits."
 
-#: .\control\templates\control\contracts_detail.html:266
-#: .\control\templates\control\contracts_detail.html:277
-#: .\control\templates\control\products_detail.html:166
-#: .\control\templates\control\products_detail.html:177
-#: .\control\templates\control\roles_detail.html:119
-#: .\control\templates\control\roles_detail.html:130
-#: .\control\templates\control\users_detail.html:89
-#: .\control\templates\control\users_detail.html:100
-#: .\control\templates\control\users_detail.html:250
-#: .\control\templates\control\users_detail.html:261
 #, python-format
 msgid "by %(name)s"
 msgstr "par %(name)s"
 
-#: .\control\templates\control\contracts_form.html:22
 msgid "Unlink this product?"
 msgstr "Dissocier ce produit ?"
 
-#: .\control\templates\control\contracts_form.html:27
 msgid ""
 "The product will be removed from this contract. Existing sale records are "
 "not affected."
@@ -1241,258 +608,164 @@ msgstr ""
 "Le produit sera retiré de ce contrat. Les enregistrements de vente existants "
 "ne sont pas affectés."
 
-#: .\control\templates\control\contracts_form.html:31
 msgid "Yes, unlink"
 msgstr "Oui, dissocier"
 
-#: .\control\templates\control\contracts_form.html:40
-#: .\control\templates\control\contracts_form.html:327
-#: .\control\templates\control\products_detail.html:100
-#: .\control\templates\control\sales_list.html:86
-#: .\control\templates\control\sales_list.html:161
-#: .\control\templates\control\sync_log.html:273
-#: .\control\templates\control\sync_log.html:353
-#: .\fidpha\templates\fidpha\base.html:40
-#: .\fidpha\templates\fidpha\contracts.html:5
-#: .\fidpha\templates\fidpha\contracts.html:6
-#: .\fidpha\templates\fidpha\dashboard.html:170
-#: .\fidpha\templates\fidpha\sales.html:198
 msgid "Contract"
 msgstr "Contrat"
 
-#: .\control\templates\control\contracts_form.html:42
 #, python-format
 msgid "Editing \"%(title)s\""
 msgstr "Modification de \"%(title)s\""
 
-#: .\control\templates\control\contracts_form.html:42
 msgid "Create a new pharmacy contract"
 msgstr "Créer un nouveau contrat pharmacie"
 
-#: .\control\templates\control\contracts_form.html:83
 msgid "Contract Details"
 msgstr "Détails du contrat"
 
-#: .\control\templates\control\contracts_form.html:95
 msgid "Only one active contract is allowed per account."
 msgstr "Un seul contrat actif est autorisé par compte."
 
-#: .\control\templates\control\contracts_form.html:107
 msgid "Contract Period"
 msgstr "Période du contrat"
 
-#: .\control\templates\control\contracts_form.html:111
 msgid "Start Date"
 msgstr "Date de début"
 
-#: .\control\templates\control\contracts_form.html:116
 msgid "End Date"
 msgstr "Date de fin"
 
-#: .\control\templates\control\contracts_form.html:134
 msgid "only active products not already linked to this contract are listed"
 msgstr "seuls les produits actifs non encore liés à ce contrat sont listés"
 
-#: .\control\templates\control\contracts_form.html:166
-#: .\control\templates\control\contracts_form.html:200
 msgid "Points multiplier per dirham of PPV (default 1)"
 msgstr "Multiplicateur de points par dirham de PPV (défaut 1)"
 
-#: .\control\templates\control\contracts_form.html:166
-#: .\control\templates\control\contracts_form.html:200
 msgid "Pts factor"
 msgstr "Facteur pts"
 
-#: .\control\templates\control\contracts_form.html:170
-#: .\control\templates\control\contracts_form.html:204
 msgid "Target quantity for this contract (optional)"
 msgstr "Quantité cible pour ce contrat (optionnel)"
 
-#: .\control\templates\control\contracts_form.html:170
-#: .\control\templates\control\contracts_form.html:204
 msgid "Target qty"
 msgstr "Qté cible"
 
-#: .\control\templates\control\contracts_form.html:176
-#: .\control\templates\control\contracts_form.html:210
 msgid "Unlink product"
 msgstr "Dissocier le produit"
 
-#: .\control\templates\control\contracts_form.html:220
 msgid "Add Product"
 msgstr "Ajouter un produit"
 
-#: .\control\templates\control\contracts_form.html:224
 msgid "Import Products"
 msgstr "Importer des produits"
 
-#: .\control\templates\control\contracts_form.html:239
 msgid "Import Products into Contract"
 msgstr "Importer des produits dans le contrat"
 
-#: .\control\templates\control\contracts_form.html:241
-#: .\control\templates\control\products_list.html:68
 msgid "Accepted:"
 msgstr "Accepté :"
 
-#: .\control\templates\control\contracts_form.html:242
 msgid "required:"
 msgstr "requis :"
 
-#: .\control\templates\control\contracts_form.html:243
 msgid "optional:"
 msgstr "optionnel :"
 
-#: .\control\templates\control\contracts_form.html:250
-#: .\control\templates\control\products_list.html:74
 msgid "Choose File"
 msgstr "Choisir un fichier"
 
-#: .\control\templates\control\contracts_form.html:252
-#: .\control\templates\control\products_list.html:76
 msgid "No file chosen"
 msgstr "Aucun fichier sélectionné"
 
-#: .\control\templates\control\contracts_form.html:261
-#: .\control\templates\control\products_list.html:85
 msgid "Preview"
 msgstr "Aperçu"
 
-#: .\control\templates\control\contracts_form.html:269
 msgid "Product Code"
 msgstr "Code produit"
 
-#: .\control\templates\control\contracts_form.html:271
 msgid "Pts Factor"
 msgstr "Facteur pts"
 
-#: .\control\templates\control\contracts_form.html:272
 msgid "Target Qty"
 msgstr "Qté cible"
 
-#: .\control\templates\control\contracts_form.html:273
-#: .\control\templates\control\products_list.html:97
 msgid "Skip reason"
 msgstr "Motif d'exclusion"
 
-#: .\control\templates\control\contracts_form.html:282
 msgid "Link"
 msgstr "Lier"
 
-#: .\control\templates\control\contracts_form.html:293
-#: .\control\templates\control\products_list.html:117
 msgid "Import Complete"
 msgstr "Import terminé"
 
-#: .\control\templates\control\contracts_form.html:297
-#: .\control\templates\control\products_list.html:121
 msgid "Done"
 msgstr "Terminé"
 
-#: .\control\templates\control\contracts_list.html:15
 msgid "Search by title or account…"
 msgstr "Rechercher par titre ou compte…"
 
-#: .\control\templates\control\contracts_list.html:60
 msgid "Synced:"
 msgstr "Synchronisé :"
 
-#: .\control\templates\control\contracts_list.html:63
 msgid "Synced"
 msgstr "Synchronisé"
 
-#: .\control\templates\control\contracts_list.html:79
 msgid "Account · City"
 msgstr "Compte · Ville"
 
-#: .\control\templates\control\contracts_list.html:131
-#: .\control\templates\control\tokens_detail.html:141
-#: .\control\templates\control\tokens_list.html:118
-#: .\control\templates\control\users_detail.html:46
-#: .\control\templates\control\users_detail.html:150
 msgid "Never"
 msgstr "Jamais"
 
-#: .\control\templates\control\contracts_list.html:162
 msgid "No contracts match your filters."
 msgstr "Aucun contrat ne correspond à vos filtres."
 
-#: .\control\templates\control\contracts_list.html:167
 msgid "No contracts yet"
 msgstr "Aucun contrat pour l'instant"
 
-#: .\control\templates\control\contracts_list.html:168
 msgid "Create a contract to link products to a pharmacy account."
 msgstr "Créez un contrat pour lier des produits à un compte pharmacie."
 
-#: .\control\templates\control\dashboard.html:25
-#: .\control\templates\control\dashboard.html:42
-#: .\control\templates\control\dashboard.html:59
-#: .\control\templates\control\dashboard.html:93
 #, python-format
 msgid "active out of %(total)s total"
 msgstr "actif(s) sur %(total)s au total"
 
-#: .\control\templates\control\dashboard.html:27
-#: .\control\templates\control\dashboard.html:44
-#: .\control\templates\control\dashboard.html:61
-#: .\control\templates\control\dashboard.html:78
-#: .\control\templates\control\dashboard.html:95
-#: .\fidpha\templates\fidpha\dashboard.html:163
 msgid "View all"
 msgstr "Voir tout"
 
-#: .\control\templates\control\dashboard.html:76
 msgid "registered users"
 msgstr "utilisateurs enregistrés"
 
-#: .\control\templates\control\dashboard.html:111
 msgid "Quick Actions"
 msgstr "Actions rapides"
 
-#: .\control\templates\control\dashboard.html:129
-#: .\control\templates\control\products_list.html:52
-#: .\control\templates\control\products_list.html:201
 msgid "New Product"
 msgstr "Nouveau produit"
 
-#: .\control\templates\control\dashboard.html:141
-#: .\control\templates\control\tokens_form.html:4
-#: .\control\templates\control\tokens_form.html:15
 msgid "New API Token"
 msgstr "Nouveau jeton API"
 
-#: .\control\templates\control\dashboard.html:157
 msgid "Recent Activity"
 msgstr "Activité récente"
 
-#: .\control\templates\control\dashboard.html:179
 msgid "created"
 msgstr "créé"
 
-#: .\control\templates\control\dashboard.html:180
 msgid "deleted"
 msgstr "supprimé"
 
-#: .\control\templates\control\dashboard.html:182
 msgid "edited"
 msgstr "modifié"
 
-#: .\control\templates\control\products_confirm_delete.html:4
-#: .\control\templates\control\products_confirm_delete.html:15
 msgid "Delete Product"
 msgstr "Supprimer le produit"
 
-#: .\control\templates\control\products_confirm_delete.html:16
-#: .\control\templates\control\tokens_confirm_delete.html:16
 msgid "This action cannot be undone."
 msgstr "Cette action est irréversible."
 
-#: .\control\templates\control\products_confirm_delete.html:29
 msgid "Code:"
 msgstr "Code :"
 
-#: .\control\templates\control\products_confirm_delete.html:40
 #, python-format
 msgid "This product is linked to <strong>%(count)s active contract</strong>."
 msgid_plural ""
@@ -1500,13 +773,11 @@ msgid_plural ""
 msgstr[0] "Ce produit est lié à <strong>%(count)s contrat actif</strong>."
 msgstr[1] "Ce produit est lié à <strong>%(count)s contrats actifs</strong>."
 
-#: .\control\templates\control\products_confirm_delete.html:41
 msgid "Deleting it will remove those links and may affect sales records."
 msgstr ""
 "Sa suppression supprimera ces liens et peut affecter les enregistrements de "
 "vente."
 
-#: .\control\templates\control\products_confirm_delete.html:46
 #, python-format
 msgid ""
 "This product is referenced by <strong>%(count)s contract</strong> (all "
@@ -1521,11 +792,9 @@ msgstr[1] ""
 "Ce produit est référencé par <strong>%(count)s contrats</strong> (tous "
 "inactifs)."
 
-#: .\control\templates\control\products_confirm_delete.html:47
 msgid "Those links will be removed."
 msgstr "Ces liens seront supprimés."
 
-#: .\control\templates\control\products_confirm_delete.html:52
 #, python-format
 msgid ""
 "Are you sure you want to permanently delete <strong style=\"color:var(--text-"
@@ -1534,64 +803,46 @@ msgstr ""
 "Êtes-vous sûr de vouloir supprimer définitivement <strong "
 "style=\"color:var(--text-primary);\">%(designation)s</strong> ?"
 
-#: .\control\templates\control\products_confirm_delete.html:59
 msgid "Yes, delete product"
 msgstr "Oui, supprimer le produit"
 
-#: .\control\templates\control\products_detail.html:48
 msgid "Product Information"
 msgstr "Informations sur le produit"
 
-#: .\control\templates\control\products_detail.html:54
-#: .\control\templates\control\products_form.html:60
-#: .\control\templates\control\products_list.html:94
-#: .\control\templates\control\products_list.html:135
-#: .\control\templates\control\sync_log.html:354
 msgid "Designation"
 msgstr "Désignation"
 
-#: .\control\templates\control\products_detail.html:72
 msgid "Linked Contracts"
 msgstr "Contrats liés"
 
-#: .\control\templates\control\products_detail.html:82
 msgid "Search contract, account, ext. designation…"
 msgstr "Rechercher contrat, compte, désignation ext.…"
 
-#: .\control\templates\control\products_detail.html:102
 msgid "Ext. Designation"
 msgstr "Désignation ext."
 
-#: .\control\templates\control\products_detail.html:153
 msgid "This product is not linked to any contract yet."
 msgstr "Ce produit n'est lié à aucun contrat pour l'instant."
 
-#: .\control\templates\control\products_form.html:20
 #, python-format
 msgid "Editing \"%(designation)s\""
 msgstr "Modification de \"%(designation)s\""
 
-#: .\control\templates\control\products_form.html:20
 msgid "Add a new product to the catalogue"
 msgstr "Ajouter un nouveau produit au catalogue"
 
-#: .\control\templates\control\products_form.html:43
 msgid "Product Details"
 msgstr "Détails du produit"
 
-#: .\control\templates\control\products_form.html:50
 msgid "Unique internal identifier, e.g. DOLI1000."
 msgstr "Identifiant interne unique, ex. DOLI1000."
 
-#: .\control\templates\control\products_form.html:63
 msgid "Full product name as it appears in the system."
 msgstr "Nom complet du produit tel qu'il apparaît dans le système."
 
-#: .\control\templates\control\products_form.html:67
 msgid "PPV (Price per unit, MAD)"
 msgstr "PPV (Prix par unité, MAD)"
 
-#: .\control\templates\control\products_form.html:70
 msgid ""
 "Used to calculate loyalty points: round(PPV × quantity). Leave blank if not "
 "applicable."
@@ -1599,544 +850,343 @@ msgstr ""
 "Utilisé pour calculer les points de fidélité : arrondi(PPV × quantité). "
 "Laisser vide si non applicable."
 
-#: .\control\templates\control\products_list.html:14
 msgid "Search by code or designation…"
 msgstr "Rechercher par code ou désignation…"
 
-#: .\control\templates\control\products_list.html:26
-#: .\control\templates\control\sync_log.html:336
 msgid "Clear"
 msgstr "Effacer"
 
-#: .\control\templates\control\products_list.html:49
-#: .\control\templates\control\products_list.html:106
 msgid "Import"
 msgstr "Importer"
 
-#: .\control\templates\control\products_list.html:67
 msgid "Import Products from CSV"
 msgstr "Importer des produits depuis CSV"
 
-#: .\control\templates\control\products_list.html:68
 msgid "required fields:"
 msgstr "champs requis :"
 
-#: .\control\templates\control\products_list.html:192
 msgid "No products match your filters."
 msgstr "Aucun produit ne correspond à vos filtres."
 
-#: .\control\templates\control\products_list.html:197
 msgid "No products yet"
 msgstr "Aucun produit pour l'instant"
 
-#: .\control\templates\control\products_list.html:198
 msgid "Add products to link them to pharmacy contracts."
 msgstr "Ajoutez des produits pour les lier aux contrats pharmacie."
 
-#: .\control\templates\control\roles_confirm_delete.html:4
-#: .\control\templates\control\roles_confirm_delete.html:15
 msgid "Delete Role"
 msgstr "Supprimer le rôle"
 
-#: .\control\templates\control\roles_confirm_delete.html:33
-#: .\control\templates\control\roles_list.html:55
 #, python-format
 msgid "%(count)s user"
 msgid_plural "%(count)s users"
 msgstr[0] "%(count)s utilisateur"
 msgstr[1] "%(count)s utilisateurs"
 
-#: .\control\templates\control\roles_confirm_delete.html:33
 msgid "currently assigned to this role will lose its permissions."
 msgstr "actuellement assigné(s) à ce rôle perdra ses permissions."
 
-#: .\control\templates\control\roles_confirm_delete.html:37
 msgid ""
 "The role and all its permission assignments will be permanently removed."
 msgstr ""
 "Le rôle et toutes ses affectations de permissions seront définitivement "
 "supprimés."
 
-#: .\control\templates\control\roles_confirm_delete.html:38
 msgid "User accounts themselves will not be deleted."
 msgstr "Les comptes utilisateur eux-mêmes ne seront pas supprimés."
 
-#: .\control\templates\control\roles_confirm_delete.html:48
 msgid "Yes, delete role"
 msgstr "Oui, supprimer le rôle"
 
-#: .\control\templates\control\roles_detail.html:21
-#: .\control\templates\control\roles_list.html:51
 #, python-format
 msgid "%(count)s permission"
 msgid_plural "%(count)s permissions"
 msgstr[0] "%(count)s permission"
 msgstr[1] "%(count)s permissions"
 
-#: .\control\templates\control\roles_detail.html:22
 #, python-format
 msgid "%(count)s user assigned"
 msgid_plural "%(count)s users assigned"
 msgstr[0] "%(count)s utilisateur assigné"
 msgstr[1] "%(count)s utilisateurs assignés"
 
-#: .\control\templates\control\roles_detail.html:46
 msgid "Assigned Users"
 msgstr "Utilisateurs assignés"
 
-#: .\control\templates\control\roles_detail.html:81
 msgid "No users assigned to this role."
 msgstr "Aucun utilisateur assigné à ce rôle."
 
-#: .\control\templates\control\roles_detail.html:88
-#: .\control\templates\control\roles_form.html:78
-#: .\control\templates\control\roles_list.html:32
 msgid "Permissions"
 msgstr "Permissions"
 
-#: .\control\templates\control\roles_detail.html:104
 msgid "No permissions assigned to this role."
 msgstr "Aucune permission assignée à ce rôle."
 
-#: .\control\templates\control\roles_detail.html:105
 msgid "Add permissions"
 msgstr "Ajouter des permissions"
 
-#: .\control\templates\control\roles_form.html:4
-#: .\control\templates\control\roles_form.html:18
-#: .\control\templates\control\roles_form.html:147
-#: .\control\templates\control\users_detail.html:171
-#: .\control\templates\control\users_form.html:154
-#: .\control\templates\control\users_list.html:77
 msgid "Role"
 msgstr "Rôle"
 
-#: .\control\templates\control\roles_form.html:20
 msgid "Define a new permission preset"
 msgstr "Définir un nouveau préréglage de permissions"
 
-#: .\control\templates\control\roles_form.html:39
 msgid "Role Details"
 msgstr "Détails du rôle"
 
-#: .\control\templates\control\roles_form.html:43
 msgid "Icon"
 msgstr "Icône"
 
-#: .\control\templates\control\roles_form.html:54
 msgid "Choose an icon that best represents this role."
 msgstr "Choisissez une icône qui représente le mieux ce rôle."
 
-#: .\control\templates\control\roles_form.html:59
 msgid "Role Name"
 msgstr "Nom du rôle"
 
-#: .\control\templates\control\roles_form.html:71
 msgid "A short descriptive name, e.g. \\"
 msgstr "Un nom court et descriptif, ex. \\"
 
-#: .\control\templates\control\roles_form.html:82
 msgid "Select all"
 msgstr "Tout sélectionner"
 
-#: .\control\templates\control\roles_form.html:86
 msgid "Clear all"
 msgstr "Tout effacer"
 
-#: .\control\templates\control\roles_form.html:94
 msgid "Search permissions…"
 msgstr "Rechercher des permissions…"
 
-#: .\control\templates\control\roles_form.html:139
 msgid "No permissions match your search."
 msgstr "Aucune permission ne correspond à votre recherche."
 
-#: .\control\templates\control\roles_list.html:14
-#: .\control\templates\control\users_form.html:169
 msgid "Search roles…"
 msgstr "Rechercher des rôles…"
 
-#: .\control\templates\control\roles_list.html:17
 #, python-format
 msgid "%(count)s role"
 msgid_plural "%(count)s roles"
 msgstr[0] "%(count)s rôle"
 msgstr[1] "%(count)s rôles"
 
-#: .\control\templates\control\roles_list.html:20
-#: .\control\templates\control\roles_list.html:95
 msgid "New Role"
 msgstr "Nouveau rôle"
 
-#: .\control\templates\control\roles_list.html:33
 msgid "Users assigned"
 msgstr "Utilisateurs assignés"
 
-#: .\control\templates\control\roles_list.html:85
 msgid "No roles match your search."
 msgstr "Aucun rôle ne correspond à votre recherche."
 
-#: .\control\templates\control\roles_list.html:90
 msgid "No roles yet"
 msgstr "Aucun rôle pour l'instant"
 
-#: .\control\templates\control\roles_list.html:91
 msgid "Create a role to define a permission preset for staff users."
 msgstr ""
 "Créez un rôle pour définir un préréglage de permissions pour le personnel."
 
-#: .\control\templates\control\sales_list.html:4
-#: .\control\templates\control\sales_list.html:5
 msgid "Sales Review"
 msgstr "Révision des ventes"
 
-#: .\control\templates\control\sales_list.html:31
 msgid "Received"
 msgstr "Reçu"
 
-#: .\control\templates\control\sales_list.html:36
-#: .\fidpha\templates\fidpha\sales.html:186
 msgid "Clear dates"
 msgstr "Effacer les dates"
 
-#: .\control\templates\control\sales_list.html:43
 msgid "Quick"
 msgstr "Rapide"
 
-#: .\control\templates\control\sales_list.html:45
-#: .\control\templates\control\tokens_detail.html:162
 msgid "Today"
 msgstr "Aujourd'hui"
 
-#: .\control\templates\control\sales_list.html:46
 msgid "Yesterday"
 msgstr "Hier"
 
-#: .\control\templates\control\sales_list.html:47
 msgid "This week"
 msgstr "Cette semaine"
 
-#: .\control\templates\control\sales_list.html:48
 msgid "This month"
 msgstr "Ce mois-ci"
 
-#: .\control\templates\control\sales_list.html:55
-#: .\control\templates\control\sales_list.html:159
-#: .\control\templates\control\sync_log.html:265
 msgid "Batch ID"
 msgstr "ID lot"
 
-#: .\control\templates\control\sales_list.html:58
-#: .\control\templates\control\sync_log.html:266
-#: .\control\templates\control\sync_log.html:270
-#: .\control\templates\control\sync_log.html:331
 msgid "Search…"
 msgstr "Rechercher…"
 
-#: .\control\templates\control\sales_list.html:67
-#: .\control\templates\control\sales_list.html:73
-#: .\control\templates\control\sales_list.html:756
-#: .\control\templates\control\sales_list.html:845
 msgid "All accounts"
 msgstr "Tous les comptes"
 
-#: .\control\templates\control\sales_list.html:71
 msgid "Search account…"
 msgstr "Rechercher un compte…"
 
-#: .\control\templates\control\sales_list.html:90
-#: .\control\templates\control\sales_list.html:96
-#: .\control\templates\control\sales_list.html:759
-#: .\control\templates\control\sales_list.html:760
-#: .\control\templates\control\sales_list.html:776
-#: .\control\templates\control\sales_list.html:784
-#: .\control\templates\control\sales_list.html:846
-#: .\control\templates\control\sales_list.html:847
-#: .\control\templates\control\sync_log.html:277
-#: .\control\templates\control\sync_log.html:283
-#: .\fidpha\templates\fidpha\contracts.html:205
 msgid "All contracts"
 msgstr "Tous les contrats"
 
-#: .\control\templates\control\sales_list.html:94
 msgid "Search contract…"
 msgstr "Rechercher un contrat…"
 
-#: .\control\templates\control\sales_list.html:103
 msgid "Review status"
 msgstr "Statut de révision"
 
-#: .\control\templates\control\sales_list.html:106
 msgid "Has pending"
 msgstr "A des ventes en attente"
 
-#: .\control\templates\control\sales_list.html:107
 msgid "Has accepted"
 msgstr "A des ventes acceptées"
 
-#: .\control\templates\control\sales_list.html:108
 msgid "Has rejected"
 msgstr "A des ventes rejetées"
 
-#: .\control\templates\control\sales_list.html:114
 msgid "Reset all filters"
 msgstr "Réinitialiser tous les filtres"
 
-#: .\control\templates\control\sales_list.html:128
 msgid "Batches"
 msgstr "Lots"
 
-#: .\control\templates\control\sales_list.html:138
 msgid "Export filtered"
 msgstr "Exporter filtré"
 
-#: .\control\templates\control\sales_list.html:141
 msgid "Export all"
 msgstr "Tout exporter"
 
-#: .\control\templates\control\sales_list.html:149
 msgid "Page 1 / 1"
 msgstr "Page 1 / 1"
 
-#: .\control\templates\control\sales_list.html:163
 msgid "Review Status"
 msgstr "Statut de révision"
 
-#: .\control\templates\control\sales_list.html:168
 msgid "Loading batches…"
 msgstr "Chargement des lots…"
 
-#: .\control\templates\control\sales_list.html:172
 msgid "No batches match the current filters."
 msgstr "Aucun lot ne correspond aux filtres actuels."
 
-#: .\control\templates\control\sales_list.html:195
 msgid "Previous batch (←)"
 msgstr "Lot précédent (←)"
 
-#: .\control\templates\control\sales_list.html:199
 msgid "Next batch (→)"
 msgstr "Lot suivant (→)"
 
-#: .\control\templates\control\sales_list.html:202
 msgid "Close (Esc)"
 msgstr "Fermer (Échap)"
 
-#: .\control\templates\control\sales_list.html:220
-#: .\control\templates\control\sales_list.html:228
-#: .\control\templates\control\tokens_detail.html:23
-#: .\control\templates\control\tokens_list.html:20
 msgid "Confirm"
 msgstr "Confirmer"
 
-#: .\control\templates\control\sales_list.html:223
 msgid "Rejection reason (optional)"
 msgstr "Motif de rejet (optionnel)"
 
-#: .\control\templates\control\sales_list.html:224
 msgid "e.g. duplicate batch, wrong product codes…"
 msgstr "ex. lot en double, codes produit incorrects…"
 
-#: .\control\templates\control\sales_list.html:893
 msgid "Page"
 msgstr "Page"
 
-#: .\control\templates\control\sales_list.html:893
 msgid "total"
 msgstr "total"
 
-#: .\control\templates\control\sales_list.html:904
-#: .\control\templates\control\sales_list.html:976
-#: .\control\templates\control\sales_list.html:1107
-#: .\control\templates\control\sales_list.html:1262
-#: .\control\templates\control\sales_list.html:1340
-#: .\control\templates\control\sales_list.html:1341
 msgid "pending"
 msgstr "en attente"
 
-#: .\control\templates\control\sales_list.html:905
-#: .\control\templates\control\sales_list.html:977
-#: .\control\templates\control\sales_list.html:1109
-#: .\control\templates\control\sales_list.html:1263
-#: .\control\templates\control\sales_list.html:1340
-#: .\control\templates\control\sales_list.html:1342
-#: .\fidpha\templates\fidpha\sales.html:151
 msgid "accepted"
 msgstr "accepté"
 
-#: .\control\templates\control\sales_list.html:906
-#: .\control\templates\control\sales_list.html:978
-#: .\control\templates\control\sales_list.html:1111
-#: .\control\templates\control\sales_list.html:1264
-#: .\control\templates\control\sales_list.html:1340
-#: .\control\templates\control\sales_list.html:1343
-#: .\control\templates\control\sales_list.html:1348
-#: .\control\templates\control\sales_list.html:1350
 msgid "rejected"
 msgstr "rejeté"
 
-#: .\control\templates\control\sales_list.html:910
-#: .\control\templates\control\sales_list.html:953
 msgid "View account"
 msgstr "Voir le compte"
 
-#: .\control\templates\control\sales_list.html:913
-#: .\control\templates\control\sales_list.html:956
-#: .\control\templates\control\sync_log.html:404
 msgid "View contract"
 msgstr "Voir le contrat"
 
-#: .\control\templates\control\sales_list.html:919
 msgid "Open this batch"
 msgstr "Ouvrir ce lot"
 
-#: .\control\templates\control\sales_list.html:979
-#: .\control\templates\control\sales_list.html:1154
-#: .\control\templates\control\sales_list.html:1265
-#: .\control\templates\control\sales_list.html:1345
 msgid "PPV mismatch"
 msgstr "Désaccord PPV"
 
-#: .\control\templates\control\sales_list.html:981
-#: .\control\templates\control\sales_list.html:1267
 msgid "No review data"
 msgstr "Aucune donnée de révision"
 
-#: .\control\templates\control\sales_list.html:1003
 msgid "No sale records for this batch."
 msgstr "Aucun enregistrement de vente pour ce lot."
 
-#: .\control\templates\control\sales_list.html:1037
 msgid "Search product…"
 msgstr "Rechercher un produit…"
 
-#: .\control\templates\control\sales_list.html:1039
 msgid "Export this batch as CSV"
 msgstr "Exporter ce lot en CSV"
 
-#: .\control\templates\control\sales_list.html:1040
 msgid "Export batch"
 msgstr "Exporter le lot"
 
-#: .\control\templates\control\sales_list.html:1046
-#: .\control\templates\control\sync_log.html:259
-#: .\control\templates\control\sync_log.html:437
-#: .\fidpha\templates\fidpha\dashboard.html:196
-#: .\fidpha\templates\fidpha\sales.html:106
-#: .\fidpha\templates\fidpha\sales.html:164
-#: .\fidpha\templates\fidpha\sales.html:231
-#: .\fidpha\templates\fidpha\sales.html:281
 msgid "Pending"
 msgstr "En attente"
 
-#: .\control\templates\control\sales_list.html:1047
-#: .\control\templates\control\sync_log.html:260
-#: .\control\templates\control\sync_log.html:432
-#: .\fidpha\templates\fidpha\dashboard.html:194
-#: .\fidpha\templates\fidpha\sales.html:95
-#: .\fidpha\templates\fidpha\sales.html:162
-#: .\fidpha\templates\fidpha\sales.html:229
-#: .\fidpha\templates\fidpha\sales.html:280
 msgid "Accepted"
 msgstr "Accepté"
 
-#: .\control\templates\control\sales_list.html:1048
-#: .\control\templates\control\sync_log.html:261
-#: .\control\templates\control\sync_log.html:420
-#: .\control\templates\control\sync_log.html:427
-#: .\fidpha\templates\fidpha\dashboard.html:195
-#: .\fidpha\templates\fidpha\sales.html:117
-#: .\fidpha\templates\fidpha\sales.html:163
-#: .\fidpha\templates\fidpha\sales.html:230
-#: .\fidpha\templates\fidpha\sales.html:282
 msgid "Rejected"
 msgstr "Rejeté"
 
-#: .\control\templates\control\sales_list.html:1053
-#: .\control\templates\control\sales_list.html:1155
 msgid "Accept"
 msgstr "Accepter"
 
-#: .\control\templates\control\sales_list.html:1056
-#: .\control\templates\control\sales_list.html:1156
 msgid "Reject"
 msgstr "Rejeter"
 
-#: .\control\templates\control\sales_list.html:1063
 msgid "Loading…"
 msgstr "Chargement…"
 
-#: .\control\templates\control\sales_list.html:1073
 msgid "Sale Date"
 msgstr "Date de vente"
 
-#: .\control\templates\control\sales_list.html:1074
-#: .\control\templates\control\sync_log.html:355
-#: .\fidpha\templates\fidpha\dashboard.html:172
-#: .\fidpha\templates\fidpha\sales.html:202
 msgid "Qty"
 msgstr "Qté"
 
-#: .\control\templates\control\sales_list.html:1076
 msgid "Pts"
 msgstr "Pts"
 
-#: .\control\templates\control\sales_list.html:1078
 msgid "Actions"
 msgstr "Actions"
 
-#: .\control\templates\control\sales_list.html:1083
 msgid "No sales match."
 msgstr "Aucune vente ne correspond."
 
-#: .\control\templates\control\sales_list.html:1106
 msgid "Batch totals"
 msgstr "Totaux du lot"
 
-#: .\control\templates\control\sales_list.html:1112
-#: .\fidpha\templates\fidpha\contracts.html:429
 msgid "pts"
 msgstr "pts"
 
-#: .\control\templates\control\sales_list.html:1151
 msgid "Awaiting review"
 msgstr "En attente de révision"
 
-#: .\control\templates\control\sales_list.html:1154
 msgid "submitted"
 msgstr "soumis"
 
-#: .\control\templates\control\sales_list.html:1154
 msgid "contract"
 msgstr "contrat"
 
-#: .\control\templates\control\sales_list.html:1208
 msgid "selected"
 msgstr "sélectionné(s)"
 
-#: .\control\templates\control\sales_list.html:1348
-#: .\control\templates\control\sales_list.html:1350
 msgid "rejection rate"
 msgstr "taux de rejet"
 
-#: .\control\templates\control\site_edit.html:4
-#: .\control\templates\control\site_edit.html:12
 msgid "Site Configuration"
 msgstr "Configuration du site"
 
-#: .\control\templates\control\site_edit.html:13
 msgid "Domain and display name used by Django and allauth"
 msgstr "Domaine et nom d'affichage utilisés par Django et allauth"
 
-#: .\control\templates\control\site_edit.html:29
 msgid "Site Details"
 msgstr "Détails du site"
 
-#: .\control\templates\control\site_edit.html:32
 msgid "Domain"
 msgstr "Domaine"
 
-#: .\control\templates\control\site_edit.html:35
 msgid ""
 "The domain name of this application, e.g. <em>fidpha.example.com</em>. Used "
 "in OAuth redirect URLs and emails."
@@ -2144,16 +1194,13 @@ msgstr ""
 "Le nom de domaine de cette application, ex. <em>fidpha.example.com</em>. "
 "Utilisé dans les URLs de redirection OAuth et les emails."
 
-#: .\control\templates\control\site_edit.html:39
 msgid "Display Name"
 msgstr "Nom d'affichage"
 
-#: .\control\templates\control\site_edit.html:42
 msgid "Human-readable name shown in emails and OAuth consent screens."
 msgstr ""
 "Nom lisible affiché dans les emails et les écrans de consentement OAuth."
 
-#: .\control\templates\control\site_edit.html:48
 #, python-format
 msgid ""
 "Site ID: <strong style=\"font-family:monospace; color:var(--text-primary);"
@@ -2166,75 +1213,49 @@ msgstr ""
 "        — assurez-vous que <code>SITE_ID = %(pk)s</code> dans vos paramètres "
 "correspond."
 
-#: .\control\templates\control\site_edit.html:55
 msgid "Save Configuration"
 msgstr "Enregistrer la configuration"
 
-#: .\control\templates\control\site_edit.html:67
-#: .\control\templates\control\social_apps_form.html:132
 msgid "Saving…"
 msgstr "Enregistrement…"
 
-#: .\control\templates\control\social_accounts_list.html:13
 msgid "OAuth accounts linked to users via django-allauth"
 msgstr "Comptes OAuth liés aux utilisateurs via django-allauth"
 
-#: .\control\templates\control\social_accounts_list.html:20
 msgid "Filter by username, provider or email…"
 msgstr "Filtrer par nom d'utilisateur, fournisseur ou email…"
 
-#: .\control\templates\control\social_accounts_list.html:28
-#: .\control\templates\control\users_form.html:4
-#: .\control\templates\control\users_form.html:15
-#: .\control\templates\control\users_form.html:247
-#: .\control\templates\control\users_list.html:75
-#: .\control\templates\control\users_list.html:204
 msgid "User"
 msgstr "Utilisateur"
 
-#: .\control\templates\control\social_accounts_list.html:29
-#: .\control\templates\control\social_apps_detail.html:43
-#: .\control\templates\control\social_apps_form.html:40
-#: .\control\templates\control\social_apps_form.html:43
-#: .\control\templates\control\social_apps_list.html:25
 msgid "Provider"
 msgstr "Fournisseur"
 
-#: .\control\templates\control\social_accounts_list.html:30
 msgid "UID"
 msgstr "UID"
 
-#: .\control\templates\control\social_accounts_list.html:31
 msgid "Email (OAuth)"
 msgstr "Email (OAuth)"
 
-#: .\control\templates\control\social_accounts_list.html:32
-#: .\control\templates\control\users_detail.html:228
 msgid "Linked"
 msgstr "Lié"
 
-#: .\control\templates\control\social_accounts_list.html:33
 msgid "Tokens"
 msgstr "Jetons"
 
-#: .\control\templates\control\social_accounts_list.html:76
 msgid "View user"
 msgstr "Voir l'utilisateur"
 
-#: .\control\templates\control\social_accounts_list.html:86
 msgid "No social accounts linked yet."
 msgstr "Aucun compte social lié pour l'instant."
 
-#: .\control\templates\control\social_apps_confirm_delete.html:4
 #, python-format
 msgid "Delete %(name)s"
 msgstr "Supprimer %(name)s"
 
-#: .\control\templates\control\social_apps_confirm_delete.html:15
 msgid "Delete Social Application"
 msgstr "Supprimer l'application sociale"
 
-#: .\control\templates\control\social_apps_confirm_delete.html:26
 #, python-format
 msgid ""
 "This will permanently remove the <strong>%(provider)s</strong> OAuth "
@@ -2243,105 +1264,73 @@ msgstr ""
 "Cela supprimera définitivement l'application OAuth <strong>%(provider)s</"
 "strong> et tous les jetons sociaux associés."
 
-#: .\control\templates\control\social_apps_confirm_delete.html:27
 msgid ""
 "Users who logged in via this provider will no longer be able to authenticate."
 msgstr ""
 "Les utilisateurs connectés via ce fournisseur ne pourront plus "
 "s'authentifier."
 
-#: .\control\templates\control\social_apps_confirm_delete.html:29
 msgid "This action"
 msgstr "Cette action"
 
-#: .\control\templates\control\social_apps_confirm_delete.html:29
 msgid "cannot be undone"
 msgstr "est irréversible"
 
-#: .\control\templates\control\social_apps_confirm_delete.html:34
 msgid "Yes, delete"
 msgstr "Oui, supprimer"
 
-#: .\control\templates\control\social_apps_detail.html:22
 #, python-format
 msgid "%(provider)s OAuth Application"
 msgstr "Application OAuth %(provider)s"
 
-#: .\control\templates\control\social_apps_detail.html:40
 msgid "Application Details"
 msgstr "Détails de l'application"
 
-#: .\control\templates\control\social_apps_detail.html:52
-#: .\control\templates\control\social_apps_form.html:56
 msgid "Provider ID"
 msgstr "ID fournisseur"
 
-#: .\control\templates\control\social_apps_detail.html:57
-#: .\control\templates\control\social_apps_form.html:93
-#: .\control\templates\control\social_apps_list.html:28
 msgid "Sites"
 msgstr "Sites"
 
-#: .\control\templates\control\social_apps_detail.html:67
 msgid "Linked User Tokens"
 msgstr "Jetons utilisateur liés"
 
-#: .\control\templates\control\social_apps_detail.html:80
-#: .\control\templates\control\social_apps_form.html:64
 msgid "OAuth Credentials"
 msgstr "Identifiants OAuth"
 
-#: .\control\templates\control\social_apps_detail.html:83
-#: .\control\templates\control\social_apps_form.html:66
-#: .\control\templates\control\social_apps_list.html:27
 msgid "Client ID"
 msgstr "ID client"
 
-#: .\control\templates\control\social_apps_detail.html:86
 msgid "Copy Client ID"
 msgstr "Copier l'ID client"
 
-#: .\control\templates\control\social_apps_detail.html:93
-#: .\control\templates\control\social_apps_form.html:72
 msgid "Client Secret"
 msgstr "Secret client"
 
-#: .\control\templates\control\social_apps_detail.html:99
 msgid "Copy Secret"
 msgstr "Copier le secret"
 
-#: .\control\templates\control\social_apps_detail.html:102
 msgid "Reveal secret"
 msgstr "Révéler le secret"
 
-#: .\control\templates\control\social_apps_detail.html:110
-#: .\control\templates\control\social_apps_detail.html:115
-#: .\control\templates\control\social_apps_form.html:85
 msgid "Key"
 msgstr "Clé"
 
-#: .\control\templates\control\social_apps_detail.html:116
 msgid "Not set"
 msgstr "Non défini"
 
-#: .\control\templates\control\social_apps_form.html:4
-#: .\control\templates\control\social_apps_form.html:16
 msgid "Social Application"
 msgstr "Application sociale"
 
-#: .\control\templates\control\social_apps_form.html:18
 msgid "Add a new OAuth provider"
 msgstr "Ajouter un nouveau fournisseur OAuth"
 
-#: .\control\templates\control\social_apps_form.html:46
 msgid "OAuth provider — currently only Google is installed."
 msgstr "Fournisseur OAuth — actuellement seul Google est installé."
 
-#: .\control\templates\control\social_apps_form.html:52
 msgid "Display name, e.g."
 msgstr "Nom d'affichage, ex."
 
-#: .\control\templates\control\social_apps_form.html:59
 msgid ""
 "Optional — only needed when running multiple configurations of the same "
 "provider."
@@ -2349,11 +1338,9 @@ msgstr ""
 "Optionnel — uniquement nécessaire pour plusieurs configurations du même "
 "fournisseur."
 
-#: .\control\templates\control\social_apps_form.html:69
 msgid "The application ID from your Google Cloud Console."
 msgstr "L'identifiant de l'application depuis votre Google Cloud Console."
 
-#: .\control\templates\control\social_apps_form.html:82
 msgid ""
 "The client secret from your Google Cloud Console. Leave blank to keep the "
 "existing value when editing."
@@ -2361,154 +1348,115 @@ msgstr ""
 "Le secret client depuis votre Google Cloud Console. Laisser vide pour "
 "conserver la valeur existante lors de la modification."
 
-#: .\control\templates\control\social_apps_form.html:88
 msgid "Optional API key — not required for standard OAuth flows."
 msgstr "Clé API optionnelle — non requise pour les flux OAuth standard."
 
-#: .\control\templates\control\social_apps_form.html:95
 msgid "Allowed Sites"
 msgstr "Sites autorisés"
 
-#: .\control\templates\control\social_apps_form.html:98
 msgid "Hold Ctrl (Windows) or ⌘ (Mac) to select multiple sites."
 msgstr "Maintenez Ctrl (Windows) ou ⌘ (Mac) pour sélectionner plusieurs sites."
 
-#: .\control\templates\control\social_apps_form.html:105
 msgid "Application"
 msgstr "Application"
 
-#: .\control\templates\control\social_apps_list.html:13
 msgid "OAuth providers used for social login (e.g. Google)"
 msgstr "Fournisseurs OAuth utilisés pour la connexion sociale (ex. Google)"
 
-#: .\control\templates\control\social_apps_list.html:16
-#: .\control\templates\control\social_apps_list.html:68
 msgid "New Application"
 msgstr "Nouvelle application"
 
-#: .\control\templates\control\social_apps_list.html:65
 msgid "No social applications yet"
 msgstr "Aucune application sociale pour l'instant"
 
-#: .\control\templates\control\social_apps_list.html:66
 msgid "Add a Google OAuth application to enable social login."
 msgstr ""
 "Ajoutez une application OAuth Google pour activer la connexion sociale."
 
-#: .\control\templates\control\sync_log.html:238
-#: .\control\templates\control\sync_log.html:499
 #, python-format
 msgid "%(n)s batch"
 msgid_plural "%(n)s batches"
 msgstr[0] "%(n)s lot"
 msgstr[1] "%(n)s lots"
 
-#: .\control\templates\control\sync_log.html:239
-#: .\control\templates\control\sync_log.html:384
-#: .\control\templates\control\sync_log.html:500
 #, python-format
 msgid "%(n)s row"
 msgid_plural "%(n)s rows"
 msgstr[0] "%(n)s ligne"
 msgstr[1] "%(n)s lignes"
 
-#: .\control\templates\control\sync_log.html:241
 msgid "Raw SaleImport staging records — superuser diagnostic view"
 msgstr ""
 "Enregistrements bruts de staging SaleImport — vue de diagnostic super-"
 "administrateur"
 
-#: .\control\templates\control\sync_log.html:247
 msgid "Export CSV"
 msgstr "Exporter CSV"
 
-#: .\control\templates\control\sync_log.html:269
 msgid "Account Code"
 msgstr "Code compte"
 
-#: .\control\templates\control\sync_log.html:292
-#: .\control\templates\control\tokens_list.html:82
 msgid "Token"
 msgstr "Jeton"
 
-#: .\control\templates\control\sync_log.html:296
-#: .\control\templates\control\sync_log.html:302
 msgid "All tokens"
 msgstr "Tous les jetons"
 
-#: .\control\templates\control\sync_log.html:300
 msgid "Search tokens…"
 msgstr "Rechercher des jetons…"
 
-#: .\control\templates\control\sync_log.html:313
 msgid "Received from"
 msgstr "Reçu du"
 
-#: .\control\templates\control\sync_log.html:317
 msgid "Received to"
 msgstr "Reçu jusqu'au"
 
-#: .\control\templates\control\sync_log.html:322
 msgid "Sale date from"
 msgstr "Date de vente du"
 
-#: .\control\templates\control\sync_log.html:326
 msgid "Sale date to"
 msgstr "Date de vente jusqu'au"
 
-#: .\control\templates\control\sync_log.html:330
 msgid "Rejection reason"
 msgstr "Motif de rejet"
 
-#: .\control\templates\control\sync_log.html:351
 msgid "Received at"
 msgstr "Reçu le"
 
-#: .\control\templates\control\sync_log.html:352
 msgid "Sale date"
 msgstr "Date de vente"
 
-#: .\control\templates\control\sync_log.html:359
 msgid "API token used to submit this batch"
 msgstr "Jeton API utilisé pour soumettre ce lot"
 
-#: .\control\templates\control\sync_log.html:360
 msgid "Source"
 msgstr "Source"
 
-#: .\control\templates\control\sync_log.html:365
 msgid "Whether a validated Sale record was created from this import row"
 msgstr ""
 "Si un enregistrement de vente validé a été créé depuis cette ligne d'import"
 
-#: .\control\templates\control\sync_log.html:366
 msgid "Linked Sale"
 msgstr "Vente liée"
 
-#: .\control\templates\control\sync_log.html:378
 msgid "Collapse / expand"
 msgstr "Réduire / développer"
 
-#: .\control\templates\control\sync_log.html:385
 #, python-format
 msgid "%(n)s accepted"
 msgstr "%(n)s accepté(s)"
 
-#: .\control\templates\control\sync_log.html:386
 #, python-format
 msgid "%(n)s rejected"
 msgstr "%(n)s rejeté(s)"
 
-#: .\control\templates\control\sync_log.html:387
 #, python-format
 msgid "%(n)s pending"
 msgstr "%(n)s en attente"
 
-#: .\control\templates\control\sync_log.html:452
 msgid "Linked to a validated Sale record"
 msgstr "Lié à un enregistrement de vente validé"
 
-#: .\control\templates\control\sync_log.html:456
 msgid ""
 "Duplicate row within this batch — the same product and datetime already "
 "appeared earlier in the same batch. Only one Sale record was created; this "
@@ -2518,29 +1466,23 @@ msgstr ""
 "déjà apparus plus tôt dans le même lot. Un seul enregistrement de vente a "
 "été créé ; cette ligne a été ignorée pour éviter les doublons."
 
-#: .\control\templates\control\sync_log.html:460
 msgid "No Sale record — row was rejected or is pending"
 msgstr ""
 "Aucun enregistrement de vente — la ligne a été rejetée ou est en attente"
 
-#: .\control\templates\control\sync_log.html:471
 msgid "No import records match the current filters."
 msgstr "Aucun enregistrement d'import ne correspond aux filtres actuels."
 
-#: .\control\templates\control\sync_log.html:480
 msgid "First"
 msgstr "Premier"
 
-#: .\control\templates\control\sync_log.html:494
 msgid "Last"
 msgstr "Dernier"
 
-#: .\control\templates\control\sync_log.html:498
 #, python-format
 msgid "Page %(current)s of %(total)s"
 msgstr "Page %(current)s sur %(total)s"
 
-#: .\control\templates\control\system_settings.html:13
 msgid ""
 "Global behaviour flags controlled at the database level — no deployment "
 "needed."
@@ -2548,19 +1490,15 @@ msgstr ""
 "Indicateurs de comportement global contrôlés au niveau de la base de données "
 "— aucun déploiement nécessaire."
 
-#: .\control\templates\control\system_settings.html:28
 msgid "Please fix the errors below before saving."
 msgstr "Veuillez corriger les erreurs ci-dessous avant d’enregistrer."
 
-#: .\control\templates\control\system_settings.html:37
 msgid "Sales Ingestion"
 msgstr "Ingestion des ventes"
 
-#: .\control\templates\control\system_settings.html:42
 msgid "Auto-review"
 msgstr "Révision automatique"
 
-#: .\control\templates\control\system_settings.html:44
 msgid ""
 "When on, any sale row that passes all validation checks is accepted "
 "immediately\n"
@@ -2569,21 +1507,18 @@ msgid ""
 "                    Each auto-accepted sale is stamped <code>auto_reviewed = "
 "true</code>."
 msgstr ""
-"Lorsqu'activée, toute ligne de vente validée est acceptée immédiatement "
-"— aucune révision du personnel n'est requise. Le personnel ne voit que "
-"les lignes rejetées. Chaque vente auto-acceptée est marquée "
-"<code>auto_reviewed = true</code>."
+"Lorsqu'activée, toute ligne de vente validée est acceptée immédiatement — "
+"aucune révision du personnel n'est requise. Le personnel ne voit que les "
+"lignes rejetées. Chaque vente auto-acceptée est marquée <code>auto_reviewed "
+"= true</code>."
 
-#: .\control\templates\control\system_settings.html:50
 #, python-format
 msgid "Last changed by <strong>%(user)s</strong> on %(date)s"
 msgstr "Dernière modification par <strong>%(user)s</strong> le %(date)s"
 
-#: .\control\templates\control\system_settings.html:68
 msgid "Max batch size"
 msgstr "Taille maximale du lot"
 
-#: .\control\templates\control\system_settings.html:78
 msgid ""
 "Maximum number of sale rows accepted per API submission. Batches exceeding "
 "this limit are rejected entirely."
@@ -2591,15 +1526,12 @@ msgstr ""
 "Nombre maximum de lignes de vente acceptées par lot API. Les lots dépassant "
 "cette limite sont intégralement rejetés."
 
-#: .\control\templates\control\system_settings.html:88
 msgid "No limit"
 msgstr "Sans limite"
 
-#: .\control\templates\control\system_settings.html:100
 msgid "PPV tolerance"
 msgstr "Tolérance PPV"
 
-#: .\control\templates\control\system_settings.html:110
 msgid ""
 "Reject rows where the submitted PPV deviates more than this percentage from "
 "the catalogue value. Leave blank to disable the check."
@@ -2607,20 +1539,15 @@ msgstr ""
 "Rejeter les lignes dont le PPV soumis s'écarte de plus de ce pourcentage du "
 "PPV catalogue. Laisser vide pour désactiver."
 
-#: .\control\templates\control\system_settings.html:129
 msgid "Review Thresholds"
 msgstr "Seuils de révision"
 
-#: .\control\templates\control\system_settings.html:135
 msgid "Warn"
 msgstr "Avertissement"
 
-#: .\control\templates\control\system_settings.html:136
-#: .\control\templates\control\system_settings.html:170
 msgid "threshold"
 msgstr "seuil"
 
-#: .\control\templates\control\system_settings.html:147
 msgid ""
 "Rejection rate above which a yellow warning badge appears on a batch in the "
 "sales review list."
@@ -2628,16 +1555,12 @@ msgstr ""
 "Taux de rejet au-delà duquel un badge d'avertissement jaune s'affiche sur un "
 "lot dans la liste de révision."
 
-#: .\control\templates\control\system_settings.html:157
-#: .\control\templates\control\system_settings.html:191
 msgid "No badge"
 msgstr "Aucun badge"
 
-#: .\control\templates\control\system_settings.html:169
 msgid "Danger"
 msgstr "Danger"
 
-#: .\control\templates\control\system_settings.html:181
 msgid ""
 "Rejection rate above which a red danger badge appears. Must be strictly "
 "greater than the warn threshold."
@@ -2645,19 +1568,15 @@ msgstr ""
 "Taux de rejet au-delà duquel un badge danger rouge apparaît. Doit être "
 "strictement supérieur au seuil d'avertissement."
 
-#: .\control\templates\control\system_settings.html:200
 msgid "API Throttling"
 msgstr "Limitation de l’API"
 
-#: .\control\templates\control\system_settings.html:205
 msgid "Rate limit"
 msgstr "Limite de débit"
 
-#: .\control\templates\control\system_settings.html:205
 msgid "req / hour"
 msgstr "req / heure"
 
-#: .\control\templates\control\system_settings.html:215
 msgid ""
 "Maximum API requests allowed per token per hour. Takes effect within the "
 "throttle cache window (≈ 1 min). Applies to all pharmacy tokens equally."
@@ -2665,35 +1584,32 @@ msgstr ""
 "Nombre maximum de requêtes API autorisées par jeton et par heure. Prend "
 "effet dans la fenêtre de cache (≈ 1 min). S'applique à tous les jetons."
 
-#: .\control\templates\control\system_settings.html:225
 msgid "Unlimited"
 msgstr "Illimité"
 
-#: .\control\templates\control\system_settings.html:234
 msgid "Save settings"
 msgstr "Enregistrer les paramètres"
 
-#: .\control\templates\control\tokens_confirm_delete.html:4
-#: .\control\templates\control\tokens_confirm_delete.html:15
+#, fuzzy
+#| msgid "Save Changes"
+msgid "Unsaved change"
+msgstr "Enregistrer"
+
+msgid "Must be"
+msgstr ""
+
 msgid "Delete Token"
 msgstr "Supprimer le jeton"
 
-#: .\control\templates\control\tokens_confirm_delete.html:32
-#: .\control\templates\control\tokens_detail.html:41
-#: .\control\templates\control\tokens_list.html:64
-#: .\control\templates\control\tokens_list.html:104
 msgid "Revoked"
 msgstr "Révoqué"
 
-#: .\control\templates\control\tokens_confirm_delete.html:41
 msgid "This token is still"
 msgstr "Ce jeton est toujours"
 
-#: .\control\templates\control\tokens_confirm_delete.html:41
 msgid "active"
 msgstr "actif"
 
-#: .\control\templates\control\tokens_confirm_delete.html:41
 msgid ""
 "Any pharmacy client using it will immediately lose API access. Consider "
 "revoking it first if you want a softer cut-off."
@@ -2701,7 +1617,6 @@ msgstr ""
 "Tout client pharmacie l'utilisant perdra immédiatement l'accès à l'API. "
 "Pensez à le révoquer d'abord si vous voulez une coupure plus douce."
 
-#: .\control\templates\control\tokens_confirm_delete.html:46
 #, python-format
 msgid ""
 "Are you sure you want to permanently delete token <strong "
@@ -2710,109 +1625,79 @@ msgstr ""
 "Êtes-vous sûr de vouloir supprimer définitivement le jeton <strong "
 "style=\"color:var(--text-primary);\">%(name)s</strong> ?"
 
-#: .\control\templates\control\tokens_confirm_delete.html:53
 msgid "Yes, delete token"
 msgstr "Oui, supprimer le jeton"
 
-#: .\control\templates\control\tokens_detail.html:19
-#: .\control\templates\control\tokens_list.html:16
 msgid "Are you sure?"
 msgstr "Êtes-vous sûr ?"
 
-#: .\control\templates\control\tokens_detail.html:44
 msgid "Rename"
 msgstr "Renommer"
 
-#: .\control\templates\control\tokens_detail.html:56
 msgid "Save"
 msgstr "Enregistrer"
 
-#: .\control\templates\control\tokens_detail.html:83
-#: .\control\templates\control\tokens_list.html:133
 msgid "Revoke"
 msgstr "Révoquer"
 
-#: .\control\templates\control\tokens_detail.html:95
-#: .\control\templates\control\tokens_list.html:138
 msgid "Reactivate"
 msgstr "Réactiver"
 
-#: .\control\templates\control\tokens_detail.html:123
 msgid "Total Calls"
 msgstr "Appels totaux"
 
-#: .\control\templates\control\tokens_detail.html:132
 msgid "Calls Today"
 msgstr "Appels aujourd'hui"
 
-#: .\control\templates\control\tokens_detail.html:143
-#: .\control\templates\control\tokens_list.html:85
 msgid "Last Used"
 msgstr "Dernière utilisation"
 
-#: .\control\templates\control\tokens_detail.html:152
 #, python-format
 msgid "Created by %(by)s"
 msgstr "Créé par %(by)s"
 
-#: .\control\templates\control\tokens_detail.html:160
 msgid "API Calls"
 msgstr "Appels API"
 
-#: .\control\templates\control\tokens_detail.html:163
 msgid "Last 7 days"
 msgstr "7 derniers jours"
 
-#: .\control\templates\control\tokens_detail.html:164
 msgid "Last 30 days"
 msgstr "30 derniers jours"
 
-#: .\control\templates\control\tokens_detail.html:175
 msgid "Recent Requests"
 msgstr "Requêtes récentes"
 
-#: .\control\templates\control\tokens_detail.html:176
 msgid "last 50"
 msgstr "50 dernières"
 
-#: .\control\templates\control\tokens_detail.html:186
 msgid "Time"
 msgstr "Heure"
 
-#: .\control\templates\control\tokens_detail.html:187
 msgid "Endpoint"
 msgstr "Point de terminaison"
 
-#: .\control\templates\control\tokens_detail.html:205
 msgid "No requests logged yet."
 msgstr "Aucune requête enregistrée pour l'instant."
 
-#: .\control\templates\control\tokens_form.html:7
-#: .\control\templates\control\tokens_list.html:70
-#: .\control\templates\control\tokens_list.html:166
 msgid "New Token"
 msgstr "Nouveau jeton"
 
-#: .\control\templates\control\tokens_form.html:16
 msgid ""
 "The token value is generated automatically and shown once after creation."
 msgstr ""
 "La valeur du jeton est générée automatiquement et affichée une seule fois "
 "après la création."
 
-#: .\control\templates\control\tokens_form.html:27
 msgid "Token Details"
 msgstr "Détails du jeton"
 
-#: .\control\templates\control\tokens_form.html:34
 msgid "A clear label so you know which client uses this token — e.g. \\"
 msgstr "Un libellé clair pour identifier le client utilisant ce jeton — ex. \\"
 
-#: .\control\templates\control\tokens_form.html:43
 msgid "The token is shown exactly once."
 msgstr "Le jeton est affiché exactement une fois."
 
-#: .\control\templates\control\tokens_form.html:44
 msgid ""
 "After you create it, copy and share it with the pharmacy client immediately. "
 "If lost, you will need to delete this token and create a new one."
@@ -2821,56 +1706,43 @@ msgstr ""
 "pharmacie. En cas de perte, vous devrez supprimer ce jeton et en créer un "
 "nouveau."
 
-#: .\control\templates\control\tokens_form.html:52
 msgid "Generate Token"
 msgstr "Générer le jeton"
 
-#: .\control\templates\control\tokens_list.html:33
 msgid "Token created — copy it now"
 msgstr "Jeton créé — copiez-le maintenant"
 
-#: .\control\templates\control\tokens_list.html:36
 msgid "This is the only time the full token will be shown. Store it securely."
 msgstr ""
 "C'est la seule fois que le jeton complet sera affiché. Conservez-le en lieu "
 "sûr."
 
-#: .\control\templates\control\tokens_list.html:40
 msgid "Copy token"
 msgstr "Copier le jeton"
 
-#: .\control\templates\control\tokens_list.html:45
 msgid "Dismiss"
 msgstr "Ignorer"
 
-#: .\control\templates\control\tokens_list.html:56
 msgid "Search by name…"
 msgstr "Rechercher par nom…"
 
-#: .\control\templates\control\tokens_list.html:84
 msgid "Uses"
 msgstr "Utilisations"
 
-#: .\control\templates\control\tokens_list.html:157
 msgid "No tokens match your filters."
 msgstr "Aucun jeton ne correspond à vos filtres."
 
-#: .\control\templates\control\tokens_list.html:162
 msgid "No API tokens yet"
 msgstr "Aucun jeton API pour l'instant"
 
-#: .\control\templates\control\tokens_list.html:163
 msgid "Create a token to allow a pharmacy client to sync sales."
 msgstr ""
 "Créez un jeton pour permettre à un client pharmacie de synchroniser ses "
 "ventes."
 
-#: .\control\templates\control\users_confirm_delete.html:4
-#: .\control\templates\control\users_confirm_delete.html:15
 msgid "Delete User"
 msgstr "Supprimer l'utilisateur"
 
-#: .\control\templates\control\users_confirm_delete.html:34
 #, python-format
 msgid ""
 "Their portal account link to <strong>%(account_name)s</strong> will also be "
@@ -2879,25 +1751,20 @@ msgstr ""
 "Leur lien de compte portail vers <strong>%(account_name)s</strong> sera "
 "également supprimé."
 
-#: .\control\templates\control\users_confirm_delete.html:40
 msgid "Their role assignment will be removed along with the user account."
 msgstr "L'affectation de rôle sera supprimée avec le compte utilisateur."
 
-#: .\control\templates\control\users_confirm_delete.html:46
 msgid "Warning:"
 msgstr "Avertissement :"
 
-#: .\control\templates\control\users_confirm_delete.html:46
 msgid "You are deleting a superuser account."
 msgstr "Vous supprimez un compte super-administrateur."
 
-#: .\control\templates\control\users_confirm_delete.html:51
 msgid "The user account will be permanently deleted. This cannot be reversed."
 msgstr ""
 "Le compte utilisateur sera définitivement supprimé. Cette action est "
 "irréversible."
 
-#: .\control\templates\control\users_confirm_delete.html:52
 msgid ""
 "If you only want to disable access, consider setting the user as inactive "
 "instead."
@@ -2905,395 +1772,280 @@ msgstr ""
 "Si vous souhaitez seulement désactiver l'accès, pensez à définir "
 "l'utilisateur comme inactif."
 
-#: .\control\templates\control\users_confirm_delete.html:62
 msgid "Yes, delete user"
 msgstr "Oui, supprimer l'utilisateur"
 
-#: .\control\templates\control\users_confirm_delete.html:66
 msgid "Deactivate instead"
 msgstr "Désactiver à la place"
 
-#: .\control\templates\control\users_detail.html:29
-#: .\control\templates\control\users_detail.html:132
-#: .\control\templates\control\users_list.html:79
-#: .\control\templates\control\users_list.html:209
 msgid "Joined"
 msgstr "Inscrit"
 
-#: .\control\templates\control\users_detail.html:42
-#: .\control\templates\control\users_detail.html:146
-#: .\control\templates\control\users_form.html:77
-#: .\fidpha\templates\fidpha\login.html:41
-#: .\fidpha\templates\fidpha\pharmacy.html:56
-#: .\fidpha\templates\fidpha\profile.html:50
 msgid "Username"
 msgstr "Nom d'utilisateur"
 
-#: .\control\templates\control\users_detail.html:43
-#: .\control\templates\control\users_detail.html:147
 msgid "Full name"
 msgstr "Nom complet"
 
-#: .\control\templates\control\users_detail.html:45
-#: .\control\templates\control\users_detail.html:149
 msgid "Date joined"
 msgstr "Date d'inscription"
 
-#: .\control\templates\control\users_detail.html:46
-#: .\control\templates\control\users_detail.html:150
 msgid "Last login"
 msgstr "Dernière connexion"
 
-#: .\control\templates\control\users_detail.html:56
 msgid "Linked Pharmacy"
 msgstr "Pharmacie liée"
 
-#: .\control\templates\control\users_detail.html:69
 msgid "Address"
 msgstr "Adresse"
 
-#: .\control\templates\control\users_detail.html:70
 msgid "Portal access"
 msgstr "Accès portail"
 
-#: .\control\templates\control\users_detail.html:75
 msgid "No pharmacy account linked to this user."
 msgstr "Aucun compte pharmacie lié à cet utilisateur."
 
-#: .\control\templates\control\users_detail.html:164
 msgid "Full system access"
 msgstr "Accès complet au système"
 
-#: .\control\templates\control\users_detail.html:165
 msgid "Superusers have all permissions automatically — no role needed."
 msgstr ""
 "Les super-administrateurs ont toutes les permissions automatiquement — aucun "
 "rôle nécessaire."
 
-#: .\control\templates\control\users_detail.html:168
 msgid "Role & Permissions"
 msgstr "Rôle & Permissions"
 
-#: .\control\templates\control\users_detail.html:173
 msgid "Permissions from this role"
 msgstr "Permissions de ce rôle"
 
-#: .\control\templates\control\users_detail.html:178
 msgid "No permissions in this role."
 msgstr "Aucune permission dans ce rôle."
 
-#: .\control\templates\control\users_detail.html:185
 msgid "No role assigned — this user has no permissions."
 msgstr "Aucun rôle assigné — cet utilisateur n'a aucune permission."
 
-#: .\control\templates\control\users_detail.html:186
 msgid "Assign a role"
 msgstr "Assigner un rôle"
 
-#: .\control\templates\control\users_detail.html:196
 msgid "Linked Social Accounts"
 msgstr "Comptes sociaux liés"
 
-#: .\control\templates\control\users_detail.html:216
 #, python-format
 msgid ""
 "Token via <strong style=\"color:var(--text-primary);\">%(app_name)s</strong>"
 msgstr ""
 "Jeton via <strong style=\"color:var(--text-primary);\">%(app_name)s</strong>"
 
-#: .\control\templates\control\users_detail.html:219
 msgid "Expires"
 msgstr "Expire"
 
-#: .\control\templates\control\users_detail.html:220
 msgid "Valid"
 msgstr "Valide"
 
-#: .\control\templates\control\users_detail.html:221
 msgid "Expired"
 msgstr "Expiré"
 
-#: .\control\templates\control\users_detail.html:224
 msgid "No expiry"
 msgstr "Pas d'expiration"
 
-#: .\control\templates\control\users_detail.html:229
 #, python-format
 msgid "Unlink %(provider)s from %(username)s?"
 msgstr "Dissocier %(provider)s de %(username)s ?"
 
-#: .\control\templates\control\users_detail.html:232
 msgid "Unlink"
 msgstr "Dissocier"
 
-#: .\control\templates\control\users_form.html:17
 msgid "Add a new user to the system"
 msgstr "Ajouter un nouvel utilisateur au système"
 
-#: .\control\templates\control\users_form.html:33
 msgid "User Type"
 msgstr "Type d'utilisateur"
 
-#: .\control\templates\control\users_form.html:42
 msgid "Full access to everything — no permission setup needed"
 msgstr "Accès complet à tout — aucune configuration de permission requise"
 
-#: .\control\templates\control\users_form.html:51
 msgid "Admin user with a specific role and its permissions"
 msgstr "Utilisateur admin avec un rôle spécifique et ses permissions"
 
-#: .\control\templates\control\users_form.html:59
 msgid "Portal User"
 msgstr "Utilisateur du portail"
 
-#: .\control\templates\control\users_form.html:60
 msgid "Pharmacy client — linked to an account"
 msgstr "Client pharmacie — lié à un compte"
 
-#: .\control\templates\control\users_form.html:73
 msgid "Basic Information"
 msgstr "Informations de base"
 
-#: .\control\templates\control\users_form.html:96
-#: .\fidpha\templates\fidpha\pharmacy.html:64
-#: .\fidpha\templates\fidpha\profile.html:65
-#: .\fidpha\templates\fidpha\setup_profile.html:60
 msgid "First Name"
 msgstr "Prénom"
 
-#: .\control\templates\control\users_form.html:100
-#: .\fidpha\templates\fidpha\pharmacy.html:70
-#: .\fidpha\templates\fidpha\profile.html:72
-#: .\fidpha\templates\fidpha\setup_profile.html:70
 msgid "Last Name"
 msgstr "Nom"
 
-#: .\control\templates\control\users_form.html:113
 msgid "Inactive users cannot log in"
 msgstr "Les utilisateurs inactifs ne peuvent pas se connecter"
 
-#: .\control\templates\control\users_form.html:123
-#: .\control\templates\control\users_form.html:136
-#: .\fidpha\templates\fidpha\login.html:49
 msgid "Password"
 msgstr "Mot de passe"
 
-#: .\control\templates\control\users_form.html:128
 msgid "Current password:"
 msgstr "Mot de passe actuel :"
 
-#: .\control\templates\control\users_form.html:130
 msgid "leave fields blank to keep unchanged"
 msgstr "laisser les champs vides pour ne pas modifier"
 
-#: .\control\templates\control\users_form.html:141
 msgid "Confirm Password"
 msgstr "Confirmer le mot de passe"
 
-#: .\control\templates\control\users_form.html:152
 msgid "Role Assignment"
 msgstr "Affectation du rôle"
 
-#: .\control\templates\control\users_form.html:162
-#: .\control\templates\control\users_form.html:174
-#: .\control\templates\control\users_form.html:175
 msgid "— No role assigned —"
 msgstr "— Aucun rôle assigné —"
 
-#: .\control\templates\control\users_form.html:190
 msgid "The role defines all permissions for this staff user."
 msgstr ""
 "Le rôle définit toutes les permissions pour cet utilisateur du personnel."
 
-#: .\control\templates\control\users_form.html:192
 msgid "Can't find the right role? Create a new one →"
 msgstr "Vous ne trouvez pas le bon rôle ? Créez-en un nouveau →"
 
-#: .\control\templates\control\users_form.html:202
 msgid "Account Assignment"
 msgstr "Affectation du compte"
 
-#: .\control\templates\control\users_form.html:204
 msgid "Pharmacy Account"
 msgstr "Compte pharmacie"
 
-#: .\control\templates\control\users_form.html:212
-#: .\control\templates\control\users_form.html:224
-#: .\control\templates\control\users_form.html:225
 msgid "— Select account —"
 msgstr "— Sélectionner un compte —"
 
-#: .\control\templates\control\users_form.html:219
 msgid "Search accounts…"
 msgstr "Rechercher des comptes…"
 
-#: .\control\templates\control\users_list.html:11
 msgid "Page sections"
 msgstr "Sections de la page"
 
-#: .\control\templates\control\users_list.html:12
-#: .\control\templates\control\users_list.html:23
 msgid "Admin Users"
 msgstr "Utilisateurs admin"
 
-#: .\control\templates\control\users_list.html:37
 msgid "Search by username, name or email…"
 msgstr "Rechercher par nom d'utilisateur, nom ou email…"
 
-#: .\control\templates\control\users_list.html:44
 msgid "Type:"
 msgstr "Type :"
 
-#: .\control\templates\control\users_list.html:54
 msgid "Reset type filter"
 msgstr "Réinitialiser le filtre de type"
 
-#: .\control\templates\control\users_list.html:64
-#: .\control\templates\control\users_list.html:193
 msgid "Reset status filter"
 msgstr "Réinitialiser le filtre de statut"
 
-#: .\control\templates\control\users_list.html:76
 msgid "Type"
 msgstr "Type"
 
-#: .\control\templates\control\users_list.html:108
 msgid "All permissions"
 msgstr "Toutes les permissions"
 
-#: .\control\templates\control\users_list.html:112
 msgid "No role"
 msgstr "Sans rôle"
 
-#: .\control\templates\control\users_list.html:121
-#: .\control\templates\control\users_list.html:251
 msgid "Clone user"
 msgstr "Dupliquer l'utilisateur"
 
-#: .\control\templates\control\users_list.html:136
 msgid "No admin users match your filter."
 msgstr "Aucun utilisateur admin ne correspond à votre filtre."
 
-#: .\control\templates\control\users_list.html:140
 msgid "No admin users yet"
 msgstr "Aucun utilisateur admin pour l'instant"
 
-#: .\control\templates\control\users_list.html:170
 msgid "Search by username, name, email or account…"
 msgstr "Rechercher par nom d'utilisateur, nom, email ou compte…"
 
-#: .\control\templates\control\users_list.html:177
 msgid "City:"
 msgstr "Ville :"
 
-#: .\control\templates\control\users_list.html:183
 msgid "Clear city filter"
 msgstr "Effacer le filtre ville"
 
-#: .\control\templates\control\users_list.html:236
 msgid "No account"
 msgstr "Sans compte"
 
-#: .\control\templates\control\users_list.html:266
 msgid "No portal users match your filter."
 msgstr "Aucun utilisateur du portail ne correspond à votre filtre."
 
-#: .\control\templates\control\users_list.html:270
 msgid "No portal users yet"
 msgstr "Aucun utilisateur du portail pour l'instant"
 
-#: .\fidpha\templates\fidpha\base.html:26
+msgid "Must be a whole number."
+msgstr "Doit être un nombre entier."
+
+msgid "Must be a valid number."
+msgstr "Doit être un nombre valide."
+
+msgid "System configuration updated."
+msgstr "Configuration système mise à jour."
+
 msgid "Pharmacy Portal"
 msgstr "Portail Pharmacie"
 
-#: .\fidpha\templates\fidpha\base.html:37
 msgid "My Program"
 msgstr "Mon Programme"
 
-#: .\fidpha\templates\fidpha\base.html:44
-#: .\fidpha\templates\fidpha\contracts.html:238
-#: .\fidpha\templates\fidpha\contracts.html:426
-#: .\fidpha\templates\fidpha\dashboard.html:174
-#: .\fidpha\templates\fidpha\dashboard.html:222
-#: .\fidpha\templates\fidpha\sales.html:203
 msgid "Points"
 msgstr "Points"
 
-#: .\fidpha\templates\fidpha\base.html:50
-#: .\fidpha\templates\fidpha\profile.html:209
 msgid "Pharmacy"
 msgstr "Pharmacie"
 
-#: .\fidpha\templates\fidpha\base.html:64
 msgid "Toggle theme"
 msgstr "Changer le thème"
 
-#: .\fidpha\templates\fidpha\contracts.html:62
-#: .\fidpha\templates\fidpha\contracts.html:121
 msgid "Points Earned"
 msgstr "Points gagnés"
 
-#: .\fidpha\templates\fidpha\contracts.html:64
 msgid "this contract"
 msgstr "ce contrat"
 
-#: .\fidpha\templates\fidpha\contracts.html:73
 msgid "Products in Contract"
 msgstr "Produits du contrat"
 
-#: .\fidpha\templates\fidpha\contracts.html:75
 msgid "total referenced"
 msgstr "total référencés"
 
-#: .\fidpha\templates\fidpha\contracts.html:84
 msgid "Products with Points"
 msgstr "Produits avec points"
 
-#: .\fidpha\templates\fidpha\contracts.html:86
 msgid "generating points"
 msgstr "générant des points"
 
-#: .\fidpha\templates\fidpha\contracts.html:101
-#: .\fidpha\templates\fidpha\sales.html:158
 msgid "Search product..."
 msgstr "Rechercher un produit..."
 
-#: .\fidpha\templates\fidpha\contracts.html:104
-#: .\fidpha\templates\fidpha\contracts.html:254
-#: .\fidpha\templates\fidpha\sales.html:247
 msgid "Show"
 msgstr "Afficher"
 
-#: .\fidpha\templates\fidpha\contracts.html:118
 msgid "External Ref"
 msgstr "Réf. externe"
 
-#: .\fidpha\templates\fidpha\contracts.html:119
-#: .\fidpha\templates\fidpha\contracts.html:234
 msgid "Units Sold"
 msgstr "Unités vendues"
 
-#: .\fidpha\templates\fidpha\contracts.html:120
 msgid "Accepted Units"
 msgstr "Unités acceptées"
 
-#: .\fidpha\templates\fidpha\contracts.html:147
 msgid "No products in this contract."
 msgstr "Aucun produit dans ce contrat."
 
-#: .\fidpha\templates\fidpha\contracts.html:163
 msgid "Monthly Trend"
 msgstr "Tendance mensuelle"
 
-#: .\fidpha\templates\fidpha\contracts.html:181
 msgid "Active contract"
 msgstr "Contrat actif"
 
-#: .\fidpha\templates\fidpha\contracts.html:193
 msgid "No active contract"
 msgstr "Aucun contrat actif"
 
-#: .\fidpha\templates\fidpha\contracts.html:194
 msgid ""
 "You don't have an active contract at the moment. Your inactive contracts are "
 "shown below."
@@ -3301,34 +2053,24 @@ msgstr ""
 "Vous n'avez pas de contrat actif pour le moment. Vos contrats inactifs sont "
 "affichés ci-dessous."
 
-#: .\fidpha\templates\fidpha\contracts.html:204
 msgid "Points per Contract"
 msgstr "Points par contrat"
 
-#: .\fidpha\templates\fidpha\contracts.html:267
-#: .\fidpha\templates\fidpha\sales.html:397
 msgid "Showing"
 msgstr "Affichage"
 
-#: .\fidpha\templates\fidpha\contracts.html:268
-#: .\fidpha\templates\fidpha\sales.html:398
 msgid "of"
 msgstr "sur"
 
-#: .\fidpha\templates\fidpha\contracts.html:427
 msgid "Unique Products"
 msgstr "Produits uniques"
 
-#: .\fidpha\templates\fidpha\contracts.html:428
-#: .\fidpha\templates\fidpha\dashboard.html:224
 msgid "Day"
 msgstr "Jour"
 
-#: .\fidpha\templates\fidpha\contracts.html:430
 msgid "products"
 msgstr "produits"
 
-#: .\fidpha\templates\fidpha\dashboard.html:14
 msgid ""
 "Your email is not verified. Verify it to unlock Google login and password "
 "recovery."
@@ -3336,106 +2078,78 @@ msgstr ""
 "Votre email n'est pas vérifié. Vérifiez-le pour activer la connexion Google "
 "et la récupération de mot de passe."
 
-#: .\fidpha\templates\fidpha\dashboard.html:17
-#: .\fidpha\templates\fidpha\pharmacy.html:83
-#: .\fidpha\templates\fidpha\profile.html:99
 msgid "Verify now"
 msgstr "Vérifier maintenant"
 
-#: .\fidpha\templates\fidpha\dashboard.html:44
 msgid "Total Points"
 msgstr "Points totaux"
 
-#: .\fidpha\templates\fidpha\dashboard.html:46
 msgid "all-time accumulated"
 msgstr "total cumulé"
 
-#: .\fidpha\templates\fidpha\dashboard.html:55
 msgid "This Month"
 msgstr "Ce mois-ci"
 
-#: .\fidpha\templates\fidpha\dashboard.html:57
 msgid "unit"
 msgid_plural "units"
 msgstr[0] "unité"
 msgstr[1] "unités"
 
-#: .\fidpha\templates\fidpha\dashboard.html:66
 msgid "Total Products"
 msgstr "Total produits"
 
-#: .\fidpha\templates\fidpha\dashboard.html:68
 msgid "unique products with points"
 msgstr "produits uniques avec points"
 
-#: .\fidpha\templates\fidpha\dashboard.html:79
 msgid "None"
 msgstr "Aucun"
 
-#: .\fidpha\templates\fidpha\dashboard.html:82
 #, python-format
 msgid "ends %(date)s"
 msgstr "se termine le %(date)s"
 
-#: .\fidpha\templates\fidpha\dashboard.html:82
 msgid "no active contract"
 msgstr "aucun contrat actif"
 
-#: .\fidpha\templates\fidpha\dashboard.html:95
 msgid "Monthly Overview"
 msgstr "Aperçu mensuel"
 
-#: .\fidpha\templates\fidpha\dashboard.html:113
 msgid "Top Products"
 msgstr "Top produits"
 
-#: .\fidpha\templates\fidpha\dashboard.html:114
 msgid "all-time · top 30"
 msgstr "de toujours · top 30"
 
-#: .\fidpha\templates\fidpha\dashboard.html:127
 msgid "Cumulative Points"
 msgstr "Points cumulés"
 
-#: .\fidpha\templates\fidpha\dashboard.html:141
 msgid "Submission Frequency"
 msgstr "Fréquence de soumission"
 
-#: .\fidpha\templates\fidpha\dashboard.html:162
 msgid "Recent Accepted"
 msgstr "Récemment acceptés"
 
-#: .\fidpha\templates\fidpha\dashboard.html:169
-#: .\fidpha\templates\fidpha\sales.html:197
 msgid "Date"
 msgstr "Date"
 
-#: .\fidpha\templates\fidpha\dashboard.html:203
 msgid "No recorded yet."
 msgstr "Aucun enregistrement pour l'instant."
 
-#: .\fidpha\templates\fidpha\dashboard.html:225
 msgid "batch"
 msgstr "lot"
 
-#: .\fidpha\templates\fidpha\dashboard.html:226
 msgid "batches"
 msgstr "lots"
 
-#: .\fidpha\templates\fidpha\dashboard.html:227
 msgid "No accepted data yet"
 msgstr "Aucune donnée acceptée"
 
-#: .\fidpha\templates\fidpha\email\verify_body.html:20
 msgid "Verify your new email"
 msgstr "Vérifiez votre nouvel email"
 
-#: .\fidpha\templates\fidpha\email\verify_body.html:20
 msgid "Verify your email"
 msgstr "Vérifiez votre email"
 
-#: .\fidpha\templates\fidpha\email\verify_body.html:30
-#: .\fidpha\templates\fidpha\email\verify_body.txt:1
 msgid ""
 "You're receiving this email because you requested to change your email "
 "address on WinInPharma."
@@ -3443,8 +2157,6 @@ msgstr ""
 "Vous recevez ce message car vous avez demandé à modifier votre adresse email "
 "sur WinInPharma."
 
-#: .\fidpha\templates\fidpha\email\verify_body.html:32
-#: .\fidpha\templates\fidpha\email\verify_body.txt:1
 msgid ""
 "You're receiving this email because you requested email verification for "
 "your WinInPharma account."
@@ -3452,22 +2164,15 @@ msgstr ""
 "Vous recevez ce message car vous avez demandé la vérification de votre "
 "adresse email sur WinInPharma."
 
-#: .\fidpha\templates\fidpha\email\verify_body.html:37
 msgid "Click the button below to verify your email address."
 msgstr "Cliquez sur le bouton ci-dessous pour vérifier votre adresse email."
 
-#: .\fidpha\templates\fidpha\email\verify_body.html:46
 msgid "Verify Email Address"
 msgstr "Vérifier l'adresse email"
 
-#: .\fidpha\templates\fidpha\email\verify_body.html:54
-#: .\templates\registration\password_reset_email_html.html:50
 msgid "Or copy and paste this link into your browser:"
 msgstr "Ou copiez-collez ce lien dans votre navigateur :"
 
-#: .\fidpha\templates\fidpha\email\verify_body.html:61
-#: .\fidpha\templates\fidpha\email\verify_body.txt:7
-#: .\templates\registration\password_reset_email_html.html:65
 msgid ""
 "This link expires after 24 hours. If you didn't request this, you can safely "
 "ignore this email."
@@ -3475,399 +2180,245 @@ msgstr ""
 "Ce lien expire après 24 heures. Si vous n'avez pas fait cette demande, vous "
 "pouvez ignorer cet email."
 
-#: .\fidpha\templates\fidpha\email\verify_body.html:69
-#: .\fidpha\templates\fidpha\login.html:100
-#: .\fidpha\templates\fidpha\setup_profile.html:114
-#: .\fidpha\templates\fidpha\verify_pending.html:65
-#: .\templates\registration\password_reset_complete.html:58
-#: .\templates\registration\password_reset_confirm.html:108
-#: .\templates\registration\password_reset_done.html:55
-#: .\templates\registration\password_reset_email_html.html:73
-#: .\templates\registration\password_reset_form.html:77
 msgid "Pharmacy Management System"
 msgstr "Système de gestion pharmaceutique"
 
-#: .\fidpha\templates\fidpha\email\verify_body.txt:3
 msgid "Click the link below to verify your email address:"
 msgstr "Cliquez sur le lien ci-dessous pour vérifier votre adresse email :"
 
-#: .\fidpha\templates\fidpha\email\verify_body.txt:9
-#: .\templates\registration\password_reset_email.html:11
 msgid "The WinInPharma team"
 msgstr "L'équipe WinInPharma"
 
-#: .\fidpha\templates\fidpha\email\verify_subject.txt:1
 msgid "WinInPharma — Verify your new email"
 msgstr "WinInPharma — Vérifiez votre nouvel email"
 
-#: .\fidpha\templates\fidpha\email\verify_subject.txt:1
 msgid "WinInPharma — Verify your email"
 msgstr "WinInPharma — Vérifiez votre email"
 
-#: .\fidpha\templates\fidpha\login.html:7
 msgid "Login"
 msgstr "Connexion"
 
-#: .\fidpha\templates\fidpha\login.html:22
 msgid "Pharmacy Management Portal"
 msgstr "Portail de gestion pharmaceutique"
 
-#: .\fidpha\templates\fidpha\login.html:44
 msgid "Enter your username"
 msgstr "Entrez votre nom d'utilisateur"
 
-#: .\fidpha\templates\fidpha\login.html:52
 msgid "Enter your password"
 msgstr "Entrez votre mot de passe"
 
-#: .\fidpha\templates\fidpha\login.html:58
 msgid "Sign In"
 msgstr "Se connecter"
 
-#: .\fidpha\templates\fidpha\login.html:61
 msgid "Forgot your password?"
 msgstr "Mot de passe oublié ?"
 
-#: .\fidpha\templates\fidpha\login.html:66
 msgid "or"
 msgstr "ou"
 
-#: .\fidpha\templates\fidpha\login.html:78
 msgid "Continue with Google"
 msgstr "Continuer avec Google"
 
-#: .\fidpha\templates\fidpha\login.html:83
-#: .\templates\registration\password_reset_complete.html:41
-#: .\templates\registration\password_reset_confirm.html:91
-#: .\templates\registration\password_reset_done.html:38
-#: .\templates\registration\password_reset_form.html:60
 msgid "Light mode"
 msgstr "Mode clair"
 
-#: .\fidpha\templates\fidpha\login.html:83
-#: .\templates\registration\password_reset_complete.html:41
-#: .\templates\registration\password_reset_confirm.html:91
-#: .\templates\registration\password_reset_done.html:38
-#: .\templates\registration\password_reset_form.html:60
 msgid "Dark mode"
 msgstr "Mode sombre"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:49
-#: .\fidpha\templates\fidpha\profile.html:43
 msgid "Personal Information"
 msgstr "Informations personnelles"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:59
-#: .\fidpha\templates\fidpha\profile.html:60
 msgid "(cannot be changed)"
 msgstr "(ne peut pas être modifié)"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:65
 msgid "First name"
 msgstr "Prénom"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:71
 msgid "Last name"
 msgstr "Nom"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:87
 msgid "Email address"
 msgstr "Adresse email"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:90
 msgid "Changing your email will send a new verification link."
 msgstr "Modifier votre email enverra un nouveau lien de vérification."
 
-#: .\fidpha\templates\fidpha\pharmacy.html:92
-#: .\fidpha\templates\fidpha\profile.html:109
 msgid "Changing your email will require re-verification."
 msgstr "Modifier votre email nécessitera une nouvelle vérification."
 
-#: .\fidpha\templates\fidpha\pharmacy.html:97
-#: .\fidpha\templates\fidpha\profile.html:128
 msgid "Save Changes"
 msgstr "Enregistrer"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:106
-#: .\fidpha\templates\fidpha\profile.html:139
 msgid "Change Password"
 msgstr "Changer le mot de passe"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:113
-#: .\fidpha\templates\fidpha\profile.html:146
 msgid "Current Password"
 msgstr "Mot de passe actuel"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:114
-#: .\fidpha\templates\fidpha\profile.html:148
 msgid "Enter your current password"
 msgstr "Entrez votre mot de passe actuel"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:119
-#: .\fidpha\templates\fidpha\profile.html:154
-#: .\fidpha\templates\fidpha\setup_profile.html:80
-#: .\templates\registration\password_reset_confirm.html:7
-#: .\templates\registration\password_reset_confirm.html:50
 msgid "New Password"
 msgstr "Nouveau mot de passe"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:120
-#: .\fidpha\templates\fidpha\profile.html:156
-#: .\templates\registration\password_reset_confirm.html:53
 msgid "Enter new password"
 msgstr "Entrez le nouveau mot de passe"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:129
-#: .\fidpha\templates\fidpha\profile.html:166
-#: .\fidpha\templates\fidpha\setup_profile.html:91
-#: .\templates\registration\password_reset_confirm.html:56
 msgid "At least 8 characters"
 msgstr "Au moins 8 caractères"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:130
-#: .\fidpha\templates\fidpha\profile.html:167
-#: .\fidpha\templates\fidpha\setup_profile.html:92
-#: .\templates\registration\password_reset_confirm.html:57
 msgid "At least one uppercase letter"
 msgstr "Au moins une lettre majuscule"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:131
-#: .\fidpha\templates\fidpha\profile.html:168
-#: .\fidpha\templates\fidpha\setup_profile.html:93
-#: .\templates\registration\password_reset_confirm.html:58
 msgid "At least one number"
 msgstr "Au moins un chiffre"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:132
-#: .\fidpha\templates\fidpha\profile.html:169
-#: .\fidpha\templates\fidpha\setup_profile.html:94
-#: .\templates\registration\password_reset_confirm.html:59
 msgid "At least one special character"
 msgstr "Au moins un caractère spécial"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:136
-#: .\fidpha\templates\fidpha\profile.html:173
-#: .\templates\registration\password_reset_confirm.html:63
 msgid "Confirm New Password"
 msgstr "Confirmer le nouveau mot de passe"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:137
-#: .\fidpha\templates\fidpha\profile.html:175
-#: .\templates\registration\password_reset_confirm.html:66
 msgid "Confirm new password"
 msgstr "Confirmez le nouveau mot de passe"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:143
-#: .\fidpha\templates\fidpha\profile.html:196
 msgid "Update Password"
 msgstr "Mettre à jour le mot de passe"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:151
-#: .\fidpha\templates\fidpha\profile.html:226
-#: .\templates\registration\password_reset_confirm.html:114
 msgid "Passwords match"
 msgstr "Les mots de passe correspondent"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:152
-#: .\fidpha\templates\fidpha\profile.html:227
-#: .\templates\registration\password_reset_confirm.html:115
 msgid "Passwords don\\'t match"
 msgstr "Les mots de passe ne correspondent pas"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:153
-#: .\fidpha\templates\fidpha\profile.html:228
-#: .\fidpha\templates\fidpha\setup_profile.html:119
-#: .\templates\registration\password_reset_confirm.html:116
 msgid "Weak"
 msgstr "Faible"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:153
-#: .\fidpha\templates\fidpha\profile.html:228
-#: .\fidpha\templates\fidpha\setup_profile.html:119
-#: .\templates\registration\password_reset_confirm.html:116
 msgid "Fair"
 msgstr "Moyen"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:153
-#: .\fidpha\templates\fidpha\profile.html:228
-#: .\fidpha\templates\fidpha\setup_profile.html:119
-#: .\templates\registration\password_reset_confirm.html:116
 msgid "Good"
 msgstr "Bon"
 
-#: .\fidpha\templates\fidpha\pharmacy.html:153
-#: .\fidpha\templates\fidpha\profile.html:228
-#: .\fidpha\templates\fidpha\setup_profile.html:119
-#: .\templates\registration\password_reset_confirm.html:116
 msgid "Strong"
 msgstr "Fort"
 
-#: .\fidpha\templates\fidpha\profile.html:5
-#: .\fidpha\templates\fidpha\profile.html:6
 msgid "Profile"
 msgstr "Profil"
 
-#: .\fidpha\templates\fidpha\profile.html:67
-#: .\fidpha\templates\fidpha\setup_profile.html:65
 msgid "Enter your first name"
 msgstr "Entrez votre prénom"
 
-#: .\fidpha\templates\fidpha\profile.html:74
-#: .\fidpha\templates\fidpha\setup_profile.html:75
 msgid "Enter your last name"
 msgstr "Entrez votre nom"
 
-#: .\fidpha\templates\fidpha\profile.html:104
-#: .\fidpha\templates\fidpha\setup_profile.html:55
-#: .\templates\registration\password_reset_form.html:46
 msgid "Enter your email"
 msgstr "Entrez votre email"
 
-#: .\fidpha\templates\fidpha\profile.html:107
 msgid "Email not verified. Changing it will send a new verification link."
 msgstr ""
 "Email non vérifié. Le modifier enverra un nouveau lien de vérification."
 
-#: .\fidpha\templates\fidpha\profile.html:206
 msgid "Linked Account"
 msgstr "Compte lié"
 
-#: .\fidpha\templates\fidpha\sales.html:5
-#: .\fidpha\templates\fidpha\sales.html:6
 msgid "Points Breakdown"
 msgstr "Détail des points"
 
-#: .\fidpha\templates\fidpha\sales.html:84
-#: .\fidpha\templates\fidpha\sales.html:283
 msgid "Total"
 msgstr "Total"
 
-#: .\fidpha\templates\fidpha\sales.html:86
 msgid "all statuses"
 msgstr "tous statuts"
 
-#: .\fidpha\templates\fidpha\sales.html:108
 msgid "awaiting review"
 msgstr "en attente de révision"
 
-#: .\fidpha\templates\fidpha\sales.html:130
-#: .\fidpha\templates\fidpha\sales.html:284
 msgid "Monthly Acceptance"
 msgstr "Acceptation mensuelle"
 
-#: .\fidpha\templates\fidpha\sales.html:149
 msgid "History"
 msgstr "Historique"
 
-#: .\fidpha\templates\fidpha\sales.html:155
 #, python-format
 msgid "%(count)s row"
 msgid_plural "%(count)s rows"
 msgstr[0] "%(count)s ligne"
 msgstr[1] "%(count)s lignes"
 
-#: .\fidpha\templates\fidpha\sales.html:168
-#: .\fidpha\templates\fidpha\sales.html:174
-#: .\fidpha\templates\fidpha\sales.html:401
 msgid "All Contracts"
 msgstr "Tous les contrats"
 
-#: .\fidpha\templates\fidpha\sales.html:172
 msgid "Search contract..."
 msgstr "Rechercher un contrat..."
 
-#: .\fidpha\templates\fidpha\sales.html:183
 msgid "From date"
 msgstr "Date de début"
 
-#: .\fidpha\templates\fidpha\sales.html:185
 msgid "To date"
 msgstr "Date de fin"
 
-#: .\fidpha\templates\fidpha\sales.html:200
 msgid "Ext. Ref"
 msgstr "Réf. ext."
 
-#: .\fidpha\templates\fidpha\sales.html:239
 msgid "No sales match your filters."
 msgstr "Aucune vente ne correspond à vos filtres."
 
-#: .\fidpha\templates\fidpha\sales.html:254
 msgid "per page"
 msgstr "par page"
 
-#: .\fidpha\templates\fidpha\sales.html:261
 msgid "No sales yet"
 msgstr "Aucune vente pour l'instant"
 
-#: .\fidpha\templates\fidpha\sales.html:262
 msgid "Sales will appear here once your pharmacy submits data."
 msgstr ""
 "Les ventes apparaîtront ici une fois que votre pharmacie aura soumis des "
 "données."
 
-#: .\fidpha\templates\fidpha\sales.html:399
 msgid "result"
 msgstr "résultat"
 
-#: .\fidpha\templates\fidpha\sales.html:400
 msgid "results"
 msgstr "résultats"
 
-#: .\fidpha\templates\fidpha\setup_profile.html:7
 msgid "Setup Profile"
 msgstr "Configurer le profil"
 
-#: .\fidpha\templates\fidpha\setup_profile.html:20
 msgid "Complete your profile"
 msgstr "Complétez votre profil"
 
-#: .\fidpha\templates\fidpha\setup_profile.html:26
 msgid "Welcome! Please set up your email and personal info before continuing."
 msgstr ""
 "Bienvenue ! Veuillez configurer votre email et vos informations personnelles "
 "avant de continuer."
 
-#: .\fidpha\templates\fidpha\setup_profile.html:50
-#: .\templates\registration\password_reset_form.html:43
 msgid "Email Address"
 msgstr "Adresse email"
 
-#: .\fidpha\templates\fidpha\setup_profile.html:60
-#: .\fidpha\templates\fidpha\setup_profile.html:70
-#: .\fidpha\templates\fidpha\setup_profile.html:80
 msgid "(optional)"
 msgstr "(optionnel)"
 
-#: .\fidpha\templates\fidpha\setup_profile.html:84
 msgid "Leave blank to keep current password"
 msgstr "Laisser vide pour conserver le mot de passe actuel"
 
-#: .\fidpha\templates\fidpha\setup_profile.html:100
 msgid "Save & Send Verification Email"
 msgstr "Enregistrer et envoyer l'email de vérification"
 
-#: .\fidpha\templates\fidpha\setup_profile.html:107
 msgid "Do it later"
 msgstr "Le faire plus tard"
 
-#: .\fidpha\templates\fidpha\verify_pending.html:7
 msgid "Verify Email"
 msgstr "Vérifier l'email"
 
-#: .\fidpha\templates\fidpha\verify_pending.html:21
 msgid "Add your email"
 msgstr "Ajouter votre email"
 
-#: .\fidpha\templates\fidpha\verify_pending.html:21
 msgid "Check your email"
 msgstr "Vérifiez votre email"
 
-#: .\fidpha\templates\fidpha\verify_pending.html:30
 msgid "No email address found"
 msgstr "Aucune adresse email trouvée"
 
-#: .\fidpha\templates\fidpha\verify_pending.html:32
 msgid ""
 "You haven't added an email address yet. Please go to your profile and add "
 "one to receive a verification link."
@@ -3875,15 +2426,12 @@ msgstr ""
 "Vous n'avez pas encore ajouté d'adresse email. Veuillez accéder à votre "
 "profil et en ajouter une pour recevoir un lien de vérification."
 
-#: .\fidpha\templates\fidpha\verify_pending.html:47
 msgid "Go to Profile"
 msgstr "Aller au profil"
 
-#: .\fidpha\templates\fidpha\verify_pending.html:53
 msgid "Verification email sent!"
 msgstr "Email de vérification envoyé !"
 
-#: .\fidpha\templates\fidpha\verify_pending.html:55
 msgid ""
 "We've sent a verification link to your email. Click the link to verify and "
 "access your dashboard."
@@ -3891,27 +2439,21 @@ msgstr ""
 "Nous avons envoyé un lien de vérification à votre email. Cliquez sur le lien "
 "pour vérifier et accéder à votre tableau de bord."
 
-#: .\fidpha\templates\fidpha\verify_pending.html:58
 msgid "Didn't receive it?"
 msgstr "Vous ne l'avez pas reçu ?"
 
-#: .\fidpha\templates\fidpha\verify_pending.html:59
 msgid "Resend email"
 msgstr "Renvoyer l'email"
 
-#: .\templates\registration\password_reset_complete.html:7
 msgid "Password Reset Complete"
 msgstr "Réinitialisation du mot de passe terminée"
 
-#: .\templates\registration\password_reset_complete.html:22
 msgid "Password reset complete"
 msgstr "Réinitialisation terminée"
 
-#: .\templates\registration\password_reset_complete.html:29
 msgid "Password updated!"
 msgstr "Mot de passe mis à jour !"
 
-#: .\templates\registration\password_reset_complete.html:31
 msgid ""
 "Your password has been successfully reset. You can now log in with your new "
 "password."
@@ -3919,51 +2461,38 @@ msgstr ""
 "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant "
 "vous connecter avec votre nouveau mot de passe."
 
-#: .\templates\registration\password_reset_complete.html:35
-#: .\templates\registration\password_reset_done.html:33
-#: .\templates\registration\password_reset_form.html:55
 msgid "Back to Login"
 msgstr "Retour à la connexion"
 
-#: .\templates\registration\password_reset_confirm.html:22
 msgid "Set new password"
 msgstr "Définir un nouveau mot de passe"
 
-#: .\templates\registration\password_reset_confirm.html:40
 msgid "Password strength"
 msgstr "Force du mot de passe"
 
-#: .\templates\registration\password_reset_confirm.html:73
 msgid "Set New Password"
 msgstr "Définir le nouveau mot de passe"
 
-#: .\templates\registration\password_reset_confirm.html:80
 msgid "Invalid or expired link"
 msgstr "Lien invalide ou expiré"
 
-#: .\templates\registration\password_reset_confirm.html:82
 msgid "This reset link is no longer valid. Please request a new one."
 msgstr ""
 "Ce lien de réinitialisation n'est plus valide. Veuillez en demander un "
 "nouveau."
 
-#: .\templates\registration\password_reset_confirm.html:84
 msgid "Request new link"
 msgstr "Demander un nouveau lien"
 
-#: .\templates\registration\password_reset_done.html:7
 msgid "Email Sent"
 msgstr "Email envoyé"
 
-#: .\templates\registration\password_reset_done.html:22
 msgid "Check your inbox"
 msgstr "Vérifiez votre boîte de réception"
 
-#: .\templates\registration\password_reset_done.html:29
 msgid "Email sent!"
 msgstr "Email envoyé !"
 
-#: .\templates\registration\password_reset_done.html:31
 msgid ""
 "We've sent a password reset link to your email. Check your inbox and follow "
 "the instructions."
@@ -3971,7 +2500,6 @@ msgstr ""
 "Nous avons envoyé un lien de réinitialisation à votre email. Vérifiez votre "
 "boîte de réception et suivez les instructions."
 
-#: .\templates\registration\password_reset_email.html:2
 msgid ""
 "You're receiving this email because you requested a password reset for your "
 "user account at WinInPharma."
@@ -3979,26 +2507,19 @@ msgstr ""
 "Vous recevez ce message car vous avez demandé une réinitialisation du mot de "
 "passe de votre compte sur WinInPharma."
 
-#: .\templates\registration\password_reset_email.html:4
 msgid "Please go to the following page and choose a new password:"
 msgstr ""
 "Veuillez vous rendre sur cette page et choisir un nouveau mot de passe :"
 
-#: .\templates\registration\password_reset_email.html:7
-#: .\templates\registration\password_reset_email_html.html:61
 msgid "In case you've forgotten, your username is:"
 msgstr "Au cas où vous l'auriez oublié, votre nom d'utilisateur est :"
 
-#: .\templates\registration\password_reset_email.html:9
 msgid "Thanks for using our site!"
 msgstr "Merci d'utiliser notre site !"
 
-#: .\templates\registration\password_reset_email_html.html:20
-#: .\templates\registration\password_reset_form.html:22
 msgid "Reset your password"
 msgstr "Réinitialisez votre mot de passe"
 
-#: .\templates\registration\password_reset_email_html.html:29
 msgid ""
 "You're receiving this email because you requested a password reset for your "
 "WinInPharma account."
@@ -4006,27 +2527,21 @@ msgstr ""
 "Vous recevez ce message car vous avez demandé une réinitialisation du mot de "
 "passe de votre compte sur WinInPharma."
 
-#: .\templates\registration\password_reset_email_html.html:33
 msgid "Click the button below to choose a new password."
 msgstr "Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe."
 
-#: .\templates\registration\password_reset_email_html.html:42
-#: .\templates\registration\password_reset_form.html:7
 msgid "Reset Password"
 msgstr "Réinitialiser le mot de passe"
 
-#: .\templates\registration\password_reset_form.html:28
 msgid ""
 "Enter your email address and we'll send you a link to reset your password."
 msgstr ""
 "Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser "
 "votre mot de passe."
 
-#: .\templates\registration\password_reset_form.html:35
 msgid "No account found with this email address."
 msgstr "Aucun compte trouvé avec cette adresse email."
 
-#: .\templates\registration\password_reset_form.html:51
 msgid "Send Reset Link"
 msgstr "Envoyer le lien de réinitialisation"
 

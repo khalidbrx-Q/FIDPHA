@@ -13,6 +13,7 @@ Last updated: April 2026
 
 import json
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -1808,13 +1809,20 @@ def system_settings(request):
             try:
                 config.max_batch_size = int(request.POST.get("max_batch_size", 50000))
             except (ValueError, TypeError):
-                errors["max_batch_size"] = "Must be a whole number."
+                errors["max_batch_size"] = _("Must be a whole number.")
         else:
             config.max_batch_size = 0  # no limit
 
         if request.POST.get("ppv_tolerance_enabled") == "1":
             tol = request.POST.get("ppv_tolerance_percent", "").strip()
-            config.ppv_tolerance_percent = tol if tol else None
+            if tol:
+                try:
+                    config.ppv_tolerance_percent = Decimal(tol)
+                except InvalidOperation:
+                    errors["ppv_tolerance_percent"] = _("Must be a valid number.")
+                    config.ppv_tolerance_percent = None
+            else:
+                config.ppv_tolerance_percent = None
         else:
             config.ppv_tolerance_percent = None  # disabled
 
@@ -1823,7 +1831,7 @@ def system_settings(request):
             try:
                 config.rejection_rate_warn_threshold = int(request.POST.get("rejection_rate_warn_threshold", 20))
             except (ValueError, TypeError):
-                errors["rejection_rate_warn_threshold"] = "Must be a whole number."
+                errors["rejection_rate_warn_threshold"] = _("Must be a whole number.")
         else:
             config.rejection_rate_warn_threshold = 0  # no badge
 
@@ -1831,7 +1839,7 @@ def system_settings(request):
             try:
                 config.rejection_rate_danger_threshold = int(request.POST.get("rejection_rate_danger_threshold", 50))
             except (ValueError, TypeError):
-                errors["rejection_rate_danger_threshold"] = "Must be a whole number."
+                errors["rejection_rate_danger_threshold"] = _("Must be a whole number.")
         else:
             config.rejection_rate_danger_threshold = 0  # no badge
 
@@ -1840,7 +1848,7 @@ def system_settings(request):
             try:
                 config.api_token_rate_limit = int(request.POST.get("api_token_rate_limit", 1000))
             except (ValueError, TypeError):
-                errors["api_token_rate_limit"] = "Must be a whole number."
+                errors["api_token_rate_limit"] = _("Must be a whole number.")
         else:
             config.api_token_rate_limit = 0  # unlimited
 
@@ -1848,7 +1856,7 @@ def system_settings(request):
             try:
                 config.full_clean()
                 config.save()
-                messages.success(request, "System configuration updated.")
+                messages.success(request, _("System configuration updated."))
                 return redirect("control:system_settings")
             except Exception as e:
                 from django.core.exceptions import ValidationError

@@ -37,6 +37,8 @@ class SystemConfig(models.Model):
     )
     rejection_rate_danger_threshold = models.PositiveSmallIntegerField(
         default=0,  # 0 = no badge (toggle OFF)
+        # Effective range enforced by clean(): 1–100. DB column allows up to
+        # 32 767 (PositiveSmallIntegerField) but clean() rejects anything > 100.
         help_text=_("Rejection rate % above which a red danger badge is shown (must exceed warn threshold). 0 = disabled."),
     )
 

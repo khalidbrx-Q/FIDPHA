@@ -23,10 +23,13 @@ Date validation rules:
 
 import datetime
 
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
 from django.apps import apps
+
+_BATCH_LIMIT_CACHE_TTL = 30   # seconds — batch limit cached to avoid DB hit per submission
 
 from fidpha.models import Contract, Contract_Product
 from fidpha.services import get_active_contract
@@ -78,8 +81,11 @@ def submit_sales_batch(
         AccountNotFoundError:   If account_code doesn't match any account.
         ContractNotFoundError:  If account has no active contract.
     """
-    SystemConfig = apps.get_model("control", "SystemConfig")
-    effective_max = SystemConfig.get().max_batch_size
+    effective_max = cache.get("sc:max_batch_size")
+    if effective_max is None:
+        SystemConfig = apps.get_model("control", "SystemConfig")
+        effective_max = SystemConfig.get().max_batch_size
+        cache.set("sc:max_batch_size", effective_max, _BATCH_LIMIT_CACHE_TTL)
     # 0 means no limit; only enforce when a positive limit is configured
     if effective_max > 0 and len(sales_data) > effective_max:
         raise BatchTooLargeError(

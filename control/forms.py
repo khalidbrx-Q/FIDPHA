@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 control/forms.py
 ----------------
@@ -118,10 +119,20 @@ class AccountForm(forms.ModelForm):
             # Remove formatting characters (spaces, dashes, dots, parens)
             local = re.sub(r'[\s\-.\(\)]', '', local)
 
-            # If the user already typed the full international number, accept it
+            # If the user typed the full international number, strip the leading
+            # prefix and re-apply the selected one so the two fields stay in sync.
             if local.startswith('+'):
-                # Keep as-is; optionally enforce that it matches the selected prefix
-                pass
+                for p, _ in PHONE_PREFIXES:
+                    if local.startswith(p):
+                        local = local[len(p):]
+                        break
+                else:
+                    # Unknown prefix — raise a clear validation error
+                    raise forms.ValidationError(
+                        _("Phone number prefix not recognised. "
+                          "Select a country prefix from the list.")
+                    )
+                local = prefix + local
             else:
                 # Strip a single leading zero (common Moroccan/French format: 0612…)
                 if local.startswith('0'):

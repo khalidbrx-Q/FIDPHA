@@ -47,6 +47,7 @@
                 <span class="dirty-dot"></span>
                 <label class="toggle-switch">
                     <input type="checkbox" name="auto_review_enabled" value="1"
+                           id="autoReviewToggle"
                            {% if config.auto_review_enabled %}checked{% endif %}>
                     <span class="toggle-slider"></span>
                 </label>
@@ -97,7 +98,7 @@
                 <label class="toggle-switch toggle-sm">
                     <input type="checkbox" name="ppv_tolerance_enabled" value="1"
                            id="tog_ppv"
-                           {% if config.ppv_tolerance_percent %}checked{% endif %}
+                           {% if config.ppv_tolerance_percent %}checked{% endif %}{# Note: falsy for 0.00 — model clean() already prevents saving 0, so this is safe #}
                            onchange="toggleSetting(this,'inp_ppv','{% trans "Disabled"|escapejs %}','0')">
                     <span class="toggle-slider"></span>
                 </label>
@@ -418,9 +419,11 @@
 
     /* ── Range validation ───────────────────────────────────────────────── */
     function _validateInput(el) {
-        // Disabled, empty, or 0 (neutral "cleared" state) → no client-side error
-        if (!el.classList.contains('num-input') || el.disabled
-                || el.value === '' || parseFloat(el.value) === 0) {
+        // Disabled or empty → no client-side error.
+        // Note: 0 is NOT skipped here — when the toggle is ON (input enabled),
+        // 0 is below every field's min and must fail the range check so the
+        // user is forced to enter a real value before saving.
+        if (!el.classList.contains('num-input') || el.disabled || el.value === '') {
             _clearValError(el);
             return true;
         }
