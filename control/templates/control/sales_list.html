@@ -19,6 +19,8 @@
     const CSRF           = "{{ csrf_token }}";
     const INIT_ACCOUNT   = "{{ init_account }}";
     const INIT_CONTRACT  = "{{ init_contract }}";
+    const RR_WARN        = {{ rr_warn }};
+    const RR_DANGER      = {{ rr_danger }};
 </script>
 
 {# ── Filter bar ── #}
@@ -1342,9 +1344,9 @@ function buildStatusCol(b) {
     const ppvBit = b.ppv_mismatch
         ? `<span class="bl-cnt-sep">·</span><span style="color:#f59e0b;" title="${b.ppv_mismatch} {% trans "PPV mismatch" %}"><span class="material-icons-round" style="font-size:10px;vertical-align:middle;">warning</span>${b.ppv_mismatch}</span>` /* i18n-todo */
         : '';
-    const rrBadge = b.rejection_rate >= 50
+    const rrBadge = (RR_DANGER > 0 && b.rejection_rate >= RR_DANGER)
         ? `<span class="bl-rr-badge bl-rr-high" title="${b.rejection_rate}% {% trans "rejection rate" %}">${b.rejection_rate}% {% trans "rejected" %}</span>` /* i18n-todo */
-        : b.rejection_rate >= 20
+        : (RR_WARN > 0 && b.rejection_rate >= RR_WARN)
         ? `<span class="bl-rr-badge bl-rr-med" title="${b.rejection_rate}% {% trans "rejection rate" %}">${b.rejection_rate}% {% trans "rejected" %}</span>` /* i18n-todo */
         : '';
     return `<div class="bl-prog-bar" title="${barTitle}">

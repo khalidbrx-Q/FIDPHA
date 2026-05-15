@@ -13,6 +13,7 @@ Last updated: April 2026
 
 import json
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -1793,13 +1794,81 @@ def site_edit(request):
 @superuser_required
 def system_settings(request):
     config = SystemConfig.get()
+    errors = {}
     if request.method == "POST":
-        config.auto_review_enabled    = request.POST.get("auto_review_enabled") == "1"
-        config.auto_review_updated_by = request.user
-        config.save()
-        messages.success(request, "System configuration updated.")
-        return redirect("control:system_settings")
-    return render(request, "control/system_settings.html", {"config": config})
+        # ── auto-review toggle ─────────────────────────────────────────────
+        new_auto_review = request.POST.get("auto_review_enabled") == "1"
+        if new_auto_review != config.auto_review_enabled:
+            config.auto_review_updated_by = request.user  # stamp only on actual change
+        config.auto_review_enabled = new_auto_review
+
+        # ── ingestion limits ───────────────────────────────────────────────
+        # Each numeric setting has a companion _enabled checkbox.
+        # When unchecked the toggle is OFF → store 0 / None (disabled sentinel).
+        if request.POST.get("max_batch_size_enabled") == "1":
+            try:
+                config.max_batch_size = int(request.POST.get("max_batch_size", 50000))
+            except (ValueError, TypeError):
+                errors["max_batch_size"] = _("Must be a whole number.")
+        else:
+            config.max_batch_size = 0  # no limit
+
+        if request.POST.get("ppv_tolerance_enabled") == "1":
+            tol = request.POST.get("ppv_tolerance_percent", "").strip()
+            if tol:
+                try:
+                    config.ppv_tolerance_percent = Decimal(tol)
+                except InvalidOperation:
+                    errors["ppv_tolerance_percent"] = _("Must be a valid number.")
+                    config.ppv_tolerance_percent = None
+            else:
+                config.ppv_tolerance_percent = None
+        else:
+            config.ppv_tolerance_percent = None  # disabled
+
+        # ── review thresholds ──────────────────────────────────────────────
+        if request.POST.get("rr_warn_enabled") == "1":
+            try:
+                config.rejection_rate_warn_threshold = int(request.POST.get("rejection_rate_warn_threshold", 20))
+            except (ValueError, TypeError):
+                errors["rejection_rate_warn_threshold"] = _("Must be a whole number.")
+        else:
+            config.rejection_rate_warn_threshold = 0  # no badge
+
+        if request.POST.get("rr_danger_enabled") == "1":
+            try:
+                config.rejection_rate_danger_threshold = int(request.POST.get("rejection_rate_danger_threshold", 50))
+            except (ValueError, TypeError):
+                errors["rejection_rate_danger_threshold"] = _("Must be a whole number.")
+        else:
+            config.rejection_rate_danger_threshold = 0  # no badge
+
+        # ── API throttling ─────────────────────────────────────────────────
+        if request.POST.get("api_rate_enabled") == "1":
+            try:
+                config.api_token_rate_limit = int(request.POST.get("api_token_rate_limit", 1000))
+            except (ValueError, TypeError):
+                errors["api_token_rate_limit"] = _("Must be a whole number.")
+        else:
+            config.api_token_rate_limit = 0  # unlimited
+
+        if not errors:
+            try:
+                config.full_clean()
+                config.save()
+                messages.success(request, _("System configuration updated."))
+                return redirect("control:system_settings")
+            except Exception as e:
+                from django.core.exceptions import ValidationError
+                if hasattr(e, "message_dict"):
+                    errors.update(e.message_dict)
+                else:
+                    errors["__all__"] = str(e)
+
+    return render(request, "control/system_settings.html", {
+        "config": config,
+        "errors": errors,
+    })
 
 
 # ===========================================================================
@@ -1810,10 +1879,13 @@ def system_settings(request):
 def sales_list(request):
     """Sales review page — batch list with inline expansion."""
     accounts = Account.objects.order_by("name")
+    config   = SystemConfig.get()
     return render(request, "control/sales_list.html", {
         "accounts":      accounts,
         "init_account":  request.GET.get("account",  ""),
         "init_contract": request.GET.get("contract", ""),
+        "rr_warn":       config.rejection_rate_warn_threshold,
+        "rr_danger":     config.rejection_rate_danger_threshold,
     })
 
 

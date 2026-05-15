@@ -1,5 +1,8 @@
 # CLAUDE.md — WinInPharma Contributor Guide
 
+@SKILL.md
+@ARCHITECTURE.md
+
 > Rules and decisions for anyone working on this codebase with Claude Code.
 > Read top to bottom. Every rule is enforced.
 
@@ -102,8 +105,8 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 |---|---|
 | `main` | Production |
 | `develop` | Active backend development |
-| `feature/react-ui` | React SPA (in progress — do not merge without approval) |
-| `feature/i18n` | French translations for control panel (in progress) |
+| `feature/react-ui` | React SPA (paused — do not merge without approval) |
+| `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
 
 - Never merge `feature/react-ui` into `develop` or `main` without explicit approval.
 - Never modify portal templates for React convenience — they are the production fallback.
@@ -148,6 +151,7 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | Global config | `control/models.py` `SystemConfig.get()` |
 | E2E tests | `tests/e2e/` — 22 tests, 8 files |
 | Unit tests | `api/tests.py`, `fidpha/tests.py`, `sales/tests.py`, `control/tests.py` — 313 tests |
+| Code reviewer agent | `.claude/agents/code-reviewer.md` (outer `FIDPHA001/` folder) |
 
 ---
 

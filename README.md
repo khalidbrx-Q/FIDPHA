@@ -212,7 +212,7 @@ The control panel at `/control/` replaces Django admin entirely. It is accessibl
 | Products | `/control/products/` | Full CRUD; bulk CSV import (`/control/products/import/`) |
 | API Tokens | `/control/tokens/` | Create tokens (shown once, stored as SHA-256 hash); revoke/reactivate; 30-day usage chart |
 | Sales Review | `/control/sales/` | Batch list, inline sale expansion, accept/reject with reason, bulk actions, CSV export |
-| System Settings | `/control/settings/system/` | Global auto-review toggle (superuser only) |
+| System Settings | `/control/settings/system/` | Global auto-review toggle, batch size limit, PPV tolerance, rejection rate thresholds, API rate limit (superuser only) |
 | Social / Sites | `/control/settings/social-apps/` etc. | Google OAuth app config, Django Sites (superuser only) |
 
 ### Sales Review Workflow
@@ -340,12 +340,12 @@ Submits a batch of sales records.
 | `MISSING_FIELD` | 400 | Required field absent |
 | `ACCOUNT_NOT_FOUND` | 404 | No account with that code |
 | `CONTRACT_NOT_FOUND` | 404 | No active contract for account |
-| `BATCH_TOO_LARGE` | 400 | Batch exceeds 50,000 rows |
+| `BATCH_TOO_LARGE` | 400 | Batch exceeds the configured max (System Settings → max_batch_size; 0 = unlimited) |
 | `SERVER_ERROR` | 500 | Internal error |
 
 ### Rate Limiting
 
-1,000 requests per hour per token. Throttle scope: `api_token` (keyed on token PK).
+Configurable via System Settings (`api_token_rate_limit`). Default: unlimited (0). When set, enforced as N requests per hour per token. Throttle scope: `api_token` (keyed on token PK), read from cache (TTL 60 s).
 
 ---
 
@@ -403,8 +403,8 @@ Staff permissions are managed through Django Groups (called "Roles" in the contr
 |---|---|
 | `main` | Production — deployed to PythonAnywhere |
 | `develop` | Active backend development |
-| `feature/react-ui` | React SPA (in progress — not merged to main) |
-| `feature/i18n` | French translations for control panel (in progress) |
+| `feature/react-ui` | React SPA (paused — not merged to main) |
+| `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
 
 ### 10.2 Merging to Main (via GitHub PR)
 
@@ -768,7 +768,7 @@ Le panneau de contrôle `/control/` remplace complètement Django admin. Il est 
 | Produits | `/control/products/` | CRUD complet ; import CSV en masse |
 | Tokens API | `/control/tokens/` | Créer des tokens (affichés une fois, stockés en SHA-256) ; révoquer/réactiver |
 | Revue des ventes | `/control/sales/` | Liste des lots, expansion inline, accepter/rejeter avec motif, actions groupées, export CSV |
-| Paramètres système | `/control/settings/system/` | Bascule auto-révision globale (superuser uniquement) |
+| Paramètres système | `/control/settings/system/` | Bascule auto-révision, limite de lot, tolérance PPV, seuils de rejet, limite de débit API (superuser uniquement) |
 | Social / Sites | `/control/settings/social-apps/` etc. | Config OAuth Google, Django Sites (superuser uniquement) |
 
 ### Workflow de Revue des Ventes
@@ -879,12 +879,12 @@ Soumet un lot de ventes.
 | `MISSING_FIELD` | 400 | Champ requis absent |
 | `ACCOUNT_NOT_FOUND` | 404 | Aucun compte avec ce code |
 | `CONTRACT_NOT_FOUND` | 404 | Aucun contrat actif pour ce compte |
-| `BATCH_TOO_LARGE` | 400 | Lot dépassant 50 000 lignes |
+| `BATCH_TOO_LARGE` | 400 | Lot dépassant la limite configurée (Paramètres Système → max_batch_size ; 0 = illimité) |
 | `SERVER_ERROR` | 500 | Erreur interne |
 
 ### Limite de Débit
 
-1 000 requêtes par heure par token. Scope du throttle : `api_token` (clé = PK du token).
+Configurable dans Paramètres Système (`api_token_rate_limit`). Par défaut : illimité (0). Quand défini, limité à N requêtes par heure par token. Scope du throttle : `api_token` (clé = PK du token), lu depuis le cache (TTL 60 s).
 
 ---
 
@@ -942,8 +942,8 @@ Les permissions du staff sont gérées via les groupes Django (appelés "Rôles"
 |---|---|
 | `main` | Production — déployée sur PythonAnywhere |
 | `develop` | Développement backend actif |
-| `feature/react-ui` | SPA React (en cours — non mergée sur main) |
-| `feature/i18n` | Traductions françaises du panneau de contrôle (en cours) |
+| `feature/react-ui` | SPA React (en pause — non mergée sur main) |
+| `feature/improvements` | Polish UI, améliorations SystemConfig, agent code-reviewer |
 
 ### 10.2 Merger sur Main (via GitHub PR)
 

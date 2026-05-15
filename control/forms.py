@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 control/forms.py
 ----------------
@@ -11,6 +12,8 @@ without duplication here.
 Author: FIDPHA Dev Team
 Last updated: April 2026
 """
+
+import re
 
 from django import forms
 from django.contrib.auth.models import Group, Permission, User
@@ -31,6 +34,19 @@ from api.models import APIToken
 # Accounts
 # ---------------------------------------------------------------------------
 
+# Country dialling prefixes shown in the phone-prefix selector.
+# Morocco is the default (index 0).  Add more countries here in the future.
+PHONE_PREFIXES = [
+    ('+212', '+212 🇲🇦'),
+    ('+33',  '+33  🇫🇷'),
+    ('+1',   '+1   🇺🇸'),
+    ('+44',  '+44  🇬🇧'),
+    ('+34',  '+34  🇪🇸'),
+    ('+39',  '+39  🇮🇹'),
+    ('+49',  '+49  🇩🇪'),
+]
+
+
 class AccountForm(forms.ModelForm):
     """
     Form for creating and editing pharmacy accounts.
@@ -38,7 +54,17 @@ class AccountForm(forms.ModelForm):
     Uses ModelForm so Django's _post_clean() automatically calls the model's
     clean() method — which enforces the "cannot deactivate with active
     contracts" business rule — and surfaces it as a non-field error.
+
+    Phone normalization: a separate phone_prefix selector is combined with
+    the local phone number in clean() to produce a normalized E.164-style
+    value (e.g., +212612345678) stored in Account.phone.
     """
+
+    phone_prefix = forms.ChoiceField(
+        choices=PHONE_PREFIXES,
+        initial='+212',
+        required=False,
+    )
 
     class Meta:
         model  = Account
@@ -50,10 +76,30 @@ class AccountForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for fname in ['code', 'name', 'city', 'phone', 'email']:
+        for fname in ['code', 'name', 'city', 'email']:
             self.fields[fname].widget.attrs.update({'class': 'form-input', 'autocomplete': 'off'})
+        self.fields['phone'].widget.attrs.update({
+            'class': 'form-input',
+            'autocomplete': 'off',
+            'placeholder': '6 12 34 56 78',
+        })
+        self.fields['phone_prefix'].widget.attrs.update({'class': 'form-input phone-prefix-select'})
         self.fields['location'].widget.attrs.update({'class': 'form-input'})
         self.fields['status'].widget.attrs.update({'class': 'form-input'})
+
+        # When editing an existing account, split the stored phone number into
+        # prefix + local part so both inputs are pre-populated correctly.
+        stored_phone = (self.instance.phone if self.instance and self.instance.pk else '') or ''
+        if stored_phone:
+            detected_prefix = '+212'  # fallback default
+            local = stored_phone
+            for prefix, _ in PHONE_PREFIXES:
+                if stored_phone.startswith(prefix):
+                    detected_prefix = prefix
+                    local = stored_phone[len(prefix):]
+                    break
+            self.fields['phone_prefix'].initial = detected_prefix
+            self.initial['phone'] = local
 
     def clean_code(self):
         code = (self.cleaned_data.get('code') or '').strip()
@@ -63,6 +109,39 @@ class AccountForm(forms.ModelForm):
         if qs.exists():
             raise forms.ValidationError('An account with this code already exists.')
         return code
+
+    def clean(self):
+        cleaned = super().clean()
+        prefix = cleaned.get('phone_prefix') or '+212'
+        local  = (cleaned.get('phone') or '').strip()
+
+        if local:
+            # Remove formatting characters (spaces, dashes, dots, parens)
+            local = re.sub(r'[\s\-.\(\)]', '', local)
+
+            # If the user typed the full international number, strip the leading
+            # prefix and re-apply the selected one so the two fields stay in sync.
+            if local.startswith('+'):
+                for p, _ in PHONE_PREFIXES:
+                    if local.startswith(p):
+                        local = local[len(p):]
+                        break
+                else:
+                    # Unknown prefix — raise a clear validation error
+                    raise forms.ValidationError(
+                        _("Phone number prefix not recognised. "
+                          "Select a country prefix from the list.")
+                    )
+                local = prefix + local
+            else:
+                # Strip a single leading zero (common Moroccan/French format: 0612…)
+                if local.startswith('0'):
+                    local = local[1:]
+                local = prefix + local
+
+            cleaned['phone'] = local
+
+        return cleaned
 
 
 # ---------------------------------------------------------------------------

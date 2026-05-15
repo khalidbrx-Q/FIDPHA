@@ -14,42 +14,212 @@
     </div>
 </div>
 
-{% if messages %}
-{% for msg in messages %}
-<div class="alert alert-{{ msg.tags }}" style="margin-bottom:16px;">
-    <span class="material-icons-round" style="font-size:18px;">check_circle</span> {{ msg }}
+{% if errors %}
+<div class="alert alert-danger" style="margin-bottom:16px;">
+    <span class="material-icons-round" style="font-size:18px;">error_outline</span>
+    {% trans "Please fix the errors below before saving." %}
 </div>
-{% endfor %}
 {% endif %}
 
 <form method="post" id="sysForm" novalidate>
     {% csrf_token %}
 
-    <div class="card" style="margin-bottom:16px; max-width:560px;">
+    {# ── Sales Ingestion ─────────────────────────────────────────────────── #}
+    <div class="card s-card">
         <div class="section-label">{% trans "Sales Ingestion" %}</div>
 
-        <div class="toggle-row">
-            <div class="toggle-info">
-                <div class="toggle-title">{% trans "Auto-review" %}</div>
-                <div class="toggle-desc">
+        {# Auto-review #}
+        <div class="s-row">
+            <div class="s-left">
+                <div class="s-title">{% trans "Auto-review" %}</div>
+                <div class="s-desc">
                     {% blocktrans %}When on, any sale row that passes all validation checks is accepted immediately
                     — no staff review needed. Staff only sees flagged or rejected rows.
                     Each auto-accepted sale is stamped <code>auto_reviewed = true</code>.{% endblocktrans %}
                 </div>
                 {% if config.auto_review_updated_by %}
-                <div class="toggle-meta">
+                <div class="s-meta">
                     {% blocktrans with user=config.auto_review_updated_by.get_full_name|default:config.auto_review_updated_by.username date=config.auto_review_updated_at|date:"d M Y, H:i" %}Last changed by <strong>{{ user }}</strong> on {{ date }}{% endblocktrans %}
                 </div>
                 {% endif %}
             </div>
-            <label class="toggle-switch">
-                <input type="checkbox" name="auto_review_enabled" value="1"
-                       id="autoReviewToggle"
-                       {% if config.auto_review_enabled %}checked{% endif %}
-                       onchange="document.getElementById('sysForm').submit()">
-                <span class="toggle-slider"></span>
-            </label>
+            <div class="s-right">
+                <span class="dirty-dot"></span>
+                <label class="toggle-switch">
+                    <input type="checkbox" name="auto_review_enabled" value="1"
+                           id="autoReviewToggle"
+                           {% if config.auto_review_enabled %}checked{% endif %}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
         </div>
+
+        <div class="field-sep"></div>
+
+        {# Max batch size #}
+        <div class="s-row">
+            <div class="s-left">
+                <div class="s-title">{% trans "Max batch size" %}</div>
+                <div class="s-desc">{% trans "Maximum number of sale rows accepted per API submission. Batches exceeding this limit are rejected entirely." %}</div>
+                {% if errors.max_batch_size %}<div class="field-error">{{ errors.max_batch_size }}</div>{% endif %}
+            </div>
+            <div class="s-right">
+                <span class="dirty-dot"></span>
+                <label class="toggle-switch toggle-sm">
+                    <input type="checkbox" name="max_batch_size_enabled" value="1"
+                           id="tog_max_batch"
+                           {% if config.max_batch_size > 0 %}checked{% endif %}
+                           onchange="toggleSetting(this,'inp_max_batch','{% trans "No limit"|escapejs %}','0')">
+                    <span class="toggle-slider"></span>
+                </label>
+                <input type="number" name="max_batch_size" id="inp_max_batch"
+                       class="num-input {% if errors.max_batch_size %}is-error{% endif %}"
+                       value="{% if config.max_batch_size > 0 %}{{ config.max_batch_size }}{% endif %}"
+                       placeholder="{% if config.max_batch_size == 0 %}{% trans "No limit" %}{% endif %}"
+                       data-off-label="{% trans "No limit"|escapejs %}"
+                       data-default="0"
+                       min="1" max="100000"
+                       {% if config.max_batch_size == 0 %}disabled{% endif %}>
+                <span class="val-msg" data-range="1–100 000"></span>
+            </div>
+        </div>
+
+        <div class="field-sep"></div>
+
+        {# PPV tolerance #}
+        <div class="s-row">
+            <div class="s-left">
+                <div class="s-title">{% trans "PPV tolerance" %} <span class="unit-label">%</span></div>
+                <div class="s-desc">{% trans "Reject rows where the submitted PPV deviates more than this percentage from the catalogue value. Leave blank to disable the check." %}</div>
+                {% if errors.ppv_tolerance_percent %}<div class="field-error">{{ errors.ppv_tolerance_percent }}</div>{% endif %}
+            </div>
+            <div class="s-right">
+                <span class="dirty-dot"></span>
+                <label class="toggle-switch toggle-sm">
+                    <input type="checkbox" name="ppv_tolerance_enabled" value="1"
+                           id="tog_ppv"
+                           {% if config.ppv_tolerance_percent %}checked{% endif %}{# Note: falsy for 0.00 — model clean() already prevents saving 0, so this is safe #}
+                           onchange="toggleSetting(this,'inp_ppv','{% trans "Disabled"|escapejs %}','0')">
+                    <span class="toggle-slider"></span>
+                </label>
+                <input type="number" name="ppv_tolerance_percent" id="inp_ppv"
+                       class="num-input {% if errors.ppv_tolerance_percent %}is-error{% endif %}"
+                       value="{{ config.ppv_tolerance_percent|default:'' }}"
+                       placeholder="{% if not config.ppv_tolerance_percent %}{% trans "Disabled" %}{% endif %}"
+                       data-off-label="{% trans "Disabled"|escapejs %}"
+                       data-default="0"
+                       min="0.01" max="100" step="0.01"
+                       {% if not config.ppv_tolerance_percent %}disabled{% endif %}>
+                <span class="val-msg" data-range="0.01–100"></span>
+            </div>
+        </div>
+    </div>
+
+    {# ── Review Thresholds ────────────────────────────────────────────────── #}
+    <div class="card s-card">
+        <div class="section-label">{% trans "Review Thresholds" %}</div>
+
+        {# Warn threshold #}
+        <div class="s-row">
+            <div class="s-left">
+                <div class="s-title">
+                    <span class="badge-preview badge-preview-med">⚠ {% trans "Warn" %}</span>
+                    {% trans "threshold" %} <span class="unit-label">%</span>
+                </div>
+                <div class="s-desc">{% trans "Rejection rate above which a yellow warning badge appears on a batch in the sales review list." %}</div>
+                {% if errors.rejection_rate_warn_threshold %}<div class="field-error">{{ errors.rejection_rate_warn_threshold }}</div>{% endif %}
+            </div>
+            <div class="s-right">
+                <span class="dirty-dot"></span>
+                <label class="toggle-switch toggle-sm">
+                    <input type="checkbox" name="rr_warn_enabled" value="1"
+                           id="tog_rr_warn"
+                           {% if config.rejection_rate_warn_threshold > 0 %}checked{% endif %}
+                           onchange="toggleSetting(this,'inp_rr_warn','{% trans "No badge"|escapejs %}','0')">
+                    <span class="toggle-slider"></span>
+                </label>
+                <input type="number" name="rejection_rate_warn_threshold" id="inp_rr_warn"
+                       class="num-input {% if errors.rejection_rate_warn_threshold %}is-error{% endif %}"
+                       value="{% if config.rejection_rate_warn_threshold > 0 %}{{ config.rejection_rate_warn_threshold }}{% endif %}"
+                       placeholder="{% if config.rejection_rate_warn_threshold == 0 %}{% trans "No badge" %}{% endif %}"
+                       data-off-label="{% trans "No badge"|escapejs %}"
+                       data-default="0"
+                       min="1" max="99"
+                       {% if config.rejection_rate_warn_threshold == 0 %}disabled{% endif %}>
+                <span class="val-msg" data-range="1–99"></span>
+            </div>
+        </div>
+
+        <div class="field-sep"></div>
+
+        {# Danger threshold #}
+        <div class="s-row">
+            <div class="s-left">
+                <div class="s-title">
+                    <span class="badge-preview badge-preview-high">✖ {% trans "Danger" %}</span>
+                    {% trans "threshold" %} <span class="unit-label">%</span>
+                </div>
+                <div class="s-desc">{% trans "Rejection rate above which a red danger badge appears. Must be strictly greater than the warn threshold." %}</div>
+                {% if errors.rejection_rate_danger_threshold %}<div class="field-error">{{ errors.rejection_rate_danger_threshold }}</div>{% endif %}
+            </div>
+            <div class="s-right">
+                <span class="dirty-dot"></span>
+                <label class="toggle-switch toggle-sm">
+                    <input type="checkbox" name="rr_danger_enabled" value="1"
+                           id="tog_rr_danger"
+                           {% if config.rejection_rate_danger_threshold > 0 %}checked{% endif %}
+                           onchange="toggleSetting(this,'inp_rr_danger','{% trans "No badge"|escapejs %}','0')">
+                    <span class="toggle-slider"></span>
+                </label>
+                <input type="number" name="rejection_rate_danger_threshold" id="inp_rr_danger"
+                       class="num-input {% if errors.rejection_rate_danger_threshold %}is-error{% endif %}"
+                       value="{% if config.rejection_rate_danger_threshold > 0 %}{{ config.rejection_rate_danger_threshold }}{% endif %}"
+                       placeholder="{% if config.rejection_rate_danger_threshold == 0 %}{% trans "No badge" %}{% endif %}"
+                       data-off-label="{% trans "No badge"|escapejs %}"
+                       data-default="0"
+                       min="1" max="100"
+                       {% if config.rejection_rate_danger_threshold == 0 %}disabled{% endif %}>
+                <span class="val-msg" data-range="1–100"></span>
+            </div>
+        </div>
+    </div>
+
+    {# ── API Throttling ──────────────────────────────────────────────────── #}
+    <div class="card s-card">
+        <div class="section-label">{% trans "API Throttling" %}</div>
+
+        <div class="s-row">
+            <div class="s-left">
+                <div class="s-title">{% trans "Rate limit" %} <span class="unit-label">{% trans "req / hour" %}</span></div>
+                <div class="s-desc">{% trans "Maximum API requests allowed per token per hour. Takes effect within the throttle cache window (≈ 1 min). Applies to all pharmacy tokens equally." %}</div>
+                {% if errors.api_token_rate_limit %}<div class="field-error">{{ errors.api_token_rate_limit }}</div>{% endif %}
+            </div>
+            <div class="s-right">
+                <span class="dirty-dot"></span>
+                <label class="toggle-switch toggle-sm">
+                    <input type="checkbox" name="api_rate_enabled" value="1"
+                           id="tog_api_rate"
+                           {% if config.api_token_rate_limit > 0 %}checked{% endif %}
+                           onchange="toggleSetting(this,'inp_api_rate','{% trans "Unlimited"|escapejs %}','0')">
+                    <span class="toggle-slider"></span>
+                </label>
+                <input type="number" name="api_token_rate_limit" id="inp_api_rate"
+                       class="num-input {% if errors.api_token_rate_limit %}is-error{% endif %}"
+                       value="{% if config.api_token_rate_limit > 0 %}{{ config.api_token_rate_limit }}{% endif %}"
+                       placeholder="{% if config.api_token_rate_limit == 0 %}{% trans "Unlimited" %}{% endif %}"
+                       data-off-label="{% trans "Unlimited"|escapejs %}"
+                       data-default="0"
+                       min="1" max="10000"
+                       {% if config.api_token_rate_limit == 0 %}disabled{% endif %}>
+                <span class="val-msg" data-range="1–10 000"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="s-card">
+        <button type="submit" class="btn btn-primary">
+            <span class="material-icons-round">save</span> {% trans "Save settings" %}
+        </button>
     </div>
 
 </form>
@@ -59,28 +229,316 @@
 
 {% block extra_css %}
 <style>
+    /* Card width */
+    .s-card { max-width: 640px; margin-bottom: 16px; }
+
+    /* Section label */
     .section-label {
-        font-size:0.75rem; font-weight:700; text-transform:uppercase;
-        letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:14px;
+        font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 16px;
     }
-    .toggle-row {
-        display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+
+    /* ── Core two-column row ────────────────────────────────────────────── */
+    .s-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
     }
-    .toggle-info { flex:1; }
-    .toggle-title { font-weight:600; font-size:0.9rem; margin-bottom:4px; }
-    .toggle-desc  { font-size:0.8rem; color:var(--text-secondary); line-height:1.45; }
-    .toggle-meta  { font-size:0.72rem; color:var(--text-secondary); margin-top:6px; opacity:0.7; }
-    .toggle-switch { position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; margin-top:2px; }
-    .toggle-switch input { opacity:0; width:0; height:0; }
+
+    /* Left: title + description fills available width */
+    .s-left { flex: 1; min-width: 0; }
+
+    .s-title {
+        font-weight: 600; font-size: 0.88rem; margin-bottom: 5px;
+        display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        color: var(--text-primary);
+    }
+    .s-desc {
+        font-size: 0.79rem; color: var(--text-secondary); line-height: 1.5;
+    }
+    .s-meta {
+        font-size: 0.71rem; color: var(--text-secondary);
+        margin-top: 5px; opacity: 0.7;
+    }
+
+    /* Right: toggle stacked above input/label, right-aligned, fixed width */
+    .s-right {
+        flex-shrink: 0;
+        width: 110px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    /* ── Toggle switches ────────────────────────────────────────────────── */
+    .toggle-switch {
+        position: relative; display: inline-block;
+        width: 44px; height: 24px; flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
     .toggle-slider {
-        position:absolute; cursor:pointer; inset:0;
-        background:var(--card-border); border-radius:24px; transition:.2s;
+        position: absolute; cursor: pointer; inset: 0;
+        background: var(--card-border); border-radius: 24px; transition: .2s;
     }
     .toggle-slider::before {
-        content:""; position:absolute; width:18px; height:18px; left:3px; bottom:3px;
-        background:#fff; border-radius:50%; transition:.2s;
+        content: ""; position: absolute;
+        width: 18px; height: 18px; left: 3px; bottom: 3px;
+        background: #fff; border-radius: 50%; transition: .2s;
     }
-    input:checked + .toggle-slider { background:var(--accent); }
-    input:checked + .toggle-slider::before { transform:translateX(20px); }
+    input:checked + .toggle-slider { background: var(--accent); }
+    input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    .toggle-sm { width: 36px; height: 20px; }
+    .toggle-sm .toggle-slider::before { width: 14px; height: 14px; }
+    .toggle-sm input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+    /* ── Number input ───────────────────────────────────────────────────── */
+    .num-input {
+        width: 100%; box-sizing: border-box;
+        background: var(--input-bg, var(--card-bg));
+        border: 1px solid var(--card-border); border-radius: 8px;
+        padding: 6px 10px; font-size: 0.88rem; text-align: right;
+        color: var(--text-primary); font-family: 'Inter', sans-serif;
+        transition: border-color .15s, opacity .15s;
+    }
+    .num-input:focus { outline: none; border-color: var(--accent); }
+    .num-input:disabled {
+        opacity: 0.65; cursor: not-allowed;
+        font-style: italic;
+    }
+    /* Placeholder shown when toggle is OFF ("No limit", "Disabled", etc.) */
+    .num-input:disabled::placeholder {
+        color: var(--text-secondary);
+        font-style: italic;
+        opacity: 1;           /* some browsers dim placeholder inside disabled */
+        text-align: right;
+    }
+    .num-input.is-error { border-color: #ef4444; }
+    .num-input.is-dirty { border-color: #f59e0b; }   /* amber border only, no glow */
+
+    /* Inline range-error shown below a number input */
+    .val-msg {
+        font-size: 0.68rem; color: #ef4444;
+        text-align: right; line-height: 1.3;
+        min-height: 0; display: none;
+    }
+    .val-msg.visible { display: block; }
+
+    /* Dirty dot on toggle rows */
+    .s-right { position: relative; }
+    .dirty-dot {
+        display: none;
+        position: absolute; top: -4px; right: -4px;
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #f59e0b;
+        box-shadow: 0 0 0 2px var(--card-bg);
+        cursor: default;
+    }
+    .s-right.is-dirty .dirty-dot { display: block; }
+
+    /* Tooltip bubble */
+    .dirty-dot::after {
+        content: attr(data-tip);
+        position: absolute;
+        bottom: calc(100% + 8px);
+        right: -6px;
+        background: rgba(15,23,42,0.92);
+        color: #f8fafc;
+        font-size: 0.69rem; font-weight: 500;
+        font-style: normal; font-family: 'Inter', sans-serif;
+        white-space: nowrap;
+        padding: 4px 8px; border-radius: 5px;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(4px);
+        transition: opacity .15s, transform .15s;
+    }
+    /* Arrow pointing down */
+    .dirty-dot::before {
+        content: '';
+        position: absolute;
+        bottom: calc(100% + 4px);
+        right: -1px;
+        border: 4px solid transparent;
+        border-top-color: rgba(15,23,42,0.92);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .15s;
+    }
+    .dirty-dot:hover::after,
+    .dirty-dot:hover::before { opacity: 1; transform: translateY(0); }
+
+    /* ── Misc ───────────────────────────────────────────────────────────── */
+    .field-sep { height: 1px; background: var(--card-border); margin: 16px 0; }
+    .field-error { font-size: 0.73rem; color: #ef4444; margin-top: 4px; }
+    .unit-label { font-size: 0.74rem; color: var(--text-secondary); font-weight: 400; }
+
+    .badge-preview {
+        display: inline-flex; align-items: center; padding: 2px 7px;
+        border-radius: 20px; font-size: 0.71rem; font-weight: 700;
+    }
+    .badge-preview-med  { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .badge-preview-high { background: rgba(239,68,68,0.12);  color: #ef4444; }
+
+    .alert-danger {
+        background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+        color: #ef4444; border-radius: 8px; padding: 10px 14px;
+        display: flex; align-items: center; gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    @media (max-width: 500px) {
+        .s-right { width: 90px; }
+    }
 </style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    const form = document.getElementById('sysForm');
+
+    /* ── Inject tooltip text on every dirty-dot ────────────────────────── */
+    const _TIP = '{% trans "Unsaved change"|escapejs %}';
+    document.querySelectorAll('.dirty-dot').forEach(d => d.dataset.tip = _TIP);
+
+    /* ── Snapshot original values on page load ──────────────────────────── */
+    const _originals = new Map();
+    form.querySelectorAll('input, select, textarea').forEach(el => {
+        _originals.set(el, el.type === 'checkbox' ? el.checked : el.value);
+    });
+
+    /* ── Check whether a single field differs from its snapshot ─────────── */
+    function _isChanged(el) {
+        if (!_originals.has(el)) return false;
+        return el.type === 'checkbox'
+            ? el.checked  !== _originals.get(el)
+            : el.value    !== _originals.get(el);
+    }
+
+    /* ── Range validation ───────────────────────────────────────────────── */
+    function _validateInput(el) {
+        // Disabled or empty → no client-side error.
+        // Note: 0 is NOT skipped here — when the toggle is ON (input enabled),
+        // 0 is below every field's min and must fail the range check so the
+        // user is forced to enter a real value before saving.
+        if (!el.classList.contains('num-input') || el.disabled || el.value === '') {
+            _clearValError(el);
+            return true;
+        }
+        const val = parseFloat(el.value);
+        const min = el.min !== '' ? parseFloat(el.min) : -Infinity;
+        const max = el.max !== '' ? parseFloat(el.max) : Infinity;
+        const msg = el.nextElementSibling;   // the .val-msg <span>
+
+        if (isNaN(val) || val < min || val > max) {
+            el.classList.add('is-error');
+            if (msg && msg.classList.contains('val-msg')) {
+                msg.textContent = msg.dataset.range
+                    ? '{% trans "Must be"|escapejs %}: ' + msg.dataset.range
+                    : '';
+                msg.classList.add('visible');
+            }
+            return false;
+        }
+        _clearValError(el);
+        return true;
+    }
+
+    function _clearValError(el) {
+        el.classList.remove('is-error');
+        const msg = el.nextElementSibling;
+        if (msg && msg.classList.contains('val-msg')) {
+            msg.textContent = '';
+            msg.classList.remove('visible');
+        }
+    }
+
+    /* ── Re-evaluate dirty state for the field that just changed ────────── */
+    function _evaluate(el) {
+        // Run range check first
+        _validateInput(el);
+
+        const changed = _isChanged(el);
+
+        // Amber border on number inputs (only when valid — error overrides)
+        if (el.classList.contains('num-input') && !el.classList.contains('is-error')) {
+            el.classList.toggle('is-dirty', changed);
+        }
+
+        // Amber dot on the .s-right row: show if ANY field in that row changed
+        const sRight = el.closest('.s-right');
+        if (sRight) {
+            const rowDirty = [...sRight.querySelectorAll('input')].some(_isChanged);
+            sRight.classList.toggle('is-dirty', rowDirty);
+        }
+
+        // Global flag: any field in the whole form changed?
+        const anyDirty = [..._originals.keys()].some(_isChanged);
+        window._formDirty = anyDirty;
+    }
+
+    form.addEventListener('input',  (e) => _evaluate(e.target));
+    form.addEventListener('change', (e) => _evaluate(e.target));
+
+    /* ── Snap to default the moment the field is cleared ───────────────── */
+    form.addEventListener('input', (e) => {
+        const el = e.target;
+        if (!el.classList.contains('num-input') || el.disabled) return;
+        if (el.value === '' && el.dataset.default) {
+            el.value = el.dataset.default;
+            _evaluate(el);
+        }
+    }, true);   // capture phase so this runs before the bubble-phase _evaluate
+
+    /* ── Clear everything on submit; block if any field is invalid ───────── */
+    form.addEventListener('submit', (e) => {
+        let valid = true;
+        form.querySelectorAll('.num-input').forEach(inp => {
+            if (!_validateInput(inp)) valid = false;
+        });
+        if (!valid) { e.preventDefault(); return; }
+
+        window._formDirty = false;
+        form.querySelectorAll('.is-dirty').forEach(el => el.classList.remove('is-dirty'));
+    });
+
+    /* ── Leave-page guard ───────────────────────────────────────────────── */
+    window.addEventListener('beforeunload', (e) => {
+        if (!window._formDirty) return;
+        e.preventDefault();
+        e.returnValue = '';
+    });
+
+    /* ── Toggle helper ─────────────────────────────────────────────────── */
+    // offLabel : text shown as placeholder when toggle is OFF
+    // defaultVal: pre-filled value when toggle is turned ON for the first time
+    function toggleSetting(checkbox, inputId, offLabel, defaultVal) {
+        const inp = document.getElementById(inputId);
+        if (!inp) return;
+
+        if (checkbox.checked) {
+            // Turning ON → restore last numeric value (or use the default)
+            inp.value       = inp.dataset.savedValue || defaultVal || '';
+            inp.placeholder = '';
+            inp.disabled    = false;
+            _validateInput(inp);   // re-check range on the restored value
+        } else {
+            // Turning OFF → save current value, clear field, show label as placeholder
+            if (inp.value) inp.dataset.savedValue = inp.value;
+            inp.value       = '';
+            inp.placeholder = offLabel;
+            inp.disabled    = true;
+
+            // Clear any dirty / error state left on the input
+            inp.classList.remove('is-dirty', 'is-error');
+            const msg = inp.nextElementSibling;
+            if (msg && msg.classList.contains('val-msg')) {
+                msg.textContent = '';
+                msg.classList.remove('visible');
+            }
+        }
+    }
+</script>
 {% endblock %}
