@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
 {% block page_title %}{{ app.name }}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:social_apps_list' %}" style="color:var(--text-secondary);text-decoration:none;">Social Applications</a>
+    <a href="{% url 'control:social_apps_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Social Applications" %}</a>
     › {{ app.name }}
 {% endblock %}
 {% block nav_social_apps %}active{% endblock %}
@@ -18,42 +19,42 @@
         </div>
         <div>
             <div class="page-header-title">{{ app.name }}</div>
-            <div class="page-header-sub" style="text-transform:capitalize;">{{ app.provider }} OAuth Application</div>
+            <div class="page-header-sub" style="text-transform:capitalize;">{% blocktrans with provider=app.provider %}{{ provider }} OAuth Application{% endblocktrans %}</div>
         </div>
     </div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <a href="{% url 'control:social_apps_list' %}" class="btn btn-secondary">
-            <span class="material-icons-round">arrow_back</span> Back
+            <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
         </a>
         <a href="{% url 'control:social_apps_edit' app.pk %}" class="btn btn-primary">
-            <span class="material-icons-round">edit</span> Edit
+            <span class="material-icons-round">edit</span> {% trans "Edit" %}
         </a>
         <a href="{% url 'control:social_apps_delete' app.pk %}" class="btn btn-danger">
-            <span class="material-icons-round">delete</span> Delete
+            <span class="material-icons-round">delete</span> {% trans "Delete" %}
         </a>
     </div>
 </div>
 
 <!-- Application Info -->
 <div class="card" style="margin-bottom:16px;">
-    <div class="section-label">Application Details</div>
+    <div class="section-label">{% trans "Application Details" %}</div>
 
     <div class="info-row">
-        <span class="info-key">Provider</span>
+        <span class="info-key">{% trans "Provider" %}</span>
         <span class="info-val" style="text-transform:capitalize; font-weight:600; color:var(--text-primary);">{{ app.provider }}</span>
     </div>
     <div class="info-row">
-        <span class="info-key">Name</span>
+        <span class="info-key">{% trans "Name" %}</span>
         <span class="info-val" style="font-weight:600; color:var(--text-primary);">{{ app.name }}</span>
     </div>
     {% if app.provider_id %}
     <div class="info-row">
-        <span class="info-key">Provider ID</span>
+        <span class="info-key">{% trans "Provider ID" %}</span>
         <span class="info-val"><span class="code-chip">{{ app.provider_id }}</span></span>
     </div>
     {% endif %}
     <div class="info-row">
-        <span class="info-key">Sites</span>
+        <span class="info-key">{% trans "Sites" %}</span>
         <span class="info-val" style="font-size:0.82rem;">
             {% for site in app.sites.all %}
                 <span class="site-chip">{{ site.domain }}</span>
@@ -63,12 +64,12 @@
         </span>
     </div>
     <div class="info-row">
-        <span class="info-key">Linked User Tokens</span>
+        <span class="info-key">{% trans "Linked User Tokens" %}</span>
         <span class="info-val">
             {% if token_count %}
                 <span class="badge badge-active">{{ token_count }} token{{ token_count|pluralize }}</span>
             {% else %}
-                <span style="color:var(--text-secondary); font-size:0.82rem;">None yet</span>
+                <span style="color:var(--text-secondary); font-size:0.82rem;">{% trans "None yet" %}</span>
             {% endif %}
         </span>
     </div>
@@ -76,29 +77,29 @@
 
 <!-- Credentials -->
 <div class="card" style="margin-bottom:16px;">
-    <div class="section-label">OAuth Credentials</div>
+    <div class="section-label">{% trans "OAuth Credentials" %}</div>
 
     <div class="info-row">
-        <span class="info-key">Client ID</span>
+        <span class="info-key">{% trans "Client ID" %}</span>
         <span class="info-val" style="display:flex; align-items:center; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
             <span class="code-chip" id="clientIdDisplay">{{ app.client_id }}</span>
-            <button class="copy-btn" onclick="copyText('{{ app.client_id }}', this)" title="Copy Client ID">
+            <button class="copy-btn" onclick="copyText('{{ app.client_id }}', this)" title="{% trans "Copy Client ID" %}">
                 <span class="material-icons-round">content_copy</span>
             </button>
         </span>
     </div>
 
     <div class="info-row">
-        <span class="info-key">Client Secret</span>
+        <span class="info-key">{% trans "Client Secret" %}</span>
         <span class="info-val" style="display:flex; align-items:center; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
             <span class="code-chip" id="secretDisplay">
                 ••••••••••••••••••••<span style="opacity:0.5;">{{ app.secret|slice:"-4:" }}</span>
             </span>
             <span id="secretFull" data-val="{{ app.secret }}" style="display:none;"></span>
-            <button class="copy-btn" onclick="copySecret(this)" title="Copy Secret">
+            <button class="copy-btn" onclick="copySecret(this)" title="{% trans "Copy Secret" %}">
                 <span class="material-icons-round">content_copy</span>
             </button>
-            <button class="copy-btn" id="revealBtn" onclick="toggleReveal()" title="Reveal secret">
+            <button class="copy-btn" id="revealBtn" onclick="toggleReveal()" title="{% trans "Reveal secret" %}">
                 <span class="material-icons-round">visibility</span>
             </button>
         </span>
@@ -106,13 +107,13 @@
 
     {% if app.key %}
     <div class="info-row" style="border-bottom:none;">
-        <span class="info-key">Key</span>
+        <span class="info-key">{% trans "Key" %}</span>
         <span class="info-val"><span class="code-chip">{{ app.key }}</span></span>
     </div>
     {% else %}
     <div class="info-row" style="border-bottom:none;">
-        <span class="info-key">Key</span>
-        <span class="info-val" style="color:var(--text-secondary); font-size:0.82rem;">Not set</span>
+        <span class="info-key">{% trans "Key" %}</span>
+        <span class="info-val" style="color:var(--text-secondary); font-size:0.82rem;">{% trans "Not set" %}</span>
     </div>
     {% endif %}
 </div>

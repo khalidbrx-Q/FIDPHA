@@ -1,9 +1,10 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Delete Role{% endblock %}
+{% block page_title %}{% trans "Delete Role" %}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:roles_list' %}" style="color: var(--text-secondary); text-decoration: none;">Roles</a>
-    › Delete
+    <a href="{% url 'control:roles_list' %}" style="color: var(--text-secondary); text-decoration: none;">{% trans "Roles" %}</a>
+    › {% trans "Delete" %}
 {% endblock %}
 {% block nav_roles %}active{% endblock %}
 
@@ -11,12 +12,12 @@
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">Delete Role</div>
-        <div class="page-header-sub">This action cannot be undone</div>
+        <div class="page-header-title">{% trans "Delete Role" %}</div>
+        <div class="page-header-sub">{% trans "This action cannot be undone" %}</div>
     </div>
     <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">
         <span class="material-icons-round">arrow_back</span>
-        Back
+        {% trans "Back" %}
     </a>
 </div>
 
@@ -25,16 +26,16 @@
         <span class="material-icons-round" style="font-size: 36px; color: #ef4444; flex-shrink: 0; margin-top: 2px;">warning</span>
         <div>
             <div style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-                Delete "{{ role.name }}"?
+                {% blocktrans with name=role.name %}Delete "{{ name }}"?{% endblocktrans %}
             </div>
             {% if user_count %}
             <div style="font-size: 0.87rem; color: #ef4444; margin-bottom: 8px;">
-                <strong>{{ user_count }} user{{ user_count|pluralize }}</strong> currently assigned to this role will lose its permissions.
+                <strong>{% blocktrans count count=user_count %}{{ count }} user{% plural %}{{ count }} users{% endblocktrans %}</strong> {% trans "currently assigned to this role will lose its permissions." %}
             </div>
             {% endif %}
             <div style="font-size: 0.87rem; color: var(--text-secondary);">
-                The role and all its permission assignments will be permanently removed.
-                User accounts themselves will not be deleted.
+                {% trans "The role and all its permission assignments will be permanently removed." %}
+                {% trans "User accounts themselves will not be deleted." %}
             </div>
         </div>
     </div>
@@ -44,9 +45,9 @@
         <div style="display: flex; gap: 10px;">
             <button type="submit" class="btn btn-danger">
                 <span class="material-icons-round">delete</span>
-                Yes, delete role
+                {% trans "Yes, delete role" %}
             </button>
-            <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">Cancel</a>
+            <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
         </div>
     </form>
 </div>

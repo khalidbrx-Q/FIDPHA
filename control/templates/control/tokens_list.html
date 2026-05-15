@@ -1,7 +1,8 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}API Tokens{% endblock %}
-{% block page_breadcrumb %}API Tokens{% endblock %}
+{% block page_title %}{% trans "API Tokens" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "API Tokens" %}{% endblock %}
 {% block nav_tokens %}active{% endblock %}
 
 {% block content %}
@@ -12,11 +13,11 @@
         <div class="modal-icon-wrap" id="modalIconWrap">
             <span class="material-icons-round" id="modalIcon" style="font-size:28px;">warning</span>
         </div>
-        <div class="modal-title" id="modalTitle">Are you sure?</div>
+        <div class="modal-title" id="modalTitle">{% trans "Are you sure?" %}</div>
         <div class="modal-msg"   id="modalMsg"></div>
         <div class="modal-actions">
-            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-            <button class="btn" id="modalConfirmBtn" onclick="modalSubmit()">Confirm</button>
+            <button class="btn btn-secondary" onclick="closeModal()">{% trans "Cancel" %}</button>
+            <button class="btn" id="modalConfirmBtn" onclick="modalSubmit()">{% trans "Confirm" %}</button>
         </div>
     </div>
 </div>
@@ -29,19 +30,19 @@
         <span class="material-icons-round" style="font-size:24px; color:#22c55e; flex-shrink:0; margin-top:2px;">key</span>
         <div style="flex:1; min-width:0;">
             <div style="font-size:0.9rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">
-                Token created — copy it now
+                {% trans "Token created — copy it now" %}
             </div>
             <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:10px;">
-                This is the only time the full token will be shown. Store it securely.
+                {% trans "This is the only time the full token will be shown. Store it securely." %}
             </div>
             <div class="token-value-row">
                 <code id="fullToken">{{ new_token_value }}</code>
-                <button class="copy-btn" onclick="copyToken()" title="Copy token">
+                <button class="copy-btn" onclick="copyToken()" title="{% trans "Copy token" %}">
                     <span class="material-icons-round" id="copyIcon">content_copy</span>
                 </button>
             </div>
         </div>
-        <button class="dismiss-btn" onclick="document.getElementById('revealBanner').remove()" title="Dismiss">
+        <button class="dismiss-btn" onclick="document.getElementById('revealBanner').remove()" title="{% trans "Dismiss" %}">
             <span class="material-icons-round">close</span>
         </button>
     </div>
@@ -52,21 +53,21 @@
 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
     <div class="search-bar" style="flex:1; min-width:200px; max-width:380px;">
         <span class="material-icons-round">search</span>
-        <input type="text" id="tokenSearch" placeholder="Search by name…"
+        <input type="text" id="tokenSearch" placeholder="{% trans "Search by name…" %}"
                oninput="applyFilters()" autocomplete="off">
     </div>
     <div style="display:flex; gap:6px; align-items:center;">
-        <span class="filter-group-label">Status:</span>
+        <span class="filter-group-label">{% trans "Status:" %}</span>
         <div class="filter-pills">
-            <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
-            <button class="filter-pill" onclick="setFilter('active',this)">Active</button>
-            <button class="filter-pill" onclick="setFilter('revoked',this)">Revoked</button>
+            <button class="filter-pill active" onclick="setFilter('all',this)">{% trans "All" %}</button>
+            <button class="filter-pill" onclick="setFilter('active',this)">{% trans "Active" %}</button>
+            <button class="filter-pill" onclick="setFilter('revoked',this)">{% trans "Revoked" %}</button>
         </div>
     </div>
     <span id="tokenCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ tokens|length }} token{{ tokens|length|pluralize }}</span>
     {% if perms.api.add_apitoken %}
     <a href="{% url 'control:tokens_create' %}" class="btn btn-primary" style="margin-left:auto; flex-shrink:0;">
-        <span class="material-icons-round">add</span> New Token
+        <span class="material-icons-round">add</span> {% trans "New Token" %}
     </a>
     {% endif %}
 </div>
@@ -77,12 +78,12 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Token</th>
-                    <th>Status</th>
-                    <th>Uses</th>
-                    <th>Last Used</th>
-                    <th>Created</th>
+                    <th>{% trans "Name" %}</th>
+                    <th>{% trans "Token" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Uses" %}</th>
+                    <th>{% trans "Last Used" %}</th>
+                    <th>{% trans "Created" %}</th>
                     <th style="width:112px;"></th>
                 </tr>
             </thead>
@@ -98,9 +99,9 @@
                     </td>
                     <td>
                         {% if t.is_active %}
-                            <span class="badge badge-active">Active</span>
+                            <span class="badge badge-active">{% trans "Active" %}</span>
                         {% else %}
-                            <span class="badge badge-inactive">Revoked</span>
+                            <span class="badge badge-inactive">{% trans "Revoked" %}</span>
                         {% endif %}
                     </td>
                     <td style="font-size:0.82rem;">
@@ -114,7 +115,7 @@
                         {% if t.last_used_at %}
                             {{ t.last_used_at|date:"d M Y, H:i" }}
                         {% else %}
-                            <span class="dim-dash">Never</span>
+                            <span class="dim-dash">{% trans "Never" %}</span>
                         {% endif %}
                     </td>
                     <td style="font-size:0.82rem;">
@@ -129,19 +130,19 @@
                         <div class="table-actions">
                             {% if perms.api.change_apitoken %}
                                 {% if t.is_active %}
-                                <button type="button" class="action-btn action-warn" title="Revoke"
+                                <button type="button" class="action-btn action-warn" title="{% trans "Revoke" %}"
                                         onclick="showConfirm({action:'{% url 'control:tokens_revoke' t.pk %}',title:'Revoke token?',msg:'<strong>{{ t.name|escapejs }}</strong> — the pharmacy using it will lose API access immediately.',btn:'Revoke',icon:'block',color:'#f59e0b'})">
                                     <span class="material-icons-round">block</span>
                                 </button>
                                 {% else %}
-                                <button type="button" class="action-btn action-reactivate" title="Reactivate"
+                                <button type="button" class="action-btn action-reactivate" title="{% trans "Reactivate" %}"
                                         onclick="showConfirm({action:'{% url 'control:tokens_reactivate' t.pk %}',title:'Reactivate token?',msg:'<strong>{{ t.name|escapejs }}</strong> will regain API access.',btn:'Reactivate',icon:'check_circle',color:'#22c55e'})">
                                     <span class="material-icons-round">check_circle</span>
                                 </button>
                                 {% endif %}
                             {% endif %}
                             {% if perms.api.delete_apitoken %}
-                            <a href="{% url 'control:tokens_delete' t.pk %}" class="action-btn action-delete" title="Delete">
+                            <a href="{% url 'control:tokens_delete' t.pk %}" class="action-btn action-delete" title="{% trans "Delete" %}">
                                 <span class="material-icons-round">delete</span>
                             </a>
                             {% endif %}
@@ -153,16 +154,16 @@
         </table>
     </div>
     <div id="noTokenResults" style="display:none; text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem;">
-        No tokens match your filters.
+        {% trans "No tokens match your filters." %}
     </div>
     {% else %}
     <div style="text-align:center; padding:48px 24px;">
         <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">key_off</span>
-        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No API tokens yet</div>
-        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Create a token to allow a pharmacy client to sync sales.</div>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">{% trans "No API tokens yet" %}</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">{% trans "Create a token to allow a pharmacy client to sync sales." %}</div>
         {% if perms.api.add_apitoken %}
         <a href="{% url 'control:tokens_create' %}" class="btn btn-primary" style="display:inline-flex;">
-            <span class="material-icons-round">add</span> New Token
+            <span class="material-icons-round">add</span> {% trans "New Token" %}
         </a>
         {% endif %}
     </div>

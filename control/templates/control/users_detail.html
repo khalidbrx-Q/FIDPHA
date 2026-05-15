@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
 {% block page_title %}{{ u.username }}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:users_list' %}" style="color:var(--text-secondary);text-decoration:none;">Users</a>
+    <a href="{% url 'control:users_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Users" %}</a>
     › {{ u.username }}
 {% endblock %}
 {% block nav_users %}active{% endblock %}
@@ -21,57 +22,57 @@
         <div>
             <div class="page-header-title">
                 {{ u.get_full_name|default:u.username }}
-                <span class="type-badge type-portal"><span class="material-icons-round" style="font-size:13px;">store</span> Portal</span>
-                {% if u.is_active %}<span class="badge badge-active">Active</span>
-                {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+                <span class="type-badge type-portal"><span class="material-icons-round" style="font-size:13px;">store</span> {% trans "Portal" %}</span>
+                {% if u.is_active %}<span class="badge badge-active">{% trans "Active" %}</span>
+                {% else %}<span class="badge badge-inactive">{% trans "Inactive" %}</span>{% endif %}
             </div>
-            <div class="page-header-sub">{{ u.email|default:"—" }} · Joined {{ u.date_joined|date:"d M Y" }}</div>
+            <div class="page-header-sub">{{ u.email|default:"—" }} · {% trans "Joined" %} {{ u.date_joined|date:"d M Y" }}</div>
         </div>
     </div>
     <div style="display:flex; gap:8px;">
-        <a href="{% url 'control:users_list' %}" class="btn btn-secondary"><span class="material-icons-round">arrow_back</span> Back</a>
-        <a href="{% url 'control:users_edit' u.pk %}" class="btn btn-primary"><span class="material-icons-round">edit</span> Edit</a>
-        <a href="{% url 'control:users_delete' u.pk %}" class="btn btn-danger"><span class="material-icons-round">delete</span> Delete</a>
+        <a href="{% url 'control:users_list' %}" class="btn btn-secondary"><span class="material-icons-round">arrow_back</span> {% trans "Back" %}</a>
+        <a href="{% url 'control:users_edit' u.pk %}" class="btn btn-primary"><span class="material-icons-round">edit</span> {% trans "Edit" %}</a>
+        <a href="{% url 'control:users_delete' u.pk %}" class="btn btn-danger"><span class="material-icons-round">delete</span> {% trans "Delete" %}</a>
     </div>
 </div>
 
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
     <div class="card">
-        <div class="section-label">Account Information</div>
-        <div class="info-row"><span class="info-key">Username</span><span class="info-val">{{ u.username }}</span></div>
-        <div class="info-row"><span class="info-key">Full name</span><span class="info-val">{{ u.get_full_name|default:"—" }}</span></div>
-        <div class="info-row"><span class="info-key">Email</span><span class="info-val">{{ u.email|default:"—" }}</span></div>
-        <div class="info-row"><span class="info-key">Date joined</span><span class="info-val">{{ u.date_joined|date:"d M Y, H:i" }}</span></div>
-        <div class="info-row"><span class="info-key">Last login</span><span class="info-val">{{ u.last_login|date:"d M Y, H:i"|default:"Never" }}</span></div>
+        <div class="section-label">{% trans "Account Information" %}</div>
+        <div class="info-row"><span class="info-key">{% trans "Username" %}</span><span class="info-val">{{ u.username }}</span></div>
+        <div class="info-row"><span class="info-key">{% trans "Full name" %}</span><span class="info-val">{{ u.get_full_name|default:"—" }}</span></div>
+        <div class="info-row"><span class="info-key">{% trans "Email" %}</span><span class="info-val">{{ u.email|default:"—" }}</span></div>
+        <div class="info-row"><span class="info-key">{% trans "Date joined" %}</span><span class="info-val">{{ u.date_joined|date:"d M Y, H:i" }}</span></div>
+        <div class="info-row"><span class="info-key">{% trans "Last login" %}</span><span class="info-val">{{ u.last_login|date:"d M Y, H:i"|default:_("Never") }}</span></div>
         <div class="info-row" style="border-bottom:none;">
-            <span class="info-key">Status</span>
+            <span class="info-key">{% trans "Status" %}</span>
             <span class="info-val">
-                {% if u.is_active %}<span class="badge badge-active">Active</span>
-                {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+                {% if u.is_active %}<span class="badge badge-active">{% trans "Active" %}</span>
+                {% else %}<span class="badge badge-inactive">{% trans "Inactive" %}</span>{% endif %}
             </span>
         </div>
     </div>
     <div class="card">
-        <div class="section-label">Linked Pharmacy</div>
+        <div class="section-label">{% trans "Linked Pharmacy" %}</div>
         {% if profile and profile.account %}
         {% with acc=profile.account %}
-        <div class="info-row"><span class="info-key">Name</span>
+        <div class="info-row"><span class="info-key">{% trans "Name" %}</span>
             <span class="info-val"><a href="{% url 'control:accounts_detail' acc.pk %}" class="info-account-link">{{ acc.name }}</a></span>
         </div>
-        <div class="info-row"><span class="info-key">Status</span>
+        <div class="info-row"><span class="info-key">{% trans "Status" %}</span>
             <span class="info-val">
-                {% if acc.status == "active" %}<span class="badge badge-active">Active</span>
-                {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+                {% if acc.status == "active" %}<span class="badge badge-active">{% trans "Active" %}</span>
+                {% else %}<span class="badge badge-inactive">{% trans "Inactive" %}</span>{% endif %}
             </span>
         </div>
-        {% if acc.phone %}<div class="info-row"><span class="info-key">Phone</span><span class="info-val">{{ acc.phone }}</span></div>{% endif %}
-        {% if acc.address %}<div class="info-row" style="border-bottom:none;"><span class="info-key">Address</span><span class="info-val" style="text-align:right;">{{ acc.address }}</span></div>{% endif %}
-        {% if not acc.phone and not acc.address %}<div class="info-row" style="border-bottom:none;"><span class="info-key">Portal access</span><span class="info-val">{% if acc.pharmacy_portal %}<span class="badge badge-active">Enabled</span>{% else %}<span class="badge badge-inactive">Disabled</span>{% endif %}</span></div>{% endif %}
+        {% if acc.phone %}<div class="info-row"><span class="info-key">{% trans "Phone" %}</span><span class="info-val">{{ acc.phone }}</span></div>{% endif %}
+        {% if acc.address %}<div class="info-row" style="border-bottom:none;"><span class="info-key">{% trans "Address" %}</span><span class="info-val" style="text-align:right;">{{ acc.address }}</span></div>{% endif %}
+        {% if not acc.phone and not acc.address %}<div class="info-row" style="border-bottom:none;"><span class="info-key">{% trans "Portal access" %}</span><span class="info-val">{% if acc.pharmacy_portal %}<span class="badge badge-active">{% trans "Enabled" %}</span>{% else %}<span class="badge badge-inactive">{% trans "Disabled" %}</span>{% endif %}</span></div>{% endif %}
         {% endwith %}
         {% else %}
         <div style="display:flex; flex-direction:column; align-items:center; padding:24px; text-align:center;">
             <span class="material-icons-round" style="font-size:36px; color:var(--card-border); margin-bottom:10px;">store_off</span>
-            <div style="font-size:0.85rem; color:var(--text-secondary);">No pharmacy account linked to this user.</div>
+            <div style="font-size:0.85rem; color:var(--text-secondary);">{% trans "No pharmacy account linked to this user." %}</div>
         </div>
         {% endif %}
     </div>
@@ -79,26 +80,26 @@
 
 {% if profile and profile.created_at %}
 <div class="card" style="margin-top:16px;">
-    <div class="section-label">Traceability</div>
+    <div class="section-label">{% trans "Traceability" %}</div>
     <div class="info-row">
-        <span class="info-key">Created</span>
+        <span class="info-key">{% trans "Created" %}</span>
         <span class="info-val">
             {{ profile.created_at|date:"d M Y, H:i" }}
             {% if profile.created_by %}
-                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ profile.created_by.get_full_name|default:profile.created_by.username }}</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> {% blocktrans with name=profile.created_by.get_full_name|default:profile.created_by.username %}by {{ name }}{% endblocktrans %}</span>
             {% else %}
-                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — {% trans "no user recorded" %}</span>
             {% endif %}
         </span>
     </div>
     <div class="info-row" style="border-bottom:none;">
-        <span class="info-key">Last Modified</span>
+        <span class="info-key">{% trans "Last Modified" %}</span>
         <span class="info-val">
             {{ profile.modified_at|date:"d M Y, H:i" }}
             {% if profile.modified_by %}
-                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ profile.modified_by.get_full_name|default:profile.modified_by.username }}</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> {% blocktrans with name=profile.modified_by.get_full_name|default:profile.modified_by.username %}by {{ name }}{% endblocktrans %}</span>
             {% else %}
-                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — {% trans "no user recorded" %}</span>
             {% endif %}
         </span>
     </div>
@@ -118,71 +119,71 @@
             <div class="page-header-title">
                 {{ u.get_full_name|default:u.username }}
                 {% if u.is_superuser %}
-                    <span class="type-badge type-superuser"><span class="material-icons-round" style="font-size:13px;">shield</span> Superuser</span>
+                    <span class="type-badge type-superuser"><span class="material-icons-round" style="font-size:13px;">shield</span> {% trans "Superuser" %}</span>
                 {% elif u.is_staff %}
-                    <span class="type-badge type-staff"><span class="material-icons-round" style="font-size:13px;">badge</span> Staff</span>
+                    <span class="type-badge type-staff"><span class="material-icons-round" style="font-size:13px;">badge</span> {% trans "Staff" %}</span>
                 {% endif %}
                 {% if u.is_active %}
-                    <span class="badge badge-active">Active</span>
+                    <span class="badge badge-active">{% trans "Active" %}</span>
                 {% else %}
-                    <span class="badge badge-inactive">Inactive</span>
+                    <span class="badge badge-inactive">{% trans "Inactive" %}</span>
                 {% endif %}
             </div>
-            <div class="page-header-sub">{{ u.email }} · Joined {{ u.date_joined|date:"d M Y" }}</div>
+            <div class="page-header-sub">{{ u.email }} · {% trans "Joined" %} {{ u.date_joined|date:"d M Y" }}</div>
         </div>
     </div>
     <div style="display:flex; gap:8px;">
-        <a href="{% url 'control:users_list' %}" class="btn btn-secondary"><span class="material-icons-round">arrow_back</span> Back</a>
-        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="btn btn-secondary"><span class="material-icons-round">content_copy</span> Clone</a>
-        <a href="{% url 'control:users_edit' u.pk %}" class="btn btn-primary"><span class="material-icons-round">edit</span> Edit</a>
-        <a href="{% url 'control:users_delete' u.pk %}" class="btn btn-danger"><span class="material-icons-round">delete</span> Delete</a>
+        <a href="{% url 'control:users_list' %}" class="btn btn-secondary"><span class="material-icons-round">arrow_back</span> {% trans "Back" %}</a>
+        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="btn btn-secondary"><span class="material-icons-round">content_copy</span> {% trans "Clone" %}</a>
+        <a href="{% url 'control:users_edit' u.pk %}" class="btn btn-primary"><span class="material-icons-round">edit</span> {% trans "Edit" %}</a>
+        <a href="{% url 'control:users_delete' u.pk %}" class="btn btn-danger"><span class="material-icons-round">delete</span> {% trans "Delete" %}</a>
     </div>
 </div>
 
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
     <div class="card">
-        <div class="section-label">Account Information</div>
-        <div class="info-row"><span class="info-key">Username</span><span class="info-val">{{ u.username }}</span></div>
-        <div class="info-row"><span class="info-key">Full name</span><span class="info-val">{{ u.get_full_name|default:"—" }}</span></div>
-        <div class="info-row"><span class="info-key">Email</span><span class="info-val">{{ u.email|default:"—" }}</span></div>
-        <div class="info-row"><span class="info-key">Date joined</span><span class="info-val">{{ u.date_joined|date:"d M Y, H:i" }}</span></div>
-        <div class="info-row"><span class="info-key">Last login</span><span class="info-val">{{ u.last_login|date:"d M Y, H:i"|default:"Never" }}</span></div>
+        <div class="section-label">{% trans "Account Information" %}</div>
+        <div class="info-row"><span class="info-key">{% trans "Username" %}</span><span class="info-val">{{ u.username }}</span></div>
+        <div class="info-row"><span class="info-key">{% trans "Full name" %}</span><span class="info-val">{{ u.get_full_name|default:"—" }}</span></div>
+        <div class="info-row"><span class="info-key">{% trans "Email" %}</span><span class="info-val">{{ u.email|default:"—" }}</span></div>
+        <div class="info-row"><span class="info-key">{% trans "Date joined" %}</span><span class="info-val">{{ u.date_joined|date:"d M Y, H:i" }}</span></div>
+        <div class="info-row"><span class="info-key">{% trans "Last login" %}</span><span class="info-val">{{ u.last_login|date:"d M Y, H:i"|default:_("Never") }}</span></div>
         <div class="info-row" style="border-bottom:none;">
-            <span class="info-key">Status</span>
+            <span class="info-key">{% trans "Status" %}</span>
             <span class="info-val">
-                {% if u.is_active %}<span class="badge badge-active">Active</span>
-                {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+                {% if u.is_active %}<span class="badge badge-active">{% trans "Active" %}</span>
+                {% else %}<span class="badge badge-inactive">{% trans "Inactive" %}</span>{% endif %}
             </span>
         </div>
     </div>
     <div class="card">
         {% if utype == "superuser" %}
-            <div class="section-label">Superuser</div>
+            <div class="section-label">{% trans "Superuser" %}</div>
             <div style="display:flex; flex-direction:column; align-items:center; padding:24px; text-align:center;">
                 <span class="material-icons-round" style="font-size:40px; color:#a855f7; margin-bottom:10px;">shield</span>
-                <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;">Full system access</div>
-                <div style="font-size:0.82rem; color:var(--text-secondary);">Superusers have all permissions automatically — no role needed.</div>
+                <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary); margin-bottom:4px;">{% trans "Full system access" %}</div>
+                <div style="font-size:0.82rem; color:var(--text-secondary);">{% trans "Superusers have all permissions automatically — no role needed." %}</div>
             </div>
         {% elif utype == "staff" %}
-            <div class="section-label">Role & Permissions</div>
+            <div class="section-label">{% trans "Role & Permissions" %}</div>
             {% with role=u.groups.first %}
             {% if role %}
-                <div class="info-row"><span class="info-key">Role</span><span class="info-val" style="font-weight:600;">{{ role.name }}</span></div>
+                <div class="info-row"><span class="info-key">{% trans "Role" %}</span><span class="info-val" style="font-weight:600;">{{ role.name }}</span></div>
                 <div style="margin-top:12px;">
-                    <div style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-secondary); margin-bottom:8px;">Permissions from this role</div>
+                    <div style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-secondary); margin-bottom:8px;">{% trans "Permissions from this role" %}</div>
                     <div class="perm-tags">
                         {% for perm in role.permissions.all %}
                             <span class="perm-tag">{{ perm.name }}</span>
                         {% empty %}
-                            <span style="font-size:0.82rem; color:var(--text-secondary);">No permissions in this role.</span>
+                            <span style="font-size:0.82rem; color:var(--text-secondary);">{% trans "No permissions in this role." %}</span>
                         {% endfor %}
                     </div>
                 </div>
             {% else %}
                 <div style="text-align:center; padding:24px; color:var(--text-secondary);">
                     <span class="material-icons-round" style="font-size:36px; display:block; margin-bottom:8px;">badge</span>
-                    <div style="font-size:0.85rem;">No role assigned — this user has no permissions.</div>
-                    <a href="{% url 'control:users_edit' u.pk %}" style="font-size:0.82rem; color:var(--accent);">Assign a role</a>
+                    <div style="font-size:0.85rem;">{% trans "No role assigned — this user has no permissions." %}</div>
+                    <a href="{% url 'control:users_edit' u.pk %}" style="font-size:0.82rem; color:var(--accent);">{% trans "Assign a role" %}</a>
                 </div>
             {% endif %}
             {% endwith %}
@@ -192,7 +193,7 @@
 
 {% if social_accounts %}
 <div class="card" style="margin-top:16px;">
-    <div class="section-label">Linked Social Accounts</div>
+    <div class="section-label">{% trans "Linked Social Accounts" %}</div>
     {% for sa in social_accounts %}
     <div class="sa-row">
         <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
@@ -212,23 +213,23 @@
         <div style="display:flex; align-items:center; gap:16px; flex-shrink:0;">
             {% for token in sa.socialtoken_set.all %}
             <div style="font-size:0.78rem; color:var(--text-secondary); text-align:right;">
-                <div>Token via <strong style="color:var(--text-primary);">{{ token.app.name|default:token.app.provider|title }}</strong></div>
+                <div>{% blocktrans with app_name=token.app.name|default:token.app.provider|title %}Token via <strong style="color:var(--text-primary);">{{ app_name }}</strong>{% endblocktrans %}</div>
                 {% if token.expires_at %}
                     {% now "U" as now_ts %}
-                    <div>Expires {{ token.expires_at|date:"d M Y" }}
-                        {% if token.expires_at|date:"U" > now_ts %}<span class="sa-badge sa-valid">Valid</span>
-                        {% else %}<span class="sa-badge sa-expired">Expired</span>{% endif %}
+                    <div>{% trans "Expires" %} {{ token.expires_at|date:"d M Y" }}
+                        {% if token.expires_at|date:"U" > now_ts %}<span class="sa-badge sa-valid">{% trans "Valid" %}</span>
+                        {% else %}<span class="sa-badge sa-expired">{% trans "Expired" %}</span>{% endif %}
                     </div>
                 {% else %}
-                    <div><span class="sa-badge sa-valid">No expiry</span></div>
+                    <div><span class="sa-badge sa-valid">{% trans "No expiry" %}</span></div>
                 {% endif %}
             </div>
             {% endfor %}
-            <div style="font-size:0.78rem; color:var(--text-secondary);">Linked {{ sa.date_joined|date:"d M Y" }}</div>
-            <form method="post" action="{% url 'control:social_account_unlink' sa.pk %}" onsubmit="return confirm('Unlink {{ sa.provider|title }} from {{ u.username }}?');">
+            <div style="font-size:0.78rem; color:var(--text-secondary);">{% trans "Linked" %} {{ sa.date_joined|date:"d M Y" }}</div>
+            <form method="post" action="{% url 'control:social_account_unlink' sa.pk %}" onsubmit="return confirm('{% blocktrans with provider=sa.provider|title username=u.username %}Unlink {{ provider }} from {{ username }}?{% endblocktrans %}');">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-danger" style="padding:5px 10px; font-size:0.78rem;">
-                    <span class="material-icons-round" style="font-size:14px;">link_off</span> Unlink
+                    <span class="material-icons-round" style="font-size:14px;">link_off</span> {% trans "Unlink" %}
                 </button>
             </form>
         </div>
@@ -240,24 +241,24 @@
 
 <!-- Traceability (staff / superuser — sourced from audit log) -->
 <div class="card" style="margin-top:16px;">
-    <div class="section-label">Traceability</div>
+    <div class="section-label">{% trans "Traceability" %}</div>
     <div class="info-row">
-        <span class="info-key">Created</span>
+        <span class="info-key">{% trans "Created" %}</span>
         <span class="info-val">
             {{ u.date_joined|date:"d M Y, H:i" }}
             {% if creation_log %}
-                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ creation_log.user.get_full_name|default:creation_log.user.username }}</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> {% blocktrans with name=creation_log.user.get_full_name|default:creation_log.user.username %}by {{ name }}{% endblocktrans %}</span>
             {% else %}
-                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — {% trans "no user recorded" %}</span>
             {% endif %}
         </span>
     </div>
     <div class="info-row" style="border-bottom:none;">
-        <span class="info-key">Last Modified</span>
+        <span class="info-key">{% trans "Last Modified" %}</span>
         <span class="info-val">
             {% if last_change_log %}
                 {{ last_change_log.action_time|date:"d M Y, H:i" }}
-                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ last_change_log.user.get_full_name|default:last_change_log.user.username }}</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> {% blocktrans with name=last_change_log.user.get_full_name|default:last_change_log.user.username %}by {{ name }}{% endblocktrans %}</span>
             {% else %}
                 <span style="color:var(--text-secondary); opacity:0.5;">—</span>
             {% endif %}

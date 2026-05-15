@@ -1,15 +1,16 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Users{% endblock %}
-{% block page_breadcrumb %}Users{% endblock %}
+{% block page_title %}{% trans "Users" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Users" %}{% endblock %}
 {% block nav_users %}active{% endblock %}
 
 {% block content %}
 
 <!-- Snap-section dot indicators -->
-<nav class="snap-dots" id="snapDots" aria-label="Page sections">
-    <button class="snap-dot active" onclick="scrollToSection(0)" title="Admin Users"></button>
-    <button class="snap-dot" onclick="scrollToSection(1)" title="Portal Users"></button>
+<nav class="snap-dots" id="snapDots" aria-label="{% trans "Page sections" %}">
+    <button class="snap-dot active" onclick="scrollToSection(0)" title="{% trans "Admin Users" %}"></button>
+    <button class="snap-dot" onclick="scrollToSection(1)" title="{% trans "Portal Users" %}"></button>
 </nav>
 
 <!-- ================================================================ -->
@@ -19,12 +20,12 @@
 <div style="display:flex; align-items:center; justify-content:space-between;">
     <div class="section-header" style="margin-bottom:0;">
         <span class="material-icons-round" style="color:#a855f7;">shield</span>
-        Admin Users
+        {% trans "Admin Users" %}
         <span class="section-count" id="admin-count"></span>
     </div>
     {% if perms.auth.add_user %}
     <a href="{% url 'control:users_create' %}" class="btn btn-primary">
-        <span class="material-icons-round">person_add</span> New User
+        <span class="material-icons-round">person_add</span> {% trans "New User" %}
     </a>
     {% endif %}
 </div>
@@ -33,34 +34,34 @@
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <div class="search-bar" style="flex:1; min-width:200px;">
             <span class="material-icons-round">search</span>
-            <input type="text" id="admin-search" placeholder="Search by username, name or email…"
+            <input type="text" id="admin-search" placeholder="{% trans "Search by username, name or email…" %}"
                    oninput="filterAdmin()" autocomplete="off">
         </div>
     </div>
     <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
         <!-- Type filter -->
         <div style="display:flex; gap:6px; align-items:center;">
-            <span class="filter-group-label">Type:</span>
+            <span class="filter-group-label">{% trans "Type:" %}</span>
             <div class="filter-pills" id="admin-type-pills">
-                <button class="filter-pill active" data-filter-group="admin-type" data-value="all" onclick="setAdminType('all',this)">All</button>
+                <button class="filter-pill active" data-filter-group="admin-type" data-value="all" onclick="setAdminType('all',this)">{% trans "All" %}</button>
                 <button class="filter-pill" data-filter-group="admin-type" data-value="superuser" onclick="setAdminType('superuser',this)">
-                    <span class="material-icons-round" style="font-size:13px;">shield</span> Superuser
+                    <span class="material-icons-round" style="font-size:13px;">shield</span> {% trans "Superuser" %}
                 </button>
                 <button class="filter-pill" data-filter-group="admin-type" data-value="staff" onclick="setAdminType('staff',this)">
-                    <span class="material-icons-round" style="font-size:13px;">badge</span> Staff
+                    <span class="material-icons-round" style="font-size:13px;">badge</span> {% trans "Staff" %}
                 </button>
             </div>
-            <button class="reset-btn" id="reset-admin-type" onclick="resetAdminType()" title="Reset type filter">✕</button>
+            <button class="reset-btn" id="reset-admin-type" onclick="resetAdminType()" title="{% trans "Reset type filter" %}">✕</button>
         </div>
         <!-- Status filter -->
         <div style="display:flex; gap:6px; align-items:center;">
-            <span class="filter-group-label">Status:</span>
+            <span class="filter-group-label">{% trans "Status:" %}</span>
             <div class="filter-pills">
-                <button class="filter-pill active" data-filter-group="admin-status" data-value="all" onclick="setAdminStatus('all',this)">All</button>
-                <button class="filter-pill" data-filter-group="admin-status" data-value="active" onclick="setAdminStatus('active',this)">Active</button>
-                <button class="filter-pill" data-filter-group="admin-status" data-value="inactive" onclick="setAdminStatus('inactive',this)">Inactive</button>
+                <button class="filter-pill active" data-filter-group="admin-status" data-value="all" onclick="setAdminStatus('all',this)">{% trans "All" %}</button>
+                <button class="filter-pill" data-filter-group="admin-status" data-value="active" onclick="setAdminStatus('active',this)">{% trans "Active" %}</button>
+                <button class="filter-pill" data-filter-group="admin-status" data-value="inactive" onclick="setAdminStatus('inactive',this)">{% trans "Inactive" %}</button>
             </div>
-            <button class="reset-btn" id="reset-admin-status" onclick="resetAdminStatus()" title="Reset status filter">✕</button>
+            <button class="reset-btn" id="reset-admin-status" onclick="resetAdminStatus()" title="{% trans "Reset status filter" %}">✕</button>
         </div>
     </div>
 </div>
@@ -71,11 +72,11 @@
     <table class="data-table" id="admin-table">
         <thead>
             <tr>
-                <th>User</th>
-                <th>Type</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Joined</th>
+                <th>{% trans "User" %}</th>
+                <th>{% trans "Type" %}</th>
+                <th>{% trans "Role" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th>{% trans "Joined" %}</th>
                 <th style="width:100px;"></th>
             </tr>
         </thead>
@@ -98,32 +99,32 @@
                 </td>
                 <td>
                     {% if u.is_superuser %}
-                        <span class="type-badge type-superuser"><span class="material-icons-round" style="font-size:13px;">shield</span> Superuser</span>
+                        <span class="type-badge type-superuser"><span class="material-icons-round" style="font-size:13px;">shield</span> {% trans "Superuser" %}</span>
                     {% else %}
-                        <span class="type-badge type-staff"><span class="material-icons-round" style="font-size:13px;">badge</span> Staff</span>
+                        <span class="type-badge type-staff"><span class="material-icons-round" style="font-size:13px;">badge</span> {% trans "Staff" %}</span>
                     {% endif %}
                 </td>
                 <td>
-                    {% if u.is_superuser %}<span class="dim">All permissions</span>
+                    {% if u.is_superuser %}<span class="dim">{% trans "All permissions" %}</span>
                     {% else %}
                         {% with role=u.groups.first %}
                             {% if role %}<span style="font-size:0.82rem;color:var(--text-primary);">{{ role.name }}</span>
-                            {% else %}<span class="dim">No role</span>{% endif %}
+                            {% else %}<span class="dim">{% trans "No role" %}</span>{% endif %}
                         {% endwith %}
                     {% endif %}
                 </td>
-                <td>{% if u.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
+                <td>{% if u.is_active %}<span class="badge badge-active">{% trans "Active" %}</span>{% else %}<span class="badge badge-inactive">{% trans "Inactive" %}</span>{% endif %}</td>
                 <td class="dim">{{ u.date_joined|date:"d M Y" }}</td>
                 <td onclick="event.stopPropagation();">
                     <div class="table-actions">
                         {% if perms.auth.add_user %}
-                        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="action-btn" title="Clone user"><span class="material-icons-round">content_copy</span></a>
+                        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="action-btn" title="{% trans "Clone user" %}"><span class="material-icons-round">content_copy</span></a>
                         {% endif %}
                         {% if perms.auth.change_user %}
-                        <a href="{% url 'control:users_edit' u.pk %}" class="action-btn" title="Edit"><span class="material-icons-round">edit</span></a>
+                        <a href="{% url 'control:users_edit' u.pk %}" class="action-btn" title="{% trans "Edit" %}"><span class="material-icons-round">edit</span></a>
                         {% endif %}
                         {% if perms.auth.delete_user %}
-                        <a href="{% url 'control:users_delete' u.pk %}" class="action-btn action-delete" title="Delete"><span class="material-icons-round">delete</span></a>
+                        <a href="{% url 'control:users_delete' u.pk %}" class="action-btn action-delete" title="{% trans "Delete" %}"><span class="material-icons-round">delete</span></a>
                         {% endif %}
                     </div>
                 </td>
@@ -132,12 +133,12 @@
         </tbody>
     </table>
     </div>
-    <div id="admin-empty" style="display:none;text-align:center;padding:32px;color:var(--text-secondary);font-size:0.87rem;">No admin users match your filter.</div>
+    <div id="admin-empty" style="display:none;text-align:center;padding:32px;color:var(--text-secondary);font-size:0.87rem;">{% trans "No admin users match your filter." %}</div>
     {% else %}
     <div style="text-align:center;padding:40px 24px;">
         <span class="material-icons-round" style="font-size:36px;color:var(--text-secondary);display:block;margin-bottom:10px;">manage_accounts</span>
-        <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">No admin users yet</div>
-        {% if perms.auth.add_user %}<a href="{% url 'control:users_create' %}" class="btn btn-primary" style="display:inline-flex;margin-top:12px;"><span class="material-icons-round">person_add</span> New User</a>{% endif %}
+        <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">{% trans "No admin users yet" %}</div>
+        {% if perms.auth.add_user %}<a href="{% url 'control:users_create' %}" class="btn btn-primary" style="display:inline-flex;margin-top:12px;"><span class="material-icons-round">person_add</span> {% trans "New User" %}</a>{% endif %}
     </div>
     {% endif %}
 </div>
@@ -152,12 +153,12 @@
 <div style="display:flex; align-items:center; justify-content:space-between;">
     <div class="section-header" style="margin-bottom:0;">
         <span class="material-icons-round" style="color:#22c55e;">store</span>
-        Portal Users
+        {% trans "Portal Users" %}
         <span class="section-count" id="portal-count"></span>
     </div>
     {% if perms.auth.add_user %}
     <a href="{% url 'control:users_create' %}" class="btn btn-primary">
-        <span class="material-icons-round">person_add</span> New User
+        <span class="material-icons-round">person_add</span> {% trans "New User" %}
     </a>
     {% endif %}
 </div>
@@ -166,30 +167,30 @@
     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <div class="search-bar" style="flex:1; min-width:200px;">
             <span class="material-icons-round">search</span>
-            <input type="text" id="portal-search" placeholder="Search by username, name, email or account…"
+            <input type="text" id="portal-search" placeholder="{% trans "Search by username, name, email or account…" %}"
                    oninput="filterPortal()" autocomplete="off">
         </div>
     </div>
     <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
         <!-- City text-search filter -->
         <div style="display:flex; gap:6px; align-items:center;">
-            <span class="filter-group-label">City:</span>
+            <span class="filter-group-label">{% trans "City:" %}</span>
             <div class="search-bar" style="min-width:160px;">
                 <span class="material-icons-round">search</span>
-                <input type="text" id="portal-city-search" placeholder="Filter by city…"
+                <input type="text" id="portal-city-search" placeholder="{% trans "Filter by city…" %}"
                        oninput="filterPortal()" autocomplete="off" style="font-size:0.82rem;">
             </div>
-            <button class="reset-btn" id="reset-portal-city" onclick="resetPortalCity()" title="Clear city filter">✕</button>
+            <button class="reset-btn" id="reset-portal-city" onclick="resetPortalCity()" title="{% trans "Clear city filter" %}">✕</button>
         </div>
         <!-- Status filter -->
         <div style="display:flex; gap:6px; align-items:center;">
-            <span class="filter-group-label">Status:</span>
+            <span class="filter-group-label">{% trans "Status:" %}</span>
             <div class="filter-pills">
-                <button class="filter-pill active" data-filter-group="portal-status" data-value="all" onclick="setPortalStatus('all',this)">All</button>
-                <button class="filter-pill" data-filter-group="portal-status" data-value="active" onclick="setPortalStatus('active',this)">Active</button>
-                <button class="filter-pill" data-filter-group="portal-status" data-value="inactive" onclick="setPortalStatus('inactive',this)">Inactive</button>
+                <button class="filter-pill active" data-filter-group="portal-status" data-value="all" onclick="setPortalStatus('all',this)">{% trans "All" %}</button>
+                <button class="filter-pill" data-filter-group="portal-status" data-value="active" onclick="setPortalStatus('active',this)">{% trans "Active" %}</button>
+                <button class="filter-pill" data-filter-group="portal-status" data-value="inactive" onclick="setPortalStatus('inactive',this)">{% trans "Inactive" %}</button>
             </div>
-            <button class="reset-btn" id="reset-portal-status" onclick="resetPortalStatus()" title="Reset status filter">✕</button>
+            <button class="reset-btn" id="reset-portal-status" onclick="resetPortalStatus()" title="{% trans "Reset status filter" %}">✕</button>
         </div>
     </div>
 </div>
@@ -200,12 +201,12 @@
     <table class="data-table" id="portal-table">
         <thead>
             <tr>
-                <th>User</th>
-                <th>Account</th>
-                <th>City</th>
-                <th>Email</th>
-                <th>Status</th>
-                <th>Joined</th>
+                <th>{% trans "User" %}</th>
+                <th>{% trans "Account" %}</th>
+                <th>{% trans "City" %}</th>
+                <th>{% trans "Email" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th>{% trans "Joined" %}</th>
                 <th style="width:100px;"></th>
             </tr>
         </thead>
@@ -232,28 +233,28 @@
                            class="account-link" onclick="event.stopPropagation();">
                             {{ u.profile.account.name }}
                         </a>
-                    {% else %}<span class="dim">No account</span>{% endif %}
+                    {% else %}<span class="dim">{% trans "No account" %}</span>{% endif %}
                 </td>
                 <td class="dim">{% if u.profile.account %}{{ u.profile.account.city }}{% else %}—{% endif %}</td>
                 <td>
                     {% if u.profile.email_verified %}
-                        <span class="badge badge-active">Verified</span>
+                        <span class="badge badge-active">{% trans "Verified" %}</span>
                     {% else %}
-                        <span class="badge badge-inactive">Not verified</span>
+                        <span class="badge badge-inactive">{% trans "Not verified" %}</span>
                     {% endif %}
                 </td>
-                <td>{% if u.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
+                <td>{% if u.is_active %}<span class="badge badge-active">{% trans "Active" %}</span>{% else %}<span class="badge badge-inactive">{% trans "Inactive" %}</span>{% endif %}</td>
                 <td class="dim">{{ u.date_joined|date:"d M Y" }}</td>
                 <td onclick="event.stopPropagation();">
                     <div class="table-actions">
                         {% if perms.auth.add_user %}
-                        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="action-btn" title="Clone user"><span class="material-icons-round">content_copy</span></a>
+                        <a href="{% url 'control:users_create' %}?clone={{ u.pk }}" class="action-btn" title="{% trans "Clone user" %}"><span class="material-icons-round">content_copy</span></a>
                         {% endif %}
                         {% if perms.auth.change_user %}
-                        <a href="{% url 'control:users_edit' u.pk %}" class="action-btn" title="Edit"><span class="material-icons-round">edit</span></a>
+                        <a href="{% url 'control:users_edit' u.pk %}" class="action-btn" title="{% trans "Edit" %}"><span class="material-icons-round">edit</span></a>
                         {% endif %}
                         {% if perms.auth.delete_user %}
-                        <a href="{% url 'control:users_delete' u.pk %}" class="action-btn action-delete" title="Delete"><span class="material-icons-round">delete</span></a>
+                        <a href="{% url 'control:users_delete' u.pk %}" class="action-btn action-delete" title="{% trans "Delete" %}"><span class="material-icons-round">delete</span></a>
                         {% endif %}
                     </div>
                 </td>
@@ -262,12 +263,12 @@
         </tbody>
     </table>
     </div>
-    <div id="portal-empty" style="display:none;text-align:center;padding:32px;color:var(--text-secondary);font-size:0.87rem;">No portal users match your filter.</div>
+    <div id="portal-empty" style="display:none;text-align:center;padding:32px;color:var(--text-secondary);font-size:0.87rem;">{% trans "No portal users match your filter." %}</div>
     {% else %}
     <div style="text-align:center;padding:40px 24px;">
         <span class="material-icons-round" style="font-size:36px;color:var(--text-secondary);display:block;margin-bottom:10px;">store</span>
-        <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">No portal users yet</div>
-        {% if perms.auth.add_user %}<a href="{% url 'control:users_create' %}" class="btn btn-primary" style="display:inline-flex;margin-top:12px;"><span class="material-icons-round">person_add</span> New User</a>{% endif %}
+        <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">{% trans "No portal users yet" %}</div>
+        {% if perms.auth.add_user %}<a href="{% url 'control:users_create' %}" class="btn btn-primary" style="display:inline-flex;margin-top:12px;"><span class="material-icons-round">person_add</span> {% trans "New User" %}</a>{% endif %}
     </div>
     {% endif %}
 </div>

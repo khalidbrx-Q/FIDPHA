@@ -1,7 +1,8 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Roles{% endblock %}
-{% block page_breadcrumb %}Roles{% endblock %}
+{% block page_title %}{% trans "Roles" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Roles" %}{% endblock %}
 {% block nav_roles %}active{% endblock %}
 
 {% block content %}
@@ -10,13 +11,13 @@
 <div class="toolbar" style="margin-bottom:12px;">
     <div class="search-bar" style="flex:1; min-width:200px; max-width:420px;">
         <span class="material-icons-round">search</span>
-        <input type="text" id="roleSearch" placeholder="Search roles…"
+        <input type="text" id="roleSearch" placeholder="{% trans "Search roles…" %}"
                oninput="filterRoles()" autocomplete="off">
     </div>
-    <span id="roleCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ roles|length }} role{{ roles|length|pluralize }}</span>
+    <span id="roleCount" style="font-size:0.82rem; color:var(--text-secondary);">{% blocktrans count count=roles|length %}{{ count }} role{% plural %}{{ count }} roles{% endblocktrans %}</span>
     {% if perms.auth.add_group %}
     <a href="{% url 'control:roles_create' %}" class="btn btn-primary" style="margin-left:auto; flex-shrink:0;">
-        <span class="material-icons-round">add</span> New Role
+        <span class="material-icons-round">add</span> {% trans "New Role" %}
     </a>
     {% endif %}
 </div>
@@ -27,9 +28,9 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Permissions</th>
-                <th>Users assigned</th>
+                <th>{% trans "Name" %}</th>
+                <th>{% trans "Permissions" %}</th>
+                <th>{% trans "Users assigned" %}</th>
                 <th style="width: 108px;"></th>
             </tr>
         </thead>
@@ -47,11 +48,11 @@
                     </div>
                 </td>
                 <td>
-                    <span class="badge badge-neutral">{{ role.perm_count }} permission{{ role.perm_count|pluralize }}</span>
+                    <span class="badge badge-neutral">{% blocktrans count count=role.perm_count %}{{ count }} permission{% plural %}{{ count }} permissions{% endblocktrans %}</span>
                 </td>
                 <td>
                     {% if role.user_count %}
-                        <span class="badge badge-active">{{ role.user_count }} user{{ role.user_count|pluralize }}</span>
+                        <span class="badge badge-active">{% blocktrans count count=role.user_count %}{{ count }} user{% plural %}{{ count }} users{% endblocktrans %}</span>
                     {% else %}
                         <span style="color: var(--text-secondary); font-size: 0.82rem;">—</span>
                     {% endif %}
@@ -59,17 +60,17 @@
                 <td onclick="event.stopPropagation()">
                     <div class="table-actions">
                         {% if perms.auth.add_group %}
-                        <a href="{% url 'control:roles_create' %}?clone={{ role.pk }}" class="action-btn" title="Clone">
+                        <a href="{% url 'control:roles_create' %}?clone={{ role.pk }}" class="action-btn" title="{% trans "Clone" %}">
                             <span class="material-icons-round">content_copy</span>
                         </a>
                         {% endif %}
                         {% if perms.auth.change_group %}
-                        <a href="{% url 'control:roles_edit' role.pk %}" class="action-btn" title="Edit">
+                        <a href="{% url 'control:roles_edit' role.pk %}" class="action-btn" title="{% trans "Edit" %}">
                             <span class="material-icons-round">edit</span>
                         </a>
                         {% endif %}
                         {% if perms.auth.delete_group %}
-                        <a href="{% url 'control:roles_delete' role.pk %}" class="action-btn action-delete" title="Delete">
+                        <a href="{% url 'control:roles_delete' role.pk %}" class="action-btn action-delete" title="{% trans "Delete" %}">
                             <span class="material-icons-round">delete</span>
                         </a>
                         {% endif %}
@@ -81,17 +82,17 @@
     </table>
     </div>
     <div id="noRoleResults" style="display:none; text-align:center; padding:32px 16px; color:var(--text-secondary); font-size:0.85rem;">
-        No roles match your search.
+        {% trans "No roles match your search." %}
     </div>
     {% else %}
     <div style="text-align: center; padding: 48px 24px;">
         <span class="material-icons-round" style="font-size: 40px; color: var(--text-secondary); display: block; margin-bottom: 12px;">badge</span>
-        <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">No roles yet</div>
-        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">Create a role to define a permission preset for staff users.</div>
+        <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">{% trans "No roles yet" %}</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">{% trans "Create a role to define a permission preset for staff users." %}</div>
         {% if perms.auth.add_group %}
         <a href="{% url 'control:roles_create' %}" class="btn btn-primary" style="display: inline-flex;">
             <span class="material-icons-round">add</span>
-            New Role
+            {% trans "New Role" %}
         </a>
         {% endif %}
     </div>

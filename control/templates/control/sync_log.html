@@ -1,7 +1,8 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Sync Import Log{% endblock %}
-{% block page_breadcrumb %}Sync Import Log{% endblock %}
+{% block page_title %}{% trans "Sync Import Log" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Sync Import Log" %}{% endblock %}
 {% block nav_sync_log %}active{% endblock %}
 
 {% block extra_css %}
@@ -233,17 +234,17 @@
 <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
     <div>
         <div class="page-header-title">
-            Sync Import Log
-            <span class="count-badge">{{ total_batches }} batch{{ total_batches|pluralize:"es" }}</span>
-            <span class="count-badge">{{ total }} row{{ total|pluralize }}</span>
+            {% trans "Sync Import Log" %}
+            <span class="count-badge">{% blocktrans count n=total_batches %}{{ n }} batch{% plural %}{{ n }} batches{% endblocktrans %}</span>
+            <span class="count-badge">{% blocktrans count n=total %}{{ n }} row{% plural %}{{ n }} rows{% endblocktrans %}</span>
         </div>
-        <div class="page-header-sub">Raw SaleImport staging records — superuser diagnostic view</div>
+        <div class="page-header-sub">{% trans "Raw SaleImport staging records — superuser diagnostic view" %}</div>
     </div>
     <a href="?{{ query_string }}&export=csv"
        class="btn btn-secondary"
        style="white-space:nowrap; display:inline-flex; align-items:center; gap:6px;">
         <span class="material-icons-round" style="font-size:18px;">download</span>
-        Export CSV
+        {% trans "Export CSV" %}
     </a>
 </div>
 
@@ -252,34 +253,34 @@
     <form id="filter-form" method="get" action="">
         <div class="filter-bar" style="margin-bottom: 10px;">
             <div class="filter-group">
-                <label class="filter-label">Status</label>
+                <label class="filter-label">{% trans "Status" %}</label>
                 <select name="status" class="filter-input" id="f-status">
-                    <option value="">All</option>
-                    <option value="{{ STATUS_PENDING }}"  {% if status_filter == STATUS_PENDING  %}selected{% endif %}>Pending</option>
-                    <option value="{{ STATUS_ACCEPTED }}" {% if status_filter == STATUS_ACCEPTED %}selected{% endif %}>Accepted</option>
-                    <option value="{{ STATUS_REJECTED }}" {% if status_filter == STATUS_REJECTED %}selected{% endif %}>Rejected</option>
+                    <option value="">{% trans "All" %}</option>
+                    <option value="{{ STATUS_PENDING }}"  {% if status_filter == STATUS_PENDING  %}selected{% endif %}>{% trans "Pending" %}</option>
+                    <option value="{{ STATUS_ACCEPTED }}" {% if status_filter == STATUS_ACCEPTED %}selected{% endif %}>{% trans "Accepted" %}</option>
+                    <option value="{{ STATUS_REJECTED }}" {% if status_filter == STATUS_REJECTED %}selected{% endif %}>{% trans "Rejected" %}</option>
                 </select>
             </div>
             <div class="filter-group">
-                <label class="filter-label">Batch ID</label>
-                <input type="text" name="batch" id="f-batch" class="filter-input" placeholder="Search…" value="{{ batch_filter }}">
+                <label class="filter-label">{% trans "Batch ID" %}</label>
+                <input type="text" name="batch" id="f-batch" class="filter-input" placeholder="{% trans "Search…" %}" value="{{ batch_filter }}">
             </div>
             <div class="filter-group">
-                <label class="filter-label">Account Code</label>
-                <input type="text" name="account" id="f-account" class="filter-input" placeholder="Search…" value="{{ account_filter }}">
+                <label class="filter-label">{% trans "Account Code" %}</label>
+                <input type="text" name="account" id="f-account" class="filter-input" placeholder="{% trans "Search…" %}" value="{{ account_filter }}">
             </div>
             <div class="filter-group">
-                <label class="filter-label">Contract</label>
+                <label class="filter-label">{% trans "Contract" %}</label>
                 <div class="ss-wrap" id="ss-contract">
                     <input type="hidden" name="contract_id" id="ss-contract-val" value="{{ contract_filter }}">
                     <button type="button" class="filter-input ss-btn" onclick="ssToggle('ss-contract')" style="min-width:180px;">
-                        <span id="ss-contract-label">{% if contract_filter %}{% for c in all_contracts %}{% if contract_filter == c.pk|stringformat:"s" %}{{ c.title }}{% endif %}{% endfor %}{% else %}All contracts{% endif %}</span>
+                        <span id="ss-contract-label">{% if contract_filter %}{% for c in all_contracts %}{% if contract_filter == c.pk|stringformat:"s" %}{{ c.title }}{% endif %}{% endfor %}{% else %}{% trans "All contracts" %}{% endif %}</span>
                         <span class="material-icons-round ss-arrow">expand_more</span>
                     </button>
                     <div class="ss-panel" id="ss-contract-panel">
-                        <input type="text" class="ss-search" placeholder="Search contracts…" oninput="ssFilter('ss-contract', this.value)">
+                        <input type="text" class="ss-search" placeholder="{% trans "Search contracts…" %}" oninput="ssFilter('ss-contract', this.value)">
                         <div class="ss-options" id="ss-contract-opts">
-                            <div class="ss-option{% if not contract_filter %} ss-selected{% endif %}" data-val="" data-label="All contracts" onclick="ssPick('ss-contract', this)">All contracts</div>
+                            <div class="ss-option{% if not contract_filter %} ss-selected{% endif %}" data-val="" data-label="{% trans "All contracts" %}" onclick="ssPick('ss-contract', this)">{% trans "All contracts" %}</div>
                             {% for c in all_contracts %}
                             <div class="ss-option{% if contract_filter == c.pk|stringformat:"s" %} ss-selected{% endif %}" data-val="{{ c.pk }}" data-label="{{ c.title|escapejs }}" onclick="ssPick('ss-contract', this)">{{ c.title }}</div>
                             {% endfor %}
@@ -288,17 +289,17 @@
                 </div>
             </div>
             <div class="filter-group">
-                <label class="filter-label">Token</label>
+                <label class="filter-label">{% trans "Token" %}</label>
                 <div class="ss-wrap" id="ss-token">
                     <input type="hidden" name="token_id" id="ss-token-val" value="{{ token_filter }}">
                     <button type="button" class="filter-input ss-btn" onclick="ssToggle('ss-token')" style="min-width:160px;">
-                        <span id="ss-token-label">{% if token_filter %}{% for t in all_tokens %}{% if token_filter == t.pk|stringformat:"s" %}{{ t.name }}{% endif %}{% endfor %}{% else %}All tokens{% endif %}</span>
+                        <span id="ss-token-label">{% if token_filter %}{% for t in all_tokens %}{% if token_filter == t.pk|stringformat:"s" %}{{ t.name }}{% endif %}{% endfor %}{% else %}{% trans "All tokens" %}{% endif %}</span>
                         <span class="material-icons-round ss-arrow">expand_more</span>
                     </button>
                     <div class="ss-panel" id="ss-token-panel">
-                        <input type="text" class="ss-search" placeholder="Search tokens…" oninput="ssFilter('ss-token', this.value)">
+                        <input type="text" class="ss-search" placeholder="{% trans "Search tokens…" %}" oninput="ssFilter('ss-token', this.value)">
                         <div class="ss-options" id="ss-token-opts">
-                            <div class="ss-option{% if not token_filter %} ss-selected{% endif %}" data-val="" data-label="All tokens" onclick="ssPick('ss-token', this)">All tokens</div>
+                            <div class="ss-option{% if not token_filter %} ss-selected{% endif %}" data-val="" data-label="{% trans "All tokens" %}" onclick="ssPick('ss-token', this)">{% trans "All tokens" %}</div>
                             {% for t in all_tokens %}
                             <div class="ss-option{% if token_filter == t.pk|stringformat:"s" %} ss-selected{% endif %}" data-val="{{ t.pk }}" data-label="{{ t.name|escapejs }}" onclick="ssPick('ss-token', this)">{{ t.name }}</div>
                             {% endfor %}
@@ -309,30 +310,30 @@
         </div>
         <div class="filter-bar">
             <div class="filter-group">
-                <label class="filter-label">Received from</label>
+                <label class="filter-label">{% trans "Received from" %}</label>
                 <input type="date" name="date_from" id="f-date-from" class="filter-input" value="{{ date_from }}">
             </div>
             <div class="filter-group">
-                <label class="filter-label">Received to</label>
+                <label class="filter-label">{% trans "Received to" %}</label>
                 <input type="date" name="date_to" id="f-date-to" class="filter-input" value="{{ date_to }}">
             </div>
             <div class="filter-sep"><div class="filter-sep-line"></div></div>
             <div class="filter-group">
-                <label class="filter-label">Sale date from</label>
+                <label class="filter-label">{% trans "Sale date from" %}</label>
                 <input type="date" name="sale_date_from" id="f-sale-date-from" class="filter-input" value="{{ sale_date_from }}">
             </div>
             <div class="filter-group">
-                <label class="filter-label">Sale date to</label>
+                <label class="filter-label">{% trans "Sale date to" %}</label>
                 <input type="date" name="sale_date_to" id="f-sale-date-to" class="filter-input" value="{{ sale_date_to }}">
             </div>
             <div class="filter-group">
-                <label class="filter-label">Rejection reason</label>
-                <input type="text" name="reason" id="f-reason" class="filter-input" placeholder="Search…" value="{{ reason_filter }}" style="min-width:180px;">
+                <label class="filter-label">{% trans "Rejection reason" %}</label>
+                <input type="text" name="reason" id="f-reason" class="filter-input" placeholder="{% trans "Search…" %}" value="{{ reason_filter }}" style="min-width:180px;">
             </div>
             {% if any_filter %}
             <div class="filter-group" style="justify-content: flex-end;">
                 <a href="{% url 'control:sync_log' %}" class="btn btn-secondary" style="height: 34px;">
-                    <span class="material-icons-round">close</span> Clear
+                    <span class="material-icons-round">close</span> {% trans "Clear" %}
                 </a>
             </div>
             {% endif %}
@@ -347,22 +348,22 @@
     <table class="sync-table">
         <thead>
             <tr>
-                <th>Received at</th>
-                <th>Sale date</th>
-                <th>Contract</th>
-                <th>Designation</th>
-                <th class="num">Qty</th>
-                <th class="num">PPV</th>
-                <th>Status</th>
+                <th>{% trans "Received at" %}</th>
+                <th>{% trans "Sale date" %}</th>
+                <th>{% trans "Contract" %}</th>
+                <th>{% trans "Designation" %}</th>
+                <th class="num">{% trans "Qty" %}</th>
+                <th class="num">{% trans "PPV" %}</th>
+                <th>{% trans "Status" %}</th>
                 <th>
-                    <span class="th-help" title="API token used to submit this batch">
-                        Source
+                    <span class="th-help" title="{% trans "API token used to submit this batch" %}">
+                        {% trans "Source" %}
                         <span class="material-icons-round">help_outline</span>
                     </span>
                 </th>
                 <th style="text-align:center;">
-                    <span class="th-help" title="Whether a validated Sale record was created from this import row">
-                        Linked Sale
+                    <span class="th-help" title="{% trans "Whether a validated Sale record was created from this import row" %}">
+                        {% trans "Linked Sale" %}
                         <span class="material-icons-round">help_outline</span>
                     </span>
                 </th>
@@ -374,16 +375,16 @@
                 <td colspan="9">
                     <button class="batch-toggle" data-idx="{{ forloop.counter0 }}"
                             onclick="toggleBatch({{ forloop.counter0 }})"
-                            title="Collapse / expand"
+                            title="{% trans "Collapse / expand" %}"
                             style="background:none; border:none; cursor:pointer; padding:0 4px 0 0; vertical-align:middle; color:var(--text-secondary); line-height:1;">
                         <span class="material-icons-round" style="font-size:16px; vertical-align:middle;">expand_less</span>
                     </button>
                     <span class="mono">{{ group.batch_id }}</span>
                     {% if group.stats %}
-                    <span class="batch-stat">{{ group.stats.total }} row{{ group.stats.total|pluralize }}</span>
-                    {% if group.stats.n_accepted %}<span class="batch-stat batch-stat-accepted">· {{ group.stats.n_accepted }} accepted</span>{% endif %}
-                    {% if group.stats.n_rejected %}<span class="batch-stat batch-stat-rejected">· {{ group.stats.n_rejected }} rejected</span>{% endif %}
-                    {% if group.stats.n_pending  %}<span class="batch-stat batch-stat-pending">· {{ group.stats.n_pending }} pending</span>{% endif %}
+                    <span class="batch-stat">{% blocktrans count n=group.stats.total %}{{ n }} row{% plural %}{{ n }} rows{% endblocktrans %}</span>
+                    {% if group.stats.n_accepted %}<span class="batch-stat batch-stat-accepted">· {% blocktrans with n=group.stats.n_accepted %}{{ n }} accepted{% endblocktrans %}</span>{% endif %}
+                    {% if group.stats.n_rejected %}<span class="batch-stat batch-stat-rejected">· {% blocktrans with n=group.stats.n_rejected %}{{ n }} rejected{% endblocktrans %}</span>{% endif %}
+                    {% if group.stats.n_pending  %}<span class="batch-stat batch-stat-pending">· {% blocktrans with n=group.stats.n_pending %}{{ n }} pending{% endblocktrans %}</span>{% endif %}
                     {% endif %}
                 </td>
             </tr>
@@ -400,7 +401,7 @@
                     <a href="{% url 'control:contracts_detail' row.contract_product.contract.pk %}"
                        class="mono"
                        style="color: var(--accent); text-decoration: none;"
-                       title="View contract">{{ row.contract_product.contract.title }}</a>
+                       title="{% trans "View contract" %}">{{ row.contract_product.contract.title }}</a>
                     {% else %}
                     <span style="color:var(--card-border);">—</span>
                     {% endif %}
@@ -416,24 +417,24 @@
                     <div class="tooltip-wrap" data-tip="{{ row.rejection_reason }}">
                         <span class="badge badge-rejected">
                             <span class="material-icons-round" style="font-size:11px;">cancel</span>
-                            Rejected
+                            {% trans "Rejected" %}
                         </span>
                         <span class="material-icons-round tooltip-icon" style="color:#ef4444;">info</span>
                     </div>
                     {% elif row.status == STATUS_REJECTED %}
                     <span class="badge badge-rejected">
                         <span class="material-icons-round" style="font-size:11px;">cancel</span>
-                        Rejected
+                        {% trans "Rejected" %}
                     </span>
                     {% elif row.status == STATUS_ACCEPTED %}
                     <span class="badge badge-accepted">
                         <span class="material-icons-round" style="font-size:11px;">check_circle</span>
-                        Accepted
+                        {% trans "Accepted" %}
                     </span>
                     {% else %}
                     <span class="badge badge-pending">
                         <span class="material-icons-round" style="font-size:11px;">schedule</span>
-                        Pending
+                        {% trans "Pending" %}
                     </span>
                     {% endif %}
                 </td>
@@ -448,15 +449,15 @@
                 </td>
                 <td style="text-align:center;">
                     {% if row.has_sale %}
-                    <span class="material-icons-round sale-linked" title="Linked to a validated Sale record">check_circle</span>
+                    <span class="material-icons-round sale-linked" title="{% trans "Linked to a validated Sale record" %}">check_circle</span>
                     {% elif row.status == STATUS_ACCEPTED %}
                     <span class="material-icons-round"
                           style="color:#f59e0b; font-size:16px; cursor:pointer;"
-                          data-tip="Duplicate row within this batch — the same product and datetime already appeared earlier in the same batch. Only one Sale record was created; this row was skipped to prevent double-counting.">
+                          data-tip="{% trans "Duplicate row within this batch — the same product and datetime already appeared earlier in the same batch. Only one Sale record was created; this row was skipped to prevent double-counting." %}">
                         warning
                     </span>
                     {% else %}
-                    <span class="material-icons-round sale-unlinked" title="No Sale record — row was rejected or is pending">close</span>
+                    <span class="material-icons-round sale-unlinked" title="{% trans "No Sale record — row was rejected or is pending" %}">close</span>
                     {% endif %}
                 </td>
             </tr>
@@ -467,7 +468,7 @@
     {% else %}
     <div style="padding: 48px; text-align: center; color: var(--text-secondary);">
         <span class="material-icons-round" style="font-size: 40px; display: block; margin-bottom: 10px; opacity: 0.4;">inbox</span>
-        No import records match the current filters.
+        {% trans "No import records match the current filters." %}
     </div>
     {% endif %}
     </div>
@@ -476,7 +477,7 @@
     {% if page_obj.has_other_pages %}
     <div class="pagination" style="padding: 16px;">
         {% if page_obj.has_previous %}
-        <a href="?{{ query_string }}&page=1" class="page-btn" title="First">«</a>
+        <a href="?{{ query_string }}&page=1" class="page-btn" title="{% trans "First" %}">«</a>
         <a href="?{{ query_string }}&page={{ page_obj.previous_page_number }}" class="page-btn">‹</a>
         {% endif %}
 
@@ -490,13 +491,13 @@
 
         {% if page_obj.has_next %}
         <a href="?{{ query_string }}&page={{ page_obj.next_page_number }}" class="page-btn">›</a>
-        <a href="?{{ query_string }}&page={{ page_obj.paginator.num_pages }}" class="page-btn" title="Last">»</a>
+        <a href="?{{ query_string }}&page={{ page_obj.paginator.num_pages }}" class="page-btn" title="{% trans "Last" %}">»</a>
         {% endif %}
 
         <span class="page-info">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-            &nbsp;·&nbsp; {{ total_batches }} batch{{ total_batches|pluralize:"es" }}
-            &nbsp;·&nbsp; {{ total }} row{{ total|pluralize }}
+            {% blocktrans with current=page_obj.number total=page_obj.paginator.num_pages %}Page {{ current }} of {{ total }}{% endblocktrans %}
+            &nbsp;·&nbsp; {% blocktrans count n=total_batches %}{{ n }} batch{% plural %}{{ n }} batches{% endblocktrans %}
+            &nbsp;·&nbsp; {% blocktrans count n=total %}{{ n }} row{% plural %}{{ n }} rows{% endblocktrans %}
         </span>
     </div>
     {% endif %}

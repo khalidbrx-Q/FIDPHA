@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
 {% block page_title %}{{ role.name }}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:roles_list' %}" style="color:var(--text-secondary);text-decoration:none;">Roles</a>
+    <a href="{% url 'control:roles_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Roles" %}</a>
     › {{ role.name }}
 {% endblock %}
 {% block nav_roles %}active{% endblock %}
@@ -17,23 +18,23 @@
         <div>
             <div class="page-header-title">{{ role.name }}</div>
             <div class="page-header-sub">
-                {{ role.permissions.count }} permission{{ role.permissions.count|pluralize }} ·
-                {{ assigned_users|length }} user{{ assigned_users|length|pluralize }} assigned
+                {% blocktrans count count=role.permissions.count %}{{ count }} permission{% plural %}{{ count }} permissions{% endblocktrans %} ·
+                {% blocktrans count count=assigned_users|length %}{{ count }} user assigned{% plural %}{{ count }} users assigned{% endblocktrans %}
             </div>
         </div>
     </div>
     <div style="display:flex; gap:8px;">
         <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">
-            <span class="material-icons-round">arrow_back</span> Back
+            <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
         </a>
         <a href="{% url 'control:roles_create' %}?clone={{ role.pk }}" class="btn btn-secondary">
-            <span class="material-icons-round">content_copy</span> Clone
+            <span class="material-icons-round">content_copy</span> {% trans "Clone" %}
         </a>
         <a href="{% url 'control:roles_edit' role.pk %}" class="btn btn-primary">
-            <span class="material-icons-round">edit</span> Edit
+            <span class="material-icons-round">edit</span> {% trans "Edit" %}
         </a>
         <a href="{% url 'control:roles_delete' role.pk %}" class="btn btn-danger">
-            <span class="material-icons-round">delete</span> Delete
+            <span class="material-icons-round">delete</span> {% trans "Delete" %}
         </a>
     </div>
 </div>
@@ -42,14 +43,14 @@
 <div class="card" style="margin-bottom:16px;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
         <div class="section-label" style="margin-bottom:0;">
-            Assigned Users <span class="count-chip">{{ assigned_users|length }}</span>
+            {% trans "Assigned Users" %} <span class="count-chip">{{ assigned_users|length }}</span>
         </div>
     </div>
 
     {% if assigned_users %}
     <div class="search-bar" style="margin-bottom:10px;">
         <span class="material-icons-round">search</span>
-        <input type="text" id="userSearch" placeholder="Search users…"
+        <input type="text" id="userSearch" placeholder="{% trans "Search users…" %}"
                oninput="filterUsers()" autocomplete="off">
     </div>
     <div id="usersList" class="users-scroll">
@@ -64,27 +65,27 @@
                 {% endif %}
             </div>
             {% if u.is_active %}
-                <span class="badge badge-active">Active</span>
+                <span class="badge badge-active">{% trans "Active" %}</span>
             {% else %}
-                <span class="badge badge-inactive">Inactive</span>
+                <span class="badge badge-inactive">{% trans "Inactive" %}</span>
             {% endif %}
         </div>
         {% endfor %}
     </div>
     <div id="noUserResults" style="display:none; text-align:center; padding:14px; color:var(--text-secondary); font-size:0.83rem;">
-        No users match your search.
+        {% trans "No users match your search." %}
     </div>
     {% else %}
     <div style="text-align:center; padding:24px 16px; color:var(--text-secondary);">
         <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px;">person_off</span>
-        <div style="font-size:0.82rem;">No users assigned to this role.</div>
+        <div style="font-size:0.82rem;">{% trans "No users assigned to this role." %}</div>
     </div>
     {% endif %}
 </div>
 
 <!-- Permissions -->
 <div class="card">
-    <div class="section-label">Permissions</div>
+    <div class="section-label">{% trans "Permissions" %}</div>
 
     {% if perm_groups %}
         {% for app_label, perms in perm_groups %}
@@ -100,8 +101,8 @@
     {% else %}
         <div style="text-align:center; padding:32px 16px; color:var(--text-secondary);">
             <span class="material-icons-round" style="font-size:36px; display:block; margin-bottom:8px;">lock_open</span>
-            <div style="font-size:0.85rem;">No permissions assigned to this role.</div>
-            <a href="{% url 'control:roles_edit' role.pk %}" style="font-size:0.82rem; color:var(--accent);">Add permissions</a>
+            <div style="font-size:0.85rem;">{% trans "No permissions assigned to this role." %}</div>
+            <a href="{% url 'control:roles_edit' role.pk %}" style="font-size:0.82rem; color:var(--accent);">{% trans "Add permissions" %}</a>
         </div>
     {% endif %}
 </div>
@@ -109,26 +110,26 @@
 <!-- Traceability -->
 {% if role.profile.created_at %}
 <div class="card" style="margin-top:16px;">
-    <div class="section-label">Traceability</div>
+    <div class="section-label">{% trans "Traceability" %}</div>
     <div class="info-row">
-        <span class="info-key">Created</span>
+        <span class="info-key">{% trans "Created" %}</span>
         <span class="info-val">
             {{ role.profile.created_at|date:"d M Y, H:i" }}
             {% if role.profile.created_by %}
-                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ role.profile.created_by.get_full_name|default:role.profile.created_by.username }}</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> {% blocktrans with name=role.profile.created_by.get_full_name|default:role.profile.created_by.username %}by {{ name }}{% endblocktrans %}</span>
             {% else %}
-                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — {% trans "no user recorded" %}</span>
             {% endif %}
         </span>
     </div>
     <div class="info-row">
-        <span class="info-key">Last Modified</span>
+        <span class="info-key">{% trans "Last Modified" %}</span>
         <span class="info-val">
             {{ role.profile.modified_at|date:"d M Y, H:i" }}
             {% if role.profile.modified_by %}
-                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ role.profile.modified_by.get_full_name|default:role.profile.modified_by.username }}</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> {% blocktrans with name=role.profile.modified_by.get_full_name|default:role.profile.modified_by.username %}by {{ name }}{% endblocktrans %}</span>
             {% else %}
-                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — {% trans "no user recorded" %}</span>
             {% endif %}
         </span>
     </div>

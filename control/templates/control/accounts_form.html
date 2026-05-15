@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{ page_action }} Account{% endblock %}
+{% block page_title %}{{ page_action }} {% trans "Account" %}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:accounts_list' %}" style="color:var(--text-secondary);text-decoration:none;">Accounts</a>
+    <a href="{% url 'control:accounts_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Accounts" %}</a>
     {% if page_action == "Edit" %}
     › <a href="{% url 'control:accounts_detail' account.pk %}" style="color:var(--text-secondary);text-decoration:none;">{{ account.name }}</a>
     {% endif %}
@@ -14,18 +15,18 @@
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">{{ page_action }} Account</div>
+        <div class="page-header-title">{{ page_action }} {% trans "Account" %}</div>
         <div class="page-header-sub">
-            {% if page_action == "Edit" %}Editing "{{ account.name }}"{% else %}Add a new pharmacy account{% endif %}
+            {% if page_action == "Edit" %}{% blocktrans with name=account.name %}Editing "{{ name }}"{% endblocktrans %}{% else %}{% trans "Add a new pharmacy account" %}{% endif %}
         </div>
     </div>
     {% if page_action == "Edit" %}
     <a href="{% url 'control:accounts_detail' account.pk %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span> Back
+        <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
     </a>
     {% else %}
     <a href="{% url 'control:accounts_list' %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span> Back
+        <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
     </a>
     {% endif %}
 </div>
@@ -46,17 +47,17 @@
 
     <!-- Account Details -->
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">Account Details</div>
+        <div class="section-label">{% trans "Account Details" %}</div>
 
         <div class="form-grid-2" style="margin-bottom:16px;">
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Code *</label>
+                <label class="form-label">{% trans "Code" %} *</label>
                 {{ form.code }}
                 {% for e in form.code.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-                <div class="form-help">Unique identifier, e.g. "PH-001"</div>
+                <div class="form-help">{% trans "Unique identifier, e.g. \"PH-001\"" %}</div>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Name *</label>
+                <label class="form-label">{% trans "Name" %} *</label>
                 {{ form.name }}
                 {% for e in form.name.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
             </div>
@@ -64,25 +65,25 @@
 
         <div class="form-grid-2" style="margin-bottom:16px;">
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">City *</label>
+                <label class="form-label">{% trans "City" %} *</label>
                 {{ form.city }}
                 {% for e in form.city.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Phone</label>
+                <label class="form-label">{% trans "Phone" %}</label>
                 {{ form.phone }}
                 {% for e in form.phone.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
             </div>
         </div>
 
         <div class="form-group" style="margin-bottom:16px;">
-            <label class="form-label">Email</label>
+            <label class="form-label">{% trans "Email" %}</label>
             {{ form.email }}
             {% for e in form.email.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Location / Address</label>
+            <label class="form-label">{% trans "Location / Address" %}</label>
             {{ form.location }}
             {% for e in form.location.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
         </div>
@@ -90,13 +91,13 @@
 
     <!-- Settings -->
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">Settings</div>
+        <div class="section-label">{% trans "Settings" %}</div>
 
         <div class="form-group" style="margin-bottom:16px;">
-            <label class="form-label">Status</label>
+            <label class="form-label">{% trans "Status" %}</label>
             {{ form.status }}
             {% for e in form.status.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">Inactive accounts cannot be linked to new contracts.</div>
+            <div class="form-help">{% trans "Inactive accounts cannot be linked to new contracts." %}</div>
         </div>
 
         <div class="form-group" style="margin-bottom:16px;">
@@ -106,8 +107,8 @@
                     <span class="toggle-slider"></span>
                 </div>
                 <div>
-                    <div style="font-size:0.87rem; font-weight:600; color:var(--text-primary);">Pharmacy Portal Access</div>
-                    <div style="font-size:0.78rem; color:var(--text-secondary);">Allow this account's users to log in to the portal</div>
+                    <div style="font-size:0.87rem; font-weight:600; color:var(--text-primary);">{% trans "Pharmacy Portal Access" %}</div>
+                    <div style="font-size:0.78rem; color:var(--text-secondary);">{% trans "Allow this account's users to log in to the portal" %}</div>
                 </div>
             </label>
             {% for e in form.pharmacy_portal.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
@@ -120,14 +121,14 @@
                     <span class="toggle-slider"></span>
                 </div>
                 <div>
-                    <div style="font-size:0.87rem; font-weight:600; color:var(--text-primary);">Auto-Review Sales</div>
+                    <div style="font-size:0.87rem; font-weight:600; color:var(--text-primary);">{% trans "Auto-Review Sales" %}</div>
                     <div style="font-size:0.78rem; color:var(--text-secondary);">
                         {% if global_auto_review %}
-                            Batches from this account are accepted automatically without staff review. Leave off for manual oversight.
+                            {% trans "Batches from this account are accepted automatically without staff review. Leave off for manual oversight." %}
                         {% else %}
-                            Global auto-review is <strong>OFF</strong>. Enable it in
-                            <a href="{% url 'control:system_settings' %}" style="color:var(--accent);">System Settings</a>
-                            to unlock this toggle.
+                            {% blocktrans %}Global auto-review is <strong>OFF</strong>. Enable it in{% endblocktrans %}
+                            <a href="{% url 'control:system_settings' %}" style="color:var(--accent);">{% trans "System Settings" %}</a>
+                            {% trans "to unlock this toggle." %}
                         {% endif %}
                     </div>
                 </div>
@@ -139,12 +140,12 @@
     <div class="form-actions" style="margin-bottom:{% if page_action == 'Edit' %}24px{% else %}0{% endif %};">
         <button type="submit" id="submitBtn" class="btn btn-primary">
             <span class="material-icons-round" id="submitIcon">save</span>
-            <span id="submitLabel">{{ page_action }} Account</span>
+            <span id="submitLabel">{{ page_action }} {% trans "Account" %}</span>
         </button>
         {% if page_action == "Edit" %}
-        <a href="{% url 'control:accounts_detail' account.pk %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'control:accounts_detail' account.pk %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
         {% else %}
-        <a href="{% url 'control:accounts_list' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'control:accounts_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
         {% endif %}
     </div>
 </form>
@@ -157,10 +158,10 @@
 <div class="card" style="margin-bottom:16px;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
         <div class="section-label" style="margin-bottom:0;">
-            Contracts <span class="count-chip">{{ contract_count }}</span>
+            {% trans "Contracts" %} <span class="count-chip">{{ contract_count }}</span>
         </div>
         <a href="{% url 'control:contracts_create' %}?account={{ account.pk }}" class="btn btn-secondary" style="padding:5px 12px; font-size:0.8rem;">
-            <span class="material-icons-round" style="font-size:15px;">add</span> New Contract
+            <span class="material-icons-round" style="font-size:15px;">add</span> {% trans "New Contract" %}
         </a>
     </div>
 
@@ -168,7 +169,7 @@
     <div class="active-contract-block">
         <div class="active-contract-header">
             <span class="material-icons-round" style="font-size:13px; color:#22c55e;">circle</span>
-            Active Contract
+            {% trans "Active Contract" %}
         </div>
         <div class="contract-row"
              data-href="{% url 'control:contracts_detail' active_contract.pk %}"
@@ -183,7 +184,7 @@
                     {{ active_contract.product_count }} product{{ active_contract.product_count|pluralize }}
                     <span class="meta-sep">·</span>
                     <span class="material-icons-round meta-icon">sync</span>
-                    {% if active_contract.last_sync_at %}{{ active_contract.last_sync_at|date:"d M Y" }}{% else %}<span style="opacity:0.5;">not synced</span>{% endif %}
+                    {% if active_contract.last_sync_at %}{{ active_contract.last_sync_at|date:"d M Y" }}{% else %}<span style="opacity:0.5;">{% trans "not synced" %}</span>{% endif %}
                 </div>
             </div>
             <span class="badge badge-active">Active</span>
@@ -194,12 +195,12 @@
     {% if inactive_contracts %}
     <div class="{% if active_contract %}inactive-section{% endif %}">
         {% if active_contract %}
-        <div class="inactive-section-header">Inactive Contracts</div>
+        <div class="inactive-section-header">{% trans "Inactive Contracts" %}</div>
         {% endif %}
 
         <div class="search-bar" style="margin-bottom:10px;">
             <span class="material-icons-round">search</span>
-            <input type="text" id="contractSearch" placeholder="Search contracts…"
+            <input type="text" id="contractSearch" placeholder="{% trans "Search contracts…" %}"
                    oninput="filterContracts()" autocomplete="off">
         </div>
 
@@ -219,7 +220,7 @@
                         {{ c.product_count }} product{{ c.product_count|pluralize }}
                         <span class="meta-sep">·</span>
                         <span class="material-icons-round meta-icon">sync</span>
-                        {% if c.last_sync_at %}{{ c.last_sync_at|date:"d M Y" }}{% else %}<span style="opacity:0.5;">not synced</span>{% endif %}
+                        {% if c.last_sync_at %}{{ c.last_sync_at|date:"d M Y" }}{% else %}<span style="opacity:0.5;">{% trans "not synced" %}</span>{% endif %}
                     </div>
                 </div>
                 <span class="badge badge-inactive">Inactive</span>
@@ -227,7 +228,7 @@
             {% endfor %}
         </div>
         <div id="noContractResults" style="display:none; text-align:center; padding:14px; color:var(--text-secondary); font-size:0.83rem;">
-            No contracts match your search.
+            {% trans "No contracts match your search." %}
         </div>
     </div>
     {% endif %}
@@ -235,7 +236,7 @@
     {% if not active_contract and not inactive_contracts %}
     <div style="text-align:center; padding:24px 0; color:var(--text-secondary); font-size:0.83rem;">
         <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px; color:var(--card-border);">description_off</span>
-        No contracts yet. Create one from the <a href="{% url 'control:contracts_create' %}" style="color:var(--accent);">contracts page</a>.
+        {% trans "No contracts yet. Create one from the" %} <a href="{% url 'control:contracts_create' %}" style="color:var(--accent);">{% trans "contracts page" %}</a>.
     </div>
     {% endif %}
 </div>
@@ -246,18 +247,18 @@
 <div class="card">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
         <div class="section-label" style="margin-bottom:0;">
-            Portal Users <span class="count-chip">{{ portal_users|length }}</span>
+            {% trans "Portal Users" %} <span class="count-chip">{{ portal_users|length }}</span>
         </div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             {% if portal_users %}
             <div style="display:flex; gap:4px;">
-                <button type="button" class="filter-pill active" onclick="setUserFilter('all',this)">All</button>
-                <button type="button" class="filter-pill" onclick="setUserFilter('active',this)">Active</button>
-                <button type="button" class="filter-pill" onclick="setUserFilter('inactive',this)">Inactive</button>
+                <button type="button" class="filter-pill active" onclick="setUserFilter('all',this)">{% trans "All" %}</button>
+                <button type="button" class="filter-pill" onclick="setUserFilter('active',this)">{% trans "Active" %}</button>
+                <button type="button" class="filter-pill" onclick="setUserFilter('inactive',this)">{% trans "Inactive" %}</button>
             </div>
             {% endif %}
             <a href="{% url 'control:users_create' %}?account={{ account.pk }}&type=portal" class="btn btn-secondary" style="padding:5px 12px; font-size:0.8rem;">
-                <span class="material-icons-round" style="font-size:15px;">person_add</span> New User
+                <span class="material-icons-round" style="font-size:15px;">person_add</span> {% trans "New User" %}
             </a>
         </div>
     </div>
@@ -265,7 +266,7 @@
     {% if portal_users %}
     <div class="search-bar" style="margin-bottom:10px;">
         <span class="material-icons-round">search</span>
-        <input type="text" id="userSearch" placeholder="Search users…"
+        <input type="text" id="userSearch" placeholder="{% trans "Search users…" %}"
                oninput="filterUsers()" autocomplete="off">
     </div>
 
@@ -289,9 +290,9 @@
                         <span class="meta-sep">·</span>
                     {% endif %}
                     {% if p.email_verified %}
-                        <span class="verified-yes"><span class="material-icons-round meta-icon">verified</span>Verified</span>
+                        <span class="verified-yes"><span class="material-icons-round meta-icon">verified</span>{% trans "Verified" %}</span>
                     {% else %}
-                        <span class="verified-no"><span class="material-icons-round meta-icon">cancel</span>Not verified</span>
+                        <span class="verified-no"><span class="material-icons-round meta-icon">cancel</span>{% trans "Not verified" %}</span>
                     {% endif %}
                     {% if p.user.last_login %}
                         <span class="meta-sep">·</span>
@@ -300,22 +301,22 @@
                 </div>
             </div>
             {% if p.user.is_active %}
-                <span class="badge badge-active">Active</span>
+                <span class="badge badge-active">{% trans "Active" %}</span>
             {% else %}
-                <span class="badge badge-inactive">Inactive</span>
+                <span class="badge badge-inactive">{% trans "Inactive" %}</span>
             {% endif %}
         </div>
         {% endfor %}
     </div>
     <div id="noUserResults" style="display:none; text-align:center; padding:14px; color:var(--text-secondary); font-size:0.83rem;">
-        No users match your search.
+        {% trans "No users match your search." %}
     </div>
 
     {% else %}
     <div style="text-align:center; padding:24px 0; color:var(--text-secondary); font-size:0.83rem;">
         <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px; color:var(--card-border);">person_off</span>
-        No portal users linked to this account.
-        <div style="margin-top:6px;">Assign users from the <a href="{% url 'control:users_create' %}" style="color:var(--accent);">user creation page</a>.</div>
+        {% trans "No portal users linked to this account." %}
+        <div style="margin-top:6px;">{% trans "Assign users from the" %} <a href="{% url 'control:users_create' %}" style="color:var(--accent);">{% trans "user creation page" %}</a>.</div>
     </div>
     {% endif %}
 </div>

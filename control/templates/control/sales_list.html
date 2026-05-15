@@ -1,7 +1,8 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Sales Review{% endblock %}
-{% block page_breadcrumb %}Sales Review{% endblock %}
+{% block page_title %}{% trans "Sales Review" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Sales Review" %}{% endblock %}
 {% block nav_sales %}active{% endblock %}
 
 {% block content %}
@@ -25,49 +26,49 @@
     <div class="filter-bar">
 
         <div class="filter-group">
-            <span class="filter-label">Received</span>
+            <span class="filter-label">{% trans "Received" %}</span>
             <div style="display:flex;align-items:center;gap:6px;">
                 <input type="date" id="sfFrom" class="filter-input" onchange="onDateChange()" style="min-width:130px;">
                 <span style="font-size:0.8rem;color:var(--text-secondary);">→</span>
                 <input type="date" id="sfTo"   class="filter-input" onchange="onDateChange()" style="min-width:130px;">
-                <button id="sfClearDate" class="icon-btn" style="display:none;" onclick="clearDates()" title="Clear dates">
+                <button id="sfClearDate" class="icon-btn" style="display:none;" onclick="clearDates()" title="{% trans "Clear dates" %}">
                     <span class="material-icons-round" style="font-size:15px;">close</span>
                 </button>
             </div>
         </div>
 
         <div class="filter-group">
-            <span class="filter-label">Quick</span>
+            <span class="filter-label">{% trans "Quick" %}</span>
             <div style="display:flex;gap:4px;">
-                <button class="sf-quick" data-range="today"     onclick="setQuick(this)">Today</button>
-                <button class="sf-quick" data-range="yesterday" onclick="setQuick(this)">Yesterday</button>
-                <button class="sf-quick" data-range="week"      onclick="setQuick(this)">This week</button>
-                <button class="sf-quick" data-range="month"     onclick="setQuick(this)">This month</button>
+                <button class="sf-quick" data-range="today"     onclick="setQuick(this)">{% trans "Today" %}</button>
+                <button class="sf-quick" data-range="yesterday" onclick="setQuick(this)">{% trans "Yesterday" %}</button>
+                <button class="sf-quick" data-range="week"      onclick="setQuick(this)">{% trans "This week" %}</button>
+                <button class="sf-quick" data-range="month"     onclick="setQuick(this)">{% trans "This month" %}</button>
             </div>
         </div>
 
         <div class="filter-sep"><div class="filter-sep-line"></div></div>
 
         <div class="filter-group">
-            <span class="filter-label">Batch ID</span>
+            <span class="filter-label">{% trans "Batch ID" %}</span>
             <div class="sf-search-input">
                 <span class="material-icons-round" style="font-size:15px;color:var(--text-secondary);">search</span>
-                <input id="sfBatchQ" type="text" placeholder="Search…" oninput="applyFilters()" autocomplete="off">
+                <input id="sfBatchQ" type="text" placeholder="{% trans "Search…" %}" oninput="applyFilters()" autocomplete="off">
             </div>
         </div>
 
         <div class="filter-group">
-            <span class="filter-label">Account</span>
+            <span class="filter-label">{% trans "Account" %}</span>
             <div class="ss-wrap" id="accWrap">
                 <button class="filter-input ss-btn" id="accBtn" onclick="toggleSs('accWrap')">
                     <span class="material-icons-round" style="font-size:15px;flex-shrink:0;">store</span>
-                    <span id="accLabel">All accounts</span>
+                    <span id="accLabel">{% trans "All accounts" %}</span>
                     <span class="material-icons-round ss-arrow">expand_more</span>
                 </button>
                 <div class="ss-panel" id="accPanel">
-                    <input class="ss-search" type="text" placeholder="Search account…" oninput="filterSsOpts(this,'accOptions')" autocomplete="off">
+                    <input class="ss-search" type="text" placeholder="{% trans "Search account…" %}" oninput="filterSsOpts(this,'accOptions')" autocomplete="off">
                     <div class="ss-options" id="accOptions">
-                        <div class="ss-option ss-selected" data-val="" onclick="pickAccount('')">All accounts</div>
+                        <div class="ss-option ss-selected" data-val="" onclick="pickAccount('')">{% trans "All accounts" %}</div>
                         {% for acc in accounts %}
                         <div class="ss-option" data-val="{{ acc.pk }}" onclick="pickAccount('{{ acc.pk }}','{{ acc.name|escapejs }}')">
                             <div class="ss-opt-name">{{ acc.name }}</div>
@@ -80,35 +81,35 @@
         </div>
 
         <div class="filter-group">
-            <span class="filter-label">Contract</span>
+            <span class="filter-label">{% trans "Contract" %}</span>
             <div class="ss-wrap" id="ctWrap">
                 <button class="filter-input ss-btn" id="ctBtn" onclick="toggleSs('ctWrap')" disabled>
                     <span class="material-icons-round" style="font-size:15px;flex-shrink:0;">description</span>
-                    <span id="ctLabel">All contracts</span>
+                    <span id="ctLabel">{% trans "All contracts" %}</span>
                     <span class="material-icons-round ss-arrow">expand_more</span>
                 </button>
                 <div class="ss-panel" id="ctPanel">
-                    <input class="ss-search" type="text" placeholder="Search contract…" oninput="filterSsOpts(this,'ctOptions')" autocomplete="off">
+                    <input class="ss-search" type="text" placeholder="{% trans "Search contract…" %}" oninput="filterSsOpts(this,'ctOptions')" autocomplete="off">
                     <div class="ss-options" id="ctOptions">
-                        <div class="ss-option ss-selected" data-val="" onclick="pickContract('')">All contracts</div>
+                        <div class="ss-option ss-selected" data-val="" onclick="pickContract('')">{% trans "All contracts" %}</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="filter-group">
-            <span class="filter-label">Review status</span>
+            <span class="filter-label">{% trans "Review status" %}</span>
             <div style="display:flex;gap:4px;" id="sfStatusPills">
-                <button class="sf-quick active" onclick="setStatus('',         this)">All</button>
-                <button class="sf-quick"        onclick="setStatus('pending',  this)">Has pending</button>
-                <button class="sf-quick"        onclick="setStatus('accepted', this)">Has accepted</button>
-                <button class="sf-quick"        onclick="setStatus('rejected', this)">Has rejected</button>
+                <button class="sf-quick active" onclick="setStatus('',         this)">{% trans "All" %}</button>
+                <button class="sf-quick"        onclick="setStatus('pending',  this)">{% trans "Has pending" %}</button>
+                <button class="sf-quick"        onclick="setStatus('accepted', this)">{% trans "Has accepted" %}</button>
+                <button class="sf-quick"        onclick="setStatus('rejected', this)">{% trans "Has rejected" %}</button>
             </div>
         </div>
 
         <div class="filter-group" style="justify-content:flex-end;">
             <span class="filter-label">&nbsp;</span>
-            <button class="icon-btn" onclick="resetFilters()" title="Reset all filters" style="height:36px;width:36px;">
+            <button class="icon-btn" onclick="resetFilters()" title="{% trans "Reset all filters" %}" style="height:36px;width:36px;">
                 <span class="material-icons-round" style="font-size:16px;">filter_alt_off</span>
             </button>
         </div>
@@ -122,20 +123,20 @@
     <div class="bl-card-hd">
         <div style="display:flex;align-items:center;gap:8px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);">
             <span class="material-icons-round" style="font-size:15px;">inventory_2</span>
-            Batches
+            {% trans "Batches" %}
             <span class="count-badge" id="blTotalChip">—</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
             <div class="exp-wrap">
                 <button class="exp-sort-btn" onclick="toggleListExportDd()">
-                    <span class="material-icons-round">download</span> Export
+                    <span class="material-icons-round">download</span> {% trans "Export" %}
                 </button>
                 <div class="exp-panel" id="listExpPanel" style="display:none;left:auto;right:0;">
                     <div class="exp-opt" onclick="doListExport(false)">
-                        <span class="material-icons-round">filter_alt</span> Export filtered
+                        <span class="material-icons-round">filter_alt</span> {% trans "Export filtered" %}
                     </div>
                     <div class="exp-opt" onclick="doListExport(true)">
-                        <span class="material-icons-round">table_rows</span> Export all
+                        <span class="material-icons-round">table_rows</span> {% trans "Export all" %}
                     </div>
                 </div>
             </div>
@@ -143,7 +144,7 @@
                 <button class="icon-btn" id="blPrev" onclick="goPage(-1)" disabled>
                     <span class="material-icons-round" style="font-size:16px;">chevron_left</span>
                 </button>
-                <span id="blPageLabel">Page 1 / 1</span>
+                <span id="blPageLabel">{% trans "Page 1 / 1" %}</span>
                 <button class="icon-btn" id="blNext" onclick="goPage(1)" disabled>
                     <span class="material-icons-round" style="font-size:16px;">chevron_right</span>
                 </button>
@@ -153,21 +154,21 @@
 
     <div class="bl-col-hd" id="blColHd" style="display:none;">
         <div></div>
-        <div>Batch ID</div>
-        <div>Account</div>
-        <div>Contract</div>
-        <div style="text-align:right;">Sales</div>
-        <div>Review Status</div>
+        <div>{% trans "Batch ID" %}</div>
+        <div>{% trans "Account" %}</div>
+        <div>{% trans "Contract" %}</div>
+        <div style="text-align:right;">{% trans "Sales" %}</div>
+        <div>{% trans "Review Status" %}</div>
     </div>
 
     <div id="blSpinner" class="bl-state">
         <span class="material-icons-round spinning" style="font-size:28px;color:var(--card-border);">autorenew</span>
-        <span style="font-size:0.83rem;color:var(--text-secondary);">Loading batches…</span>
+        <span style="font-size:0.83rem;color:var(--text-secondary);">{% trans "Loading batches…" %}</span>
     </div>
     <div id="blEmpty" class="bl-state" style="display:none;">
         <span class="material-icons-round" style="font-size:28px;color:var(--card-border);">search_off</span>
-        <span style="font-size:0.83rem;color:var(--text-secondary);">No batches match the current filters.</span>
-        <a onclick="resetFilters()" style="font-size:0.8rem;color:var(--accent);cursor:pointer;text-decoration:none;margin-top:2px;">Clear filters</a>
+        <span style="font-size:0.83rem;color:var(--text-secondary);">{% trans "No batches match the current filters." %}</span>
+        <a onclick="resetFilters()" style="font-size:0.8rem;color:var(--accent);cursor:pointer;text-decoration:none;margin-top:2px;">{% trans "Clear filters" %}</a>
     </div>
 
     <div id="blRows"></div>
@@ -189,14 +190,14 @@
                     <span class="bm-batch-id" id="bmBatchId">—</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-                    <button class="bm-nav-btn" id="bmPrev" onclick="navBatch(-1)" title="Previous batch (←)">
+                    <button class="bm-nav-btn" id="bmPrev" onclick="navBatch(-1)" title="{% trans "Previous batch (←)" %}">
                         <span class="material-icons-round" style="font-size:16px;">chevron_left</span>
                     </button>
                     <span id="bmNavLabel" style="font-size:0.78rem;color:var(--text-secondary);white-space:nowrap;">1 / 1</span>
-                    <button class="bm-nav-btn" id="bmNext" onclick="navBatch(1)"  title="Next batch (→)">
+                    <button class="bm-nav-btn" id="bmNext" onclick="navBatch(1)"  title="{% trans "Next batch (→)" %}">
                         <span class="material-icons-round" style="font-size:16px;">chevron_right</span>
                     </button>
-                    <button class="bm-close-btn" onclick="closeBatchModal()" title="Close (Esc)">
+                    <button class="bm-close-btn" onclick="closeBatchModal()" title="{% trans "Close (Esc)" %}">
                         <span class="material-icons-round" style="font-size:18px;">close</span>
                     </button>
                 </div>
@@ -214,15 +215,15 @@
 {# ── Confirm modal ── #}
 <div id="confirmModal" class="confirm-overlay" style="display:none;">
     <div class="confirm-box">
-        <div class="confirm-title" id="confirmTitle">Confirm</div>
+        <div class="confirm-title" id="confirmTitle">{% trans "Confirm" %}</div>
         <div class="confirm-msg"   id="confirmMsg"></div>
         <div id="confirmReasonWrap" style="display:none;margin-top:10px;">
-            <label style="font-size:0.75rem;opacity:0.6;display:block;margin-bottom:4px;">Rejection reason (optional)</label>
-            <textarea id="confirmReason" rows="2" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--card-border);border-radius:6px;background:var(--card-bg);color:var(--text-primary);font-size:0.82rem;resize:vertical;" placeholder="e.g. duplicate batch, wrong product codes…"></textarea>
+            <label style="font-size:0.75rem;opacity:0.6;display:block;margin-bottom:4px;">{% trans "Rejection reason (optional)" %}</label>
+            <textarea id="confirmReason" rows="2" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--card-border);border-radius:6px;background:var(--card-bg);color:var(--text-primary);font-size:0.82rem;resize:vertical;" placeholder="{% trans "e.g. duplicate batch, wrong product codes…" %}"></textarea>
         </div>
         <div class="confirm-actions">
-            <button class="confirm-btn confirm-btn-cancel" onclick="closeConfirm()">Cancel</button>
-            <button class="confirm-btn" id="confirmOkBtn" onclick="confirmOk()">Confirm</button>
+            <button class="confirm-btn confirm-btn-cancel" onclick="closeConfirm()">{% trans "Cancel" %}</button>
+            <button class="confirm-btn" id="confirmOkBtn" onclick="confirmOk()">{% trans "Confirm" %}</button>
         </div>
     </div>
 </div>
@@ -750,11 +751,11 @@ function filterSsOpts(input, optionsId) {
 function pickAccount(pk, name) {
     fAccountPk  = pk;
     fContractPk = '';
-    document.getElementById('accLabel').textContent = name || 'All accounts';
+    document.getElementById('accLabel').textContent = name || '{% trans "All accounts" %}';
     document.querySelectorAll('#accOptions .ss-option').forEach(o => o.classList.toggle('ss-selected', o.dataset.val === pk));
     closeAllSs();
-    document.getElementById('ctLabel').textContent  = 'All contracts';
-    document.getElementById('ctOptions').innerHTML  = '<div class="ss-option ss-selected" data-val="" onclick="pickContract(\'\')">All contracts</div>';
+    document.getElementById('ctLabel').textContent  = '{% trans "All contracts" %}';
+    document.getElementById('ctOptions').innerHTML  = '<div class="ss-option ss-selected" data-val="" onclick="pickContract(\'\')">{% trans "All contracts" %}</div>';
     document.getElementById('ctBtn').disabled = !pk;
     if (pk) {
         if (contractsCache[pk]) populateContracts(contractsCache[pk]);
@@ -768,9 +769,9 @@ function pickAccount(pk, name) {
 function populateContracts(list) {
     const opts = document.getElementById('ctOptions');
     const dot = s => s === 'active'
-        ? `<span style="color:#22c55e;font-size:8px;line-height:1;vertical-align:middle;margin-right:5px;" title="Active">●</span>`
+        ? `<span style="color:#22c55e;font-size:8px;line-height:1;vertical-align:middle;margin-right:5px;" title="{% trans "Active" %}">●</span>` /* i18n-todo */
         : `<span style="color:var(--text-secondary);font-size:8px;line-height:1;vertical-align:middle;margin-right:5px;opacity:0.35;" title="${escHtml(s)}">●</span>`;
-    opts.innerHTML = '<div class="ss-option ss-selected" data-val="" onclick="pickContract(\'\')">All contracts</div>' +
+    opts.innerHTML = '<div class="ss-option ss-selected" data-val="" onclick="pickContract(\'\')">{% trans "All contracts" %}</div>' +
         list.map(c => `<div class="ss-option" data-val="${c.pk}" onclick="pickContract('${c.pk}','${escAttr(c.title)}')">
             <div class="ss-opt-name">${dot(c.status)}${escHtml(c.title)}</div>
             <div class="ss-opt-sub">${escHtml(c.start_date)} – ${escHtml(c.end_date)} · ${c.sale_count} sales</div>
@@ -778,7 +779,7 @@ function populateContracts(list) {
 }
 function pickContract(pk, name) {
     fContractPk = pk;
-    document.getElementById('ctLabel').textContent = name || 'All contracts';
+    document.getElementById('ctLabel').textContent = name || '{% trans "All contracts" %}';
     document.querySelectorAll('#ctOptions .ss-option').forEach(o => o.classList.toggle('ss-selected', o.dataset.val === pk));
     closeAllSs();
     applyFilters();
@@ -839,9 +840,9 @@ function resetFilters() {
     document.getElementById('sfTo').value='';
     document.getElementById('sfClearDate').style.display='none';
     document.getElementById('sfBatchQ').value='';
-    document.getElementById('accLabel').textContent='All accounts';
-    document.getElementById('ctLabel').textContent='All contracts';
-    document.getElementById('ctOptions').innerHTML='<div class="ss-option ss-selected" data-val="" onclick="pickContract(\'\')">All contracts</div>';
+    document.getElementById('accLabel').textContent='{% trans "All accounts" %}';
+    document.getElementById('ctLabel').textContent='{% trans "All contracts" %}';
+    document.getElementById('ctOptions').innerHTML='<div class="ss-option ss-selected" data-val="" onclick="pickContract(\'\')">{% trans "All contracts" %}</div>';
     document.getElementById('ctBtn').disabled=true;
     document.querySelectorAll('#accOptions .ss-option').forEach(o=>o.classList.toggle('ss-selected',o.dataset.val===''));
     document.querySelectorAll('.sf-quick[data-range]').forEach(b=>b.classList.remove('active'));
@@ -887,7 +888,7 @@ function fetchBatches() {
             totalPages=d.pages;
             document.getElementById('blColHd').style.display='';
             document.getElementById('blPageInfo').style.display='flex';
-            document.getElementById('blPageLabel').textContent=`Page ${d.page} / ${d.pages}  (${d.total} total)`;
+            document.getElementById('blPageLabel').textContent=`{% trans "Page" %} ${d.page} / ${d.pages}  (${d.total} {% trans "total" %})`; /* i18n-todo: interpolated */
             document.getElementById('blPrev').disabled=!d.has_prev;
             document.getElementById('blNext').disabled=!d.has_next;
             renderBatchRows(d.batches);
@@ -898,22 +899,22 @@ function renderBatchRows(batches) {
     const container=document.getElementById('blRows');
     container.innerHTML=batches.map((b,i)=>{
         const chips=[
-            b.pending  ? `<span class="bc bc-p">${b.pending} pending</span>`   : '',
-            b.accepted ? `<span class="bc bc-a">${b.accepted} accepted</span>` : '',
-            b.rejected ? `<span class="bc bc-r">${b.rejected} rejected</span>` : '',
+            b.pending  ? `<span class="bc bc-p">${b.pending} {% trans "pending" %}</span>`   : '', /* i18n-todo */
+            b.accepted ? `<span class="bc bc-a">${b.accepted} {% trans "accepted" %}</span>` : '', /* i18n-todo */
+            b.rejected ? `<span class="bc bc-r">${b.rejected} {% trans "rejected" %}</span>` : '', /* i18n-todo */
         ].filter(Boolean).join('') || '<span style="font-size:0.78rem;opacity:0.4;color:var(--text-secondary);">—</span>';
         const ctText  = b.contract_title || '—';
         const accLink = b.account_pk
-            ? `<a href="/control/accounts/${b.account_pk}/" class="bl-link" onclick="event.stopPropagation()" title="View account">${escHtml(b.account_name)}</a>`
+            ? `<a href="/control/accounts/${b.account_pk}/" class="bl-link" onclick="event.stopPropagation()" title="{% trans "View account" %}">${escHtml(b.account_name)}</a>`
             : escHtml(b.account_name);
         const ctLink  = b.contract_pk
-            ? `<a href="/control/contracts/${b.contract_pk}/" class="bl-link" onclick="event.stopPropagation()" title="View contract">${escHtml(ctText)}</a>`
+            ? `<a href="/control/contracts/${b.contract_pk}/" class="bl-link" onclick="event.stopPropagation()" title="{% trans "View contract" %}">${escHtml(ctText)}</a>`
             : escHtml(ctText);
         const relTime = relativeTime(b.received_at_iso);
         const safe=safeBid(b.batch_id);
         return `
 <div class="bl-batch" id="blb-${safe}" data-idx="${i}" onclick="openBatchModal(${i})">
-  <div class="bl-hd" title="Open this batch">
+  <div class="bl-hd" title="{% trans "Open this batch" %}">
     <span class="bl-chevron material-icons-round">open_in_new</span>
     <div class="bl-id-recv">
       <div class="bl-batch-id">${escHtml(b.batch_id)}</div>
@@ -947,20 +948,20 @@ function openBatchModal(idx) {
     // Fill header
     document.getElementById('bmBatchId').textContent = b.batch_id;
     const bmAccLink = b.account_pk
-        ? `<a href="/control/accounts/${b.account_pk}/" class="bm-link" title="View account">${escHtml(b.account_name)}</a>`
+        ? `<a href="/control/accounts/${b.account_pk}/" class="bm-link" title="{% trans "View account" %}">${escHtml(b.account_name)}</a>`
         : escHtml(b.account_name);
     const bmCtLink  = b.contract_pk
-        ? `<a href="/control/contracts/${b.contract_pk}/" class="bm-link" title="View contract">${escHtml(b.contract_title||'—')}</a>`
+        ? `<a href="/control/contracts/${b.contract_pk}/" class="bm-link" title="{% trans "View contract" %}">${escHtml(b.contract_title||'—')}</a>`
         : escHtml(b.contract_title||'—');
     const period    = formatDateRange(b.sale_date_min, b.sale_date_max);
-    const periodTitle = b.sale_date_min
+    const periodTitle = b.sale_date_min /* i18n-todo */
         ? 'Sale dates in this batch\nEarliest: ' + b.sale_date_min +
           (b.sale_date_max && b.sale_date_max !== b.sale_date_min ? '\nLatest:   ' + b.sale_date_max : '')
         : 'Sale date range';
     const periodBit = (period && period !== '—')
         ? `<span style="opacity:0.35;">·</span><span title="${periodTitle}" style="cursor:default;display:inline-flex;align-items:center;gap:4px;"><span class="material-icons-round">date_range</span>${period}</span>`
         : '';
-    const recvTitle = 'Date and time this batch was received by the server' +
+    const recvTitle = 'Date and time this batch was received by the server' + /* i18n-todo */
                       (b.received_at_iso ? '\n' + b.received_at_iso : '');
     document.getElementById('bmMeta').innerHTML =
         `<span class="material-icons-round">store</span>${bmAccLink}` +
@@ -970,12 +971,12 @@ function openBatchModal(idx) {
         `<span title="${recvTitle}" style="cursor:default;display:inline-flex;align-items:center;gap:4px;"><span class="material-icons-round">schedule</span>${escHtml(b.received_at||'—')}</span>` +
         periodBit;
     const chips=[
-        b.pending      ? `<span class="bc bc-p">${b.pending} pending</span>`   : '',
-        b.accepted     ? `<span class="bc bc-a">${b.accepted} accepted</span>` : '',
-        b.rejected     ? `<span class="bc bc-r">${b.rejected} rejected</span>` : '',
-        b.ppv_mismatch ? `<span class="bc bc-ppv"><span class="material-icons-round">warning</span>${b.ppv_mismatch} PPV mismatch</span>` : '',
+        b.pending      ? `<span class="bc bc-p">${b.pending} {% trans "pending" %}</span>`   : '', /* i18n-todo */
+        b.accepted     ? `<span class="bc bc-a">${b.accepted} {% trans "accepted" %}</span>` : '', /* i18n-todo */
+        b.rejected     ? `<span class="bc bc-r">${b.rejected} {% trans "rejected" %}</span>` : '', /* i18n-todo */
+        b.ppv_mismatch ? `<span class="bc bc-ppv"><span class="material-icons-round">warning</span>${b.ppv_mismatch} {% trans "PPV mismatch" %}</span>` : '', /* i18n-todo */
     ].filter(Boolean).join('');
-    document.getElementById('bmChips').innerHTML = chips || '<span style="font-size:0.8rem;opacity:0.4;color:var(--text-secondary);">No review data</span>';
+    document.getElementById('bmChips').innerHTML = chips || '<span style="font-size:0.8rem;opacity:0.4;color:var(--text-secondary);">{% trans "No review data" %}</span>';
 
     // Nav controls
     document.getElementById('bmNavLabel').textContent = `${idx+1} / ${batchList.length}`;
@@ -997,7 +998,7 @@ function openBatchModal(idx) {
     if (!b.contract_pk) {
         document.getElementById('salesSpinner').style.display='none';
         document.getElementById('salesEmpty').style.display='';
-        document.getElementById('salesEmpty').textContent='No sale records for this batch.';
+        document.getElementById('salesEmpty').textContent='{% trans "No sale records for this batch." %}';
         return;
     }
     loadSales(b.contract_pk, b.batch_id);
@@ -1031,33 +1032,33 @@ function getSalesTableHtml() {
   <div class="st-row">
     <div class="st-search">
       <span class="material-icons-round">search</span>
-      <input id="salesSearch" type="text" placeholder="Search product…" oninput="filterSalesTable()" autocomplete="off">
+      <input id="salesSearch" type="text" placeholder="{% trans "Search product…" %}" oninput="filterSalesTable()" autocomplete="off">
     </div>
-    <button class="exp-sort-btn" onclick="doExportBatch()" title="Export this batch as CSV">
-      <span class="material-icons-round">download</span> Export batch
+    <button class="exp-sort-btn" onclick="doExportBatch()" title="{% trans "Export this batch as CSV" %}">
+      <span class="material-icons-round">download</span> {% trans "Export batch" %}
     </button>
   </div>
   <div class="st-row" style="justify-content:space-between;">
     <div id="salesFilterPills" style="display:flex;gap:4px;flex-wrap:wrap;">
-      <button class="st-pill active" onclick="setSalesFilter('all',this)">All</button>
-      <button class="st-pill" onclick="setSalesFilter('pending',this)">Pending</button>
-      <button class="st-pill" onclick="setSalesFilter('accepted',this)">Accepted</button>
-      <button class="st-pill" onclick="setSalesFilter('rejected',this)">Rejected</button>
+      <button class="st-pill active" onclick="setSalesFilter('all',this)">{% trans "All" %}</button>
+      <button class="st-pill" onclick="setSalesFilter('pending',this)">{% trans "Pending" %}</button>
+      <button class="st-pill" onclick="setSalesFilter('accepted',this)">{% trans "Accepted" %}</button>
+      <button class="st-pill" onclick="setSalesFilter('rejected',this)">{% trans "Rejected" %}</button>
     </div>
     <div id="bulkBar" style="display:flex;gap:6px;align-items:center;">
       <span id="selCount" style="display:none;font-size:0.78rem;color:var(--text-secondary);white-space:nowrap;"></span>
       <button class="sr-btn sr-btn-accept" id="btnAccSel" style="display:none;" onclick="bulkSelected('accepted')">
-        <span class="material-icons-round">check</span> Accept
+        <span class="material-icons-round">check</span> {% trans "Accept" %}
       </button>
       <button class="sr-btn sr-btn-reject" id="btnRejSel" style="display:none;" onclick="bulkSelected('rejected')">
-        <span class="material-icons-round">close</span> Reject
+        <span class="material-icons-round">close</span> {% trans "Reject" %}
       </button>
     </div>
   </div>
 </div>
 
 <div id="salesSpinner" class="st-spinner">
-  <span class="material-icons-round spinning">autorenew</span> Loading…
+  <span class="material-icons-round spinning">autorenew</span> {% trans "Loading…" %}
 </div>
 
 <div id="salesTableWrap" style="display:none;">
@@ -1066,18 +1067,18 @@ function getSalesTableHtml() {
       <thead><tr>
         <th class="th-chk"><input type="checkbox" id="selAll" onchange="toggleSelectAll(this.checked)"></th>
         <th>#</th>
-        <th>Product</th>
-        <th class="th-sort" onclick="setSalesSort('date')">Sale Date <span class="sort-arr" id="sa-date">↕</span></th>
-        <th class="th-sort" style="text-align:right;" onclick="setSalesSort('qty')">Qty <span class="sort-arr" id="sa-qty">↕</span></th>
-        <th style="text-align:right;">PPV</th>
-        <th class="th-sort" style="text-align:right;" onclick="setSalesSort('pts')">Pts <span class="sort-arr" id="sa-pts">↕</span></th>
-        <th style="text-align:center;">Status</th>
-        <th style="text-align:center;">Actions</th>
+        <th>{% trans "Product" %}</th>
+        <th class="th-sort" onclick="setSalesSort('date')">{% trans "Sale Date" %} <span class="sort-arr" id="sa-date">↕</span></th>
+        <th class="th-sort" style="text-align:right;" onclick="setSalesSort('qty')">{% trans "Qty" %} <span class="sort-arr" id="sa-qty">↕</span></th>
+        <th style="text-align:right;">{% trans "PPV" %}</th>
+        <th class="th-sort" style="text-align:right;" onclick="setSalesSort('pts')">{% trans "Pts" %} <span class="sort-arr" id="sa-pts">↕</span></th>
+        <th style="text-align:center;">{% trans "Status" %}</th>
+        <th style="text-align:center;">{% trans "Actions" %}</th>
       </tr></thead>
       <tbody id="salesBody"></tbody>
     </table>
   </div>
-  <div id="salesEmpty" class="st-empty" style="display:none;">No sales match.</div>
+  <div id="salesEmpty" class="st-empty" style="display:none;">{% trans "No sales match." %}</div>
 </div>
 <div id="bmSummary" class="bm-summary" style="display:none;"></div>`;
 }
@@ -1100,13 +1101,13 @@ function loadSales(contractPk, batchId) {
             const sumEl=document.getElementById('bmSummary');
             if (sumEl) {
                 sumEl.style.display='';
-                sumEl.innerHTML=`<span class="bms-lbl">Batch totals</span>`
-                    +`<span class="bms-item">${c.pending||0} <span class="bms-dim">pending</span></span>`
+                sumEl.innerHTML=`<span class="bms-lbl">{% trans "Batch totals" %}</span>` /* i18n-todo */
+                    +`<span class="bms-item">${c.pending||0} <span class="bms-dim">{% trans "pending" %}</span></span>` /* i18n-todo */
                     +`<span class="bms-sep">·</span>`
-                    +`<span class="bms-item" style="color:#22c55e;">${c.accepted||0} <span class="bms-dim">accepted</span></span>`
+                    +`<span class="bms-item" style="color:#22c55e;">${c.accepted||0} <span class="bms-dim">{% trans "accepted" %}</span></span>` /* i18n-todo */
                     +`<span class="bms-sep">·</span>`
-                    +`<span class="bms-item" style="color:#ef4444;">${c.rejected||0} <span class="bms-dim">rejected</span></span>`
-                    +((c.total_pts>0)?`<span class="bms-sep">·</span><span class="bms-item" style="color:var(--accent);">${c.total_pts.toLocaleString()} <span class="bms-dim">pts</span></span>`:'');
+                    +`<span class="bms-item" style="color:#ef4444;">${c.rejected||0} <span class="bms-dim">{% trans "rejected" %}</span></span>` /* i18n-todo */
+                    +((c.total_pts>0)?`<span class="bms-sep">·</span><span class="bms-item" style="color:var(--accent);">${c.total_pts.toLocaleString()} <span class="bms-dim">{% trans "pts" %}</span></span>`:'');
             }
         });
 }
@@ -1145,12 +1146,12 @@ function renderSalesTable() {
             (s.import_received_at?`<div class="srt-row"><span class="srt-icon srt-icon-recv material-icons-round">arrow_downward</span><span class="srt-txt">${escHtml(s.import_received_at)}</span></div>`:'') +
             (s.reviewed_at
                 ?`<div class="srt-row"><span class="srt-icon ${s.status==='accepted'?'srt-icon-ok':'srt-icon-rej'} material-icons-round">${s.status==='accepted'?'check':'close'}</span><span class="srt-txt">${s.reviewed_by?escHtml(s.reviewed_by)+' · ':''}${escHtml(s.reviewed_at)}</span></div>`
-                :`<div class="srt-row"><span class="srt-icon srt-icon-wait material-icons-round">hourglass_empty</span><span class="srt-txt" style="opacity:0.45;">Awaiting review</span></div>`)
+                :`<div class="srt-row"><span class="srt-icon srt-icon-wait material-icons-round">hourglass_empty</span><span class="srt-txt" style="opacity:0.45;">{% trans "Awaiting review" %}</span></div>`) /* i18n-todo */
             +`</div>`;
         const ppvWarn=s.ppv_mismatch
-            ?`<span class="material-icons-round" title="PPV mismatch — submitted: ${s.ppv}, contract: ${s.contract_ppv}" style="font-size:13px;color:#f59e0b;vertical-align:middle;margin-left:3px;cursor:default;">warning</span>`:'';
-        const aBtn=s.status!=='accepted'?`<button class="ab ab-a" title="Accept" onclick="doAction(${s.pk},'accept',this)"><span class="material-icons-round">check</span></button>`:'';
-        const rBtn=s.status!=='rejected'?`<button class="ab ab-r" title="Reject" onclick="doAction(${s.pk},'reject',this)"><span class="material-icons-round">close</span></button>`:'';
+            ?`<span class="material-icons-round" title="{% trans "PPV mismatch" %} — {% trans "submitted" %}: ${s.ppv}, {% trans "contract" %}: ${s.contract_ppv}" style="font-size:13px;color:#f59e0b;vertical-align:middle;margin-left:3px;cursor:default;">warning</span>`:''  /* i18n-todo */;
+        const aBtn=s.status!=='accepted'?`<button class="ab ab-a" title="{% trans "Accept" %}" onclick="doAction(${s.pk},'accept',this)"><span class="material-icons-round">check</span></button>`:''  /* i18n-todo */;
+        const rBtn=s.status!=='rejected'?`<button class="ab ab-r" title="{% trans "Reject" %}" onclick="doAction(${s.pk},'reject',this)"><span class="material-icons-round">close</span></button>`:''  /* i18n-todo */;
         return `<tr data-pk="${s.pk}" data-status="${s.status}" data-search="${escAttr(s.product.toLowerCase()+' '+s.ext_designation.toLowerCase())}" class="${hidden}">
             <td style="padding:10px 4px 10px 14px;"><input type="checkbox" class="row-chk" onchange="onRowCheck()"></td>
             <td style="color:var(--text-secondary);font-size:0.77rem;">${i+1}</td>
@@ -1202,7 +1203,7 @@ function updateSelectionUI(n) {
     const sc=document.getElementById('selCount');
     const ba=document.getElementById('btnAccSel');
     const br=document.getElementById('btnRejSel');
-    if (sc) { sc.style.display=n?'':'none'; sc.textContent=n+' selected'; }
+    if (sc) { sc.style.display=n?'':'none'; sc.textContent=n+' {% trans "selected" %}'; } /* i18n-todo */
     if (ba) ba.style.display=n?'':'none';
     if (br) br.style.display=n?'':'none';
 }
@@ -1256,12 +1257,12 @@ function refreshBatchChips(batchId) {
             }
             // Update modal header chips
             const modalChips=[
-                b.pending      ?`<span class="bc bc-p">${b.pending} pending</span>`  :'',
-                b.accepted     ?`<span class="bc bc-a">${b.accepted} accepted</span>`:'',
-                b.rejected     ?`<span class="bc bc-r">${b.rejected} rejected</span>`:'',
-                b.ppv_mismatch ?`<span class="bc bc-ppv"><span class="material-icons-round">warning</span>${b.ppv_mismatch} PPV mismatch</span>`:'',
+                b.pending      ?`<span class="bc bc-p">${b.pending} {% trans "pending" %}</span>`  :'', /* i18n-todo */
+                b.accepted     ?`<span class="bc bc-a">${b.accepted} {% trans "accepted" %}</span>`:'', /* i18n-todo */
+                b.rejected     ?`<span class="bc bc-r">${b.rejected} {% trans "rejected" %}</span>`:'', /* i18n-todo */
+                b.ppv_mismatch ?`<span class="bc bc-ppv"><span class="material-icons-round">warning</span>${b.ppv_mismatch} {% trans "PPV mismatch" %}</span>`:'', /* i18n-todo */
             ].filter(Boolean).join('');
-            document.getElementById('bmChips').innerHTML=modalChips||'<span style="font-size:0.8rem;opacity:0.4;color:var(--text-secondary);">No review data</span>';
+            document.getElementById('bmChips').innerHTML=modalChips||'<span style="font-size:0.8rem;opacity:0.4;color:var(--text-secondary);">{% trans "No review data" %}</span>';
         });
 }
 
@@ -1334,17 +1335,17 @@ function buildStatusCol(b) {
     const pPct     = (b.pending  / total * 100).toFixed(1);
     const aPct     = (b.accepted / total * 100).toFixed(1);
     const rPct     = (b.rejected / total * 100).toFixed(1);
-    const barTitle = `${b.pending} pending · ${b.accepted} accepted · ${b.rejected} rejected`;
-    const pStr = b.pending  ? `<span style="color:#f59e0b;font-weight:700" title="${b.pending} pending">${b.pending}</span>`   : `<span style="opacity:0.25" title="0 pending">${b.pending}</span>`;
-    const aStr = b.accepted ? `<span style="color:#22c55e;font-weight:700" title="${b.accepted} accepted">${b.accepted}</span>` : `<span style="opacity:0.25" title="0 accepted">${b.accepted}</span>`;
-    const rStr = b.rejected ? `<span style="color:#ef4444;font-weight:700" title="${b.rejected} rejected">${b.rejected}</span>` : `<span style="opacity:0.25" title="0 rejected">${b.rejected}</span>`;
+    const barTitle = `${b.pending} {% trans "pending" %} · ${b.accepted} {% trans "accepted" %} · ${b.rejected} {% trans "rejected" %}`; /* i18n-todo */
+    const pStr = b.pending  ? `<span style="color:#f59e0b;font-weight:700" title="${b.pending} {% trans "pending" %}">${b.pending}</span>`   : `<span style="opacity:0.25" title="0 {% trans "pending" %}">${b.pending}</span>`; /* i18n-todo */
+    const aStr = b.accepted ? `<span style="color:#22c55e;font-weight:700" title="${b.accepted} {% trans "accepted" %}">${b.accepted}</span>` : `<span style="opacity:0.25" title="0 {% trans "accepted" %}">${b.accepted}</span>`; /* i18n-todo */
+    const rStr = b.rejected ? `<span style="color:#ef4444;font-weight:700" title="${b.rejected} {% trans "rejected" %}">${b.rejected}</span>` : `<span style="opacity:0.25" title="0 {% trans "rejected" %}">${b.rejected}</span>`; /* i18n-todo */
     const ppvBit = b.ppv_mismatch
-        ? `<span class="bl-cnt-sep">·</span><span style="color:#f59e0b;" title="${b.ppv_mismatch} PPV mismatch"><span class="material-icons-round" style="font-size:10px;vertical-align:middle;">warning</span>${b.ppv_mismatch}</span>`
+        ? `<span class="bl-cnt-sep">·</span><span style="color:#f59e0b;" title="${b.ppv_mismatch} {% trans "PPV mismatch" %}"><span class="material-icons-round" style="font-size:10px;vertical-align:middle;">warning</span>${b.ppv_mismatch}</span>` /* i18n-todo */
         : '';
     const rrBadge = b.rejection_rate >= 50
-        ? `<span class="bl-rr-badge bl-rr-high" title="${b.rejection_rate}% rejection rate">${b.rejection_rate}% rejected</span>`
+        ? `<span class="bl-rr-badge bl-rr-high" title="${b.rejection_rate}% {% trans "rejection rate" %}">${b.rejection_rate}% {% trans "rejected" %}</span>` /* i18n-todo */
         : b.rejection_rate >= 20
-        ? `<span class="bl-rr-badge bl-rr-med" title="${b.rejection_rate}% rejection rate">${b.rejection_rate}% rejected</span>`
+        ? `<span class="bl-rr-badge bl-rr-med" title="${b.rejection_rate}% {% trans "rejection rate" %}">${b.rejection_rate}% {% trans "rejected" %}</span>` /* i18n-todo */
         : '';
     return `<div class="bl-prog-bar" title="${barTitle}">
   <div class="bl-prog-p" style="width:${pPct}%"></div>

@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
 {% block page_title %}{{ contract.title }}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:contracts_list' %}" style="color:var(--text-secondary);text-decoration:none;">Contracts</a>
+    <a href="{% url 'control:contracts_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Contracts" %}</a>
     › {{ contract.title }}
 {% endblock %}
 {% block nav_contracts %}active{% endblock %}
@@ -18,9 +19,9 @@
             <div class="page-header-title">
                 {{ contract.title }}
                 {% if contract.status == "active" %}
-                    <span class="status-badge status-active">Active</span>
+                    <span class="status-badge status-active">{% trans "Active" %}</span>
                 {% else %}
-                    <span class="status-badge status-inactive">Inactive</span>
+                    <span class="status-badge status-inactive">{% trans "Inactive" %}</span>
                 {% endif %}
             </div>
             <div class="page-header-sub">
@@ -33,16 +34,16 @@
     </div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <a href="{% url 'control:contracts_list' %}" class="btn btn-secondary">
-            <span class="material-icons-round">arrow_back</span> Back
+            <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
         </a>
         <a href="{% url 'control:contracts_create' %}?clone={{ contract.pk }}" class="btn btn-secondary">
-            <span class="material-icons-round">content_copy</span> Clone
+            <span class="material-icons-round">content_copy</span> {% trans "Clone" %}
         </a>
         <a href="{% url 'control:contracts_edit' contract.pk %}" class="btn btn-primary">
-            <span class="material-icons-round">edit</span> Edit
+            <span class="material-icons-round">edit</span> {% trans "Edit" %}
         </a>
         <a href="{% url 'control:contracts_delete' contract.pk %}" class="btn btn-danger">
-            <span class="material-icons-round">delete</span> Delete
+            <span class="material-icons-round">delete</span> {% trans "Delete" %}
         </a>
     </div>
 </div>
@@ -51,10 +52,10 @@
 <!-- CONTRACT INFO                                                      -->
 <!-- ================================================================ -->
 <div class="card">
-    <div class="section-label">Contract Information</div>
-    <div class="info-row"><span class="info-key">Title</span><span class="info-val">{{ contract.title }}</span></div>
+    <div class="section-label">{% trans "Contract Information" %}</div>
+    <div class="info-row"><span class="info-key">{% trans "Title" %}</span><span class="info-val">{{ contract.title }}</span></div>
     <div class="info-row">
-        <span class="info-key">Account</span>
+        <span class="info-key">{% trans "Account" %}</span>
         <span class="info-val">
             <a href="{% url 'control:accounts_detail' contract.account.pk %}"
                style="color:var(--accent); text-decoration:none;">
@@ -66,7 +67,7 @@
         </span>
     </div>
     <div class="info-row">
-        <span class="info-key">Period</span>
+        <span class="info-key">{% trans "Period" %}</span>
         <span class="info-val" style="display:flex; flex-direction:column; align-items:flex-end; gap:3px;">
             <span>{{ contract.start_date|date:"d M Y, H:i" }} → {{ contract.end_date|date:"d M Y, H:i" }}</span>
             {% if duration %}
@@ -78,14 +79,14 @@
         </span>
     </div>
     <div class="info-row">
-        <span class="info-key">Status</span>
+        <span class="info-key">{% trans "Status" %}</span>
         <span class="info-val">
-            {% if contract.status == "active" %}<span class="badge badge-active">Active</span>
-            {% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+            {% if contract.status == "active" %}<span class="badge badge-active">{% trans "Active" %}</span>
+            {% else %}<span class="badge badge-inactive">{% trans "Inactive" %}</span>{% endif %}
         </span>
     </div>
     <div class="info-row" style="border-bottom:none; align-items:flex-start;">
-        <span class="info-key" style="padding-top:2px;">Description</span>
+        <span class="info-key" style="padding-top:2px;">{% trans "Description" %}</span>
         <span class="info-val" style="white-space:pre-line; text-align:right;">{{ contract.designation|default:"—" }}</span>
     </div>
 </div>
@@ -95,26 +96,26 @@
 <!-- ================================================================ -->
 <div class="card">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
-        <div class="section-label" style="margin-bottom:0;">Sales Sync</div>
+        <div class="section-label" style="margin-bottom:0;">{% trans "Sales Sync" %}</div>
         {% if sale_count %}
         <a href="{% url 'control:sales_list' %}?account={{ contract.account.pk }}&contract={{ contract.pk }}"
            class="btn btn-secondary" style="padding:5px 12px; font-size:0.8rem;">
-            <span class="material-icons-round" style="font-size:15px;">point_of_sale</span> Review Sales
+            <span class="material-icons-round" style="font-size:15px;">point_of_sale</span> {% trans "Review Sales" %}
         </a>
         {% endif %}
     </div>
     <div class="info-row">
-        <span class="info-key">Sales Recorded</span>
+        <span class="info-key">{% trans "Sales Recorded" %}</span>
         <span class="info-val">
             {% if sale_count %}
                 <span class="badge badge-active">{{ sale_count }} sale{{ sale_count|pluralize }}</span>
             {% else %}
-                <span class="dim-dash">None yet</span>
+                <span class="dim-dash">{% trans "None yet" %}</span>
             {% endif %}
         </span>
     </div>
     <div class="info-row">
-        <span class="info-key">Last Sale Date</span>
+        <span class="info-key">{% trans "Last Sale Date" %}</span>
         <span class="info-val">
             {% if contract.last_sale_datetime %}
                 {{ contract.last_sale_datetime|date:"d M Y, H:i" }}
@@ -124,12 +125,12 @@
         </span>
     </div>
     <div class="info-row" style="border-bottom:none;">
-        <span class="info-key">Last Sync</span>
+        <span class="info-key">{% trans "Last Sync" %}</span>
         <span class="info-val">
             {% if contract.last_sync_at %}
                 <span style="color:#22c55e;">{{ contract.last_sync_at|date:"d M Y, H:i" }}</span>
             {% else %}
-                <span class="dim-dash">Never synced</span>
+                <span class="dim-dash">{% trans "Never synced" %}</span>
             {% endif %}
         </span>
     </div>
@@ -143,19 +144,19 @@
 <div class="card" style="flex:1.5; min-width:340px;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
         <div style="display:flex; align-items:center; gap:10px;">
-            <div class="section-label" style="margin-bottom:0;">Trend</div>
+            <div class="section-label" style="margin-bottom:0;">{% trans "Trend" %}</div>
             <span id="drillBreadcrumb" style="display:none; font-size:0.78rem; color:var(--text-secondary); display:none; align-items:center; gap:4px;">
                 <button onclick="exitDrillDown()" style="background:none; border:none; cursor:pointer; color:var(--accent); font-size:0.78rem; font-family:'Inter',sans-serif; padding:0; display:flex; align-items:center; gap:2px;">
-                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> Back
+                    <span class="material-icons-round" style="font-size:13px;">arrow_back</span> {% trans "Back" %}
                 </button>
                 <span id="drillBreadcrumbText" style="color:var(--text-secondary);"></span>
             </span>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
-            <span id="trendModeLabel" style="font-size:0.75rem; color:var(--text-secondary);">Points &amp; products by month</span>
+            <span id="trendModeLabel" style="font-size:0.75rem; color:var(--text-secondary);">{% trans "Points & products by month" %}</span>
             <select id="yearSelector" onchange="switchYear(this.value)"
                 style="padding:3px 8px; border-radius:7px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-secondary); font-size:0.78rem; font-family:'Inter',sans-serif; cursor:pointer;">
-                <option value="last12">Last 12 months</option>
+                <option value="last12">{% trans "Last 12 months" %}</option>
             </select>
         </div>
     </div>
@@ -164,7 +165,7 @@
 {% if products_data %}
 <div class="card" style="flex:1; min-width:280px;">
     <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-        <div class="section-label" style="margin-bottom:0;">Points by Product</div>
+        <div class="section-label" style="margin-bottom:0;">{% trans "Points by Product" %}</div>
         <span id="prodChartMonthLabel" style="font-size:0.75rem; color:#f59e0b;"></span>
     </div>
     <div id="prodChart" style="height:240px;"></div>
@@ -179,18 +180,18 @@
 <div class="card">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
         <div class="section-label" style="margin-bottom:0;">
-            Products <span class="count-chip">{{ products_data|length }}</span>
+            {% trans "Products" %} <span class="count-chip">{{ products_data|length }}</span>
         </div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             {% if products_data %}
             <div style="display:flex; gap:4px;">
-                <button class="filter-pill active" onclick="setProdFilter('all',this)">All</button>
-                <button class="filter-pill" onclick="setProdFilter('active',this)">Active</button>
-                <button class="filter-pill" onclick="setProdFilter('inactive',this)">Inactive</button>
+                <button class="filter-pill active" onclick="setProdFilter('all',this)">{% trans "All" %}</button>
+                <button class="filter-pill" onclick="setProdFilter('active',this)">{% trans "Active" %}</button>
+                <button class="filter-pill" onclick="setProdFilter('inactive',this)">{% trans "Inactive" %}</button>
             </div>
             {% endif %}
             <a href="{% url 'control:contracts_edit' contract.pk %}" class="btn btn-secondary" style="padding:5px 12px; font-size:0.8rem;">
-                <span class="material-icons-round" style="font-size:15px;">edit</span> Manage
+                <span class="material-icons-round" style="font-size:15px;">edit</span> {% trans "Manage" %}
             </a>
         </div>
     </div>
@@ -198,7 +199,7 @@
     {% if products_data %}
     <div class="search-bar" style="margin-bottom:10px;">
         <span class="material-icons-round">search</span>
-        <input type="text" id="prodSearch" placeholder="Search products…"
+        <input type="text" id="prodSearch" placeholder="{% trans "Search products…" %}"
                oninput="filterProducts()" autocomplete="off">
     </div>
 
@@ -206,12 +207,12 @@
         <table class="data-table" id="prodTable">
             <thead>
                 <tr>
-                    <th>Product</th>
-                    <th>Internal Code</th>
-                    <th>External Designation</th>
-                    <th style="text-align:center;">PPV</th>
-                    <th style="text-align:center;">Factor</th>
-                    <th>Status</th>
+                    <th>{% trans "Product" %}</th>
+                    <th>{% trans "Internal Code" %}</th>
+                    <th>{% trans "External Designation" %}</th>
+                    <th style="text-align:center;">{% trans "PPV" %}</th>
+                    <th style="text-align:center;">{% trans "Factor" %}</th>
+                    <th>{% trans "Status" %}</th>
                 </tr>
             </thead>
             <tbody id="prodTableBody">
@@ -227,9 +228,9 @@
                     </td>
                     <td>
                         {% if item.cp.product.status == "active" %}
-                            <span class="badge badge-active">Active</span>
+                            <span class="badge badge-active">{% trans "Active" %}</span>
                         {% else %}
-                            <span class="badge badge-inactive">Inactive</span>
+                            <span class="badge badge-inactive">{% trans "Inactive" %}</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -238,15 +239,15 @@
         </table>
     </div>
     <div id="noProdResults" style="display:none; text-align:center; padding:14px; color:var(--text-secondary); font-size:0.83rem;">
-        No products match your search.
+        {% trans "No products match your search." %}
     </div>
 
     {% else %}
     <div style="text-align:center; padding:24px 0; color:var(--text-secondary); font-size:0.83rem;">
         <span class="material-icons-round" style="font-size:32px; display:block; margin-bottom:8px; color:var(--card-border);">medication_liquid</span>
-        No products linked to this contract.
+        {% trans "No products linked to this contract." %}
         <div style="margin-top:6px;">
-            <a href="{% url 'control:contracts_edit' contract.pk %}" style="color:var(--accent);">Edit the contract</a> to add products.
+            <a href="{% url 'control:contracts_edit' contract.pk %}" style="color:var(--accent);">{% trans "Edit the contract" %}</a> {% trans "to add products." %}
         </div>
     </div>
     {% endif %}
@@ -256,26 +257,26 @@
 <!-- TRACEABILITY                                                       -->
 <!-- ================================================================ -->
 <div class="card">
-    <div class="section-label">Traceability</div>
+    <div class="section-label">{% trans "Traceability" %}</div>
     <div class="info-row">
-        <span class="info-key">Created</span>
+        <span class="info-key">{% trans "Created" %}</span>
         <span class="info-val">
             {{ contract.created_at|date:"d M Y, H:i" }}
             {% if contract.created_by %}
-                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ contract.created_by.get_full_name|default:contract.created_by.username }}</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> {% blocktrans with name=contract.created_by.get_full_name|default:contract.created_by.username %}by {{ name }}{% endblocktrans %}</span>
             {% else %}
-                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — {% trans "no user recorded" %}</span>
             {% endif %}
         </span>
     </div>
     <div class="info-row" style="border-bottom:none;">
-        <span class="info-key">Last Modified</span>
+        <span class="info-key">{% trans "Last Modified" %}</span>
         <span class="info-val">
             {{ contract.modified_at|date:"d M Y, H:i" }}
             {% if contract.modified_by %}
-                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ contract.modified_by.get_full_name|default:contract.modified_by.username }}</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> {% blocktrans with name=contract.modified_by.get_full_name|default:contract.modified_by.username %}by {{ name }}{% endblocktrans %}</span>
             {% else %}
-                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — {% trans "no user recorded" %}</span>
             {% endif %}
         </span>
     </div>

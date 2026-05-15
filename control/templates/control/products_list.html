@@ -1,7 +1,8 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Products{% endblock %}
-{% block page_breadcrumb %}Products{% endblock %}
+{% block page_title %}{% trans "Products" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Products" %}{% endblock %}
 {% block nav_products %}active{% endblock %}
 
 {% block content %}
@@ -10,22 +11,22 @@
 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
     <div class="search-bar" style="flex:1; min-width:200px; max-width:400px;">
         <span class="material-icons-round">search</span>
-        <input type="text" id="prodSearch" placeholder="Search by code or designation…"
+        <input type="text" id="prodSearch" placeholder="{% trans "Search by code or designation…" %}"
                oninput="applyFilters()" autocomplete="off">
     </div>
     <div style="display:flex; gap:6px; align-items:center;">
-        <span class="filter-group-label">Status:</span>
+        <span class="filter-group-label">{% trans "Status:" %}</span>
         <div class="filter-pills">
-            <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
-            <button class="filter-pill" onclick="setFilter('active',this)">Active</button>
-            <button class="filter-pill" onclick="setFilter('inactive',this)">Inactive</button>
+            <button class="filter-pill active" onclick="setFilter('all',this)">{% trans "All" %}</button>
+            <button class="filter-pill" onclick="setFilter('active',this)">{% trans "Active" %}</button>
+            <button class="filter-pill" onclick="setFilter('inactive',this)">{% trans "Inactive" %}</button>
         </div>
     </div>
     <span id="prodCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ products|length }} product{{ products|length|pluralize }}</span>
-    <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear</button>
+    <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ {% trans "Clear" %}</button>
     {% if perms.fidpha.add_product %}
     <a href="{% url 'control:products_create' %}" class="btn btn-primary" style="margin-left:auto;">
-        <span class="material-icons-round">add</span> New Product
+        <span class="material-icons-round">add</span> {% trans "New Product" %}
     </a>
     {% endif %}
 </div>
@@ -36,11 +37,11 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Code</th>
-                    <th>Designation</th>
-                    <th>PPV</th>
-                    <th>Status</th>
-                    <th>Contracts</th>
+                    <th>{% trans "Code" %}</th>
+                    <th>{% trans "Designation" %}</th>
+                    <th>{% trans "PPV" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Contracts" %}</th>
                     <th style="width:96px;"></th>
                 </tr>
             </thead>
@@ -57,9 +58,9 @@
                     </td>
                     <td>
                         {% if p.status == "active" %}
-                            <span class="badge badge-active">Active</span>
+                            <span class="badge badge-active">{% trans "Active" %}</span>
                         {% else %}
-                            <span class="badge badge-inactive">Inactive</span>
+                            <span class="badge badge-inactive">{% trans "Inactive" %}</span>
                         {% endif %}
                     </td>
                     <td>
@@ -72,17 +73,17 @@
                     <td onclick="event.stopPropagation()">
                         <div class="table-actions">
                             {% if perms.fidpha.add_product %}
-                            <a href="{% url 'control:products_create' %}?clone={{ p.pk }}" class="action-btn" title="Clone">
+                            <a href="{% url 'control:products_create' %}?clone={{ p.pk }}" class="action-btn" title="{% trans "Clone" %}">
                                 <span class="material-icons-round">content_copy</span>
                             </a>
                             {% endif %}
                             {% if perms.fidpha.change_product %}
-                            <a href="{% url 'control:products_edit' p.pk %}" class="action-btn" title="Edit">
+                            <a href="{% url 'control:products_edit' p.pk %}" class="action-btn" title="{% trans "Edit" %}">
                                 <span class="material-icons-round">edit</span>
                             </a>
                             {% endif %}
                             {% if perms.fidpha.delete_product %}
-                            <a href="{% url 'control:products_delete' p.pk %}" class="action-btn action-delete" title="Delete">
+                            <a href="{% url 'control:products_delete' p.pk %}" class="action-btn action-delete" title="{% trans "Delete" %}">
                                 <span class="material-icons-round">delete</span>
                             </a>
                             {% endif %}
@@ -94,16 +95,16 @@
         </table>
     </div>
     <div id="noProdResults" style="display:none; text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem;">
-        No products match your filters.
+        {% trans "No products match your filters." %}
     </div>
     {% else %}
     <div style="text-align:center; padding:48px 24px;">
         <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">medication_liquid</span>
-        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No products yet</div>
-        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Add products to link them to pharmacy contracts.</div>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">{% trans "No products yet" %}</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">{% trans "Add products to link them to pharmacy contracts." %}</div>
         {% if perms.fidpha.add_product %}
         <a href="{% url 'control:products_create' %}" class="btn btn-primary" style="display:inline-flex;">
-            <span class="material-icons-round">add</span> New Product
+            <span class="material-icons-round">add</span> {% trans "New Product" %}
         </a>
         {% endif %}
     </div>

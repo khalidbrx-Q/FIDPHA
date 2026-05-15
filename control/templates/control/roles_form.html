@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{ page_action }} Role{% endblock %}
+{% block page_title %}{{ page_action }} {% trans "Role" %}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:roles_list' %}" style="color: var(--text-secondary); text-decoration: none;">Roles</a>
+    <a href="{% url 'control:roles_list' %}" style="color: var(--text-secondary); text-decoration: none;">{% trans "Roles" %}</a>
     {% if page_action == "Edit" %}
     › <a href="{% url 'control:roles_detail' role.pk %}" style="color: var(--text-secondary); text-decoration: none;">{{ role.name }}</a>
     {% endif %}
@@ -14,18 +15,18 @@
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">{{ page_action }} Role</div>
+        <div class="page-header-title">{{ page_action }} {% trans "Role" %}</div>
         <div class="page-header-sub">
-            {% if page_action == "Edit" %}Editing "{{ role.name }}"{% else %}Define a new permission preset{% endif %}
+            {% if page_action == "Edit" %}{% blocktrans with name=role.name %}Editing "{{ name }}"{% endblocktrans %}{% else %}{% trans "Define a new permission preset" %}{% endif %}
         </div>
     </div>
     {% if page_action == "Edit" %}
     <a href="{% url 'control:roles_detail' role.pk %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span> Back
+        <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
     </a>
     {% else %}
     <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span> Back
+        <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
     </a>
     {% endif %}
 </div>
@@ -35,11 +36,11 @@
 
     <!-- Role name + icon -->
     <div class="card" style="margin-bottom: 16px;">
-        <div class="section-label">Role Details</div>
+        <div class="section-label">{% trans "Role Details" %}</div>
 
         <!-- Icon picker -->
         <div class="form-group">
-            <label class="form-label">Icon</label>
+            <label class="form-label">{% trans "Icon" %}</label>
             <input type="hidden" name="role_icon" id="roleIconInput" value="{{ current_icon|default:'badge' }}">
             <div class="icon-picker" id="iconPicker">
                 {% for icon_name, icon_label in role_icons %}
@@ -50,12 +51,12 @@
                 </div>
                 {% endfor %}
             </div>
-            <div class="form-help">Choose an icon that best represents this role.</div>
+            <div class="form-help">{% trans "Choose an icon that best represents this role." %}</div>
         </div>
 
         <!-- Name -->
         <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label" for="{{ form.name.id_for_label }}">Role Name *</label>
+            <label class="form-label" for="{{ form.name.id_for_label }}">{% trans "Role Name" %} *</label>
             {{ form.name }}
             {% if form.name.errors %}
                 {% for error in form.name.errors %}
@@ -67,22 +68,22 @@
                 {% endfor %}
             {% endif %}
             <div id="nameErrorInline" class="form-error" style="display:none;"></div>
-            <div class="form-help">A short descriptive name, e.g. "Accounts Manager" or "Read-only Staff".</div>
+            <div class="form-help">{% trans "A short descriptive name, e.g. \"Accounts Manager\" or \"Read-only Staff\"." %}</div>
         </div>
     </div>
 
     <!-- Permissions -->
     <div class="card">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-            <div class="section-label" style="margin-bottom: 0;">Permissions</div>
+            <div class="section-label" style="margin-bottom: 0;">{% trans "Permissions" %}</div>
             <div style="display: flex; gap: 8px;">
                 <button type="button" class="btn btn-secondary" onclick="selectAll()" style="padding: 5px 12px; font-size: 0.8rem;">
                     <span class="material-icons-round" style="font-size: 14px;">select_all</span>
-                    Select all
+                    {% trans "Select all" %}
                 </button>
                 <button type="button" class="btn btn-secondary" onclick="clearAll()" style="padding: 5px 12px; font-size: 0.8rem;">
                     <span class="material-icons-round" style="font-size: 14px;">deselect</span>
-                    Clear all
+                    {% trans "Clear all" %}
                 </button>
             </div>
         </div>
@@ -90,7 +91,7 @@
         <!-- Search -->
         <div class="search-bar" style="margin-bottom: 16px;">
             <span class="material-icons-round">search</span>
-            <input type="text" id="permSearch" placeholder="Search permissions…" oninput="filterPerms(this.value)">
+            <input type="text" id="permSearch" placeholder="{% trans "Search permissions…" %}" oninput="filterPerms(this.value)">
         </div>
 
         <!-- Grouped checkboxes -->
@@ -135,7 +136,7 @@
         </div>
 
         <div id="noPermResults" style="display:none; text-align:center; padding: 24px; color: var(--text-secondary); font-size: 0.85rem;">
-            No permissions match your search.
+            {% trans "No permissions match your search." %}
         </div>
     </div>
 
@@ -143,9 +144,9 @@
     <div class="form-actions">
         <button type="submit" id="submitBtn" class="btn btn-primary">
             <span class="material-icons-round" id="submitIcon">save</span>
-            {{ page_action }} Role
+            {{ page_action }} {% trans "Role" %}
         </button>
-        <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'control:roles_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
     </div>
 
 </form>

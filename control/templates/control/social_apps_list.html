@@ -1,18 +1,19 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Social Applications{% endblock %}
-{% block page_breadcrumb %}Configuration › Social Applications{% endblock %}
+{% block page_title %}{% trans "Social Applications" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Configuration" %} › {% trans "Social Applications" %}{% endblock %}
 {% block nav_social_apps %}active{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">Social Applications</div>
-        <div class="page-header-sub">OAuth providers used for social login (e.g. Google)</div>
+        <div class="page-header-title">{% trans "Social Applications" %}</div>
+        <div class="page-header-sub">{% trans "OAuth providers used for social login (e.g. Google)" %}</div>
     </div>
     <a href="{% url 'control:social_apps_create' %}" class="btn btn-primary">
-        <span class="material-icons-round">add</span> New Application
+        <span class="material-icons-round">add</span> {% trans "New Application" %}
     </a>
 </div>
 
@@ -21,10 +22,10 @@
 <table class="data-table">
     <thead>
         <tr>
-            <th>Provider</th>
-            <th>Name</th>
-            <th>Client ID</th>
-            <th>Sites</th>
+            <th>{% trans "Provider" %}</th>
+            <th>{% trans "Name" %}</th>
+            <th>{% trans "Client ID" %}</th>
+            <th>{% trans "Sites" %}</th>
             <th style="width:80px;"></th>
         </tr>
     </thead>
@@ -46,10 +47,10 @@
             </td>
             <td onclick="event.stopPropagation()">
                 <div class="table-actions">
-                    <a href="{% url 'control:social_apps_edit' app.pk %}" class="action-btn" title="Edit">
+                    <a href="{% url 'control:social_apps_edit' app.pk %}" class="action-btn" title="{% trans "Edit" %}">
                         <span class="material-icons-round">edit</span>
                     </a>
-                    <a href="{% url 'control:social_apps_delete' app.pk %}" class="action-btn action-delete" title="Delete">
+                    <a href="{% url 'control:social_apps_delete' app.pk %}" class="action-btn action-delete" title="{% trans "Delete" %}">
                         <span class="material-icons-round">delete</span>
                     </a>
                 </div>
@@ -61,10 +62,10 @@
 {% else %}
 <div style="text-align:center; padding:48px 24px;">
     <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">apps</span>
-    <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No social applications yet</div>
-    <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Add a Google OAuth application to enable social login.</div>
+    <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">{% trans "No social applications yet" %}</div>
+    <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">{% trans "Add a Google OAuth application to enable social login." %}</div>
     <a href="{% url 'control:social_apps_create' %}" class="btn btn-primary" style="display:inline-flex;">
-        <span class="material-icons-round">add</span> New Application
+        <span class="material-icons-round">add</span> {% trans "New Application" %}
     </a>
 </div>
 {% endif %}

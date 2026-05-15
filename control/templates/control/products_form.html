@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{ page_action }} Product{% endblock %}
+{% block page_title %}{{ page_action }} {% trans "Product" %}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:products_list' %}" style="color:var(--text-secondary);text-decoration:none;">Products</a>
+    <a href="{% url 'control:products_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Products" %}</a>
     {% if cloned_from %}
     › <a href="{% url 'control:products_detail' cloned_from.pk %}" style="color:var(--text-secondary);text-decoration:none;">{{ cloned_from.designation }}</a>
     {% endif %}
@@ -14,13 +15,13 @@
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">{{ page_action }} Product</div>
+        <div class="page-header-title">{{ page_action }} {% trans "Product" %}</div>
         <div class="page-header-sub">
-            {% if page_action == "Edit" %}Editing "{{ product.designation }}"{% else %}Add a new product to the catalogue{% endif %}
+            {% if page_action == "Edit" %}{% blocktrans with designation=product.designation %}Editing "{{ designation }}"{% endblocktrans %}{% else %}{% trans "Add a new product to the catalogue" %}{% endif %}
         </div>
     </div>
     <a href="{% url 'control:products_list' %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span> Back
+        <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
     </a>
 </div>
 
@@ -39,34 +40,34 @@
     {% csrf_token %}
 
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">Product Details</div>
+        <div class="section-label">{% trans "Product Details" %}</div>
 
         <div class="form-grid-2">
             <div class="form-group">
-                <label class="form-label">Code *</label>
+                <label class="form-label">{% trans "Code" %} *</label>
                 {{ form.code }}
                 {% for e in form.code.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-                <div class="form-help">Unique internal identifier, e.g. DOLI1000.</div>
+                <div class="form-help">{% trans "Unique internal identifier, e.g. DOLI1000." %}</div>
             </div>
             <div class="form-group">
-                <label class="form-label">Status *</label>
+                <label class="form-label">{% trans "Status" %} *</label>
                 {{ form.status }}
                 {% for e in form.status.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
             </div>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Designation *</label>
+            <label class="form-label">{% trans "Designation" %} *</label>
             {{ form.designation }}
             {% for e in form.designation.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">Full product name as it appears in the system.</div>
+            <div class="form-help">{% trans "Full product name as it appears in the system." %}</div>
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">PPV (Price per unit, MAD)</label>
+            <label class="form-label">{% trans "PPV (Price per unit, MAD)" %}</label>
             {{ form.ppv }}
             {% for e in form.ppv.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">Used to calculate loyalty points: round(PPV × quantity). Leave blank if not applicable.</div>
+            <div class="form-help">{% trans "Used to calculate loyalty points: round(PPV × quantity). Leave blank if not applicable." %}</div>
         </div>
     </div>
 
@@ -75,7 +76,7 @@
             <span class="material-icons-round" id="submitIcon">save</span>
             <span id="submitLabel">{{ page_action }} Product</span>
         </button>
-        <a href="{% url 'control:products_list' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'control:products_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
     </div>
 </form>
 
