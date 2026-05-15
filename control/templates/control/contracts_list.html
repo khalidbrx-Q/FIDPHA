@@ -1,7 +1,8 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Contracts{% endblock %}
-{% block page_breadcrumb %}Contracts{% endblock %}
+{% block page_title %}{% trans "Contracts" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Contracts" %}{% endblock %}
 {% block nav_contracts %}active{% endblock %}
 
 {% block content %}
@@ -11,19 +12,19 @@
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
         <div class="search-bar" style="flex:2; min-width:200px; max-width:380px;">
             <span class="material-icons-round">search</span>
-            <input type="text" id="ctSearch" placeholder="Search by title or account…"
+            <input type="text" id="ctSearch" placeholder="{% trans "Search by title or account…" %}"
                    oninput="applyFilters()" autocomplete="off">
         </div>
         <div class="search-bar" style="flex:1; min-width:140px; max-width:220px;">
             <span class="material-icons-round">location_on</span>
-            <input type="text" id="ctCity" placeholder="Filter by city…"
+            <input type="text" id="ctCity" placeholder="{% trans "Filter by city…" %}"
                    oninput="applyFilters()" autocomplete="off">
         </div>
         <div style="margin-left:auto; display:flex; gap:8px; flex-shrink:0;">
             {% if perms.fidpha.view_contract %}
             <div class="export-dropdown" id="exportDropdown">
                 <button class="btn btn-secondary" onclick="toggleExportMenu(event)">
-                    <span class="material-icons-round">download</span> Export
+                    <span class="material-icons-round">download</span> {% trans "Export" %}
                     <span class="material-icons-round" style="font-size:16px; margin-left:2px;">arrow_drop_down</span>
                 </button>
                 <div class="export-menu" id="exportMenu" style="display:none;">
@@ -41,30 +42,30 @@
             {% endif %}
             {% if perms.fidpha.add_contract %}
             <a href="{% url 'control:contracts_create' %}" class="btn btn-primary">
-                <span class="material-icons-round">add</span> New Contract
+                <span class="material-icons-round">add</span> {% trans "New Contract" %}
             </a>
             {% endif %}
         </div>
     </div>
     <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
         <div style="display:flex; gap:6px; align-items:center;">
-            <span class="filter-group-label">Status:</span>
+            <span class="filter-group-label">{% trans "Status:" %}</span>
             <div class="filter-pills">
-                <button class="filter-pill active" onclick="setFilter('status','all',this)">All</button>
-                <button class="filter-pill" onclick="setFilter('status','active',this)">Active</button>
-                <button class="filter-pill" onclick="setFilter('status','inactive',this)">Inactive</button>
+                <button class="filter-pill active" onclick="setFilter('status','all',this)">{% trans "All" %}</button>
+                <button class="filter-pill" onclick="setFilter('status','active',this)">{% trans "Active" %}</button>
+                <button class="filter-pill" onclick="setFilter('status','inactive',this)">{% trans "Inactive" %}</button>
             </div>
         </div>
         <div style="display:flex; gap:6px; align-items:center;">
-            <span class="filter-group-label">Synced:</span>
+            <span class="filter-group-label">{% trans "Synced:" %}</span>
             <div class="filter-pills">
-                <button class="filter-pill active" onclick="setFilter('synced','all',this)">All</button>
-                <button class="filter-pill" onclick="setFilter('synced','yes',this)">Synced</button>
-                <button class="filter-pill" onclick="setFilter('synced','no',this)">Never synced</button>
+                <button class="filter-pill active" onclick="setFilter('synced','all',this)">{% trans "All" %}</button>
+                <button class="filter-pill" onclick="setFilter('synced','yes',this)">{% trans "Synced" %}</button>
+                <button class="filter-pill" onclick="setFilter('synced','no',this)">{% trans "Never synced" %}</button>
             </div>
         </div>
         <span id="ctCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ contracts|length }} contract{{ contracts|length|pluralize }}</span>
-        <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear filters</button>
+        <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ {% trans "Clear filters" %}</button>
     </div>
 </div>
 
@@ -74,12 +75,12 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Title</th>
-                    <th>Account · City</th>
-                    <th>Period</th>
-                    <th>Status</th>
-                    <th>Products</th>
-                    <th>Last Sync</th>
+                    <th>{% trans "Title" %}</th>
+                    <th>{% trans "Account · City" %}</th>
+                    <th>{% trans "Period" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Products" %}</th>
+                    <th>{% trans "Last Sync" %}</th>
                     <th style="width:108px;"></th>
                 </tr>
             </thead>
@@ -111,9 +112,9 @@
                     </td>
                     <td>
                         {% if ct.status == "active" %}
-                            <span class="badge badge-active">Active</span>
+                            <span class="badge badge-active">{% trans "Active" %}</span>
                         {% else %}
-                            <span class="badge badge-inactive">Inactive</span>
+                            <span class="badge badge-inactive">{% trans "Inactive" %}</span>
                         {% endif %}
                     </td>
                     <td>
@@ -127,26 +128,26 @@
                         {% if ct.last_sync_at %}
                             <span style="color:#22c55e;">{{ ct.last_sync_at|date:"d M Y H:i" }}</span>
                         {% else %}
-                            <span class="dim-dash">Never</span>
+                            <span class="dim-dash">{% trans "Never" %}</span>
                         {% endif %}
                     </td>
                     <td onclick="event.stopPropagation()">
                         <div class="table-actions">
                             {% if perms.fidpha.add_contract %}
                             <a href="{% url 'control:contracts_create' %}?clone={{ ct.pk }}"
-                               class="action-btn" title="Clone">
+                               class="action-btn" title="{% trans "Clone" %}">
                                 <span class="material-icons-round">content_copy</span>
                             </a>
                             {% endif %}
                             {% if perms.fidpha.change_contract %}
                             <a href="{% url 'control:contracts_edit' ct.pk %}"
-                               class="action-btn" title="Edit">
+                               class="action-btn" title="{% trans "Edit" %}">
                                 <span class="material-icons-round">edit</span>
                             </a>
                             {% endif %}
                             {% if perms.fidpha.delete_contract %}
                             <a href="{% url 'control:contracts_delete' ct.pk %}"
-                               class="action-btn action-delete" title="Delete">
+                               class="action-btn action-delete" title="{% trans "Delete" %}">
                                 <span class="material-icons-round">delete</span>
                             </a>
                             {% endif %}
@@ -158,16 +159,16 @@
         </table>
     </div>
     <div id="noCtResults" style="display:none; text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem;">
-        No contracts match your filters.
+        {% trans "No contracts match your filters." %}
     </div>
     {% else %}
     <div style="text-align:center; padding:48px 24px;">
         <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">description_off</span>
-        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No contracts yet</div>
-        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Create a contract to link products to a pharmacy account.</div>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">{% trans "No contracts yet" %}</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">{% trans "Create a contract to link products to a pharmacy account." %}</div>
         {% if perms.fidpha.add_contract %}
         <a href="{% url 'control:contracts_create' %}" class="btn btn-primary" style="display:inline-flex;">
-            <span class="material-icons-round">add</span> New Contract
+            <span class="material-icons-round">add</span> {% trans "New Contract" %}
         </a>
         {% endif %}
     </div>

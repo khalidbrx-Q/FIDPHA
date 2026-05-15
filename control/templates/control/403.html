@@ -1,19 +1,20 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Access Denied{% endblock %}
+{% block page_title %}{% trans "Access Denied" %}{% endblock %}
 {% block page_breadcrumb %}403{% endblock %}
 
 {% block content %}
 <div style="display:flex; align-items:center; justify-content:center; min-height:60vh;">
     <div style="text-align:center; max-width:400px;">
         <span class="material-icons-round" style="font-size:56px; color:var(--card-border); display:block; margin-bottom:16px;">lock</span>
-        <div style="font-size:1.1rem; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Access Denied</div>
+        <div style="font-size:1.1rem; font-weight:700; color:var(--text-primary); margin-bottom:8px;">{% trans "Access Denied" %}</div>
         <div style="font-size:0.88rem; color:var(--text-secondary); margin-bottom:24px; line-height:1.6;">
-            You don't have permission to access this page.<br>
-            Contact a superuser to request access.
+            {% trans "You don't have permission to access this page." %}<br>
+            {% trans "Contact a superuser to request access." %}
         </div>
         <a href="{% url 'control:dashboard' %}" class="btn btn-secondary">
-            <span class="material-icons-round">arrow_back</span> Back to Dashboard
+            <span class="material-icons-round">arrow_back</span> {% trans "Back to Dashboard" %}
         </a>
     </div>
 </div>

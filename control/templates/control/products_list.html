@@ -1,7 +1,8 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Products{% endblock %}
-{% block page_breadcrumb %}Products{% endblock %}
+{% block page_title %}{% trans "Products" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Products" %}{% endblock %}
 {% block nav_products %}active{% endblock %}
 
 {% block content %}
@@ -10,24 +11,24 @@
 <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
     <div class="search-bar" style="flex:1; min-width:200px; max-width:400px;">
         <span class="material-icons-round">search</span>
-        <input type="text" id="prodSearch" placeholder="Search by code or designation…"
+        <input type="text" id="prodSearch" placeholder="{% trans "Search by code or designation…" %}"
                oninput="applyFilters()" autocomplete="off">
     </div>
     <div style="display:flex; gap:6px; align-items:center;">
-        <span class="filter-group-label">Status:</span>
+        <span class="filter-group-label">{% trans "Status:" %}</span>
         <div class="filter-pills">
-            <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
-            <button class="filter-pill" onclick="setFilter('active',this)">Active</button>
-            <button class="filter-pill" onclick="setFilter('inactive',this)">Inactive</button>
+            <button class="filter-pill active" onclick="setFilter('all',this)">{% trans "All" %}</button>
+            <button class="filter-pill" onclick="setFilter('active',this)">{% trans "Active" %}</button>
+            <button class="filter-pill" onclick="setFilter('inactive',this)">{% trans "Inactive" %}</button>
         </div>
     </div>
     <span id="prodCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ products|length }} product{{ products|length|pluralize }}</span>
-    <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear</button>
+    <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ {% trans "Clear" %}</button>
     <div style="margin-left:auto; display:flex; gap:8px;">
         {% if perms.fidpha.view_product %}
         <div class="export-dropdown" id="exportDropdown">
             <button class="btn btn-secondary" onclick="toggleExportMenu(event)">
-                <span class="material-icons-round">download</span> Export
+                <span class="material-icons-round">download</span> {% trans "Export" %}
                 <span class="material-icons-round" style="font-size:16px; margin-left:2px;">arrow_drop_down</span>
             </button>
             <div class="export-menu" id="exportMenu" style="display:none;">
@@ -45,10 +46,10 @@
         {% endif %}
         {% if perms.fidpha.add_product %}
         <button class="btn btn-secondary" onclick="openCsvModal()">
-            <span class="material-icons-round">upload_file</span> Import
+            <span class="material-icons-round">upload_file</span> {% trans "Import" %}
         </button>
         <a href="{% url 'control:products_create' %}" class="btn btn-primary">
-            <span class="material-icons-round">add</span> New Product
+            <span class="material-icons-round">add</span> {% trans "New Product" %}
         </a>
         {% endif %}
     </div>
@@ -63,16 +64,16 @@
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
                 <span class="material-icons-round" style="font-size:28px; color:var(--accent);">upload_file</span>
                 <div>
-                    <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">Import Products from CSV</div>
-                    <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:3px;">Accepted: <code>.csv</code>, <code>.xlsx</code>, <code>.xls</code>, <code>.json</code> — required fields: <code>code</code>, <code>designation</code>, <code>ppv</code>, <code>status</code></div>
+                    <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">{% trans "Import Products from CSV" %}</div>
+                    <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:3px;">{% trans "Accepted:" %} <code>.csv</code>, <code>.xlsx</code>, <code>.xls</code>, <code>.json</code> — {% trans "required fields:" %} <code>code</code>, <code>designation</code>, <code>ppv</code>, <code>status</code></div>
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
                 <input type="file" id="csvFileInput" accept=".csv,.xlsx,.xls,.json" onchange="handleCsvFile(event)" style="display:none;">
                 <label for="csvFileInput" class="btn btn-secondary" style="cursor:pointer;">
-                    <span class="material-icons-round">folder_open</span> Choose File
+                    <span class="material-icons-round">folder_open</span> {% trans "Choose File" %}
                 </label>
-                <span id="csvFileName" style="font-size:0.83rem; color:var(--text-secondary);">No file chosen</span>
+                <span id="csvFileName" style="font-size:0.83rem; color:var(--text-secondary);">{% trans "No file chosen" %}</span>
             </div>
             <div id="csvParseError" style="display:none; color:#ef4444; font-size:0.82rem; margin-top:10px;"></div>
         </div>
@@ -81,19 +82,19 @@
         <div id="csvStep2" style="display:none;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
                 <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary);">
-                    Preview — <span id="csvRowCount">0</span> product<span id="csvRowPlural">s</span>
+                    {% trans "Preview" %} — <span id="csvRowCount">0</span> product<span id="csvRowPlural">s</span>
                 </div>
-                <button onclick="csvBackToStep1()" style="font-size:0.78rem; background:none; border:none; color:var(--accent); cursor:pointer; font-family:'Inter',sans-serif; padding:0;">← Back</button>
+                <button onclick="csvBackToStep1()" style="font-size:0.78rem; background:none; border:none; color:var(--accent); cursor:pointer; font-family:'Inter',sans-serif; padding:0;">← {% trans "Back" %}</button>
             </div>
             <div style="max-height:360px; overflow-y:auto; border:1px solid var(--card-border); border-radius:8px;">
                 <table style="width:100%; border-collapse:collapse;" id="csvPreviewTable">
                     <thead>
                         <tr>
-                            <th class="csv-th">Code</th>
-                            <th class="csv-th">Designation</th>
+                            <th class="csv-th">{% trans "Code" %}</th>
+                            <th class="csv-th">{% trans "Designation" %}</th>
                             <th class="csv-th" style="width:90px;">PPV</th>
-                            <th class="csv-th" style="width:100px;">Status</th>
-                            <th id="csvReasonTh" class="csv-th" style="display:none; color:#f59e0b;">Skip reason</th>
+                            <th class="csv-th" style="width:100px;">{% trans "Status" %}</th>
+                            <th id="csvReasonTh" class="csv-th" style="display:none; color:#f59e0b;">{% trans "Skip reason" %}</th>
                             <th class="csv-th" style="width:36px;"></th>
                         </tr>
                     </thead>
@@ -102,9 +103,9 @@
             </div>
             <div style="display:flex; gap:10px; margin-top:16px; align-items:center;">
                 <button class="btn btn-primary" id="csvConfirmBtn" onclick="submitCsvImport()">
-                    <span class="material-icons-round">upload</span> Import <span id="csvConfirmCount">0</span> products
+                    <span class="material-icons-round">upload</span> {% trans "Import" %} <span id="csvConfirmCount">0</span> products
                 </button>
-                <button class="btn btn-secondary" onclick="closeCsvModal()">Cancel</button>
+                <button class="btn btn-secondary" onclick="closeCsvModal()">{% trans "Cancel" %}</button>
                 <span id="csvSubmitError" style="display:none; color:#ef4444; font-size:0.82rem;"></span>
             </div>
         </div>
@@ -113,11 +114,11 @@
         <div id="csvStep3" style="display:none;">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
                 <span class="material-icons-round" style="font-size:28px; color:#22c55e;">check_circle</span>
-                <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">Import Complete</div>
+                <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">{% trans "Import Complete" %}</div>
             </div>
             <div id="csvResultBody"></div>
             <div style="margin-top:16px;">
-                <button class="btn btn-primary" onclick="closeCsvModal(); location.reload();">Done</button>
+                <button class="btn btn-primary" onclick="closeCsvModal(); location.reload();">{% trans "Done" %}</button>
             </div>
         </div>
 
@@ -130,11 +131,11 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Code</th>
-                    <th>Designation</th>
-                    <th>PPV</th>
-                    <th>Status</th>
-                    <th>Contracts</th>
+                    <th>{% trans "Code" %}</th>
+                    <th>{% trans "Designation" %}</th>
+                    <th>{% trans "PPV" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Contracts" %}</th>
                     <th style="width:96px;"></th>
                 </tr>
             </thead>
@@ -151,9 +152,9 @@
                     </td>
                     <td>
                         {% if p.status == "active" %}
-                            <span class="badge badge-active">Active</span>
+                            <span class="badge badge-active">{% trans "Active" %}</span>
                         {% else %}
-                            <span class="badge badge-inactive">Inactive</span>
+                            <span class="badge badge-inactive">{% trans "Inactive" %}</span>
                         {% endif %}
                     </td>
                     <td>
@@ -166,17 +167,17 @@
                     <td onclick="event.stopPropagation()">
                         <div class="table-actions">
                             {% if perms.fidpha.add_product %}
-                            <a href="{% url 'control:products_create' %}?clone={{ p.pk }}" class="action-btn" title="Clone">
+                            <a href="{% url 'control:products_create' %}?clone={{ p.pk }}" class="action-btn" title="{% trans "Clone" %}">
                                 <span class="material-icons-round">content_copy</span>
                             </a>
                             {% endif %}
                             {% if perms.fidpha.change_product %}
-                            <a href="{% url 'control:products_edit' p.pk %}" class="action-btn" title="Edit">
+                            <a href="{% url 'control:products_edit' p.pk %}" class="action-btn" title="{% trans "Edit" %}">
                                 <span class="material-icons-round">edit</span>
                             </a>
                             {% endif %}
                             {% if perms.fidpha.delete_product %}
-                            <a href="{% url 'control:products_delete' p.pk %}" class="action-btn action-delete" title="Delete">
+                            <a href="{% url 'control:products_delete' p.pk %}" class="action-btn action-delete" title="{% trans "Delete" %}">
                                 <span class="material-icons-round">delete</span>
                             </a>
                             {% endif %}
@@ -188,16 +189,16 @@
         </table>
     </div>
     <div id="noProdResults" style="display:none; text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem;">
-        No products match your filters.
+        {% trans "No products match your filters." %}
     </div>
     {% else %}
     <div style="text-align:center; padding:48px 24px;">
         <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">medication_liquid</span>
-        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No products yet</div>
-        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Add products to link them to pharmacy contracts.</div>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">{% trans "No products yet" %}</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">{% trans "Add products to link them to pharmacy contracts." %}</div>
         {% if perms.fidpha.add_product %}
         <a href="{% url 'control:products_create' %}" class="btn btn-primary" style="display:inline-flex;">
-            <span class="material-icons-round">add</span> New Product
+            <span class="material-icons-round">add</span> {% trans "New Product" %}
         </a>
         {% endif %}
     </div>

@@ -1,9 +1,10 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Delete User{% endblock %}
+{% block page_title %}{% trans "Delete User" %}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:users_list' %}" style="color:var(--text-secondary);text-decoration:none;">Users</a>
-    › Delete
+    <a href="{% url 'control:users_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Users" %}</a>
+    › {% trans "Delete" %}
 {% endblock %}
 {% block nav_users %}active{% endblock %}
 
@@ -11,12 +12,12 @@
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">Delete User</div>
-        <div class="page-header-sub">This action cannot be undone</div>
+        <div class="page-header-title">{% trans "Delete User" %}</div>
+        <div class="page-header-sub">{% trans "This action cannot be undone" %}</div>
     </div>
     <a href="{% url 'control:users_list' %}" class="btn btn-secondary">
         <span class="material-icons-round">arrow_back</span>
-        Back
+        {% trans "Back" %}
     </a>
 </div>
 
@@ -25,30 +26,30 @@
         <span class="material-icons-round" style="font-size:36px; color:#ef4444; flex-shrink:0; margin-top:2px;">warning</span>
         <div>
             <div style="font-size:1rem; font-weight:600; color:var(--text-primary); margin-bottom:8px;">
-                Delete "{{ u.username }}"?
+                {% blocktrans with name=u.username %}Delete "{{ name }}"?{% endblocktrans %}
             </div>
 
             {% if utype == "portal" and profile %}
             <div style="font-size:0.87rem; color:#ef4444; margin-bottom:8px;">
-                Their portal account link to <strong>{{ profile.account.name }}</strong> will also be removed.
+                {% blocktrans with account_name=profile.account.name %}Their portal account link to <strong>{{ account_name }}</strong> will also be removed.{% endblocktrans %}
             </div>
             {% endif %}
 
             {% if utype == "staff" %}
             <div style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:8px;">
-                Their role assignment will be removed along with the user account.
+                {% trans "Their role assignment will be removed along with the user account." %}
             </div>
             {% endif %}
 
             {% if utype == "superuser" %}
             <div style="font-size:0.87rem; color:#ef4444; margin-bottom:8px;">
-                <strong>Warning:</strong> You are deleting a superuser account.
+                <strong>{% trans "Warning:" %}</strong> {% trans "You are deleting a superuser account." %}
             </div>
             {% endif %}
 
             <div style="font-size:0.87rem; color:var(--text-secondary);">
-                The user account will be permanently deleted. This cannot be reversed.
-                If you only want to disable access, consider setting the user as inactive instead.
+                {% trans "The user account will be permanently deleted. This cannot be reversed." %}
+                {% trans "If you only want to disable access, consider setting the user as inactive instead." %}
             </div>
         </div>
     </div>
@@ -58,13 +59,13 @@
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <button type="submit" class="btn btn-danger">
                 <span class="material-icons-round">delete</span>
-                Yes, delete user
+                {% trans "Yes, delete user" %}
             </button>
             <a href="{% url 'control:users_edit' u.pk %}" class="btn btn-secondary">
                 <span class="material-icons-round">block</span>
-                Deactivate instead
+                {% trans "Deactivate instead" %}
             </a>
-            <a href="{% url 'control:users_list' %}" class="btn btn-secondary">Cancel</a>
+            <a href="{% url 'control:users_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
         </div>
     </form>
 </div>

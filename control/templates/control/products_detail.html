@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
 {% block page_title %}{{ product.designation }}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:products_list' %}" style="color:var(--text-secondary);text-decoration:none;">Products</a>
+    <a href="{% url 'control:products_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Products" %}</a>
     › {{ product.designation }}
 {% endblock %}
 {% block nav_products %}active{% endblock %}
@@ -18,9 +19,9 @@
             <div class="page-header-title">
                 {{ product.designation }}
                 {% if product.status == "active" %}
-                    <span class="status-badge status-active">Active</span>
+                    <span class="status-badge status-active">{% trans "Active" %}</span>
                 {% else %}
-                    <span class="status-badge status-inactive">Inactive</span>
+                    <span class="status-badge status-inactive">{% trans "Inactive" %}</span>
                 {% endif %}
             </div>
             <div class="page-header-sub">{{ product.code }}</div>
@@ -28,38 +29,38 @@
     </div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <a href="{% url 'control:products_list' %}" class="btn btn-secondary">
-            <span class="material-icons-round">arrow_back</span> Back
+            <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
         </a>
         <a href="{% url 'control:products_create' %}?clone={{ product.pk }}" class="btn btn-secondary">
-            <span class="material-icons-round">content_copy</span> Clone
+            <span class="material-icons-round">content_copy</span> {% trans "Clone" %}
         </a>
         <a href="{% url 'control:products_edit' product.pk %}" class="btn btn-primary">
-            <span class="material-icons-round">edit</span> Edit
+            <span class="material-icons-round">edit</span> {% trans "Edit" %}
         </a>
         <a href="{% url 'control:products_delete' product.pk %}" class="btn btn-danger">
-            <span class="material-icons-round">delete</span> Delete
+            <span class="material-icons-round">delete</span> {% trans "Delete" %}
         </a>
     </div>
 </div>
 
 <!-- Product Info -->
 <div class="card" style="margin-bottom:16px;">
-    <div class="section-label">Product Information</div>
+    <div class="section-label">{% trans "Product Information" %}</div>
     <div class="info-row">
-        <span class="info-key">Code</span>
+        <span class="info-key">{% trans "Code" %}</span>
         <span class="info-val"><span style="font-family:monospace; font-size:0.88rem;">{{ product.code }}</span></span>
     </div>
     <div class="info-row">
-        <span class="info-key">Designation</span>
+        <span class="info-key">{% trans "Designation" %}</span>
         <span class="info-val" style="font-weight:600; color:var(--text-primary);">{{ product.designation }}</span>
     </div>
     <div class="info-row" style="border-bottom:none;">
-        <span class="info-key">Status</span>
+        <span class="info-key">{% trans "Status" %}</span>
         <span class="info-val">
             {% if product.status == "active" %}
-                <span class="badge badge-active">Active</span>
+                <span class="badge badge-active">{% trans "Active" %}</span>
             {% else %}
-                <span class="badge badge-inactive">Inactive</span>
+                <span class="badge badge-inactive">{% trans "Inactive" %}</span>
             {% endif %}
         </span>
     </div>
@@ -68,7 +69,7 @@
 <!-- Contracts using this product -->
 <div class="card" style="padding:0; overflow:hidden;">
     <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 16px 0; flex-wrap:wrap; gap:8px;">
-        <div class="section-label" style="margin-bottom:0;">Linked Contracts</div>
+        <div class="section-label" style="margin-bottom:0;">{% trans "Linked Contracts" %}</div>
         <span class="count-chip" id="cpCount">{{ contract_products|length }}</span>
     </div>
 
@@ -78,15 +79,15 @@
         <div class="search-bar" style="flex:1; min-width:180px; max-width:360px;">
             <span class="material-icons-round">search</span>
             <input type="text" id="cpSearch"
-                   placeholder="Search contract, account, ext. designation…"
+                   placeholder="{% trans "Search contract, account, ext. designation…" %}"
                    oninput="applyFilters()" autocomplete="off">
         </div>
         <div style="display:flex; gap:6px; align-items:center;">
-            <span class="filter-group-label">Status:</span>
+            <span class="filter-group-label">{% trans "Status:" %}</span>
             <div class="filter-pills">
-                <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
-                <button class="filter-pill" onclick="setFilter('active',this)">Active</button>
-                <button class="filter-pill" onclick="setFilter('inactive',this)">Inactive</button>
+                <button class="filter-pill active" onclick="setFilter('all',this)">{% trans "All" %}</button>
+                <button class="filter-pill" onclick="setFilter('active',this)">{% trans "Active" %}</button>
+                <button class="filter-pill" onclick="setFilter('inactive',this)">{% trans "Inactive" %}</button>
             </div>
         </div>
     </div>
@@ -96,11 +97,11 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Contract</th>
-                    <th>Account</th>
-                    <th>Ext. Designation</th>
-                    <th>Period</th>
-                    <th>Status</th>
+                    <th>{% trans "Contract" %}</th>
+                    <th>{% trans "Account" %}</th>
+                    <th>{% trans "Ext. Designation" %}</th>
+                    <th>{% trans "Period" %}</th>
+                    <th>{% trans "Status" %}</th>
                 </tr>
             </thead>
             <tbody id="cpTableBody">
@@ -133,9 +134,9 @@
                     </td>
                     <td>
                         {% if cp.contract.status == "active" %}
-                            <span class="badge badge-active">Active</span>
+                            <span class="badge badge-active">{% trans "Active" %}</span>
                         {% else %}
-                            <span class="badge badge-inactive">Inactive</span>
+                            <span class="badge badge-inactive">{% trans "Inactive" %}</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -143,39 +144,39 @@
             </tbody>
         </table>
         <div id="cpNoResults" style="display:none; text-align:center; padding:28px; color:var(--text-secondary); font-size:0.85rem;">
-            No contracts match your search.
+            {% trans "No contracts match your search." %}
         </div>
     </div>
     {% else %}
     <div style="text-align:center; padding:36px 24px;">
         <span class="material-icons-round" style="font-size:36px; color:var(--text-secondary); display:block; margin-bottom:10px;">assignment_late</span>
-        <div style="font-size:0.88rem; color:var(--text-secondary);">This product is not linked to any contract yet.</div>
+        <div style="font-size:0.88rem; color:var(--text-secondary);">{% trans "This product is not linked to any contract yet." %}</div>
     </div>
     {% endif %}
 </div>
 
 <!-- Traceability -->
 <div class="card" style="margin-top:16px;">
-    <div class="section-label">Traceability</div>
+    <div class="section-label">{% trans "Traceability" %}</div>
     <div class="info-row">
-        <span class="info-key">Created</span>
+        <span class="info-key">{% trans "Created" %}</span>
         <span class="info-val">
             {{ product.created_at|date:"d M Y, H:i" }}
             {% if product.created_by %}
-                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ product.created_by.get_full_name|default:product.created_by.username }}</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> {% blocktrans with name=product.created_by.get_full_name|default:product.created_by.username %}by {{ name }}{% endblocktrans %}</span>
             {% else %}
-                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — {% trans "no user recorded" %}</span>
             {% endif %}
         </span>
     </div>
     <div class="info-row" style="border-bottom:none;">
-        <span class="info-key">Last Modified</span>
+        <span class="info-key">{% trans "Last Modified" %}</span>
         <span class="info-val">
             {{ product.modified_at|date:"d M Y, H:i" }}
             {% if product.modified_by %}
-                <span style="color:var(--text-secondary); font-size:0.8rem;"> by {{ product.modified_by.get_full_name|default:product.modified_by.username }}</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem;"> {% blocktrans with name=product.modified_by.get_full_name|default:product.modified_by.username %}by {{ name }}{% endblocktrans %}</span>
             {% else %}
-                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — no user recorded</span>
+                <span style="color:var(--text-secondary); font-size:0.8rem; opacity:0.5;"> — {% trans "no user recorded" %}</span>
             {% endif %}
         </span>
     </div>

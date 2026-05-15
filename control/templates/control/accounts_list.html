@@ -1,7 +1,8 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Accounts{% endblock %}
-{% block page_breadcrumb %}Accounts{% endblock %}
+{% block page_title %}{% trans "Accounts" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Accounts" %}{% endblock %}
 {% block nav_accounts %}active{% endblock %}
 
 {% block content %}
@@ -12,19 +13,19 @@
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
         <div class="search-bar" style="flex:1; min-width:180px; max-width:360px;">
             <span class="material-icons-round">search</span>
-            <input type="text" id="accSearch" placeholder="Search by name or code…"
+            <input type="text" id="accSearch" placeholder="{% trans "Search by name or code…" %}"
                    oninput="applyFilters()" autocomplete="off">
         </div>
         <div class="search-bar" style="flex:1; min-width:150px; max-width:240px;">
             <span class="material-icons-round">search</span>
-            <input type="text" id="accCity" placeholder="Filter by city…"
+            <input type="text" id="accCity" placeholder="{% trans "Filter by city…" %}"
                    oninput="applyFilters()" autocomplete="off">
         </div>
         <div style="margin-left:auto; display:flex; gap:8px; flex-shrink:0;">
             {% if perms.fidpha.view_account %}
             <div class="export-dropdown" id="exportDropdown">
                 <button class="btn btn-secondary" onclick="toggleExportMenu(event)">
-                    <span class="material-icons-round">download</span> Export
+                    <span class="material-icons-round">download</span> {% trans "Export" %}
                     <span class="material-icons-round" style="font-size:16px; margin-left:2px;">arrow_drop_down</span>
                 </button>
                 <div class="export-menu" id="exportMenu" style="display:none;">
@@ -42,7 +43,7 @@
             {% endif %}
             {% if perms.fidpha.add_account %}
             <a href="{% url 'control:accounts_create' %}" class="btn btn-primary">
-                <span class="material-icons-round">add</span> New Account
+                <span class="material-icons-round">add</span> {% trans "New Account" %}
             </a>
             {% endif %}
         </div>
@@ -50,23 +51,23 @@
     <!-- Row 2: pill filters + count + reset -->
     <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
         <div style="display:flex; gap:6px; align-items:center;">
-            <span class="filter-group-label">Status:</span>
+            <span class="filter-group-label">{% trans "Status:" %}</span>
             <div class="filter-pills">
-                <button class="filter-pill active" onclick="setFilter('status','all',this)">All</button>
-                <button class="filter-pill" onclick="setFilter('status','active',this)">Active</button>
-                <button class="filter-pill" onclick="setFilter('status','inactive',this)">Inactive</button>
+                <button class="filter-pill active" onclick="setFilter('status','all',this)">{% trans "All" %}</button>
+                <button class="filter-pill" onclick="setFilter('status','active',this)">{% trans "Active" %}</button>
+                <button class="filter-pill" onclick="setFilter('status','inactive',this)">{% trans "Inactive" %}</button>
             </div>
         </div>
         <div style="display:flex; gap:6px; align-items:center;">
-            <span class="filter-group-label">Portal:</span>
+            <span class="filter-group-label">{% trans "Portal:" %}</span>
             <div class="filter-pills">
-                <button class="filter-pill active" onclick="setFilter('portal','all',this)">All</button>
-                <button class="filter-pill" onclick="setFilter('portal','yes',this)">Has Portal</button>
-                <button class="filter-pill" onclick="setFilter('portal','no',this)">No Portal</button>
+                <button class="filter-pill active" onclick="setFilter('portal','all',this)">{% trans "All" %}</button>
+                <button class="filter-pill" onclick="setFilter('portal','yes',this)">{% trans "Has Portal" %}</button>
+                <button class="filter-pill" onclick="setFilter('portal','no',this)">{% trans "No Portal" %}</button>
             </div>
         </div>
         <span id="accCount" style="font-size:0.82rem; color:var(--text-secondary);">{{ accounts|length }} account{{ accounts|length|pluralize }}</span>
-        <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ Clear filters</button>
+        <button id="resetBtn" class="reset-btn" onclick="resetAll()" style="display:none;">✕ {% trans "Clear filters" %}</button>
     </div>
 </div>
 
@@ -76,13 +77,13 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>City</th>
-                <th>Status</th>
-                <th>Portal</th>
-                <th>Contracts</th>
-                <th>Users</th>
+                <th>{% trans "Code" %}</th>
+                <th>{% trans "Name" %}</th>
+                <th>{% trans "City" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th>{% trans "Portal" %}</th>
+                <th>{% trans "Contracts" %}</th>
+                <th>{% trans "Users" %}</th>
                 <th style="width:108px;"></th>
             </tr>
         </thead>
@@ -100,16 +101,16 @@
                 <td>{{ acc.city }}</td>
                 <td>
                     {% if acc.status == "active" %}
-                        <span class="badge badge-active">Active</span>
+                        <span class="badge badge-active">{% trans "Active" %}</span>
                     {% else %}
-                        <span class="badge badge-inactive">Inactive</span>
+                        <span class="badge badge-inactive">{% trans "Inactive" %}</span>
                     {% endif %}
                 </td>
                 <td>
                     {% if acc.pharmacy_portal %}
-                        <span class="material-icons-round portal-yes" title="Has portal access">check_circle</span>
+                        <span class="material-icons-round portal-yes" title="{% trans "Has portal access" %}">check_circle</span>
                     {% else %}
-                        <span class="material-icons-round portal-no" title="No portal access">cancel</span>
+                        <span class="material-icons-round portal-no" title="{% trans "No portal access" %}">cancel</span>
                     {% endif %}
                 </td>
                 <td>
@@ -129,17 +130,17 @@
                 <td onclick="event.stopPropagation()">
                     <div class="table-actions">
                         {% if perms.fidpha.add_account %}
-                        <a href="{% url 'control:accounts_create' %}?clone={{ acc.pk }}" class="action-btn" title="Clone">
+                        <a href="{% url 'control:accounts_create' %}?clone={{ acc.pk }}" class="action-btn" title="{% trans "Clone" %}">
                             <span class="material-icons-round">content_copy</span>
                         </a>
                         {% endif %}
                         {% if perms.fidpha.change_account %}
-                        <a href="{% url 'control:accounts_edit' acc.pk %}" class="action-btn" title="Edit">
+                        <a href="{% url 'control:accounts_edit' acc.pk %}" class="action-btn" title="{% trans "Edit" %}">
                             <span class="material-icons-round">edit</span>
                         </a>
                         {% endif %}
                         {% if perms.fidpha.delete_account %}
-                        <a href="{% url 'control:accounts_delete' acc.pk %}" class="action-btn action-delete" title="Delete">
+                        <a href="{% url 'control:accounts_delete' acc.pk %}" class="action-btn action-delete" title="{% trans "Delete" %}">
                             <span class="material-icons-round">delete</span>
                         </a>
                         {% endif %}
@@ -151,16 +152,16 @@
     </table>
     </div>
     <div id="noAccResults" style="display:none; text-align:center; padding:32px; color:var(--text-secondary); font-size:0.85rem;">
-        No accounts match your filters.
+        {% trans "No accounts match your filters." %}
     </div>
     {% else %}
     <div style="text-align:center; padding:48px 24px;">
         <span class="material-icons-round" style="font-size:40px; color:var(--text-secondary); display:block; margin-bottom:12px;">store_off</span>
-        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">No accounts yet</div>
-        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">Add a pharmacy account to get started.</div>
+        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:6px;">{% trans "No accounts yet" %}</div>
+        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">{% trans "Add a pharmacy account to get started." %}</div>
         {% if perms.fidpha.add_account %}
         <a href="{% url 'control:accounts_create' %}" class="btn btn-primary" style="display:inline-flex;">
-            <span class="material-icons-round">add</span> New Account
+            <span class="material-icons-round">add</span> {% trans "New Account" %}
         </a>
         {% endif %}
     </div>

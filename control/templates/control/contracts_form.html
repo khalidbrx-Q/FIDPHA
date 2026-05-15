@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
 {% block page_title %}{{ page_action }} Contract{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:contracts_list' %}" style="color:var(--text-secondary);text-decoration:none;">Contracts</a>
+    <a href="{% url 'control:contracts_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Contracts" %}</a>
     {% if page_action == "Edit" %}
     › <a href="{% url 'control:contracts_detail' contract.pk %}" style="color:var(--text-secondary);text-decoration:none;">{{ contract.title }}</a>
     {% endif %}
@@ -18,36 +19,36 @@
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
             <span class="material-icons-round" style="font-size:28px; color:#f59e0b;">link_off</span>
             <div>
-                <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">Unlink this product?</div>
+                <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">{% trans "Unlink this product?" %}</div>
                 <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:3px;" id="unlinkProductName"></div>
             </div>
         </div>
         <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px;">
-            The product will be removed from this contract. Existing sale records are not affected.
+            {% trans "The product will be removed from this contract. Existing sale records are not affected." %}
         </div>
         <div style="display:flex; gap:10px;">
             <button class="btn btn-danger" onclick="confirmUnlink()">
-                <span class="material-icons-round">link_off</span> Yes, unlink
+                <span class="material-icons-round">link_off</span> {% trans "Yes, unlink" %}
             </button>
-            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-secondary" onclick="closeModal()">{% trans "Cancel" %}</button>
         </div>
     </div>
 </div>
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">{{ page_action }} Contract</div>
+        <div class="page-header-title">{{ page_action }} {% trans "Contract" %}</div>
         <div class="page-header-sub">
-            {% if page_action == "Edit" %}Editing "{{ contract.title }}"{% else %}Create a new pharmacy contract{% endif %}
+            {% if page_action == "Edit" %}{% blocktrans with title=contract.title %}Editing "{{ title }}"{% endblocktrans %}{% else %}{% trans "Create a new pharmacy contract" %}{% endif %}
         </div>
     </div>
     {% if page_action == "Edit" %}
     <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span> Back
+        <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
     </a>
     {% else %}
     <a href="{% url 'control:contracts_list' %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span> Back
+        <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
     </a>
     {% endif %}
 </div>
@@ -79,23 +80,23 @@
 
     <!-- ── Contract Details ───────────────────────────────────────── -->
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">Contract Details</div>
+        <div class="section-label">{% trans "Contract Details" %}</div>
 
         <div class="form-group">
-            <label class="form-label">Title *</label>
+            <label class="form-label">{% trans "Title" %} *</label>
             {{ form.title }}
             {% for e in form.title.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
         </div>
 
         <div class="form-group">
-            <label class="form-label">Account *</label>
+            <label class="form-label">{% trans "Account" %} *</label>
             {{ form.account }}
             {% for e in form.account.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">Only one active contract is allowed per account.</div>
+            <div class="form-help">{% trans "Only one active contract is allowed per account." %}</div>
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Description</label>
+            <label class="form-label">{% trans "Description" %}</label>
             {{ form.designation }}
             {% for e in form.designation.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
         </div>
@@ -103,23 +104,23 @@
 
     <!-- ── Contract Period ────────────────────────────────────────── -->
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">Contract Period</div>
+        <div class="section-label">{% trans "Contract Period" %}</div>
 
         <div class="form-grid-2" style="margin-bottom:16px;">
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Start Date *</label>
+                <label class="form-label">{% trans "Start Date" %} *</label>
                 {{ form.start_date }}
                 {% for e in form.start_date.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">End Date *</label>
+                <label class="form-label">{% trans "End Date" %} *</label>
                 {{ form.end_date }}
                 {% for e in form.end_date.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
             </div>
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Status</label>
+            <label class="form-label">{% trans "Status" %}</label>
             {{ form.status }}
             {% for e in form.status.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
         </div>
@@ -128,9 +129,9 @@
     <!-- ── Products ───────────────────────────────────────────────── -->
     <div class="card" style="margin-bottom:16px;">
         <div class="section-label">
-            Products
+            {% trans "Products" %}
             <span id="productsHint" style="font-size:0.73rem; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-secondary);">
-                — only active products not already linked to this contract are listed
+                — {% trans "only active products not already linked to this contract are listed" %}
             </span>
         </div>
 
@@ -153,26 +154,26 @@
                 {% endif %}
                 <div class="product-row-fields">
                     <div class="form-group" style="margin:0; flex:2; min-width:0;">
-                        <label class="form-label">Product</label>
+                        <label class="form-label">{% trans "Product" %}</label>
                         {{ pf.product }}
                     </div>
                     <div class="form-group" style="margin:0; flex:1.5; min-width:0;">
-                        <label class="form-label">External Designation</label>
+                        <label class="form-label">{% trans "External Designation" %}</label>
                         {{ pf.external_designation }}
                     </div>
 
                     <div class="form-group" style="margin:0; flex:0 0 80px;">
-                        <label class="form-label" title="Points multiplier per dirham of PPV (default 1)">Pts factor</label>
+                        <label class="form-label" title="{% trans "Points multiplier per dirham of PPV (default 1)" %}">{% trans "Pts factor" %}</label>
                         {{ pf.points_per_unit }}
                     </div>
                     <div class="form-group" style="margin:0; flex:0 0 100px;">
-                        <label class="form-label" title="Target quantity for this contract (optional)">Target qty</label>
+                        <label class="form-label" title="{% trans "Target quantity for this contract (optional)" %}">{% trans "Target qty" %}</label>
                         {{ pf.target_quantity }}
                     </div>
                     <div class="delete-field" style="display:none;">{{ pf.DELETE }}</div>
                     <button type="button" class="unlink-btn"
                             onclick="askUnlink(this)"
-                            title="Unlink product">
+                            title="{% trans "Unlink product" %}">
                         <span class="material-icons-round">link_off</span>
                     </button>
                 </div>
@@ -187,26 +188,26 @@
                 <div style="display:none;">{{ pf.id }}</div>
                 <div class="product-row-fields">
                     <div class="form-group" style="margin:0; flex:2; min-width:0;">
-                        <label class="form-label">Product</label>
+                        <label class="form-label">{% trans "Product" %}</label>
                         {{ pf.product }}
                     </div>
                     <div class="form-group" style="margin:0; flex:1.5; min-width:0;">
-                        <label class="form-label">External Designation</label>
+                        <label class="form-label">{% trans "External Designation" %}</label>
                         {{ pf.external_designation }}
                     </div>
 
                     <div class="form-group" style="margin:0; flex:0 0 80px;">
-                        <label class="form-label" title="Points multiplier per dirham of PPV (default 1)">Pts factor</label>
+                        <label class="form-label" title="{% trans "Points multiplier per dirham of PPV (default 1)" %}">{% trans "Pts factor" %}</label>
                         {{ pf.points_per_unit }}
                     </div>
                     <div class="form-group" style="margin:0; flex:0 0 100px;">
-                        <label class="form-label" title="Target quantity for this contract (optional)">Target qty</label>
+                        <label class="form-label" title="{% trans "Target quantity for this contract (optional)" %}">{% trans "Target qty" %}</label>
                         {{ pf.target_quantity }}
                     </div>
                     <div class="delete-field" style="display:none;">{{ pf.DELETE }}</div>
                     <button type="button" class="unlink-btn"
                             onclick="askUnlink(this)"
-                            title="Unlink product">
+                            title="{% trans "Unlink product" %}">
                         <span class="material-icons-round">link_off</span>
                     </button>
                 </div>
@@ -216,11 +217,11 @@
 
         <div style="display:flex; gap:8px; margin-top:14px;">
             <button type="button" onclick="addProductRow()" class="btn btn-secondary">
-                <span class="material-icons-round">add</span> Add Product
+                <span class="material-icons-round">add</span> {% trans "Add Product" %}
             </button>
             {% if page_action == "Edit" and perms.fidpha.change_contract %}
             <button type="button" onclick="openCpImportModal()" class="btn btn-secondary">
-                <span class="material-icons-round">upload_file</span> Import Products
+                <span class="material-icons-round">upload_file</span> {% trans "Import Products" %}
             </button>
             {% endif %}
         </div>
@@ -235,20 +236,20 @@
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
                     <span class="material-icons-round" style="font-size:28px; color:var(--accent);">upload_file</span>
                     <div>
-                        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">Import Products into Contract</div>
+                        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">{% trans "Import Products into Contract" %}</div>
                         <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:3px;">
-                            Accepted: <code>.csv</code>, <code>.xlsx</code>, <code>.xls</code>, <code>.json</code> —
-                            required: <code>product_code</code>, <code>external_designation</code> —
-                            optional: <code>points_per_unit</code>, <code>target_quantity</code>
+                            {% trans "Accepted:" %} <code>.csv</code>, <code>.xlsx</code>, <code>.xls</code>, <code>.json</code> —
+                            {% trans "required:" %} <code>product_code</code>, <code>external_designation</code> —
+                            {% trans "optional:" %} <code>points_per_unit</code>, <code>target_quantity</code>
                         </div>
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:12px;">
                     <input type="file" id="cpFileInput" accept=".csv,.xlsx,.xls,.json" onchange="handleCpFile(event)" style="display:none;">
                     <label for="cpFileInput" class="btn btn-secondary" style="cursor:pointer;">
-                        <span class="material-icons-round">folder_open</span> Choose File
+                        <span class="material-icons-round">folder_open</span> {% trans "Choose File" %}
                     </label>
-                    <span id="cpFileName" style="font-size:0.83rem; color:var(--text-secondary);">No file chosen</span>
+                    <span id="cpFileName" style="font-size:0.83rem; color:var(--text-secondary);">{% trans "No file chosen" %}</span>
                 </div>
                 <div id="cpParseError" style="display:none; color:#ef4444; font-size:0.82rem; margin-top:10px;"></div>
             </div>
@@ -257,19 +258,19 @@
             <div id="cpStep2" style="display:none;">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
                     <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary);">
-                        Preview — <span id="cpRowCount">0</span> product<span id="cpRowPlural">s</span>
+                        {% trans "Preview" %} — <span id="cpRowCount">0</span> product<span id="cpRowPlural">s</span>
                     </div>
-                    <button type="button" onclick="cpBackToStep1()" style="font-size:0.78rem; background:none; border:none; color:var(--accent); cursor:pointer; font-family:'Inter',sans-serif; padding:0;">← Back</button>
+                    <button type="button" onclick="cpBackToStep1()" style="font-size:0.78rem; background:none; border:none; color:var(--accent); cursor:pointer; font-family:'Inter',sans-serif; padding:0;">← {% trans "Back" %}</button>
                 </div>
                 <div style="max-height:340px; overflow-y:auto; border:1px solid var(--card-border); border-radius:8px;">
                     <table style="width:100%; border-collapse:collapse;" id="cpPreviewTable">
                         <thead>
                             <tr>
-                                <th class="csv-th">Product Code</th>
-                                <th class="csv-th">External Designation</th>
-                                <th class="csv-th" style="width:100px;">Pts Factor</th>
-                                <th class="csv-th" style="width:100px;">Target Qty</th>
-                                <th id="cpReasonTh" class="csv-th" style="display:none; color:#f59e0b;">Skip reason</th>
+                                <th class="csv-th">{% trans "Product Code" %}</th>
+                                <th class="csv-th">{% trans "External Designation" %}</th>
+                                <th class="csv-th" style="width:100px;">{% trans "Pts Factor" %}</th>
+                                <th class="csv-th" style="width:100px;">{% trans "Target Qty" %}</th>
+                                <th id="cpReasonTh" class="csv-th" style="display:none; color:#f59e0b;">{% trans "Skip reason" %}</th>
                                 <th class="csv-th" style="width:36px;"></th>
                             </tr>
                         </thead>
@@ -278,9 +279,9 @@
                 </div>
                 <div style="display:flex; gap:10px; margin-top:16px; align-items:center;">
                     <button type="button" class="btn btn-primary" id="cpConfirmBtn" onclick="submitCpImport()">
-                        <span class="material-icons-round">link</span> Link <span id="cpConfirmCount">0</span> products
+                        <span class="material-icons-round">link</span> {% trans "Link" %} <span id="cpConfirmCount">0</span> products
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="closeCpImportModal()">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeCpImportModal()">{% trans "Cancel" %}</button>
                     <span id="cpSubmitError" style="display:none; color:#ef4444; font-size:0.82rem;"></span>
                 </div>
             </div>
@@ -289,11 +290,11 @@
             <div id="cpStep3" style="display:none;">
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
                     <span class="material-icons-round" style="font-size:28px; color:#22c55e;">check_circle</span>
-                    <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">Import Complete</div>
+                    <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">{% trans "Import Complete" %}</div>
                 </div>
                 <div id="cpResultBody"></div>
                 <div style="margin-top:16px;">
-                    <button type="button" class="btn btn-primary" onclick="cpDone()">Done</button>
+                    <button type="button" class="btn btn-primary" onclick="cpDone()">{% trans "Done" %}</button>
                 </div>
             </div>
 
@@ -303,15 +304,15 @@
     <!-- ── Sales Sync (edit only) ───────────────────────────────── -->
     {% if page_action == "Edit" %}
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">Sales Sync</div>
+        <div class="section-label">{% trans "Sales Sync" %}</div>
         <div class="form-grid-2">
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Last Sale Date</label>
+                <label class="form-label">{% trans "Last Sale Date" %}</label>
                 {{ form.last_sale_datetime }}
                 {% for e in form.last_sale_datetime.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Last Sync</label>
+                <label class="form-label">{% trans "Last Sync" %}</label>
                 {{ form.last_sync_at }}
                 {% for e in form.last_sync_at.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
             </div>
@@ -323,12 +324,12 @@
     <div class="form-actions">
         <button type="submit" id="submitBtn" class="btn btn-primary">
             <span class="material-icons-round" id="submitIcon">save</span>
-            <span id="submitLabel">{{ page_action }} Contract</span>
+            <span id="submitLabel">{{ page_action }} {% trans "Contract" %}</span>
         </button>
         {% if page_action == "Edit" %}
-        <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
         {% else %}
-        <a href="{% url 'control:contracts_list' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'control:contracts_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
         {% endif %}
     </div>
 

@@ -1,15 +1,16 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Site Configuration{% endblock %}
-{% block page_breadcrumb %}Configuration › Site{% endblock %}
+{% block page_title %}{% trans "Site Configuration" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Configuration" %} › {% trans "Site" %}{% endblock %}
 {% block nav_site %}active{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">Site Configuration</div>
-        <div class="page-header-sub">Domain and display name used by Django and allauth</div>
+        <div class="page-header-title">{% trans "Site Configuration" %}</div>
+        <div class="page-header-sub">{% trans "Domain and display name used by Django and allauth" %}</div>
     </div>
 </div>
 
@@ -25,33 +26,33 @@
     {% csrf_token %}
 
     <div class="card" style="margin-bottom:16px; max-width:560px;">
-        <div class="section-label">Site Details</div>
+        <div class="section-label">{% trans "Site Details" %}</div>
 
         <div class="form-group">
-            <label class="form-label">Domain *</label>
+            <label class="form-label">{% trans "Domain" %} *</label>
             {{ form.domain }}
             {% for e in form.domain.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">The domain name of this application, e.g. <em>fidpha.example.com</em>. Used in OAuth redirect URLs and emails.</div>
+            <div class="form-help">{% blocktrans %}The domain name of this application, e.g. <em>fidpha.example.com</em>. Used in OAuth redirect URLs and emails.{% endblocktrans %}</div>
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Display Name *</label>
+            <label class="form-label">{% trans "Display Name" %} *</label>
             {{ form.name }}
             {% for e in form.name.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">Human-readable name shown in emails and OAuth consent screens.</div>
+            <div class="form-help">{% trans "Human-readable name shown in emails and OAuth consent screens." %}</div>
         </div>
     </div>
 
     <div style="display:flex; gap:8px; align-items:center; padding:4px 0; font-size:0.78rem; color:var(--text-secondary); margin-bottom:16px;">
         <span class="material-icons-round" style="font-size:15px;">info</span>
-        Site ID: <strong style="font-family:monospace; color:var(--text-primary);">{{ site.pk }}</strong>
-        — make sure <code>SITE_ID = {{ site.pk }}</code> in your settings matches this.
+        {% blocktrans with pk=site.pk %}Site ID: <strong style="font-family:monospace; color:var(--text-primary);">{{ pk }}</strong>
+        — make sure <code>SITE_ID = {{ pk }}</code> in your settings matches this.{% endblocktrans %}
     </div>
 
     <div class="form-actions">
         <button type="submit" id="submitBtn" class="btn btn-primary">
             <span class="material-icons-round" id="submitIcon">save</span>
-            <span id="submitLabel">Save Configuration</span>
+            <span id="submitLabel">{% trans "Save Configuration" %}</span>
         </button>
     </div>
 </form>
@@ -63,7 +64,7 @@
         btn.dataset.locked = '1';
         btn.disabled = true;
         document.getElementById('submitIcon').textContent  = 'hourglass_empty';
-        document.getElementById('submitLabel').textContent = 'Saving…';
+        document.getElementById('submitLabel').textContent = '{% trans "Saving…" %}';
     });
 </script>
 

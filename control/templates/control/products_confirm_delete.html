@@ -1,9 +1,10 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Delete Product{% endblock %}
+{% block page_title %}{% trans "Delete Product" %}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:products_list' %}" style="color:var(--text-secondary);text-decoration:none;">Products</a>
-    › Delete
+    <a href="{% url 'control:products_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Products" %}</a>
+    › {% trans "Delete" %}
 {% endblock %}
 {% block nav_products %}active{% endblock %}
 
@@ -11,11 +12,11 @@
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">Delete Product</div>
-        <div class="page-header-sub">This action cannot be undone.</div>
+        <div class="page-header-title">{% trans "Delete Product" %}</div>
+        <div class="page-header-sub">{% trans "This action cannot be undone." %}</div>
     </div>
     <a href="{% url 'control:products_list' %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span> Back
+        <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
     </a>
 </div>
 
@@ -25,10 +26,10 @@
         <div>
             <div style="font-size:1rem; font-weight:700; color:var(--text-primary);">{{ product.designation }}</div>
             <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:2px;">
-                Code: <span style="font-family:monospace;">{{ product.code }}</span>
-                · Status:
-                {% if product.status == "active" %}<span style="color:#22c55e;">Active</span>
-                {% else %}<span style="color:#ef4444;">Inactive</span>{% endif %}
+                {% trans "Code:" %} <span style="font-family:monospace;">{{ product.code }}</span>
+                · {% trans "Status:" %}
+                {% if product.status == "active" %}<span style="color:#22c55e;">{% trans "Active" %}</span>
+                {% else %}<span style="color:#ef4444;">{% trans "Inactive" %}</span>{% endif %}
             </div>
         </div>
     </div>
@@ -36,29 +37,29 @@
     {% if active_contract_count %}
     <div class="alert alert-error" style="margin-bottom:16px;">
         <span class="material-icons-round" style="font-size:18px;">warning</span>
-        This product is linked to <strong>{{ active_contract_count }} active contract{{ active_contract_count|pluralize }}</strong>.
-        Deleting it will remove those links and may affect sales records.
+        {% blocktrans with count=active_contract_count %}This product is linked to <strong>{{ count }} active contract</strong>.{% plural %}This product is linked to <strong>{{ count }} active contracts</strong>.{% endblocktrans %}
+        {% trans "Deleting it will remove those links and may affect sales records." %}
     </div>
     {% elif contract_count %}
     <div class="alert alert-warning" style="margin-bottom:16px;">
         <span class="material-icons-round" style="font-size:18px;">info</span>
-        This product is referenced by <strong>{{ contract_count }} contract{{ contract_count|pluralize }}</strong> (all inactive).
-        Those links will be removed.
+        {% blocktrans with count=contract_count %}This product is referenced by <strong>{{ count }} contract</strong> (all inactive).{% plural %}This product is referenced by <strong>{{ count }} contracts</strong> (all inactive).{% endblocktrans %}
+        {% trans "Those links will be removed." %}
     </div>
     {% endif %}
 
     <p style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:24px;">
-        Are you sure you want to permanently delete <strong style="color:var(--text-primary);">{{ product.designation }}</strong>?
+        {% blocktrans with designation=product.designation %}Are you sure you want to permanently delete <strong style="color:var(--text-primary);">{{ designation }}</strong>?{% endblocktrans %}
     </p>
 
     <div style="display:flex; gap:10px;">
         <form method="post">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">
-                <span class="material-icons-round">delete_forever</span> Yes, delete product
+                <span class="material-icons-round">delete_forever</span> {% trans "Yes, delete product" %}
             </button>
         </form>
-        <a href="{% url 'control:products_list' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'control:products_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
     </div>
 </div>
 

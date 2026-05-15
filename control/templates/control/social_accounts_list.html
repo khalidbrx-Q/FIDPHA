@@ -1,22 +1,23 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Social Accounts{% endblock %}
-{% block page_breadcrumb %}Configuration › Social Accounts{% endblock %}
+{% block page_title %}{% trans "Social Accounts" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Configuration" %} › {% trans "Social Accounts" %}{% endblock %}
 {% block nav_social_accounts %}active{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">Social Accounts</div>
-        <div class="page-header-sub">OAuth accounts linked to users via django-allauth</div>
+        <div class="page-header-title">{% trans "Social Accounts" %}</div>
+        <div class="page-header-sub">{% trans "OAuth accounts linked to users via django-allauth" %}</div>
     </div>
 </div>
 
 <div class="toolbar">
     <div class="search-bar">
         <span class="material-icons-round">search</span>
-        <input type="text" id="searchInput" placeholder="Filter by username, provider or email…" oninput="filterRows()">
+        <input type="text" id="searchInput" placeholder="{% trans "Filter by username, provider or email…" %}" oninput="filterRows()">
     </div>
 </div>
 
@@ -24,12 +25,12 @@
     <table class="data-table" id="accountsTable">
         <thead>
             <tr>
-                <th>User</th>
-                <th>Provider</th>
-                <th>UID</th>
-                <th>Email (OAuth)</th>
-                <th>Linked</th>
-                <th>Tokens</th>
+                <th>{% trans "User" %}</th>
+                <th>{% trans "Provider" %}</th>
+                <th>{% trans "UID" %}</th>
+                <th>{% trans "Email (OAuth)" %}</th>
+                <th>{% trans "Linked" %}</th>
+                <th>{% trans "Tokens" %}</th>
                 <th></th>
             </tr>
         </thead>
@@ -72,7 +73,7 @@
                 </td>
                 <td>
                     <div class="table-actions">
-                        <a href="{% url 'control:users_detail' sa.user.pk %}" class="action-btn" title="View user">
+                        <a href="{% url 'control:users_detail' sa.user.pk %}" class="action-btn" title="{% trans "View user" %}">
                             <span class="material-icons-round">person</span>
                         </a>
                     </div>
@@ -82,7 +83,7 @@
             <tr>
                 <td colspan="7" style="text-align:center; padding:48px; color:var(--text-secondary);">
                     <span class="material-icons-round" style="font-size:36px; display:block; margin-bottom:10px; opacity:.4;">link_off</span>
-                    No social accounts linked yet.
+                    {% trans "No social accounts linked yet." %}
                 </td>
             </tr>
             {% endfor %}

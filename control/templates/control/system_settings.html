@@ -1,15 +1,16 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}System Settings{% endblock %}
-{% block page_breadcrumb %}Configuration › System{% endblock %}
+{% block page_title %}{% trans "System Settings" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Configuration" %} › {% trans "System" %}{% endblock %}
 {% block nav_system %}active{% endblock %}
 
 {% block content %}
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">System Settings</div>
-        <div class="page-header-sub">Global behaviour flags controlled at the database level — no deployment needed.</div>
+        <div class="page-header-title">{% trans "System Settings" %}</div>
+        <div class="page-header-sub">{% trans "Global behaviour flags controlled at the database level — no deployment needed." %}</div>
     </div>
 </div>
 
@@ -25,20 +26,19 @@
     {% csrf_token %}
 
     <div class="card" style="margin-bottom:16px; max-width:560px;">
-        <div class="section-label">Sales Ingestion</div>
+        <div class="section-label">{% trans "Sales Ingestion" %}</div>
 
         <div class="toggle-row">
             <div class="toggle-info">
-                <div class="toggle-title">Auto-review</div>
+                <div class="toggle-title">{% trans "Auto-review" %}</div>
                 <div class="toggle-desc">
-                    When on, any sale row that passes all validation checks is accepted immediately
+                    {% blocktrans %}When on, any sale row that passes all validation checks is accepted immediately
                     — no staff review needed. Staff only sees flagged or rejected rows.
-                    Each auto-accepted sale is stamped <code>auto_reviewed = true</code>.
+                    Each auto-accepted sale is stamped <code>auto_reviewed = true</code>.{% endblocktrans %}
                 </div>
                 {% if config.auto_review_updated_by %}
                 <div class="toggle-meta">
-                    Last changed by <strong>{{ config.auto_review_updated_by.get_full_name|default:config.auto_review_updated_by.username }}</strong>
-                    on {{ config.auto_review_updated_at|date:"d M Y, H:i" }}
+                    {% blocktrans with user=config.auto_review_updated_by.get_full_name|default:config.auto_review_updated_by.username date=config.auto_review_updated_at|date:"d M Y, H:i" %}Last changed by <strong>{{ user }}</strong> on {{ date }}{% endblocktrans %}
                 </div>
                 {% endif %}
             </div>

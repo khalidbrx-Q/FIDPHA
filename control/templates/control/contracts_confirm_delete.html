@@ -1,10 +1,11 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Delete Contract{% endblock %}
+{% block page_title %}{% trans "Delete Contract" %}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:contracts_list' %}" style="color:var(--text-secondary);text-decoration:none;">Contracts</a>
+    <a href="{% url 'control:contracts_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Contracts" %}</a>
     › <a href="{% url 'control:contracts_detail' contract.pk %}" style="color:var(--text-secondary);text-decoration:none;">{{ contract.title }}</a>
-    › Delete
+    › {% trans "Delete" %}
 {% endblock %}
 {% block nav_contracts %}active{% endblock %}
 
@@ -12,11 +13,11 @@
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">Delete Contract</div>
-        <div class="page-header-sub">This action cannot be undone</div>
+        <div class="page-header-title">{% trans "Delete Contract" %}</div>
+        <div class="page-header-sub">{% trans "This action cannot be undone" %}</div>
     </div>
     <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span> Back
+        <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
     </a>
 </div>
 
@@ -28,9 +29,9 @@
         <div style="flex:1;">
             <div style="font-size:1rem; font-weight:600; color:var(--text-primary); margin-bottom:10px;">
                 {% if has_sales %}
-                    Cannot delete "{{ contract.title }}"
+                    {% blocktrans with name=contract.title %}Cannot delete "{{ name }}"{% endblocktrans %}
                 {% else %}
-                    Delete "{{ contract.title }}"?
+                    {% blocktrans with name=contract.title %}Delete "{{ name }}"?{% endblocktrans %}
                 {% endif %}
             </div>
 
@@ -38,30 +39,29 @@
             <!-- Blocked: sales records exist -->
             <div class="alert alert-error" style="margin-bottom:12px;">
                 <span class="material-icons-round" style="font-size:18px;">error_outline</span>
-                This contract has <strong>{{ sale_count }} sale record{{ sale_count|pluralize }}</strong> linked to it.
-                Deleting it would destroy pharmacy sales history, which is not allowed.
+                {% blocktrans with count=sale_count %}This contract has <strong>{{ count }} sale record{{ count|pluralize }}</strong> linked to it.{% endblocktrans %}
+                {% trans "Deleting it would destroy pharmacy sales history, which is not allowed." %}
             </div>
             <div style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:4px;">
-                To delete this contract you must first remove all associated sales data.
-                Contact your database administrator if this is required.
+                {% trans "To delete this contract you must first remove all associated sales data. Contact your database administrator if this is required." %}
             </div>
 
             {% else %}
             <!-- Safe to delete -->
             {% if product_count %}
             <div style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:6px;">
-                · <strong>{{ product_count }} product link{{ product_count|pluralize }}</strong> will be permanently removed.
+                · {% blocktrans with count=product_count %}<strong>{{ count }} product link{{ count|pluralize }}</strong> will be permanently removed.{% endblocktrans %}
             </div>
             {% endif %}
 
             {% if not product_count %}
             <div style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:6px;">
-                This contract has no linked products or sales records.
+                {% trans "This contract has no linked products or sales records." %}
             </div>
             {% endif %}
 
             <div style="font-size:0.87rem; color:var(--text-secondary); margin-top:10px;">
-                The contract record will be permanently removed. This cannot be undone.
+                {% trans "The contract record will be permanently removed. This cannot be undone." %}
             </div>
             {% endif %}
         </div>
@@ -72,14 +72,14 @@
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
             {% if has_sales %}
             <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-primary">
-                <span class="material-icons-round">arrow_back</span> Go back
+                <span class="material-icons-round">arrow_back</span> {% trans "Go back" %}
             </a>
             {% else %}
             <button type="submit" class="btn btn-danger">
                 <span class="material-icons-round">delete</span>
-                Yes, delete contract
+                {% trans "Yes, delete contract" %}
             </button>
-            <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-secondary">Cancel</a>
+            <a href="{% url 'control:contracts_detail' contract.pk %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
             {% endif %}
         </div>
     </form>

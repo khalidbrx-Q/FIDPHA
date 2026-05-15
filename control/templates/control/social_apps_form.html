@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{ page_action }} Social Application{% endblock %}
+{% block page_title %}{{ page_action }} {% trans "Social Application" %}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:social_apps_list' %}" style="color:var(--text-secondary);text-decoration:none;">Social Applications</a>
+    <a href="{% url 'control:social_apps_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Social Applications" %}</a>
     {% if app %}› <a href="{% url 'control:social_apps_detail' app.pk %}" style="color:var(--text-secondary);text-decoration:none;">{{ app.name }}</a>{% endif %}
     › {{ page_action }}
 {% endblock %}
@@ -12,13 +13,13 @@
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">{{ page_action }} Social Application</div>
+        <div class="page-header-title">{{ page_action }} {% trans "Social Application" %}</div>
         <div class="page-header-sub">
-            {% if page_action == "Edit" %}Editing "{{ app.name }}"{% else %}Add a new OAuth provider{% endif %}
+            {% if page_action == "Edit" %}{% blocktrans with name=app.name %}Editing "{{ name }}"{% endblocktrans %}{% else %}{% trans "Add a new OAuth provider" %}{% endif %}
         </div>
     </div>
     <a href="{% url 'control:social_apps_list' %}" class="btn btn-secondary">
-        <span class="material-icons-round">arrow_back</span> Back
+        <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
     </a>
 </div>
 
@@ -36,39 +37,39 @@
     {% csrf_token %}
 
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">Provider</div>
+        <div class="section-label">{% trans "Provider" %}</div>
         <div class="form-grid-2">
             <div class="form-group">
-                <label class="form-label">Provider *</label>
+                <label class="form-label">{% trans "Provider" %} *</label>
                 {{ form.provider }}
                 {% for e in form.provider.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-                <div class="form-help">OAuth provider — currently only Google is installed.</div>
+                <div class="form-help">{% trans "OAuth provider — currently only Google is installed." %}</div>
             </div>
             <div class="form-group">
-                <label class="form-label">Name *</label>
+                <label class="form-label">{% trans "Name" %} *</label>
                 {{ form.name }}
                 {% for e in form.name.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-                <div class="form-help">Display name, e.g. <em>Google</em>.</div>
+                <div class="form-help">{% trans "Display name, e.g." %} <em>Google</em>.</div>
             </div>
         </div>
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Provider ID</label>
+            <label class="form-label">{% trans "Provider ID" %}</label>
             {{ form.provider_id }}
             {% for e in form.provider_id.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">Optional — only needed when running multiple configurations of the same provider.</div>
+            <div class="form-help">{% trans "Optional — only needed when running multiple configurations of the same provider." %}</div>
         </div>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">OAuth Credentials</div>
+        <div class="section-label">{% trans "OAuth Credentials" %}</div>
         <div class="form-group">
-            <label class="form-label">Client ID *</label>
+            <label class="form-label">{% trans "Client ID" %} *</label>
             {{ form.client_id }}
             {% for e in form.client_id.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">The application ID from your Google Cloud Console.</div>
+            <div class="form-help">{% trans "The application ID from your Google Cloud Console." %}</div>
         </div>
         <div class="form-group">
-            <label class="form-label">Client Secret</label>
+            <label class="form-label">{% trans "Client Secret" %}</label>
             <div style="position:relative;">
                 {{ form.secret }}
                 <button type="button" onclick="toggleSecretVisibility()" id="secretToggle"
@@ -78,32 +79,32 @@
                 </button>
             </div>
             {% for e in form.secret.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">The client secret from your Google Cloud Console. Leave blank to keep the existing value when editing.</div>
+            <div class="form-help">{% trans "The client secret from your Google Cloud Console. Leave blank to keep the existing value when editing." %}</div>
         </div>
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Key</label>
+            <label class="form-label">{% trans "Key" %}</label>
             {{ form.key }}
             {% for e in form.key.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">Optional API key — not required for standard OAuth flows.</div>
+            <div class="form-help">{% trans "Optional API key — not required for standard OAuth flows." %}</div>
         </div>
     </div>
 
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">Sites</div>
+        <div class="section-label">{% trans "Sites" %}</div>
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Allowed Sites *</label>
+            <label class="form-label">{% trans "Allowed Sites" %} *</label>
             {{ form.sites }}
             {% for e in form.sites.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">Hold Ctrl (Windows) or ⌘ (Mac) to select multiple sites.</div>
+            <div class="form-help">{% trans "Hold Ctrl (Windows) or ⌘ (Mac) to select multiple sites." %}</div>
         </div>
     </div>
 
     <div class="form-actions">
         <button type="submit" id="submitBtn" class="btn btn-primary">
             <span class="material-icons-round" id="submitIcon">save</span>
-            <span id="submitLabel">{{ page_action }} Application</span>
+            <span id="submitLabel">{{ page_action }} {% trans "Application" %}</span>
         </button>
-        <a href="{% url 'control:social_apps_list' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'control:social_apps_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
     </div>
 </form>
 
@@ -128,7 +129,7 @@
         btn.dataset.locked = '1';
         btn.disabled = true;
         document.getElementById('submitIcon').textContent  = 'hourglass_empty';
-        document.getElementById('submitLabel').textContent = 'Saving…';
+        document.getElementById('submitLabel').textContent = '{% trans "Saving…" %}';
     });
 </script>
 

@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
 {% block page_title %}{{ token.name }}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:tokens_list' %}" style="color:var(--text-secondary);text-decoration:none;">API Tokens</a>
+    <a href="{% url 'control:tokens_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "API Tokens" %}</a>
     › <span id="breadcrumbName">{{ token.name }}</span>
 {% endblock %}
 {% block nav_tokens %}active{% endblock %}
@@ -15,11 +16,11 @@
         <div class="modal-icon-wrap" id="modalIconWrap">
             <span class="material-icons-round" id="modalIcon" style="font-size:28px;">warning</span>
         </div>
-        <div class="modal-title" id="modalTitle">Are you sure?</div>
+        <div class="modal-title" id="modalTitle">{% trans "Are you sure?" %}</div>
         <div class="modal-msg"   id="modalMsg"></div>
         <div class="modal-actions">
-            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-            <button class="btn" id="modalConfirmBtn" onclick="modalSubmit()">Confirm</button>
+            <button class="btn btn-secondary" onclick="closeModal()">{% trans "Cancel" %}</button>
+            <button class="btn" id="modalConfirmBtn" onclick="modalSubmit()">{% trans "Confirm" %}</button>
         </div>
     </div>
 </div>
@@ -35,12 +36,12 @@
             <div class="page-header-title" id="nameDisplay">
                 <span id="nameText">{{ token.name }}</span>
                 {% if token.is_active %}
-                    <span class="status-badge status-active">Active</span>
+                    <span class="status-badge status-active">{% trans "Active" %}</span>
                 {% else %}
-                    <span class="status-badge status-revoked">Revoked</span>
+                    <span class="status-badge status-revoked">{% trans "Revoked" %}</span>
                 {% endif %}
                 {% if perms.api.change_apitoken %}
-                <button class="icon-btn" onclick="startRename()" title="Rename" style="margin-left:6px;">
+                <button class="icon-btn" onclick="startRename()" title="{% trans "Rename" %}" style="margin-left:6px;">
                     <span class="material-icons-round" style="font-size:16px; vertical-align:middle;">edit</span>
                 </button>
                 {% endif %}
@@ -52,9 +53,9 @@
                 <div style="display:flex; gap:8px; align-items:center;">
                     <input type="text" name="name" id="renameInput" class="form-input"
                            value="{{ token.name }}" style="width:260px; padding:5px 10px; font-size:0.9rem;">
-                    <button type="submit" class="btn btn-primary" style="padding:5px 12px; font-size:0.82rem;">Save</button>
+                    <button type="submit" class="btn btn-primary" style="padding:5px 12px; font-size:0.82rem;">{% trans "Save" %}</button>
                     <button type="button" class="btn btn-secondary" onclick="cancelRename()"
-                            style="padding:5px 12px; font-size:0.82rem;">Cancel</button>
+                            style="padding:5px 12px; font-size:0.82rem;">{% trans "Cancel" %}</button>
                 </div>
             </form>
             {% endif %}
@@ -66,7 +67,7 @@
     </div>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <a href="{% url 'control:tokens_list' %}" class="btn btn-secondary">
-            <span class="material-icons-round">arrow_back</span> Back
+            <span class="material-icons-round">arrow_back</span> {% trans "Back" %}
         </a>
         {% if perms.api.change_apitoken %}
             {% if token.is_active %}
@@ -79,7 +80,7 @@
                         icon:   'block',
                         color:  '#f59e0b'
                     })">
-                <span class="material-icons-round">block</span> Revoke
+                <span class="material-icons-round">block</span> {% trans "Revoke" %}
             </button>
             {% else %}
             <button class="btn btn-success"
@@ -91,7 +92,7 @@
                         icon:   'check_circle',
                         color:  '#22c55e'
                     })">
-                <span class="material-icons-round">check_circle</span> Reactivate
+                <span class="material-icons-round">check_circle</span> {% trans "Reactivate" %}
             </button>
             {% endif %}
         {% endif %}
@@ -105,7 +106,7 @@
                     icon:   'delete_forever',
                     color:  '#ef4444'
                 })">
-            <span class="material-icons-round">delete</span> Delete
+            <span class="material-icons-round">delete</span> {% trans "Delete" %}
         </button>
         {% endif %}
     </div>
@@ -119,7 +120,7 @@
         </div>
         <div>
             <div class="stat-value">{{ token.usage_count }}</div>
-            <div class="stat-label">Total Calls</div>
+            <div class="stat-label">{% trans "Total Calls" %}</div>
         </div>
     </div>
     <div class="stat-card">
@@ -128,7 +129,7 @@
         </div>
         <div>
             <div class="stat-value">{{ total_today }}</div>
-            <div class="stat-label">Calls Today</div>
+            <div class="stat-label">{% trans "Calls Today" %}</div>
         </div>
     </div>
     <div class="stat-card">
@@ -137,9 +138,9 @@
         </div>
         <div>
             <div class="stat-value">
-                {% if token.last_used_at %}{{ token.last_used_at|date:"d M, H:i" }}{% else %}Never{% endif %}
+                {% if token.last_used_at %}{{ token.last_used_at|date:"d M, H:i" }}{% else %}{% trans "Never" %}{% endif %}
             </div>
-            <div class="stat-label">Last Used</div>
+            <div class="stat-label">{% trans "Last Used" %}</div>
         </div>
     </div>
     <div class="stat-card">
@@ -148,7 +149,7 @@
         </div>
         <div>
             <div class="stat-value">{{ token.created_at|date:"d M Y" }}</div>
-            <div class="stat-label">Created{% if token.created_by %} by {{ token.created_by.get_full_name|default:token.created_by.username }}{% endif %}</div>
+            <div class="stat-label">{% if token.created_by %}{% blocktrans with by=token.created_by.get_full_name|default:token.created_by.username %}Created by {{ by }}{% endblocktrans %}{% else %}{% trans "Created" %}{% endif %}</div>
         </div>
     </div>
 </div>
@@ -156,11 +157,11 @@
 <!-- Chart -->
 <div class="card" style="margin-bottom:16px;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
-        <div class="section-label" style="margin-bottom:0;">API Calls</div>
+        <div class="section-label" style="margin-bottom:0;">{% trans "API Calls" %}</div>
         <div class="filter-pills">
-            <button class="filter-pill" onclick="setRange('today', this)">Today</button>
-            <button class="filter-pill" onclick="setRange('7d', this)">Last 7 days</button>
-            <button class="filter-pill active" onclick="setRange('30d', this)">Last 30 days</button>
+            <button class="filter-pill" onclick="setRange('today', this)">{% trans "Today" %}</button>
+            <button class="filter-pill" onclick="setRange('7d', this)">{% trans "Last 7 days" %}</button>
+            <button class="filter-pill active" onclick="setRange('30d', this)">{% trans "Last 30 days" %}</button>
         </div>
     </div>
     <div style="position:relative; height:200px;">
@@ -171,8 +172,8 @@
 <!-- Recent requests -->
 <div class="card" style="padding:0;">
     <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 16px 0;">
-        <div class="section-label" style="margin-bottom:0;">Recent Requests</div>
-        <span class="count-chip">last 50</span>
+        <div class="section-label" style="margin-bottom:0;">{% trans "Recent Requests" %}</div>
+        <span class="count-chip">{% trans "last 50" %}</span>
     </div>
 
     {% if recent_logs %}
@@ -182,8 +183,8 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Time</th>
-                    <th>Endpoint</th>
+                    <th>{% trans "Time" %}</th>
+                    <th>{% trans "Endpoint" %}</th>
                 </tr>
             </thead>
             <tbody>
@@ -201,7 +202,7 @@
     {% else %}
     <div style="text-align:center; padding:36px 24px;">
         <span class="material-icons-round" style="font-size:36px; color:var(--text-secondary); display:block; margin-bottom:10px;">history</span>
-        <div style="font-size:0.88rem; color:var(--text-secondary);">No requests logged yet.</div>
+        <div style="font-size:0.88rem; color:var(--text-secondary);">{% trans "No requests logged yet." %}</div>
     </div>
     {% endif %}
 </div>

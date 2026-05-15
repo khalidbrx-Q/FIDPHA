@@ -1,8 +1,9 @@
 {% extends "control/base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{ page_action }} User{% endblock %}
+{% block page_title %}{{ page_action }} {% trans "User" %}{% endblock %}
 {% block page_breadcrumb %}
-    <a href="{% url 'control:users_list' %}" style="color:var(--text-secondary);text-decoration:none;">Users</a>
+    <a href="{% url 'control:users_list' %}" style="color:var(--text-secondary);text-decoration:none;">{% trans "Users" %}</a>
     › {{ page_action }}
 {% endblock %}
 {% block nav_users %}active{% endblock %}
@@ -11,14 +12,14 @@
 
 <div class="page-header">
     <div>
-        <div class="page-header-title">{{ page_action }} User</div>
+        <div class="page-header-title">{{ page_action }} {% trans "User" %}</div>
         <div class="page-header-sub">
-            {% if page_action == "Edit" %}Editing "{{ user_obj.username }}"{% else %}Add a new user to the system{% endif %}
+            {% if page_action == "Edit" %}{% blocktrans with name=user_obj.username %}Editing "{{ name }}"{% endblocktrans %}{% else %}{% trans "Add a new user to the system" %}{% endif %}
         </div>
     </div>
     <a href="{% url 'control:users_list' %}" class="btn btn-secondary">
         <span class="material-icons-round">arrow_back</span>
-        Back
+        {% trans "Back" %}
     </a>
 </div>
 
@@ -29,7 +30,7 @@
     <!-- STEP 1 — User Type                                                -->
     <!-- ================================================================ -->
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">User Type</div>
+        <div class="section-label">{% trans "User Type" %}</div>
         <div class="type-cards">
 
             <label class="type-card" id="card-superuser">
@@ -37,8 +38,8 @@
                        {% if selected_type == 'superuser' %}checked{% endif %}
                        onchange="onTypeChange('superuser')">
                 <span class="material-icons-round type-card-icon" style="color:#a855f7;">shield</span>
-                <div class="type-card-title">Superuser</div>
-                <div class="type-card-sub">Full access to everything — no permission setup needed</div>
+                <div class="type-card-title">{% trans "Superuser" %}</div>
+                <div class="type-card-sub">{% trans "Full access to everything — no permission setup needed" %}</div>
             </label>
 
             <label class="type-card" id="card-staff">
@@ -46,8 +47,8 @@
                        {% if selected_type == 'staff' %}checked{% endif %}
                        onchange="onTypeChange('staff')">
                 <span class="material-icons-round type-card-icon" style="color:#0ea5e9;">badge</span>
-                <div class="type-card-title">Staff</div>
-                <div class="type-card-sub">Admin user with a specific role and its permissions</div>
+                <div class="type-card-title">{% trans "Staff" %}</div>
+                <div class="type-card-sub">{% trans "Admin user with a specific role and its permissions" %}</div>
             </label>
 
             <label class="type-card" id="card-portal">
@@ -55,8 +56,8 @@
                        {% if selected_type == 'portal' or not selected_type %}checked{% endif %}
                        onchange="onTypeChange('portal')">
                 <span class="material-icons-round type-card-icon" style="color:#22c55e;">store</span>
-                <div class="type-card-title">Portal User</div>
-                <div class="type-card-sub">Pharmacy client — linked to an account</div>
+                <div class="type-card-title">{% trans "Portal User" %}</div>
+                <div class="type-card-sub">{% trans "Pharmacy client — linked to an account" %}</div>
             </label>
 
         </div>
@@ -69,22 +70,22 @@
     <!-- STEP 2 — Basic Info                                               -->
     <!-- ================================================================ -->
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">Basic Information</div>
+        <div class="section-label">{% trans "Basic Information" %}</div>
 
         <div class="form-grid-2">
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Username *</label>
+                <label class="form-label">{% trans "Username" %} *</label>
                 {{ form.username }}
                 {% for error in form.username.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">
-                    Email
+                    {% trans "Email" %}
                     {% if page_action == "Edit" and utype == "portal" %}
                         {% if profile and profile.email_verified %}
-                            <span class="verify-badge verify-yes"><span class="material-icons-round" style="font-size:12px;">verified</span> Verified</span>
+                            <span class="verify-badge verify-yes"><span class="material-icons-round" style="font-size:12px;">verified</span> {% trans "Verified" %}</span>
                         {% else %}
-                            <span class="verify-badge verify-no"><span class="material-icons-round" style="font-size:12px;">cancel</span> Not verified</span>
+                            <span class="verify-badge verify-no"><span class="material-icons-round" style="font-size:12px;">cancel</span> {% trans "Not verified" %}</span>
                         {% endif %}
                     {% endif %}
                 </label>
@@ -92,11 +93,11 @@
                 {% for error in form.email.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">First Name</label>
+                <label class="form-label">{% trans "First Name" %}</label>
                 {{ form.first_name }}
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Last Name</label>
+                <label class="form-label">{% trans "Last Name" %}</label>
                 {{ form.last_name }}
             </div>
         </div>
@@ -108,8 +109,8 @@
                     <span class="toggle-slider"></span>
                 </div>
                 <div>
-                    <div style="font-size:0.87rem; font-weight:600; color:var(--text-primary);">Active</div>
-                    <div style="font-size:0.78rem; color:var(--text-secondary);">Inactive users cannot log in</div>
+                    <div style="font-size:0.87rem; font-weight:600; color:var(--text-primary);">{% trans "Active" %}</div>
+                    <div style="font-size:0.78rem; color:var(--text-secondary);">{% trans "Inactive users cannot log in" %}</div>
                 </div>
             </label>
         </div>
@@ -119,25 +120,25 @@
     <!-- STEP 3 — Password                                                 -->
     <!-- ================================================================ -->
     <div class="card" style="margin-bottom:16px;">
-        <div class="section-label">Password</div>
+        <div class="section-label">{% trans "Password" %}</div>
 
         {% if page_action == "Edit" %}
         <div class="pw-current-indicator">
             <span class="material-icons-round" style="font-size:15px; color:var(--text-secondary);">lock</span>
-            <span style="color:var(--text-secondary); font-size:0.82rem;">Current password:</span>
+            <span style="color:var(--text-secondary); font-size:0.82rem;">{% trans "Current password:" %}</span>
             <span style="letter-spacing:3px; font-family:monospace; color:var(--text-primary); font-size:0.9rem;">••••••••</span>
-            <span style="color:var(--text-secondary); font-size:0.78rem; margin-left:4px;">— leave fields blank to keep unchanged</span>
+            <span style="color:var(--text-secondary); font-size:0.78rem; margin-left:4px;">— {% trans "leave fields blank to keep unchanged" %}</span>
         </div>
         {% endif %}
 
         <div class="form-grid-2">
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Password {% if page_action == "Create" %}*{% endif %}</label>
+                <label class="form-label">{% trans "Password" %} {% if page_action == "Create" %}*{% endif %}</label>
                 {{ form.password1 }}
                 {% for error in form.password1.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Confirm Password {% if page_action == "Create" %}*{% endif %}</label>
+                <label class="form-label">{% trans "Confirm Password" %} {% if page_action == "Create" %}*{% endif %}</label>
                 {{ form.password2 }}
                 {% for error in form.password2.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
             </div>
@@ -148,9 +149,9 @@
     <!-- STEP 4a — Role (Staff only)                                       -->
     <!-- ================================================================ -->
     <div class="card" style="margin-bottom:16px;" id="section-role">
-        <div class="section-label">Role Assignment</div>
+        <div class="section-label">{% trans "Role Assignment" %}</div>
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Role</label>
+            <label class="form-label">{% trans "Role" %}</label>
 
             <div class="custom-select" id="cs-role">
                 <input type="hidden" name="role" value="{{ selected_role_pk }}">
@@ -158,20 +159,20 @@
                     <span class="cs-display">
                         {% if selected_role_pk %}
                             {% for role in roles %}{% if role.pk == selected_role_pk %}{{ role.name }}{% endif %}{% endfor %}
-                        {% else %}— No role assigned —{% endif %}
+                        {% else %}{% trans "— No role assigned —" %}{% endif %}
                     </span>
                     <span class="material-icons-round cs-arrow">expand_more</span>
                 </button>
                 <div class="cs-panel">
                     <div class="cs-search-wrap">
                         <span class="material-icons-round">search</span>
-                        <input type="text" class="cs-search-input" placeholder="Search roles…"
+                        <input type="text" class="cs-search-input" placeholder="{% trans "Search roles…" %}"
                                oninput="csFilter('cs-role', this.value)" autocomplete="off">
                     </div>
                     <div class="cs-list">
                         <div class="cs-item {% if not selected_role_pk %}cs-selected{% endif %}"
-                             data-value="" onclick="csSelect('cs-role', '', '— No role assigned —')">
-                            — No role assigned —
+                             data-value="" onclick="csSelect('cs-role', '', '{% trans "— No role assigned —" %}')">
+                            {% trans "— No role assigned —" %}
                         </div>
                         {% for role in roles %}
                         <div class="cs-item {% if role.pk == selected_role_pk %}cs-selected{% endif %}"
@@ -186,9 +187,9 @@
 
             {% for error in form.role.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
             <div class="form-help">
-                The role defines all permissions for this staff user. ·
+                {% trans "The role defines all permissions for this staff user." %} ·
                 <a href="{% url 'control:roles_create' %}" target="_blank" style="color:var(--accent);">
-                    Can't find the right role? Create a new one →
+                    {% trans "Can't find the right role? Create a new one →" %}
                 </a>
             </div>
         </div>
@@ -198,9 +199,9 @@
     <!-- STEP 4b — Account (Portal only)                                   -->
     <!-- ================================================================ -->
     <div class="card" style="margin-bottom:16px;" id="section-account">
-        <div class="section-label">Account Assignment</div>
+        <div class="section-label">{% trans "Account Assignment" %}</div>
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Pharmacy Account *</label>
+            <label class="form-label">{% trans "Pharmacy Account" %} *</label>
 
             <div class="custom-select" id="cs-account">
                 <input type="hidden" name="account" value="{{ selected_account_pk }}">
@@ -208,20 +209,20 @@
                     <span class="cs-display">
                         {% if selected_account_pk %}
                             {% for acc in accounts %}{% if acc.pk == selected_account_pk %}{{ acc.name }}{% endif %}{% endfor %}
-                        {% else %}— Select account —{% endif %}
+                        {% else %}{% trans "— Select account —" %}{% endif %}
                     </span>
                     <span class="material-icons-round cs-arrow">expand_more</span>
                 </button>
                 <div class="cs-panel">
                     <div class="cs-search-wrap">
                         <span class="material-icons-round">search</span>
-                        <input type="text" class="cs-search-input" placeholder="Search accounts…"
+                        <input type="text" class="cs-search-input" placeholder="{% trans "Search accounts…" %}"
                                oninput="csFilter('cs-account', this.value)" autocomplete="off">
                     </div>
                     <div class="cs-list">
                         <div class="cs-item {% if not selected_account_pk %}cs-selected{% endif %}"
-                             data-value="" onclick="csSelect('cs-account', '', '— Select account —')">
-                            — Select account —
+                             data-value="" onclick="csSelect('cs-account', '', '{% trans "— Select account —" %}')">
+                            {% trans "— Select account —" %}
                         </div>
                         {% for acc in accounts %}
                         <div class="cs-item {% if acc.pk == selected_account_pk %}cs-selected{% endif %}"
@@ -243,9 +244,9 @@
     <div class="form-actions">
         <button type="submit" class="btn btn-primary" id="submitBtn">
             <span class="material-icons-round" id="submitIcon">save</span>
-            <span id="submitLabel">{{ page_action }} User</span>
+            <span id="submitLabel">{{ page_action }} {% trans "User" %}</span>
         </button>
-        <a href="{% url 'control:users_list' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'control:users_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
     </div>
 
 </form>
