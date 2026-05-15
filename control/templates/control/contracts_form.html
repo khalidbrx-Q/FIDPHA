@@ -215,9 +215,90 @@
         </template>
         {% endwith %}
 
-        <button type="button" onclick="addProductRow()" class="btn btn-secondary" style="margin-top:14px;">
-            <span class="material-icons-round">add</span> {% trans "Add Product" %}
-        </button>
+        <div style="display:flex; gap:8px; margin-top:14px;">
+            <button type="button" onclick="addProductRow()" class="btn btn-secondary">
+                <span class="material-icons-round">add</span> {% trans "Add Product" %}
+            </button>
+            {% if page_action == "Edit" and perms.fidpha.change_contract %}
+            <button type="button" onclick="openCpImportModal()" class="btn btn-secondary">
+                <span class="material-icons-round">upload_file</span> {% trans "Import Products" %}
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Contract products import modal -->
+    <div id="cpImportModal" class="modal-backdrop" style="display:none;" onclick="closeCpImportModal()">
+        <div class="modal-box" onclick="event.stopPropagation()" style="max-width:760px; width:95%;">
+
+            <!-- Step 1: file picker -->
+            <div id="cpStep1">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                    <span class="material-icons-round" style="font-size:28px; color:var(--accent);">upload_file</span>
+                    <div>
+                        <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">{% trans "Import Products into Contract" %}</div>
+                        <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:3px;">
+                            {% trans "Accepted:" %} <code>.csv</code>, <code>.xlsx</code>, <code>.xls</code>, <code>.json</code> —
+                            {% trans "required:" %} <code>product_code</code>, <code>external_designation</code> —
+                            {% trans "optional:" %} <code>points_per_unit</code>, <code>target_quantity</code>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <input type="file" id="cpFileInput" accept=".csv,.xlsx,.xls,.json" onchange="handleCpFile(event)" style="display:none;">
+                    <label for="cpFileInput" class="btn btn-secondary" style="cursor:pointer;">
+                        <span class="material-icons-round">folder_open</span> {% trans "Choose File" %}
+                    </label>
+                    <span id="cpFileName" style="font-size:0.83rem; color:var(--text-secondary);">{% trans "No file chosen" %}</span>
+                </div>
+                <div id="cpParseError" style="display:none; color:#ef4444; font-size:0.82rem; margin-top:10px;"></div>
+            </div>
+
+            <!-- Step 2: editable preview -->
+            <div id="cpStep2" style="display:none;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                    <div style="font-size:0.9rem; font-weight:600; color:var(--text-primary);">
+                        {% trans "Preview" %} — <span id="cpRowCount">0</span> product<span id="cpRowPlural">s</span>
+                    </div>
+                    <button type="button" onclick="cpBackToStep1()" style="font-size:0.78rem; background:none; border:none; color:var(--accent); cursor:pointer; font-family:'Inter',sans-serif; padding:0;">← {% trans "Back" %}</button>
+                </div>
+                <div style="max-height:340px; overflow-y:auto; border:1px solid var(--card-border); border-radius:8px;">
+                    <table style="width:100%; border-collapse:collapse;" id="cpPreviewTable">
+                        <thead>
+                            <tr>
+                                <th class="csv-th">{% trans "Product Code" %}</th>
+                                <th class="csv-th">{% trans "External Designation" %}</th>
+                                <th class="csv-th" style="width:100px;">{% trans "Pts Factor" %}</th>
+                                <th class="csv-th" style="width:100px;">{% trans "Target Qty" %}</th>
+                                <th id="cpReasonTh" class="csv-th" style="display:none; color:#f59e0b;">{% trans "Skip reason" %}</th>
+                                <th class="csv-th" style="width:36px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cpPreviewBody"></tbody>
+                    </table>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:16px; align-items:center;">
+                    <button type="button" class="btn btn-primary" id="cpConfirmBtn" onclick="submitCpImport()">
+                        <span class="material-icons-round">link</span> {% trans "Link" %} <span id="cpConfirmCount">0</span> products
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeCpImportModal()">{% trans "Cancel" %}</button>
+                    <span id="cpSubmitError" style="display:none; color:#ef4444; font-size:0.82rem;"></span>
+                </div>
+            </div>
+
+            <!-- Step 3: result -->
+            <div id="cpStep3" style="display:none;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                    <span class="material-icons-round" style="font-size:28px; color:#22c55e;">check_circle</span>
+                    <div style="font-size:0.95rem; font-weight:600; color:var(--text-primary);">{% trans "Import Complete" %}</div>
+                </div>
+                <div id="cpResultBody"></div>
+                <div style="margin-top:16px;">
+                    <button type="button" class="btn btn-primary" onclick="cpDone()">{% trans "Done" %}</button>
+                </div>
+            </div>
+
+        </div>
     </div>
 
     <!-- ── Sales Sync (edit only) ───────────────────────────────── -->
@@ -414,14 +495,40 @@
         border-radius:6px; border:1px solid rgba(239,68,68,0.2);
     }
     .inactive-row-warning .material-icons-round { font-size:14px; }
+
+    /* Import products modal table */
+    .csv-th {
+        text-align:left; font-size:0.73rem; font-weight:600;
+        color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px;
+        padding:8px 10px; border-bottom:1px solid var(--card-border);
+        background:var(--card-bg); position:sticky; top:0; z-index:1;
+    }
+    .csv-td { padding:5px 4px; border-bottom:1px solid var(--card-border); }
+    .csv-input {
+        width:100%; padding:4px 6px; font-size:0.83rem; font-family:'Inter',sans-serif;
+        background:var(--input-bg, var(--sidebar-hover)); border:1px solid var(--card-border);
+        border-radius:4px; color:var(--text-primary); box-sizing:border-box;
+    }
+    .csv-input:focus { outline:none; border-color:var(--accent); }
+    .csv-remove-btn {
+        background:none; border:none; cursor:pointer; color:var(--text-secondary);
+        padding:2px; display:flex; align-items:center; transition:color 0.15s;
+    }
+    .csv-remove-btn:hover { color:#ef4444; }
 </style>
 {% endblock %}
 
 
 {% block extra_js %}
+{% if page_action == "Edit" and perms.fidpha.change_contract %}
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+{% endif %}
 <script>
     const CP_PREFIX   = "{{ cp_prefix }}";
     const ALL_PRODUCTS = {{ products_json|safe }};
+    {% if page_action == "Edit" and perms.fidpha.change_contract %}
+    const UNLINK_BASE_URL = "{% url 'control:contracts_unlink_product' contract.pk 1 %}".replace(/\/\d+\/$/, '/');
+    {% endif %}
     let pendingUnlinkBtn = null;
 
     /* ── Custom searchable select ─────────────────────────────────── */
@@ -712,26 +819,61 @@
         closeModal();
         const row = btn.closest('.product-row');
         const sel = row.querySelector('select[name$="-product"]');
+        const freedValue = sel?.value || null;
+        const freedText  = freedValue ? sel.options[sel.selectedIndex]?.text : null;
+        const idInput    = row.querySelector('input[name$="-id"]');
+        const cpPk       = idInput?.value ? parseInt(idInput.value) : null;
 
-        const freedValue = sel?.value;
-        const freedText  = sel?.options[sel.selectedIndex]?.text;
-
-        const cb = row.querySelector('input[name$="-DELETE"]');
-        if (cb) cb.checked = true;
-        row.style.display = 'none';
-
-        if (freedValue) {
-            /* add freed product to every other visible row's native select */
-            document.querySelectorAll('.product-row').forEach(otherRow => {
-                if (otherRow === row || otherRow.style.display === 'none') return;
-                const otherSel = otherRow.querySelector('select[name$="-product"]');
-                if (otherSel) insertOptAlpha(otherSel, freedValue, freedText);
+        if (cpPk && typeof UNLINK_BASE_URL !== 'undefined') {
+            /* Saved product in Edit mode — immediate AJAX delete */
+            fetch(UNLINK_BASE_URL + cpPk + '/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.ok) return;
+                row.remove();
+                _reindexFormset();
+                if (freedValue) _restoreFreedProduct(freedValue, freedText);
             });
-            /* also update the template so future "Add Product" rows include it */
-            const tmplSel = document.getElementById('product-row-template')
-                ?.content?.querySelector('select[name$="-product"]');
-            if (tmplSel) insertOptAlpha(tmplSel, freedValue, freedText);
+        } else {
+            /* Unsaved row or Create mode — just remove from DOM */
+            row.remove();
+            _reindexFormset();
+            if (freedValue) _restoreFreedProduct(freedValue, freedText);
         }
+    }
+
+    function _restoreFreedProduct(freedValue, freedText) {
+        document.querySelectorAll('.product-row').forEach(otherRow => {
+            if (otherRow.style.display === 'none') return;
+            const otherSel = otherRow.querySelector('select[name$="-product"]');
+            if (otherSel) insertOptAlpha(otherSel, freedValue, freedText);
+        });
+        const tmplSel = document.getElementById('product-row-template')
+            ?.content?.querySelector('select[name$="-product"]');
+        if (tmplSel) insertOptAlpha(tmplSel, freedValue, freedText);
+    }
+
+    function _reindexFormset() {
+        const prefix = CP_PREFIX;
+        const rows   = Array.from(document.getElementById('product-rows').querySelectorAll('.product-row'));
+        rows.forEach((row, newIdx) => {
+            const m = row.id.match(/product-row-(\d+)/);
+            if (!m) return;
+            const oldIdx = parseInt(m[1]);
+            if (oldIdx === newIdx) return;
+            row.id = `product-row-${newIdx}`;
+            row.querySelectorAll('[name]').forEach(el => {
+                el.name = el.name.replace(`${prefix}-${oldIdx}-`, `${prefix}-${newIdx}-`);
+            });
+            row.querySelectorAll('[id]').forEach(el => {
+                if (el.id) el.id = el.id.replace(`id_${prefix}-${oldIdx}-`, `id_${prefix}-${newIdx}-`);
+            });
+        });
+        const totalInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+        if (totalInput) totalInput.value = rows.length;
     }
 
     function closeModal() {
@@ -886,5 +1028,303 @@
         icon.textContent = 'refresh';
         lbl.textContent = 'Saving…';
     });
+
+    /* ── Contract Products Import Modal ─────────────────────── */
+    let cpPendingRetryRows = [];
+    let cpRetryMode = false;
+
+    function openCpImportModal() {
+        document.getElementById('cpImportModal').style.display = 'flex';
+    }
+
+    function closeCpImportModal() {
+        document.getElementById('cpImportModal').style.display = 'none';
+        document.getElementById('cpStep1').style.display = '';
+        document.getElementById('cpStep2').style.display = 'none';
+        document.getElementById('cpStep3').style.display = 'none';
+        document.getElementById('cpParseError').style.display = 'none';
+        document.getElementById('cpFileInput').value = '';
+        document.getElementById('cpFileName').textContent = 'No file chosen';
+        document.getElementById('cpPreviewBody').innerHTML = '';
+        document.getElementById('cpConfirmBtn').disabled = false;
+        document.getElementById('cpSubmitError').style.display = 'none';
+        cpRetryMode = false;
+        document.getElementById('cpReasonTh').style.display = 'none';
+    }
+
+    function cpDone() {
+        closeCpImportModal();
+    }
+
+    function cpBackToStep1() {
+        document.getElementById('cpStep2').style.display = 'none';
+        document.getElementById('cpStep1').style.display = '';
+        document.getElementById('cpFileInput').value = '';
+        document.getElementById('cpFileName').textContent = 'No file chosen';
+    }
+
+    function parseCpCsvText(text) {
+        const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim() !== '');
+        if (lines.length < 2) return { error: 'CSV must have a header row and at least one data row.' };
+
+        const h = lines[0].replace(/"(?:[^"]|"")*"/g, '');
+        const sep = (h.match(/;/g)||[]).length > (h.match(/,/g)||[]).length ? ';' : ',';
+
+        function parseLine(line) {
+            const out = []; let cur = '', inQ = false;
+            for (let i = 0; i < line.length; i++) {
+                const c = line[i];
+                if (inQ) {
+                    if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+                    else if (c === '"') inQ = false;
+                    else cur += c;
+                } else {
+                    if (c === '"') inQ = true;
+                    else if (c === sep) { out.push(cur.trim()); cur = ''; }
+                    else cur += c;
+                }
+            }
+            out.push(cur.trim());
+            return out;
+        }
+
+        const hdrs = parseLine(lines[0]).map(h => h.toLowerCase().replace(/['"]/g, '').trim());
+        const ci = {
+            pc:  hdrs.indexOf('product_code'),
+            ed:  hdrs.indexOf('external_designation'),
+            ppu: hdrs.indexOf('points_per_unit'),
+            tq:  hdrs.indexOf('target_quantity'),
+        };
+        if (ci.pc < 0 || ci.ed < 0)
+            return { error: 'CSV must have columns: product_code, external_designation (optional: points_per_unit, target_quantity).' };
+
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+            const c = parseLine(lines[i]);
+            rows.push({
+                product_code:         (c[ci.pc]  || '').trim(),
+                external_designation: (c[ci.ed]  || '').trim(),
+                points_per_unit:      ci.ppu >= 0 ? (c[ci.ppu] || '').trim() : '',
+                target_quantity:      ci.tq  >= 0 ? (c[ci.tq]  || '').trim() : '',
+            });
+        }
+        return { rows };
+    }
+
+    function parseCpJSON(text) {
+        let data;
+        try { data = JSON.parse(text); } catch(e) {
+            return { error: 'Invalid JSON — could not parse the file.' };
+        }
+        if (!Array.isArray(data)) return { error: 'JSON must be an array of objects.' };
+        if (data.length === 0) return { error: 'JSON array is empty.' };
+        const rows = data.map(obj => {
+            const lk = {};
+            Object.keys(obj).forEach(k => { lk[k.toLowerCase()] = obj[k]; });
+            return {
+                product_code:         String(lk['product_code']         ?? '').trim(),
+                external_designation: String(lk['external_designation']  ?? '').trim(),
+                points_per_unit:      String(lk['points_per_unit']       ?? '').trim(),
+                target_quantity:      String(lk['target_quantity']       ?? '').trim(),
+            };
+        });
+        if (!rows[0].product_code && !rows[0].external_designation)
+            return { error: 'JSON objects must have keys: product_code, external_designation.' };
+        return { rows };
+    }
+
+    function parseCpExcel(arrayBuffer) {
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (data.length < 2) return { error: 'File must have a header row and at least one data row.' };
+        const hdrs = data[0].map(h => String(h).toLowerCase().trim());
+        const ci = {
+            pc:  hdrs.indexOf('product_code'),
+            ed:  hdrs.indexOf('external_designation'),
+            ppu: hdrs.indexOf('points_per_unit'),
+            tq:  hdrs.indexOf('target_quantity'),
+        };
+        if (ci.pc < 0 || ci.ed < 0)
+            return { error: 'File must have columns: product_code, external_designation.' };
+        const rows = [];
+        for (let i = 1; i < data.length; i++) {
+            const c = data[i];
+            if (c.every(cell => cell === '' || cell === null || cell === undefined)) continue;
+            rows.push({
+                product_code:         String(c[ci.pc]  || '').trim(),
+                external_designation: String(c[ci.ed]  || '').trim(),
+                points_per_unit:      ci.ppu >= 0 ? String(c[ci.ppu] || '').trim() : '',
+                target_quantity:      ci.tq  >= 0 ? String(c[ci.tq]  || '').trim() : '',
+            });
+        }
+        return { rows };
+    }
+
+    function handleCpFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        document.getElementById('cpFileName').textContent = file.name;
+        const ext = file.name.toLowerCase().split('.').pop();
+        const errEl = document.getElementById('cpParseError');
+        if (!['csv', 'xlsx', 'xls', 'json'].includes(ext)) {
+            errEl.textContent = `"${file.name}" is not supported. Please upload a .csv, .xlsx, .xls, or .json file.`;
+            errEl.style.display = 'block';
+            document.getElementById('cpFileInput').value = '';
+            document.getElementById('cpFileName').textContent = 'No file chosen';
+            return;
+        }
+        errEl.style.display = 'none';
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            let result;
+            if (ext === 'csv')       result = parseCpCsvText(e.target.result);
+            else if (ext === 'json') result = parseCpJSON(e.target.result);
+            else                     result = parseCpExcel(e.target.result);
+            if (result.error) {
+                errEl.textContent = result.error;
+                errEl.style.display = 'block';
+                return;
+            }
+            buildCpPreview(result.rows);
+        };
+        if (['csv', 'json'].includes(ext)) reader.readAsText(file);
+        else reader.readAsArrayBuffer(file);
+    }
+
+    function buildCpPreview(rows) {
+        cpRetryMode = rows.some(r => r.reason);
+        document.getElementById('cpReasonTh').style.display = cpRetryMode ? '' : 'none';
+        const tbody = document.getElementById('cpPreviewBody');
+        tbody.innerHTML = '';
+        rows.forEach(row => tbody.appendChild(buildCpRow(row)));
+        updateCpCount();
+        document.getElementById('cpStep1').style.display = 'none';
+        document.getElementById('cpStep2').style.display = '';
+    }
+
+    function buildCpRow(row) {
+        const tr = document.createElement('tr');
+        const reasonCell = cpRetryMode
+            ? `<td class="csv-td" style="font-size:0.78rem; color:#f59e0b; white-space:nowrap;">${escapeHtml(row.reason || '')}</td>`
+            : '';
+        tr.innerHTML =
+            `<td class="csv-td"><input class="csv-input" value="${escapeHtml(row.product_code || '')}"></td>` +
+            `<td class="csv-td"><input class="csv-input" value="${escapeHtml(row.external_designation || '')}"></td>` +
+            `<td class="csv-td"><input class="csv-input" value="${escapeHtml(row.points_per_unit || '')}" style="text-align:right;" placeholder="1"></td>` +
+            `<td class="csv-td"><input class="csv-input" value="${escapeHtml(row.target_quantity || '')}" style="text-align:right;" placeholder="—"></td>` +
+            reasonCell +
+            `<td class="csv-td" style="text-align:center;">
+                <button class="csv-remove-btn" onclick="removeCpRow(this)" title="Remove row">
+                    <span class="material-icons-round" style="font-size:18px;">close</span>
+                </button>
+             </td>`;
+        return tr;
+    }
+
+    function removeCpRow(btn) {
+        btn.closest('tr').remove();
+        updateCpCount();
+    }
+
+    function updateCpCount() {
+        const n = document.getElementById('cpPreviewBody').querySelectorAll('tr').length;
+        document.getElementById('cpRowCount').textContent = n;
+        document.getElementById('cpRowPlural').textContent = n === 1 ? '' : 's';
+        document.getElementById('cpConfirmCount').textContent = n;
+    }
+
+    function submitCpImport() {
+        const rows = [];
+        document.querySelectorAll('#cpPreviewBody tr').forEach(tr => {
+            const inputs = tr.querySelectorAll('input');
+            rows.push({
+                product_code:         inputs[0].value.trim(),
+                external_designation: inputs[1].value.trim(),
+                points_per_unit:      inputs[2].value.trim(),
+                target_quantity:      inputs[3].value.trim(),
+            });
+        });
+        if (!rows.length) return;
+
+        _submitCpImportCreate(rows);
+    }
+
+    function _submitCpImportCreate(rows) {
+        const codeMap = {};
+        ALL_PRODUCTS.forEach(p => { if (p.code) codeMap[p.code] = p; });
+
+        const contractStatus = getContractStatus();
+        const usedIds  = getUsedIds();
+        const created  = [];
+        const skipped  = [];
+        const seen     = new Set();
+
+        rows.forEach(row => {
+            const code     = row.product_code;
+            const extDesig = row.external_designation;
+            if (!code)     { skipped.push({...row, reason: 'Missing product_code'}); return; }
+            if (!extDesig) { skipped.push({...row, reason: 'Missing external_designation'}); return; }
+            if (seen.has(code)) { skipped.push({...row, reason: 'Duplicate product_code in batch'}); return; }
+            const prod = codeMap[code];
+            if (!prod) { skipped.push({...row, reason: `Product code not found: ${code}`}); return; }
+            if (usedIds.has(String(prod.id))) { skipped.push({...row, reason: 'Product already added to form'}); return; }
+            if (contractStatus === 'active' && !prod.active) {
+                skipped.push({...row, reason: 'Cannot link an inactive product to an active contract'});
+                return;
+            }
+            seen.add(code);
+            usedIds.add(String(prod.id));
+            created.push({...row, productId: prod.id, productLabel: prod.label});
+        });
+
+        created.forEach(row => {
+            addProductRow();
+            const idx    = parseInt(document.getElementById(`id_${CP_PREFIX}-TOTAL_FORMS`).value) - 1;
+            const newRow = document.getElementById(`product-row-${idx}`);
+            if (!newRow) return;
+            const sel = newRow.querySelector('select[name$="-product"]');
+            if (sel) {
+                sel.value = String(row.productId);
+                sel._csSyncTrigger?.();
+                syncProductOptions(sel, String(row.productId), row.productLabel, null, null);
+                updateInactiveWarning(sel);
+            }
+            const extInput = newRow.querySelector('input[name$="-external_designation"]');
+            if (extInput) extInput.value = row.external_designation;
+            const ppuInput = newRow.querySelector('input[name$="-points_per_unit"]');
+            if (ppuInput && row.points_per_unit) ppuInput.value = row.points_per_unit;
+            const tqInput  = newRow.querySelector('input[name$="-target_quantity"]');
+            if (tqInput  && row.target_quantity) tqInput.value  = row.target_quantity;
+        });
+
+        let html = `<p style="font-size:0.9rem; color:var(--text-primary); margin-bottom:12px;">
+            <strong style="color:#22c55e;">${created.length}</strong> product${created.length === 1 ? '' : 's'} added to the form.
+        </p>`;
+        if (skipped.length) {
+            cpPendingRetryRows = skipped.map(s => ({...s}));
+            html += `<p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px;">Skipped ${skipped.length} row${skipped.length === 1 ? '' : 's'}:</p>`;
+            html += '<ul style="font-size:0.82rem; color:var(--text-secondary); margin:0 0 16px; padding-left:18px;">';
+            skipped.forEach(s => {
+                html += `<li style="margin-bottom:4px;"><span style="font-family:monospace; font-size:0.82rem;">${escapeHtml(s.product_code || '—')}</span> — ${escapeHtml(s.reason)}</li>`;
+            });
+            html += '</ul>';
+            html += `<button type="button" class="btn btn-secondary" onclick="retryCpSkipped()">
+                <span class="material-icons-round">edit</span> Fix &amp; retry ${skipped.length} skipped row${skipped.length === 1 ? '' : 's'}
+            </button>`;
+        } else {
+            cpPendingRetryRows = [];
+        }
+        document.getElementById('cpResultBody').innerHTML = html;
+        document.getElementById('cpStep2').style.display = 'none';
+        document.getElementById('cpStep3').style.display = '';
+    }
+
+    function retryCpSkipped() {
+        document.getElementById('cpStep3').style.display = 'none';
+        document.getElementById('cpConfirmBtn').disabled = false;
+        document.getElementById('cpSubmitError').style.display = 'none';
+        buildCpPreview(cpPendingRetryRows);
+    }
 </script>
 {% endblock %}

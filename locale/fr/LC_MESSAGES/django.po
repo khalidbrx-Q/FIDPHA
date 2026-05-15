@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WinInPharma 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-14 20:06+0100\n"
+"POT-Creation-Date: 2026-05-15 16:30+0100\n"
 "PO-Revision-Date: 2026-05-04 23:42+0100\n"
 "Last-Translator: WinInPharma\n"
 "Language-Team: French\n"
@@ -50,13 +50,13 @@ msgstr "Comptes"
 
 #: .\control\templates\control\accounts_confirm_delete.html:8
 #: .\control\templates\control\accounts_detail.html:47
-#: .\control\templates\control\accounts_list.html:122
+#: .\control\templates\control\accounts_list.html:143
 #: .\control\templates\control\contracts_confirm_delete.html:8
 #: .\control\templates\control\contracts_detail.html:46
-#: .\control\templates\control\contracts_list.html:129
+#: .\control\templates\control\contracts_list.html:150
 #: .\control\templates\control\products_confirm_delete.html:7
 #: .\control\templates\control\products_detail.html:41
-#: .\control\templates\control\products_list.html:86
+#: .\control\templates\control\products_list.html:180
 #: .\control\templates\control\roles_confirm_delete.html:7
 #: .\control\templates\control\roles_detail.html:37
 #: .\control\templates\control\roles_list.html:73
@@ -90,9 +90,11 @@ msgstr "Cette action est irréversible"
 #: .\control\templates\control\contracts_detail.html:150
 #: .\control\templates\control\contracts_form.html:47
 #: .\control\templates\control\contracts_form.html:51
+#: .\control\templates\control\contracts_form.html:263
 #: .\control\templates\control\products_confirm_delete.html:19
 #: .\control\templates\control\products_detail.html:32
 #: .\control\templates\control\products_form.html:24
+#: .\control\templates\control\products_list.html:87
 #: .\control\templates\control\roles_confirm_delete.html:20
 #: .\control\templates\control\roles_detail.html:28
 #: .\control\templates\control\roles_form.html:25
@@ -164,10 +166,12 @@ msgstr "Oui, supprimer le compte"
 #: .\control\templates\control\accounts_form.html:148
 #: .\control\templates\control\contracts_confirm_delete.html:82
 #: .\control\templates\control\contracts_form.html:33
-#: .\control\templates\control\contracts_form.html:249
-#: .\control\templates\control\contracts_form.html:251
+#: .\control\templates\control\contracts_form.html:284
+#: .\control\templates\control\contracts_form.html:330
+#: .\control\templates\control\contracts_form.html:332
 #: .\control\templates\control\products_confirm_delete.html:62
 #: .\control\templates\control\products_form.html:79
+#: .\control\templates\control\products_list.html:108
 #: .\control\templates\control\roles_confirm_delete.html:50
 #: .\control\templates\control\roles_form.html:149
 #: .\control\templates\control\sales_list.html:225
@@ -189,21 +193,21 @@ msgstr "Annuler"
 #: .\control\templates\control\accounts_detail.html:233
 #: .\control\templates\control\accounts_form.html:256
 #: .\control\templates\control\accounts_form.html:304
-#: .\control\templates\control\accounts_list.html:36
-#: .\control\templates\control\accounts_list.html:83
+#: .\control\templates\control\accounts_list.html:57
+#: .\control\templates\control\accounts_list.html:104
 #: .\control\templates\control\contracts_detail.html:22
 #: .\control\templates\control\contracts_detail.html:84
 #: .\control\templates\control\contracts_detail.html:189
 #: .\control\templates\control\contracts_detail.html:231
-#: .\control\templates\control\contracts_list.html:34
-#: .\control\templates\control\contracts_list.html:94
+#: .\control\templates\control\contracts_list.html:55
+#: .\control\templates\control\contracts_list.html:115
 #: .\control\templates\control\products_confirm_delete.html:31
 #: .\control\templates\control\products_detail.html:22
 #: .\control\templates\control\products_detail.html:61
 #: .\control\templates\control\products_detail.html:89
 #: .\control\templates\control\products_detail.html:137
 #: .\control\templates\control\products_list.html:21
-#: .\control\templates\control\products_list.html:61
+#: .\control\templates\control\products_list.html:155
 #: .\control\templates\control\roles_detail.html:68
 #: .\control\templates\control\sales_list.html:772
 #: .\control\templates\control\tokens_confirm_delete.html:31
@@ -232,21 +236,21 @@ msgstr "Actif"
 #: .\control\templates\control\accounts_detail.html:235
 #: .\control\templates\control\accounts_form.html:257
 #: .\control\templates\control\accounts_form.html:306
-#: .\control\templates\control\accounts_list.html:37
-#: .\control\templates\control\accounts_list.html:85
+#: .\control\templates\control\accounts_list.html:58
+#: .\control\templates\control\accounts_list.html:106
 #: .\control\templates\control\contracts_detail.html:24
 #: .\control\templates\control\contracts_detail.html:85
 #: .\control\templates\control\contracts_detail.html:190
 #: .\control\templates\control\contracts_detail.html:233
-#: .\control\templates\control\contracts_list.html:35
-#: .\control\templates\control\contracts_list.html:96
+#: .\control\templates\control\contracts_list.html:56
+#: .\control\templates\control\contracts_list.html:117
 #: .\control\templates\control\products_confirm_delete.html:32
 #: .\control\templates\control\products_detail.html:24
 #: .\control\templates\control\products_detail.html:63
 #: .\control\templates\control\products_detail.html:90
 #: .\control\templates\control\products_detail.html:139
 #: .\control\templates\control\products_list.html:22
-#: .\control\templates\control\products_list.html:63
+#: .\control\templates\control\products_list.html:157
 #: .\control\templates\control\roles_detail.html:70
 #: .\control\templates\control\users_detail.html:27
 #: .\control\templates\control\users_detail.html:51
@@ -264,7 +268,7 @@ msgid "Inactive"
 msgstr "Inactif"
 
 #: .\control\templates\control\accounts_detail.html:27
-#: .\control\templates\control\accounts_list.html:63
+#: .\control\templates\control\accounts_list.html:84
 #: .\control\templates\control\users_detail.html:25
 msgid "Portal"
 msgstr "Portail"
@@ -275,11 +279,11 @@ msgid "Auto-Review"
 msgstr "Révision automatique"
 
 #: .\control\templates\control\accounts_detail.html:41
-#: .\control\templates\control\accounts_list.html:112
+#: .\control\templates\control\accounts_list.html:133
 #: .\control\templates\control\contracts_detail.html:40
-#: .\control\templates\control\contracts_list.html:117
+#: .\control\templates\control\contracts_list.html:138
 #: .\control\templates\control\products_detail.html:35
-#: .\control\templates\control\products_list.html:76
+#: .\control\templates\control\products_list.html:170
 #: .\control\templates\control\roles_detail.html:31
 #: .\control\templates\control\roles_list.html:63
 #: .\control\templates\control\users_detail.html:137
@@ -287,11 +291,11 @@ msgid "Clone"
 msgstr "Dupliquer"
 
 #: .\control\templates\control\accounts_detail.html:44
-#: .\control\templates\control\accounts_list.html:117
+#: .\control\templates\control\accounts_list.html:138
 #: .\control\templates\control\contracts_detail.html:43
-#: .\control\templates\control\contracts_list.html:123
+#: .\control\templates\control\contracts_list.html:144
 #: .\control\templates\control\products_detail.html:38
-#: .\control\templates\control\products_list.html:81
+#: .\control\templates\control\products_list.html:175
 #: .\control\templates\control\roles_detail.html:34
 #: .\control\templates\control\roles_list.html:68
 #: .\control\templates\control\social_apps_detail.html:30
@@ -311,10 +315,11 @@ msgstr "Informations sur le compte"
 
 #: .\control\templates\control\accounts_detail.html:57
 #: .\control\templates\control\accounts_form.html:54
-#: .\control\templates\control\accounts_list.html:59
+#: .\control\templates\control\accounts_list.html:80
 #: .\control\templates\control\products_detail.html:50
 #: .\control\templates\control\products_form.html:47
-#: .\control\templates\control\products_list.html:40
+#: .\control\templates\control\products_list.html:93
+#: .\control\templates\control\products_list.html:134
 #: .\fidpha\templates\fidpha\pharmacy.html:34
 #: .\fidpha\templates\fidpha\profile.html:217
 msgid "Code"
@@ -322,7 +327,7 @@ msgstr "Code"
 
 #: .\control\templates\control\accounts_detail.html:58
 #: .\control\templates\control\accounts_form.html:60
-#: .\control\templates\control\accounts_list.html:60
+#: .\control\templates\control\accounts_list.html:81
 #: .\control\templates\control\roles_list.html:31
 #: .\control\templates\control\social_apps_detail.html:47
 #: .\control\templates\control\social_apps_form.html:49
@@ -336,7 +341,7 @@ msgstr "Nom"
 
 #: .\control\templates\control\accounts_detail.html:59
 #: .\control\templates\control\accounts_form.html:68
-#: .\control\templates\control\accounts_list.html:61
+#: .\control\templates\control\accounts_list.html:82
 #: .\control\templates\control\users_list.html:206
 #: .\fidpha\templates\fidpha\pharmacy.html:36
 #: .\fidpha\templates\fidpha\profile.html:213
@@ -369,15 +374,16 @@ msgstr "Localisation"
 
 #: .\control\templates\control\accounts_detail.html:67
 #: .\control\templates\control\accounts_form.html:97
-#: .\control\templates\control\accounts_list.html:62
+#: .\control\templates\control\accounts_list.html:83
 #: .\control\templates\control\contracts_detail.html:82
 #: .\control\templates\control\contracts_detail.html:215
 #: .\control\templates\control\contracts_form.html:123
-#: .\control\templates\control\contracts_list.html:60
+#: .\control\templates\control\contracts_list.html:81
 #: .\control\templates\control\products_detail.html:58
 #: .\control\templates\control\products_detail.html:104
 #: .\control\templates\control\products_form.html:53
-#: .\control\templates\control\products_list.html:43
+#: .\control\templates\control\products_list.html:96
+#: .\control\templates\control\products_list.html:137
 #: .\control\templates\control\sales_list.html:1075
 #: .\control\templates\control\sync_log.html:256
 #: .\control\templates\control\sync_log.html:357
@@ -419,7 +425,7 @@ msgstr "révision manuelle"
 
 #: .\control\templates\control\accounts_detail.html:99
 #: .\control\templates\control\accounts_form.html:161
-#: .\control\templates\control\accounts_list.html:64
+#: .\control\templates\control\accounts_list.html:85
 #: .\control\templates\control\base.html:533
 #: .\control\templates\control\contracts_confirm_delete.html:6
 #: .\control\templates\control\contracts_detail.html:6
@@ -427,7 +433,7 @@ msgstr "révision manuelle"
 #: .\control\templates\control\contracts_list.html:4
 #: .\control\templates\control\contracts_list.html:5
 #: .\control\templates\control\dashboard.html:36
-#: .\control\templates\control\products_list.html:44
+#: .\control\templates\control\products_list.html:138
 msgid "Contracts"
 msgstr "Contrats"
 
@@ -472,11 +478,11 @@ msgstr "Utilisateurs du portail"
 
 #: .\control\templates\control\accounts_detail.html:188
 #: .\control\templates\control\accounts_form.html:255
-#: .\control\templates\control\accounts_list.html:35
-#: .\control\templates\control\accounts_list.html:43
+#: .\control\templates\control\accounts_list.html:56
+#: .\control\templates\control\accounts_list.html:64
 #: .\control\templates\control\contracts_detail.html:188
-#: .\control\templates\control\contracts_list.html:33
-#: .\control\templates\control\contracts_list.html:41
+#: .\control\templates\control\contracts_list.html:54
+#: .\control\templates\control\contracts_list.html:62
 #: .\control\templates\control\products_detail.html:88
 #: .\control\templates\control\products_list.html:20
 #: .\control\templates\control\sales_list.html:103
@@ -647,8 +653,8 @@ msgid "to unlock this toggle."
 msgstr "pour déverrouiller ce commutateur."
 
 #: .\control\templates\control\accounts_form.html:164
-#: .\control\templates\control\contracts_list.html:25
-#: .\control\templates\control\contracts_list.html:150
+#: .\control\templates\control\contracts_list.html:45
+#: .\control\templates\control\contracts_list.html:171
 #: .\control\templates\control\dashboard.html:123
 msgid "New Contract"
 msgstr "Nouveau contrat"
@@ -714,14 +720,21 @@ msgstr "Rechercher par nom ou code…"
 msgid "Filter by city…"
 msgstr "Filtrer par ville…"
 
-#: .\control\templates\control\accounts_list.html:26
-#: .\control\templates\control\accounts_list.html:143
+#: .\control\templates\control\accounts_list.html:28
+#: .\control\templates\control\contracts_list.html:27
+#: .\control\templates\control\products_list.html:31
+#: .\control\templates\control\sales_list.html:132
+msgid "Export"
+msgstr "Exporter"
+
+#: .\control\templates\control\accounts_list.html:46
+#: .\control\templates\control\accounts_list.html:164
 #: .\control\templates\control\dashboard.html:117
 msgid "New Account"
 msgstr "Nouveau compte"
 
-#: .\control\templates\control\accounts_list.html:33
-#: .\control\templates\control\contracts_list.html:31
+#: .\control\templates\control\accounts_list.html:54
+#: .\control\templates\control\contracts_list.html:52
 #: .\control\templates\control\products_confirm_delete.html:30
 #: .\control\templates\control\products_detail.html:86
 #: .\control\templates\control\products_list.html:18
@@ -732,25 +745,25 @@ msgstr "Nouveau compte"
 msgid "Status:"
 msgstr "Statut :"
 
-#: .\control\templates\control\accounts_list.html:41
+#: .\control\templates\control\accounts_list.html:62
 msgid "Portal:"
 msgstr "Portail :"
 
-#: .\control\templates\control\accounts_list.html:44
+#: .\control\templates\control\accounts_list.html:65
 msgid "Has Portal"
 msgstr "A un portail"
 
-#: .\control\templates\control\accounts_list.html:45
+#: .\control\templates\control\accounts_list.html:66
 msgid "No Portal"
 msgstr "Sans portail"
 
-#: .\control\templates\control\accounts_list.html:49
-#: .\control\templates\control\contracts_list.html:47
+#: .\control\templates\control\accounts_list.html:70
+#: .\control\templates\control\contracts_list.html:68
 #: .\control\templates\control\sales_list.html:171
 msgid "Clear filters"
 msgstr "Réinitialiser les filtres"
 
-#: .\control\templates\control\accounts_list.html:65
+#: .\control\templates\control\accounts_list.html:86
 #: .\control\templates\control\base.html:514
 #: .\control\templates\control\dashboard.html:70
 #: .\control\templates\control\users_confirm_delete.html:6
@@ -761,23 +774,23 @@ msgstr "Réinitialiser les filtres"
 msgid "Users"
 msgstr "Utilisateurs"
 
-#: .\control\templates\control\accounts_list.html:90
+#: .\control\templates\control\accounts_list.html:111
 msgid "Has portal access"
 msgstr "A accès au portail"
 
-#: .\control\templates\control\accounts_list.html:92
+#: .\control\templates\control\accounts_list.html:113
 msgid "No portal access"
 msgstr "Pas d'accès au portail"
 
-#: .\control\templates\control\accounts_list.html:134
+#: .\control\templates\control\accounts_list.html:155
 msgid "No accounts match your filters."
 msgstr "Aucun compte ne correspond à vos filtres."
 
-#: .\control\templates\control\accounts_list.html:139
+#: .\control\templates\control\accounts_list.html:160
 msgid "No accounts yet"
 msgstr "Aucun compte pour l'instant"
 
-#: .\control\templates\control\accounts_list.html:140
+#: .\control\templates\control\accounts_list.html:161
 msgid "Add a pharmacy account to get started."
 msgstr "Ajoutez un compte pharmacie pour commencer."
 
@@ -820,7 +833,7 @@ msgstr "Rôles"
 #: .\control\templates\control\base.html:540
 #: .\control\templates\control\contracts_detail.html:183
 #: .\control\templates\control\contracts_form.html:132
-#: .\control\templates\control\contracts_list.html:61
+#: .\control\templates\control\contracts_list.html:82
 #: .\control\templates\control\dashboard.html:53
 #: .\control\templates\control\products_confirm_delete.html:6
 #: .\control\templates\control\products_detail.html:6
@@ -979,12 +992,12 @@ msgstr "Informations sur le contrat"
 
 #: .\control\templates\control\contracts_detail.html:56
 #: .\control\templates\control\contracts_form.html:86
-#: .\control\templates\control\contracts_list.html:57
+#: .\control\templates\control\contracts_list.html:78
 msgid "Title"
 msgstr "Titre"
 
 #: .\control\templates\control\contracts_detail.html:70
-#: .\control\templates\control\contracts_list.html:59
+#: .\control\templates\control\contracts_list.html:80
 #: .\control\templates\control\products_detail.html:103
 msgid "Period"
 msgstr "Période"
@@ -995,7 +1008,7 @@ msgid "Description"
 msgstr "Description"
 
 #: .\control\templates\control\contracts_detail.html:99
-#: .\control\templates\control\contracts_form.html:226
+#: .\control\templates\control\contracts_form.html:307
 msgid "Sales Sync"
 msgstr "Synchronisation des ventes"
 
@@ -1013,18 +1026,18 @@ msgid "None yet"
 msgstr "Aucune pour l'instant"
 
 #: .\control\templates\control\contracts_detail.html:118
-#: .\control\templates\control\contracts_form.html:229
+#: .\control\templates\control\contracts_form.html:310
 msgid "Last Sale Date"
 msgstr "Date de dernière vente"
 
 #: .\control\templates\control\contracts_detail.html:128
-#: .\control\templates\control\contracts_form.html:234
-#: .\control\templates\control\contracts_list.html:62
+#: .\control\templates\control\contracts_form.html:315
+#: .\control\templates\control\contracts_list.html:83
 msgid "Last Sync"
 msgstr "Dernière sync."
 
 #: .\control\templates\control\contracts_detail.html:133
-#: .\control\templates\control\contracts_list.html:43
+#: .\control\templates\control\contracts_list.html:64
 msgid "Never synced"
 msgstr "Jamais synchronisé"
 
@@ -1076,11 +1089,12 @@ msgstr "Code interne"
 #: .\control\templates\control\contracts_detail.html:212
 #: .\control\templates\control\contracts_form.html:161
 #: .\control\templates\control\contracts_form.html:195
+#: .\control\templates\control\contracts_form.html:270
 msgid "External Designation"
 msgstr "Désignation externe"
 
 #: .\control\templates\control\contracts_detail.html:213
-#: .\control\templates\control\products_list.html:42
+#: .\control\templates\control\products_list.html:136
 #: .\control\templates\control\sales_list.html:1073
 #: .\control\templates\control\sync_log.html:356
 msgid "PPV"
@@ -1133,7 +1147,7 @@ msgid "Yes, unlink"
 msgstr "Oui, dissocier"
 
 #: .\control\templates\control\contracts_form.html:40
-#: .\control\templates\control\contracts_form.html:246
+#: .\control\templates\control\contracts_form.html:327
 #: .\control\templates\control\products_detail.html:100
 #: .\control\templates\control\sales_list.html:84
 #: .\control\templates\control\sales_list.html:159
@@ -1205,27 +1219,94 @@ msgstr "Qté cible"
 msgid "Unlink product"
 msgstr "Dissocier le produit"
 
-#: .\control\templates\control\contracts_form.html:219
+#: .\control\templates\control\contracts_form.html:220
 msgid "Add Product"
 msgstr "Ajouter un produit"
+
+#: .\control\templates\control\contracts_form.html:224
+msgid "Import Products"
+msgstr "Importer des produits"
+
+#: .\control\templates\control\contracts_form.html:239
+msgid "Import Products into Contract"
+msgstr "Importer des produits dans le contrat"
+
+#: .\control\templates\control\contracts_form.html:241
+#: .\control\templates\control\products_list.html:68
+msgid "Accepted:"
+msgstr "Accepté :"
+
+#: .\control\templates\control\contracts_form.html:242
+msgid "required:"
+msgstr "requis :"
+
+#: .\control\templates\control\contracts_form.html:243
+msgid "optional:"
+msgstr "optionnel :"
+
+#: .\control\templates\control\contracts_form.html:250
+#: .\control\templates\control\products_list.html:74
+msgid "Choose File"
+msgstr "Choisir un fichier"
+
+#: .\control\templates\control\contracts_form.html:252
+#: .\control\templates\control\products_list.html:76
+msgid "No file chosen"
+msgstr "Aucun fichier sélectionné"
+
+#: .\control\templates\control\contracts_form.html:261
+#: .\control\templates\control\products_list.html:85
+msgid "Preview"
+msgstr "Aperçu"
+
+#: .\control\templates\control\contracts_form.html:269
+msgid "Product Code"
+msgstr "Code produit"
+
+#: .\control\templates\control\contracts_form.html:271
+msgid "Pts Factor"
+msgstr "Facteur pts"
+
+#: .\control\templates\control\contracts_form.html:272
+msgid "Target Qty"
+msgstr "Qté cible"
+
+#: .\control\templates\control\contracts_form.html:273
+#: .\control\templates\control\products_list.html:97
+msgid "Skip reason"
+msgstr "Motif d'exclusion"
+
+#: .\control\templates\control\contracts_form.html:282
+msgid "Link"
+msgstr "Lier"
+
+#: .\control\templates\control\contracts_form.html:293
+#: .\control\templates\control\products_list.html:117
+msgid "Import Complete"
+msgstr "Import terminé"
+
+#: .\control\templates\control\contracts_form.html:297
+#: .\control\templates\control\products_list.html:121
+msgid "Done"
+msgstr "Terminé"
 
 #: .\control\templates\control\contracts_list.html:15
 msgid "Search by title or account…"
 msgstr "Rechercher par titre ou compte…"
 
-#: .\control\templates\control\contracts_list.html:39
+#: .\control\templates\control\contracts_list.html:60
 msgid "Synced:"
 msgstr "Synchronisé :"
 
-#: .\control\templates\control\contracts_list.html:42
+#: .\control\templates\control\contracts_list.html:63
 msgid "Synced"
 msgstr "Synchronisé"
 
-#: .\control\templates\control\contracts_list.html:58
+#: .\control\templates\control\contracts_list.html:79
 msgid "Account · City"
 msgstr "Compte · Ville"
 
-#: .\control\templates\control\contracts_list.html:110
+#: .\control\templates\control\contracts_list.html:131
 #: .\control\templates\control\tokens_detail.html:141
 #: .\control\templates\control\tokens_list.html:118
 #: .\control\templates\control\users_detail.html:46
@@ -1233,15 +1314,15 @@ msgstr "Compte · Ville"
 msgid "Never"
 msgstr "Jamais"
 
-#: .\control\templates\control\contracts_list.html:141
+#: .\control\templates\control\contracts_list.html:162
 msgid "No contracts match your filters."
 msgstr "Aucun contrat ne correspond à vos filtres."
 
-#: .\control\templates\control\contracts_list.html:146
+#: .\control\templates\control\contracts_list.html:167
 msgid "No contracts yet"
 msgstr "Aucun contrat pour l'instant"
 
-#: .\control\templates\control\contracts_list.html:147
+#: .\control\templates\control\contracts_list.html:168
 msgid "Create a contract to link products to a pharmacy account."
 msgstr "Créez un contrat pour lier des produits à un compte pharmacie."
 
@@ -1271,8 +1352,8 @@ msgid "Quick Actions"
 msgstr "Actions rapides"
 
 #: .\control\templates\control\dashboard.html:129
-#: .\control\templates\control\products_list.html:29
-#: .\control\templates\control\products_list.html:107
+#: .\control\templates\control\products_list.html:52
+#: .\control\templates\control\products_list.html:201
 msgid "New Product"
 msgstr "Nouveau produit"
 
@@ -1349,7 +1430,8 @@ msgstr "Informations sur le produit"
 
 #: .\control\templates\control\products_detail.html:54
 #: .\control\templates\control\products_form.html:60
-#: .\control\templates\control\products_list.html:41
+#: .\control\templates\control\products_list.html:94
+#: .\control\templates\control\products_list.html:135
 #: .\control\templates\control\sync_log.html:354
 msgid "Designation"
 msgstr "Désignation"
@@ -1408,15 +1490,28 @@ msgstr "Rechercher par code ou désignation…"
 msgid "Clear"
 msgstr "Effacer"
 
-#: .\control\templates\control\products_list.html:98
+#: .\control\templates\control\products_list.html:49
+#: .\control\templates\control\products_list.html:106
+msgid "Import"
+msgstr "Importer"
+
+#: .\control\templates\control\products_list.html:67
+msgid "Import Products from CSV"
+msgstr "Importer des produits depuis CSV"
+
+#: .\control\templates\control\products_list.html:68
+msgid "required fields:"
+msgstr "champs requis :"
+
+#: .\control\templates\control\products_list.html:192
 msgid "No products match your filters."
 msgstr "Aucun produit ne correspond à vos filtres."
 
-#: .\control\templates\control\products_list.html:103
+#: .\control\templates\control\products_list.html:197
 msgid "No products yet"
 msgstr "Aucun produit pour l'instant"
 
-#: .\control\templates\control\products_list.html:104
+#: .\control\templates\control\products_list.html:198
 msgid "Add products to link them to pharmacy contracts."
 msgstr "Ajoutez des produits pour les lier aux contrats pharmacie."
 
@@ -1668,10 +1763,6 @@ msgstr "Réinitialiser tous les filtres"
 #: .\control\templates\control\sales_list.html:126
 msgid "Batches"
 msgstr "Lots"
-
-#: .\control\templates\control\sales_list.html:132
-msgid "Export"
-msgstr "Exporter"
 
 #: .\control\templates\control\sales_list.html:136
 msgid "Export filtered"
@@ -2312,8 +2403,7 @@ msgid ""
 msgstr ""
 "Lorsqu'activée, toute ligne de vente validée est acceptée immédiatement\n"
 "                    — aucune révision du personnel n'est requise. Le personnel ne voit que les lignes rejetées.\n"
-"                    Chaque vente auto-acceptée est marquée <code>auto_reviewed = true</code>."
-"Lorsqu'activée, toute ligne de vente validée est acceptée immédiatement\n"
+"                    Chaque vente auto-acceptée est marquée <code>auto_reviewed = true</code>.Lorsqu'activée, toute ligne de vente validée est acceptée immédiatement\n"
 "                    — aucune révision du personnel n'est requise. Le personnel ne voit que les lignes rejetées.\n"
 "                    Chaque vente auto-acceptée est marquée <code>auto_reviewed = true</code>."
 

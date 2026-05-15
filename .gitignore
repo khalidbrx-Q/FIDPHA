@@ -11,6 +11,15 @@ staticfiles/
 robot_test.py
 test_log.txt
 
+# Tests — local dev only, not committed
+tests/
+conftest.py
+pytest.ini
+api/tests.py
+fidpha/tests.py
+sales/tests.py
+control/tests.py
+
 # Generated reports / diagrams
 sales_flow.html
 sales_flow.pdf

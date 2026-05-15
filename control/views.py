@@ -14,6 +14,7 @@ Last updated: April 2026
 import json
 from datetime import timedelta
 
+from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.models import User, Group, Permission
@@ -32,6 +33,121 @@ from api.models import APIToken, APITokenUsageLog
 from sales.models import Sale, SaleImport
 from .decorators import staff_required, perm_required, superuser_required
 from .models import SystemConfig
+
+
+def _export_response(rows, basename, fmt):
+    """Build a CSV / XLSX / JSON download response from a list of rows (first row = headers)."""
+    import csv, io, json, zipfile
+    from django.http import HttpResponse, StreamingHttpResponse
+
+    headers = rows[0]
+    data    = rows[1:]
+
+    if fmt == "json":
+        payload = [dict(zip(headers, row)) for row in data]
+        resp = HttpResponse(
+            json.dumps(payload, ensure_ascii=False, indent=2, default=str),
+            content_type="application/json",
+        )
+        resp["Content-Disposition"] = f'attachment; filename="{basename}.json"'
+        return resp
+
+    if fmt == "xlsx":
+        strings, strings_index = [], {}
+
+        def si(s):
+            s = str(s)
+            if s not in strings_index:
+                strings_index[s] = len(strings)
+                strings.append(s)
+            return strings_index[s]
+
+        def xe(s):
+            return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+        sheet_rows_xml = []
+        from decimal import Decimal as _Dec
+        for r_idx, row in enumerate(rows, 1):
+            cells = []
+            for c_idx, val in enumerate(row):
+                col = chr(ord('A') + c_idx)
+                ref = f"{col}{r_idx}"
+                if isinstance(val, (int, float, _Dec)) and not isinstance(val, bool):
+                    cells.append(f'<c r="{ref}"><v>{float(val)}</v></c>')
+                else:
+                    cells.append(f'<c r="{ref}" t="s"><v>{si(str(val))}</v></c>')
+            sheet_rows_xml.append(f'<row r="{r_idx}">{"".join(cells)}</row>')
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("[Content_Types].xml", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                '<Default Extension="xml" ContentType="application/xml"/>'
+                '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+                '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+                '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
+                '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+                '</Types>'
+            ))
+            zf.writestr("_rels/.rels", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+                '</Relationships>'
+            ))
+            zf.writestr("xl/workbook.xml", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+                '<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>'
+                '</workbook>'
+            ))
+            zf.writestr("xl/_rels/workbook.xml.rels", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+                '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'
+                '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+                '</Relationships>'
+            ))
+            zf.writestr("xl/worksheets/sheet1.xml", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                f'<sheetData>{"".join(sheet_rows_xml)}</sheetData>'
+                '</worksheet>'
+            ))
+            ss = "".join(f'<si><t xml:space="preserve">{xe(s)}</t></si>' for s in strings)
+            zf.writestr("xl/sharedStrings.xml", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                f'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="{len(strings)}" uniqueCount="{len(strings)}">{ss}</sst>'
+            ))
+            zf.writestr("xl/styles.xml", (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                '<fonts><font/></fonts><fills><fill/></fills><borders><border/></borders>'
+                '<cellStyleXfs><xf/></cellStyleXfs><cellXfs><xf/></cellXfs>'
+                '</styleSheet>'
+            ))
+        resp = HttpResponse(
+            buf.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        resp["Content-Disposition"] = f'attachment; filename="{basename}.xlsx"'
+        return resp
+
+    # default: csv
+    class Echo:
+        def write(self, value): return value
+
+    writer = csv.writer(Echo())
+    from django.http import StreamingHttpResponse
+    resp = StreamingHttpResponse(
+        (writer.writerow(row) for row in rows),
+        content_type="text/csv",
+    )
+    resp["Content-Disposition"] = f'attachment; filename="{basename}.csv"'
+    return resp
 
 
 def _log(user, obj, flag, message=""):
@@ -1066,7 +1182,7 @@ def contracts_create(request):
         "page_action":   "Create",
         "cp_prefix":     _CP_PREFIX,
         "products_json": json.dumps([
-            {"id": p.pk, "label": p.designation, "active": p.status == Product.STATUS_ACTIVE}
+            {"id": p.pk, "label": p.designation, "active": p.status == Product.STATUS_ACTIVE, "code": p.code}
             for p in Product.objects.order_by("designation")
         ]),
     })
@@ -1083,6 +1199,20 @@ def contracts_edit(request, pk: int):
         form    = ContractForm(request.POST, instance=contract)
         formset = ContractProductFormSet(request.POST, instance=contract, prefix=_CP_PREFIX, form_kwargs=fkwargs)
         _patch_freed_product_queryset(formset, available, request.POST)
+        # Tell contract.clean() which Contract_Product rows are being deleted so it
+        # can exclude them from the inactive-product check (they're still in DB at
+        # validation time, before formset.save() runs).
+        total = int(request.POST.get(f"{_CP_PREFIX}-TOTAL_FORMS", 0))
+        pending_deletes = set()
+        for i in range(total):
+            pk_raw  = request.POST.get(f"{_CP_PREFIX}-{i}-id", "")
+            del_raw = request.POST.get(f"{_CP_PREFIX}-{i}-DELETE", "")
+            if pk_raw and del_raw:
+                try:
+                    pending_deletes.add(int(pk_raw))
+                except (ValueError, TypeError):
+                    pass
+        contract._pending_cp_deletes = pending_deletes
         if form.is_valid() and formset.is_valid():
             contract = form.save(commit=False)
             contract.modified_by = request.user
@@ -1114,7 +1244,7 @@ def contracts_edit(request, pk: int):
         "page_action":   "Edit",
         "cp_prefix":     _CP_PREFIX,
         "products_json": json.dumps([
-            {"id": p.pk, "label": p.designation, "active": p.status == Product.STATUS_ACTIVE}
+            {"id": p.pk, "label": p.designation, "active": p.status == Product.STATUS_ACTIVE, "code": p.code}
             for p in Product.objects.order_by("designation")
         ]),
     })
@@ -1144,6 +1274,52 @@ def contracts_delete(request, pk: int):
         "sale_count":    sale_count,
         "has_sales":     has_sales,
     })
+
+
+@perm_required('fidpha.change_contract')
+def contracts_import_products(request, pk: int):
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    contract = get_object_or_404(Contract, pk=pk)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    rows = data.get("rows", [])
+    if not isinstance(rows, list):
+        return JsonResponse({"error": "rows must be a list"}, status=400)
+
+    from fidpha.services import bulk_link_products_to_contract
+    result = bulk_link_products_to_contract(contract, rows, created_by=request.user)
+
+    for cp in result["created"]:
+        _log(request.user, cp, ADDITION, "bulk file import")
+
+    return JsonResponse({
+        "created": len(result["created"]),
+        "skipped": [
+            {
+                "product_code":        s["row"].get("product_code", ""),
+                "external_designation": s["row"].get("external_designation", ""),
+                "points_per_unit":     s["row"].get("points_per_unit", ""),
+                "target_quantity":     s["row"].get("target_quantity", ""),
+                "reason":              s["reason"],
+            }
+            for s in result["skipped"]
+        ],
+    })
+
+
+@perm_required('fidpha.change_contract')
+def contracts_unlink_product(request, pk: int, cp_pk: int):
+    """Immediately remove a single product link from a contract."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    contract = get_object_or_404(Contract, pk=pk)
+    cp       = get_object_or_404(Contract_Product, pk=cp_pk, contract=contract)
+    _log(request.user, cp, DELETION)
+    cp.delete()
+    return JsonResponse({'ok': True})
 
 
 # ---------------------------------------------------------------------------
@@ -1269,6 +1445,102 @@ def products_delete(request, pk: int):
         "product":              product,
         "contract_count":       contract_count,
         "active_contract_count": active_contract_count,
+    })
+
+
+@perm_required('fidpha.view_product')
+def products_export(request):
+    fmt      = request.GET.get("format", "csv").lower()
+    basename = f"products_{timezone.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    rows = [["code", "designation", "ppv", "status"]] + [
+        [p.code, p.designation, p.ppv, p.status]
+        for p in Product.objects.all().order_by("designation").iterator()
+    ]
+    return _export_response(rows, basename, fmt)
+
+
+@perm_required('fidpha.view_account')
+def accounts_export(request):
+    fmt      = request.GET.get("format", "csv").lower()
+    basename = f"accounts_{timezone.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    rows = [["code", "name", "city", "location", "phone", "email", "status", "pharmacy_portal", "auto_review_enabled"]] + [
+        [a.code, a.name, a.city, a.location, a.phone, a.email, a.status,
+         "yes" if a.pharmacy_portal else "no",
+         "yes" if a.auto_review_enabled else "no"]
+        for a in Account.objects.all().order_by("name").iterator()
+    ]
+    return _export_response(rows, basename, fmt)
+
+
+@perm_required('fidpha.view_contract')
+def contracts_export(request):
+    fmt      = request.GET.get("format", "csv").lower()
+    basename = f"contracts_{timezone.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    qs = (
+        Contract.objects
+        .select_related("account")
+        .prefetch_related("contract_product_set__product")
+        .order_by("-status", "account__name", "title")
+    )
+    headers = [
+        "title", "account_code", "account_name", "start_date", "end_date", "status",
+        "product_code", "product_designation", "product_ppv",
+        "external_designation", "points_per_unit", "target_quantity",
+    ]
+    rows = [headers]
+    for c in qs:
+        contract_base = [
+            c.title, c.account.code, c.account.name,
+            c.start_date.strftime("%Y-%m-%d") if c.start_date else "",
+            c.end_date.strftime("%Y-%m-%d")   if c.end_date   else "",
+            c.status,
+        ]
+        cps = list(c.contract_product_set.all())
+        if cps:
+            for cp in cps:
+                rows.append(contract_base + [
+                    cp.product.code,
+                    cp.product.designation,
+                    cp.product.ppv,
+                    cp.external_designation,
+                    cp.points_per_unit,
+                    cp.target_quantity if cp.target_quantity is not None else "",
+                ])
+        else:
+            rows.append(contract_base + ["", "", "", "", "", ""])
+    return _export_response(rows, basename, fmt)
+
+
+@perm_required('fidpha.add_product')
+def products_import(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    rows = data.get("rows", [])
+    if not isinstance(rows, list):
+        return JsonResponse({"error": "rows must be a list"}, status=400)
+
+    from fidpha.services import bulk_import_products
+    result = bulk_import_products(rows, created_by=request.user)
+
+    for product in result["created"]:
+        _log(request.user, product, ADDITION, "bulk CSV import")
+
+    return JsonResponse({
+        "created": len(result["created"]),
+        "skipped": [
+            {
+                "code":        s["row"].get("code", ""),
+                "designation": s["row"].get("designation", ""),
+                "ppv":         s["row"].get("ppv", ""),
+                "status":      s["row"].get("status", ""),
+                "reason":      s["reason"],
+            }
+            for s in result["skipped"]
+        ],
     })
 
 

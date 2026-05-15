@@ -39,30 +39,6 @@ MAX_BATCH_SIZE = 50000
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _response_from_existing_batch(batch_id: str) -> dict | None:
-    """Return the stored result for an already-processed batch, or None."""
-    rows = SaleImport.objects.filter(batch_id=batch_id)
-    if not rows.exists():
-        return None
-    total = rows.count()
-    rejected_rows = list(
-        rows.filter(status=SaleImport.STATUS_REJECTED)
-        .values_list("external_designation", "rejection_reason")
-    )
-    errors = [
-        {"index": i, "external_designation": ext, "reason": reason}
-        for i, (ext, reason) in enumerate(rejected_rows)
-    ]
-    return {
-        "batch_id": batch_id,
-        "received": total,
-        "accepted": total - len(rejected_rows),
-        "rejected": len(rejected_rows),
-        "errors":   errors,
-        "warnings": [],
-    }
-
-
 # ---------------------------------------------------------------------------
 # Custom exceptions
 # ---------------------------------------------------------------------------
@@ -102,11 +78,6 @@ def submit_sales_batch(
         AccountNotFoundError:   If account_code doesn't match any account.
         ContractNotFoundError:  If account has no active contract.
     """
-    # Idempotency: if this batch_id was already processed, return stored result
-    existing = _response_from_existing_batch(batch_id)
-    if existing is not None:
-        return existing
-
     if len(sales_data) > MAX_BATCH_SIZE:
         raise BatchTooLargeError(
             f"Batch too large. Max {MAX_BATCH_SIZE} rows per request, "
@@ -158,6 +129,7 @@ def submit_sales_batch(
         imports_to_update = []
         errors            = []
         max_sale_dt       = None
+        seen_keys         = set()  # (external_designation, sale_datetime) within this batch
 
         for idx, (row, sale_import) in enumerate(zip(sales_data, created_imports)):
             ext = row.get("external_designation", "")
@@ -173,9 +145,15 @@ def submit_sales_batch(
             now      = timezone.now()
             today    = now.date()
             sale_date = sale_import.sale_datetime.date()
+            row_key   = (ext, sale_import.sale_datetime)
 
             if not cp:
                 rejection_reason = f"Product '{ext}' not found in active contract"
+
+            elif row_key in seen_keys:
+                rejection_reason = (
+                    f"Duplicate row within batch: same product and sale_datetime already accepted"
+                )
 
             elif sale_date >= today:
                 rejection_reason = (
@@ -230,6 +208,7 @@ def submit_sales_batch(
                     "reason":               rejection_reason,
                 })
             else:
+                seen_keys.add(row_key)
                 sale_import.status = SaleImport.STATUS_ACCEPTED
                 sales_to_create.append(Sale(
                     sale_import=sale_import,
