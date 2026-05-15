@@ -32,7 +32,7 @@ from fidpha.models import Contract, Contract_Product
 from fidpha.services import get_active_contract
 from sales.models import Sale, SaleImport
 
-MAX_BATCH_SIZE = 50000
+MAX_BATCH_SIZE = 50000  # fallback default — overridden at runtime by SystemConfig.max_batch_size
 
 
 # ---------------------------------------------------------------------------
@@ -78,9 +78,12 @@ def submit_sales_batch(
         AccountNotFoundError:   If account_code doesn't match any account.
         ContractNotFoundError:  If account has no active contract.
     """
-    if len(sales_data) > MAX_BATCH_SIZE:
+    SystemConfig = apps.get_model("control", "SystemConfig")
+    effective_max = SystemConfig.get().max_batch_size
+    # 0 means no limit; only enforce when a positive limit is configured
+    if effective_max > 0 and len(sales_data) > effective_max:
         raise BatchTooLargeError(
-            f"Batch too large. Max {MAX_BATCH_SIZE} rows per request, "
+            f"Batch too large. Max {effective_max} rows per request, "
             f"got {len(sales_data)}."
         )
 
