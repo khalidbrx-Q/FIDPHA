@@ -82,7 +82,7 @@ FIDPHA/                              ← repo root (git root) — manage.py is h
 - `models.py` — `APIToken`, `APITokenUsageLog`.
 - `authentication.py` — `APITokenAuthentication`. Hashes `Authorization: Token <raw>` with SHA-256, looks up by hash, bumps usage, writes `APITokenUsageLog`.
 - `permissions.py` — `HasAPIToken` (DRF `BasePermission`). `PortalSessionPermission` and `StaffSessionPermission` (session-auth gates for React endpoints).
-- `throttles.py` — `APITokenThrottle(SimpleRateThrottle)`. Scope `api_token` (1000/hour). Cache key = `token.pk`. Falls through to `AnonRateThrottle` if no token.
+- `throttles.py` — `APITokenThrottle(SimpleRateThrottle)`. Scope `api_token`. Rate is dynamic: reads `SystemConfig.api_token_rate_limit` via Django cache (TTL 60 s); 0 = unlimited. Cache key = `token.pk`. Falls through to `AnonRateThrottle` if no token.
 - `views.py` — `ActiveContractView` (GET `/api/v1/contract/active/`), `SalesSubmitView` (POST `/api/v1/sales/`), `custom_exception_handler` (uniform error envelope).
 - `urls.py` — two routes (`active_contract`, `sales_submit`).
 
@@ -100,12 +100,12 @@ FIDPHA/                              ← repo root (git root) — manage.py is h
 ### 4.3 `sales` — ingestion + storage
 
 - `models.py` — `SaleImport` (raw, indexed `batch_id` and `(account_code, status)`), `Sale` (validated, 1-1 PROTECT to SaleImport).
-- `services.py` — `submit_sales_batch(account_code, batch_id, sales_data, token)` — single ingestion entry point. `BatchTooLargeError` on > 50000 rows. Idempotency via `_response_from_existing_batch()`.
+- `services.py` — `submit_sales_batch(account_code, batch_id, sales_data, token)` — single ingestion entry point. `BatchTooLargeError` when batch exceeds `SystemConfig.max_batch_size` (read via Django cache, TTL 30 s; 0 = unlimited). Idempotency via `_response_from_existing_batch()`.
 - `views.py` — empty stub (no Django HTTP views; everything goes through `api/views.py`).
 
 ### 4.4 `control` — staff control panel
 
-- `models.py` — `SystemConfig` (single-row table, `get_or_create(pk=1)`): `auto_review_enabled` bool, `auto_review_updated_by` FK, `auto_review_updated_at`. Extended here for future global toggles/variables.
+- `models.py` — `SystemConfig` (single-row table, `get_or_create(pk=1)`): `auto_review_enabled` bool, `auto_review_updated_by` FK, `auto_review_updated_at`. Also: `max_batch_size`, `ppv_tolerance_percent`, `rejection_rate_warn_threshold`, `rejection_rate_danger_threshold`, `api_token_rate_limit` (all with 0/None = disabled sentinel; see model section).
 - `views.py` — `dashboard`, full CRUD for roles/users/accounts/contracts/products/tokens, sales review (batch list + accept/reject + bulk + export), social-app/social-account/site config, sync_log, `system_settings`.
 - `forms.py` — `AccountForm`, `ContractForm`, `ContractProductForm` (+ `ContractProductFormSet` with extended `BaseInlineFormSet` supporting "delete and re-add same product"), `RoleForm`, `UserForm`, `ProductForm`, `TokenForm`, `SocialAppForm`, `SiteForm`.
 - `decorators.py` — `staff_required`, `perm_required`, `superuser_required`.
@@ -178,8 +178,13 @@ FIDPHA/                              ← repo root (git root) — manage.py is h
 - Accessed via `SystemConfig.get()` (`get_or_create(pk=1)`).
 - `auto_review_enabled` (bool, default False) — global kill-switch; per-account `Account.auto_review_enabled` is the secondary gate.
 - `auto_review_updated_by` (FK→User, SET_NULL, nullable), `auto_review_updated_at` (auto_now).
-- Settings page: `/control/settings/system/` (superuser only).
-- Planned future fields: `max_batch_size`, `rejection_rate_warn_threshold`, `rejection_rate_danger_threshold`, `api_token_rate_limit` (see memory `project_systemconfig_future_fields.md`).
+- `max_batch_size` (PositiveIntegerField, default 0) — max rows per API batch; 0 = unlimited. Used by `sales/services.py` (cached 30 s).
+- `ppv_tolerance_percent` (DecimalField 5,2, nullable) — reject rows where submitted PPV deviates more than this % from catalog PPV. None/blank = disabled. Stored but enforcement in ingestion is future work.
+- `rejection_rate_warn_threshold` (PositiveSmallIntegerField, default 0) — batch rejection rate % above which a yellow badge shows in sales review. 0 = disabled.
+- `rejection_rate_danger_threshold` (PositiveSmallIntegerField, default 0) — batch rejection rate % above which a red badge shows. Must exceed warn threshold. 0 = disabled.
+- `api_token_rate_limit` (PositiveIntegerField, default 0) — max API requests per token per hour; 0 = unlimited. Read by `api/throttles.py` (cached 60 s).
+- `clean()` validates all constraints (ranges, warn < danger). View calls `full_clean()` before save.
+- Settings page: `/control/settings/system/` (superuser only) — 4 card sections: Auto-Review, Sales Ingestion, Review Thresholds, API Throttling.
 
 ### `APITokenUsageLog`
 - `token` (FK), `called_at` (db_index, default now), `endpoint` (str). Created on every authenticated API call.
@@ -317,7 +322,7 @@ Request/response shapes documented in docstrings on each view.
 - Header: `Authorization: Token <raw>`.
 - Look up by `sha256(raw).hexdigest()` against `APIToken.token`.
 - On success: bump `usage_count` + `last_used_at`, write `APITokenUsageLog` row. Returns `(None, token)` — `request.user` stays anonymous, `request.auth` is the `APIToken`.
-- DRF defaults wire it globally + `HasAPIToken`. Throttling: `APITokenThrottle` (scope `api_token`, 1000/hour per token pk, `api/throttles.py`); `AnonRateThrottle` fallback for requests with no token.
+- DRF defaults wire it globally + `HasAPIToken`. Throttling: `APITokenThrottle` (scope `api_token`, dynamic rate from `SystemConfig.api_token_rate_limit` cached 60 s, keyed on token pk, `api/throttles.py`); `AnonRateThrottle` fallback for requests with no token.
 
 ---
 
@@ -332,7 +337,7 @@ Single ingestion entry point. Three stages inside one `transaction.atomic()`:
 
 Safeguards:
 - **Idempotency**: `_response_from_existing_batch(batch_id)` at entry — if batch_id already exists in `SaleImport`, returns the stored result immediately (safe retries).
-- `BatchTooLargeError` if `len(sales_data) > MAX_BATCH_SIZE (50000)`.
+- `BatchTooLargeError` if `len(sales_data) > SystemConfig.max_batch_size` (cached 30 s; 0 = no limit).
 - `select_for_update()` on Contract (with `select_related("account")`) inside the transaction → race-safe `last_sale_datetime` and account flag access.
 - Contract re-validated as `status=active` inside the transaction → handles deactivation mid-sync.
 
@@ -378,6 +383,9 @@ Per-row rejection reasons (in order):
 | sales | 0008 | **Sale.auto_reviewed** (bool, default False) — auto-review audit flag |
 | fidpha | 0012 | **Account.auto_review_enabled** (bool, default False) — per-account auto-review opt-in |
 | control | 0001 | **SystemConfig** — first migration for control app; single-row global config table |
+| control | 0002 | Alter SystemConfig.id → BigAutoField (Django 5.2 default) |
+| control | 0003 | **SystemConfig new fields** — `max_batch_size`, `ppv_tolerance_percent`, `rejection_rate_warn_threshold`, `rejection_rate_danger_threshold`, `api_token_rate_limit` |
+| control | 0004 | **SystemConfig default-off** — change all new field defaults to 0/None (disabled sentinel); RunPython resets existing singleton row |
 
 ---
 
@@ -489,9 +497,9 @@ Production hardening (when user requests): env-var secrets, restricted ALLOWED_H
 
 - Apple OAuth provider.
 - Token detail page enhancements (usage chart; `APITokenUsageLog` model already in place).
-- French translation of control panel templates (`control/templates/control/`) + language toggle in topbar — portal done; control panel pending on `feature/i18n`.
+- `SystemConfig.ppv_tolerance_percent` enforcement — field is stored and configurable but the rejection check inside `submit_sales_batch` is still a no-op.
 - Sales Review UX backlog (remaining items).
-- `SystemConfig` additional fields: `max_batch_size`, `rejection_rate_warn_threshold`, `rejection_rate_danger_threshold`, `api_token_rate_limit`.
+- React SPA (`feature/react-ui`) — portal and staff React UIs built, paused pending advisor approval to merge.
 
 ---
 
