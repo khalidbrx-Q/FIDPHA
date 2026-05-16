@@ -307,7 +307,19 @@ Request/response shapes documented in docstrings on each view.
 2. Else read `user.profile.account`. If `account.pharmacy_portal == False` → reject.
 3. Else → `/portal/dashboard/`.
 
-### 7.5 Google OAuth (`fidpha/adapters.py`)
+### 7.5 Google OAuth — Fresh PostgreSQL DB Gotcha
+
+When setting up a fresh PostgreSQL database (`migrate` + `loaddata`), the `SocialApp` for Google is linked to `site id=2` (the local dev site) but `SITE_ID=1` in settings. allauth's `get_app()` looks up by `SITE_ID` and raises `DoesNotExist` on `/auth/google/login/`.
+
+**Fix — run once after `loaddata` on any new PG database:**
+```python
+from django.contrib.sites.models import Site
+from allauth.socialaccount.models import SocialApp
+app = SocialApp.objects.get(provider='google')
+app.sites.add(Site.objects.get(id=1))
+```
+
+### 7.6 Google OAuth (`fidpha/adapters.py`)
 
 `FIDPHASocialAccountAdapter.pre_social_login`:
 - Reads `email` from Google extra_data; missing → reject.
