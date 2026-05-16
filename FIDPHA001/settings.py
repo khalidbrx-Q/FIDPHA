@@ -102,20 +102,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "FIDPHA001.wsgi.application"
 
-USE_POSTGRES = config('USE_POSTGRES', default=False, cast=bool)
+# DB_BACKEND controls which database is used: sqlite | local | neon
+DB_BACKEND = config('DB_BACKEND', default='sqlite')
 
-if USE_POSTGRES:
+if DB_BACKEND == 'local':
     DATABASES = {
         'default': {
             'ENGINE':   'django.db.backends.postgresql',
-            'NAME':     config('DB_NAME'),
-            'USER':     config('DB_USER'),
-            'PASSWORD': config('DB_PASSWORD'),
-            'HOST':     config('DB_HOST', default='localhost'),
-            'PORT':     config('DB_PORT', default='5432'),
+            'NAME':     config('LOCAL_DB_NAME'),
+            'USER':     config('LOCAL_DB_USER'),
+            'PASSWORD': config('LOCAL_DB_PASSWORD'),
+            'HOST':     config('LOCAL_DB_HOST', default='localhost'),
+            'PORT':     config('LOCAL_DB_PORT', default='5432'),
+            'OPTIONS':  {'sslmode': 'prefer'},
         }
     }
-else:
+elif DB_BACKEND == 'neon':
+    DATABASES = {
+        'default': {
+            'ENGINE':   'django.db.backends.postgresql',
+            'NAME':     config('NEON_DB_NAME'),
+            'USER':     config('NEON_DB_USER'),
+            'PASSWORD': config('NEON_DB_PASSWORD'),
+            'HOST':     config('NEON_DB_HOST'),
+            'PORT':     config('NEON_DB_PORT', default='5432'),
+            'OPTIONS':  {'sslmode': 'require'},
+        }
+    }
+else:  # sqlite (default)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
