@@ -24,6 +24,7 @@ from django.core.paginator import Paginator
 from django.db.models import Count, F, Q, Min, Max, Sum
 from django.db.models.functions import TruncDay, TruncHour
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.sites.models import Site

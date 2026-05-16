@@ -69,7 +69,7 @@
                     <input type="checkbox" name="max_batch_size_enabled" value="1"
                            id="tog_max_batch"
                            {% if config.max_batch_size > 0 %}checked{% endif %}
-                           onchange="toggleSetting(this,'inp_max_batch','{% trans "No limit"|escapejs %}','0')">
+                           onchange="toggleSetting(this,'inp_max_batch','{% trans "No limit"|escapejs %}','1000')">
                     <span class="toggle-slider"></span>
                 </label>
                 <input type="number" name="max_batch_size" id="inp_max_batch"
@@ -77,7 +77,7 @@
                        value="{% if config.max_batch_size > 0 %}{{ config.max_batch_size }}{% endif %}"
                        placeholder="{% if config.max_batch_size == 0 %}{% trans "No limit" %}{% endif %}"
                        data-off-label="{% trans "No limit"|escapejs %}"
-                       data-default="0"
+                       data-default="1000"
                        min="1" max="100000"
                        {% if config.max_batch_size == 0 %}disabled{% endif %}>
                 <span class="val-msg" data-range="1–100 000"></span>
@@ -99,7 +99,7 @@
                     <input type="checkbox" name="ppv_tolerance_enabled" value="1"
                            id="tog_ppv"
                            {% if config.ppv_tolerance_percent %}checked{% endif %}{# Note: falsy for 0.00 — model clean() already prevents saving 0, so this is safe #}
-                           onchange="toggleSetting(this,'inp_ppv','{% trans "Disabled"|escapejs %}','0')">
+                           onchange="toggleSetting(this,'inp_ppv','{% trans "Disabled"|escapejs %}','5')">
                     <span class="toggle-slider"></span>
                 </label>
                 <input type="number" name="ppv_tolerance_percent" id="inp_ppv"
@@ -107,7 +107,7 @@
                        value="{{ config.ppv_tolerance_percent|default:'' }}"
                        placeholder="{% if not config.ppv_tolerance_percent %}{% trans "Disabled" %}{% endif %}"
                        data-off-label="{% trans "Disabled"|escapejs %}"
-                       data-default="0"
+                       data-default="5"
                        min="0.01" max="100" step="0.01"
                        {% if not config.ppv_tolerance_percent %}disabled{% endif %}>
                 <span class="val-msg" data-range="0.01–100"></span>
@@ -135,7 +135,7 @@
                     <input type="checkbox" name="rr_warn_enabled" value="1"
                            id="tog_rr_warn"
                            {% if config.rejection_rate_warn_threshold > 0 %}checked{% endif %}
-                           onchange="toggleSetting(this,'inp_rr_warn','{% trans "No badge"|escapejs %}','0')">
+                           onchange="toggleSetting(this,'inp_rr_warn','{% trans "No badge"|escapejs %}','20')">
                     <span class="toggle-slider"></span>
                 </label>
                 <input type="number" name="rejection_rate_warn_threshold" id="inp_rr_warn"
@@ -143,7 +143,7 @@
                        value="{% if config.rejection_rate_warn_threshold > 0 %}{{ config.rejection_rate_warn_threshold }}{% endif %}"
                        placeholder="{% if config.rejection_rate_warn_threshold == 0 %}{% trans "No badge" %}{% endif %}"
                        data-off-label="{% trans "No badge"|escapejs %}"
-                       data-default="0"
+                       data-default="20"
                        min="1" max="99"
                        {% if config.rejection_rate_warn_threshold == 0 %}disabled{% endif %}>
                 <span class="val-msg" data-range="1–99"></span>
@@ -168,7 +168,7 @@
                     <input type="checkbox" name="rr_danger_enabled" value="1"
                            id="tog_rr_danger"
                            {% if config.rejection_rate_danger_threshold > 0 %}checked{% endif %}
-                           onchange="toggleSetting(this,'inp_rr_danger','{% trans "No badge"|escapejs %}','0')">
+                           onchange="toggleSetting(this,'inp_rr_danger','{% trans "No badge"|escapejs %}','50')">
                     <span class="toggle-slider"></span>
                 </label>
                 <input type="number" name="rejection_rate_danger_threshold" id="inp_rr_danger"
@@ -176,7 +176,7 @@
                        value="{% if config.rejection_rate_danger_threshold > 0 %}{{ config.rejection_rate_danger_threshold }}{% endif %}"
                        placeholder="{% if config.rejection_rate_danger_threshold == 0 %}{% trans "No badge" %}{% endif %}"
                        data-off-label="{% trans "No badge"|escapejs %}"
-                       data-default="0"
+                       data-default="50"
                        min="1" max="100"
                        {% if config.rejection_rate_danger_threshold == 0 %}disabled{% endif %}>
                 <span class="val-msg" data-range="1–100"></span>
@@ -200,7 +200,7 @@
                     <input type="checkbox" name="api_rate_enabled" value="1"
                            id="tog_api_rate"
                            {% if config.api_token_rate_limit > 0 %}checked{% endif %}
-                           onchange="toggleSetting(this,'inp_api_rate','{% trans "Unlimited"|escapejs %}','0')">
+                           onchange="toggleSetting(this,'inp_api_rate','{% trans "Unlimited"|escapejs %}','1000')">
                     <span class="toggle-slider"></span>
                 </label>
                 <input type="number" name="api_token_rate_limit" id="inp_api_rate"
@@ -208,7 +208,7 @@
                        value="{% if config.api_token_rate_limit > 0 %}{{ config.api_token_rate_limit }}{% endif %}"
                        placeholder="{% if config.api_token_rate_limit == 0 %}{% trans "Unlimited" %}{% endif %}"
                        data-off-label="{% trans "Unlimited"|escapejs %}"
-                       data-default="0"
+                       data-default="1000"
                        min="1" max="10000"
                        {% if config.api_token_rate_limit == 0 %}disabled{% endif %}>
                 <span class="val-msg" data-range="1–10 000"></span>

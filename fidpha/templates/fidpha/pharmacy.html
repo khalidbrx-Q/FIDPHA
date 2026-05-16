@@ -148,15 +148,15 @@
 </div>
 
 <script>
-    var STR_MATCH   = '✓ {% trans "Passwords match" %}';
-    var STR_NOMATCH = '✗ {% trans "Passwords don\'t match" %}';
-    var STR_LABELS  = ['{% trans "Weak" %}', '{% trans "Fair" %}', '{% trans "Good" %}', '{% trans "Strong" %}'];
+    var STR_MATCH   = '✓ {% trans "Passwords match"|escapejs %}';
+    var STR_NOMATCH = '✗ {% trans "Passwords don\'t match"|escapejs %}';
+    var STR_LABELS  = ['{% trans "Weak"|escapejs %}', '{% trans "Fair"|escapejs %}', '{% trans "Good"|escapejs %}', '{% trans "Strong"|escapejs %}'];
 
-    var pwd     = document.getElementById('pharmacy_password');
-    var confirm = document.getElementById('pharmacy_confirm');
-    var bar     = document.getElementById('ph-strength-bar');
-    var text    = document.getElementById('ph-strength-text');
-    var match   = document.getElementById('ph-match-text');
+    var pwd       = document.getElementById('pharmacy_password');
+    var confirmEl = document.getElementById('pharmacy_confirm');
+    var bar       = document.getElementById('ph-strength-bar');
+    var text      = document.getElementById('ph-strength-text');
+    var matchEl   = document.getElementById('ph-match-text');
 
     function updReq(id, met) {
         var el = document.getElementById(id);
@@ -164,29 +164,41 @@
         el.style.color = met ? '#22c55e' : 'var(--text-secondary)';
         el.textContent = (met ? '✓' : '✗') + el.textContent.substring(1);
     }
+
     function checkMatch() {
-        if (!confirm || confirm.value.length === 0) { match.textContent = ''; return; }
-        var ok = pwd.value === confirm.value;
-        match.style.color = ok ? '#22c55e' : '#ef4444';
-        match.textContent  = ok ? STR_MATCH : STR_NOMATCH;
+        if (!confirmEl || confirmEl.value.length === 0) { matchEl.textContent = ''; return; }
+        var ok = pwd.value === confirmEl.value;
+        matchEl.style.color = ok ? '#22c55e' : '#ef4444';
+        matchEl.textContent = ok ? STR_MATCH : STR_NOMATCH;
     }
+
     if (pwd) {
         pwd.addEventListener('input', function () {
             var p = pwd.value;
-            var hL = p.length >= 8, hU = /[A-Z]/.test(p), hN = /[0-9]/.test(p), hS = /[!@#$%^&*()_+\-=\[\]{}|;':",./<>?]/.test(p);
-            updReq('ph-req-length', hL); updReq('ph-req-upper', hU);
-            updReq('ph-req-number', hN); updReq('ph-req-special', hS);
-            var score = [hL, hU, hN, hS].filter(Boolean).length;
-            var colors = ['#ef4444','#f59e0b','#3b82f6','#22c55e'];
-            if (p.length === 0 || score === 0) { bar.style.width = '0%'; bar.style.backgroundColor = ''; text.textContent = ''; }
-            else {
-                bar.style.backgroundColor = colors[score-1]; bar.style.width = (score*25)+'%';
-                text.style.color = colors[score-1]; text.textContent = STR_LABELS[score-1];
+            var hL = p.length >= 8;
+            var hU = /[A-Z]/.test(p);
+            var hN = /[0-9]/.test(p);
+            var hS = /[!@#$%^&*()_+\-=\[\]{}|;':",./<>?]/.test(p);
+            updReq('ph-req-length', hL);
+            updReq('ph-req-upper',  hU);
+            updReq('ph-req-number', hN);
+            updReq('ph-req-special', hS);
+
+            var score  = [hL, hU, hN, hS].filter(Boolean).length;
+            var colors = ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e'];
+            if (p.length === 0) {
+                bar.style.width = '0%'; bar.style.backgroundColor = ''; text.textContent = '';
+            } else {
+                var display = Math.max(score, 1);
+                bar.style.backgroundColor = colors[display - 1];
+                bar.style.width = (display * 25) + '%';
+                text.style.color = colors[display - 1];
+                text.textContent = STR_LABELS[display - 1];
             }
             checkMatch();
         });
     }
-    if (confirm) { confirm.addEventListener('input', checkMatch); }
+    if (confirmEl) { confirmEl.addEventListener('input', checkMatch); }
 </script>
 
 {% endblock %}

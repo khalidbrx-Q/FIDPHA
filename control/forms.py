@@ -34,17 +34,211 @@ from api.models import APIToken
 # Accounts
 # ---------------------------------------------------------------------------
 
-# Country dialling prefixes shown in the phone-prefix selector.
-# Morocco is the default (index 0).  Add more countries here in the future.
-PHONE_PREFIXES = [
-    ('+212', '+212 🇲🇦'),
-    ('+33',  '+33  🇫🇷'),
-    ('+1',   '+1   🇺🇸'),
-    ('+44',  '+44  🇬🇧'),
-    ('+34',  '+34  🇪🇸'),
-    ('+39',  '+39  🇮🇹'),
-    ('+49',  '+49  🇩🇪'),
+# Single source of truth for phone-prefix data.
+# Format: (dial_prefix, ISO_3166-1_alpha-2_UPPERCASE, max_local_digits)
+# Morocco first (default).  The JS flag-picker sorts the rest by translated name.
+# max_local_digits must mirror JS RAW[].maxLen — both are derived from this list.
+_PHONE_DATA = [
+    # (prefix,  ISO,  max_digits)
+    ('+212', 'MA',  9),   # Morocco (default — always first)
+    ('+1',   'US', 10),   # USA / Canada (NANP)
+    ('+7',   'RU', 10),   # Russia / Kazakhstan
+    ('+20',  'EG', 10),   # Egypt
+    ('+27',  'ZA',  9),   # South Africa
+    ('+30',  'GR', 10),   # Greece
+    ('+31',  'NL',  9),   # Netherlands
+    ('+32',  'BE',  9),   # Belgium
+    ('+33',  'FR',  9),   # France
+    ('+34',  'ES',  9),   # Spain
+    ('+36',  'HU',  9),   # Hungary
+    ('+39',  'IT', 10),   # Italy
+    ('+40',  'RO',  9),   # Romania
+    ('+41',  'CH',  9),   # Switzerland
+    ('+43',  'AT', 10),   # Austria
+    ('+44',  'GB', 10),   # United Kingdom
+    ('+45',  'DK',  8),   # Denmark
+    ('+46',  'SE',  9),   # Sweden
+    ('+47',  'NO',  8),   # Norway
+    ('+48',  'PL',  9),   # Poland
+    ('+49',  'DE', 11),   # Germany
+    ('+51',  'PE',  9),   # Peru
+    ('+52',  'MX', 10),   # Mexico
+    ('+53',  'CU',  8),   # Cuba
+    ('+54',  'AR', 10),   # Argentina
+    ('+55',  'BR', 11),   # Brazil
+    ('+56',  'CL',  9),   # Chile
+    ('+57',  'CO', 10),   # Colombia
+    ('+58',  'VE', 10),   # Venezuela
+    ('+60',  'MY',  9),   # Malaysia
+    ('+61',  'AU',  9),   # Australia
+    ('+62',  'ID', 11),   # Indonesia
+    ('+63',  'PH', 10),   # Philippines
+    ('+64',  'NZ',  9),   # New Zealand
+    ('+65',  'SG',  8),   # Singapore
+    ('+66',  'TH',  9),   # Thailand
+    ('+81',  'JP', 10),   # Japan
+    ('+82',  'KR', 10),   # South Korea
+    ('+84',  'VN',  9),   # Vietnam
+    ('+86',  'CN', 11),   # China
+    ('+90',  'TR', 10),   # Turkey
+    ('+91',  'IN', 10),   # India
+    ('+92',  'PK', 10),   # Pakistan
+    ('+93',  'AF',  9),   # Afghanistan
+    ('+94',  'LK',  9),   # Sri Lanka
+    ('+95',  'MM',  9),   # Myanmar
+    ('+98',  'IR', 10),   # Iran
+    ('+213', 'DZ',  9),   # Algeria
+    ('+216', 'TN',  8),   # Tunisia
+    ('+218', 'LY',  9),   # Libya
+    ('+220', 'GM',  7),   # Gambia
+    ('+221', 'SN',  9),   # Senegal
+    ('+222', 'MR',  8),   # Mauritania
+    ('+223', 'ML',  8),   # Mali
+    ('+224', 'GN',  9),   # Guinea
+    ('+225', 'CI', 10),   # Ivory Coast
+    ('+226', 'BF',  8),   # Burkina Faso
+    ('+227', 'NE',  8),   # Niger
+    ('+228', 'TG',  8),   # Togo
+    ('+229', 'BJ',  8),   # Benin
+    ('+230', 'MU',  8),   # Mauritius
+    ('+231', 'LR',  9),   # Liberia
+    ('+232', 'SL',  8),   # Sierra Leone
+    ('+233', 'GH',  9),   # Ghana
+    ('+234', 'NG', 10),   # Nigeria
+    ('+235', 'TD',  8),   # Chad
+    ('+236', 'CF',  8),   # Central African Republic
+    ('+237', 'CM',  9),   # Cameroon
+    ('+238', 'CV',  7),   # Cape Verde
+    ('+239', 'ST',  7),   # São Tomé and Príncipe
+    ('+240', 'GQ',  9),   # Equatorial Guinea
+    ('+241', 'GA',  7),   # Gabon
+    ('+242', 'CG',  9),   # Republic of the Congo
+    ('+243', 'CD',  9),   # DR Congo
+    ('+244', 'AO',  9),   # Angola
+    ('+245', 'GW',  9),   # Guinea-Bissau
+    ('+248', 'SC',  7),   # Seychelles
+    ('+249', 'SD',  9),   # Sudan
+    ('+250', 'RW',  9),   # Rwanda
+    ('+251', 'ET',  9),   # Ethiopia
+    ('+252', 'SO',  9),   # Somalia
+    ('+253', 'DJ',  8),   # Djibouti
+    ('+254', 'KE',  9),   # Kenya
+    ('+255', 'TZ',  9),   # Tanzania
+    ('+256', 'UG',  9),   # Uganda
+    ('+257', 'BI',  8),   # Burundi
+    ('+258', 'MZ',  9),   # Mozambique
+    ('+260', 'ZM',  9),   # Zambia
+    ('+261', 'MG',  9),   # Madagascar
+    ('+262', 'RE',  9),   # Réunion
+    ('+263', 'ZW',  9),   # Zimbabwe
+    ('+264', 'NA',  9),   # Namibia
+    ('+265', 'MW',  9),   # Malawi
+    ('+266', 'LS',  8),   # Lesotho
+    ('+267', 'BW',  8),   # Botswana
+    ('+268', 'SZ',  8),   # Eswatini
+    ('+269', 'KM',  7),   # Comoros
+    ('+291', 'ER',  7),   # Eritrea
+    ('+297', 'AW',  7),   # Aruba
+    ('+298', 'FO',  6),   # Faroe Islands
+    ('+299', 'GL',  6),   # Greenland
+    ('+350', 'GI',  8),   # Gibraltar
+    ('+351', 'PT',  9),   # Portugal
+    ('+352', 'LU',  9),   # Luxembourg
+    ('+353', 'IE',  9),   # Ireland
+    ('+354', 'IS',  7),   # Iceland
+    ('+355', 'AL',  9),   # Albania
+    ('+356', 'MT',  8),   # Malta
+    ('+357', 'CY',  8),   # Cyprus
+    ('+358', 'FI', 10),   # Finland
+    ('+359', 'BG',  9),   # Bulgaria
+    ('+370', 'LT',  8),   # Lithuania
+    ('+371', 'LV',  8),   # Latvia
+    ('+372', 'EE',  8),   # Estonia
+    ('+373', 'MD',  8),   # Moldova
+    ('+374', 'AM',  8),   # Armenia
+    ('+375', 'BY',  9),   # Belarus
+    ('+376', 'AD',  6),   # Andorra
+    ('+377', 'MC',  8),   # Monaco
+    ('+378', 'SM', 10),   # San Marino
+    ('+380', 'UA',  9),   # Ukraine
+    ('+381', 'RS',  9),   # Serbia
+    ('+382', 'ME',  8),   # Montenegro
+    ('+383', 'XK',  8),   # Kosovo
+    ('+385', 'HR',  9),   # Croatia
+    ('+386', 'SI',  8),   # Slovenia
+    ('+387', 'BA',  8),   # Bosnia and Herzegovina
+    ('+389', 'MK',  8),   # North Macedonia
+    ('+420', 'CZ',  9),   # Czech Republic
+    ('+421', 'SK',  9),   # Slovakia
+    ('+423', 'LI',  7),   # Liechtenstein
+    ('+501', 'BZ',  7),   # Belize
+    ('+502', 'GT',  8),   # Guatemala
+    ('+503', 'SV',  8),   # El Salvador
+    ('+504', 'HN',  8),   # Honduras
+    ('+505', 'NI',  8),   # Nicaragua
+    ('+506', 'CR',  8),   # Costa Rica
+    ('+507', 'PA',  8),   # Panama
+    ('+509', 'HT',  8),   # Haiti
+    ('+590', 'GP',  9),   # Guadeloupe
+    ('+591', 'BO',  8),   # Bolivia
+    ('+592', 'GY',  7),   # Guyana
+    ('+593', 'EC',  9),   # Ecuador
+    ('+595', 'PY',  9),   # Paraguay
+    ('+597', 'SR',  7),   # Suriname
+    ('+598', 'UY',  8),   # Uruguay
+    ('+670', 'TL',  8),   # Timor-Leste
+    ('+673', 'BN',  7),   # Brunei
+    ('+675', 'PG',  8),   # Papua New Guinea
+    ('+676', 'TO',  7),   # Tonga
+    ('+677', 'SB',  7),   # Solomon Islands
+    ('+678', 'VU',  7),   # Vanuatu
+    ('+679', 'FJ',  7),   # Fiji
+    ('+680', 'PW',  7),   # Palau
+    ('+685', 'WS',  7),   # Samoa
+    ('+686', 'KI',  8),   # Kiribati
+    ('+688', 'TV',  6),   # Tuvalu
+    ('+689', 'PF',  6),   # French Polynesia
+    ('+691', 'FM',  7),   # Micronesia
+    ('+692', 'MH',  7),   # Marshall Islands
+    ('+850', 'KP', 10),   # North Korea
+    ('+852', 'HK',  8),   # Hong Kong
+    ('+853', 'MO',  8),   # Macau
+    ('+855', 'KH',  9),   # Cambodia
+    ('+856', 'LA',  9),   # Laos
+    ('+880', 'BD', 10),   # Bangladesh
+    ('+886', 'TW',  9),   # Taiwan
+    ('+960', 'MV',  7),   # Maldives
+    ('+961', 'LB',  8),   # Lebanon
+    ('+962', 'JO',  9),   # Jordan
+    ('+963', 'SY',  9),   # Syria
+    ('+964', 'IQ', 10),   # Iraq
+    ('+965', 'KW',  8),   # Kuwait
+    ('+966', 'SA',  9),   # Saudi Arabia
+    ('+967', 'YE',  9),   # Yemen
+    ('+968', 'OM',  8),   # Oman
+    ('+970', 'PS',  9),   # Palestine
+    ('+971', 'AE',  9),   # UAE
+    ('+972', 'IL',  9),   # Israel
+    ('+973', 'BH',  8),   # Bahrain
+    ('+974', 'QA',  8),   # Qatar
+    ('+975', 'BT',  8),   # Bhutan
+    ('+976', 'MN',  8),   # Mongolia
+    ('+977', 'NP', 10),   # Nepal
+    ('+992', 'TJ',  9),   # Tajikistan
+    ('+993', 'TM',  8),   # Turkmenistan
+    ('+994', 'AZ',  9),   # Azerbaijan
+    ('+995', 'GE',  9),   # Georgia
+    ('+996', 'KG',  9),   # Kyrgyzstan
+    ('+998', 'UZ',  9),   # Uzbekistan
 ]
+
+# Derived from _PHONE_DATA — used by the AccountForm ChoiceField.
+# The label is just the prefix; display is handled entirely by the JS flag-picker.
+PHONE_PREFIXES   = [(p, p) for p, _, _ in _PHONE_DATA]
+
+# Maximum local digits per prefix — server-side validation safety net.
+# Must stay in sync with JS RAW[].maxLen (both derived from _PHONE_DATA).
+PHONE_MAX_DIGITS = {p: ml for p, _, ml in _PHONE_DATA}
 
 
 class AccountForm(forms.ModelForm):
@@ -98,6 +292,9 @@ class AccountForm(forms.ModelForm):
                     detected_prefix = prefix
                     local = stored_phone[len(prefix):]
                     break
+            # Strip leading trunk zero (e.g. Moroccan "0698…" → "698…")
+            if local.startswith('0'):
+                local = local[1:]
             self.fields['phone_prefix'].initial = detected_prefix
             self.initial['phone'] = local
 
@@ -138,6 +335,16 @@ class AccountForm(forms.ModelForm):
                 if local.startswith('0'):
                     local = local[1:]
                 local = prefix + local
+
+            # Enforce digit-count limit for the selected country
+            digits_only = re.sub(r'\D', '', local[len(prefix):])
+            max_digits   = PHONE_MAX_DIGITS.get(prefix, 15)
+            if len(digits_only) > max_digits:
+                raise forms.ValidationError(
+                    _("Phone number is too long for the selected country "
+                      "(max %(max)d digits after the prefix).")
+                    % {'max': max_digits}
+                )
 
             cleaned['phone'] = local
 

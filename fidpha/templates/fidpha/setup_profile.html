@@ -116,7 +116,7 @@
     </div>
 
     <script>
-        var STR_LABELS = ['{% trans "Weak" %}', '{% trans "Fair" %}', '{% trans "Good" %}', '{% trans "Strong" %}'];
+        var STR_LABELS = ['{% trans "Weak"|escapejs %}', '{% trans "Fair"|escapejs %}', '{% trans "Good"|escapejs %}', '{% trans "Strong"|escapejs %}'];
         const p = document.getElementById("new_password");
         const bar = document.getElementById("strength-bar");
         const strengthText = document.getElementById("strength-text");
@@ -145,15 +145,16 @@
                 const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e"];
                 const widths = ["25%", "50%", "75%", "100%"];
 
-                if (pwd.length === 0 || score === 0) {
+                if (pwd.length === 0) {
                     bar.style.width = "0%";
                     bar.style.backgroundColor = "";
                     strengthText.textContent = "";
                 } else {
-                    bar.style.backgroundColor = colors[score - 1];
-                    bar.style.width = widths[score - 1];
-                    strengthText.style.color = colors[score - 1];
-                    strengthText.textContent = STR_LABELS[score - 1];
+                    var display = Math.max(score, 1);
+                    bar.style.backgroundColor = colors[display - 1];
+                    bar.style.width = widths[display - 1];
+                    strengthText.style.color = colors[display - 1];
+                    strengthText.textContent = STR_LABELS[display - 1];
                 }
             });
         }

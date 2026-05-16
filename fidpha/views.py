@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from .models import UserProfile, Contract
 import secrets
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
@@ -203,35 +204,40 @@ def portal_profile_password(request):
 
         # verify current password
         if not request.user.check_password(current_password):
-            messages.error(request, "Current password is incorrect.")
+            messages.error(request, _("Current password is incorrect."))
+            return redirect("/portal/pharmacy/")
+
+        # new password must differ from current
+        if new_password == current_password:
+            messages.error(request, _("New password must be different from your current password."))
             return redirect("/portal/pharmacy/")
 
         # check new passwords match
         if new_password != confirm_password:
-            messages.error(request, "New passwords don't match.")
+            messages.error(request, _("New passwords don't match."))
             return redirect("/portal/pharmacy/")
 
         # validate strength
         if len(new_password) < 8:
-            messages.error(request, "Password must be at least 8 characters.")
+            messages.error(request, _("Password must be at least 8 characters."))
             return redirect("/portal/pharmacy/")
         if new_password.isdigit():
-            messages.error(request, "Password can't be entirely numeric.")
+            messages.error(request, _("Password can't be entirely numeric."))
             return redirect("/portal/pharmacy/")
         if not any(c.isupper() for c in new_password):
-            messages.error(request, "Password must contain at least one uppercase letter.")
+            messages.error(request, _("Password must contain at least one uppercase letter."))
             return redirect("/portal/pharmacy/")
         if not any(c.isdigit() for c in new_password):
-            messages.error(request, "Password must contain at least one number.")
+            messages.error(request, _("Password must contain at least one number."))
             return redirect("/portal/pharmacy/")
         if not any(c in "!@#$%^&*()_+-=[]{}|;':\",./<>?" for c in new_password):
-            messages.error(request, "Password must contain at least one special character.")
+            messages.error(request, _("Password must contain at least one special character."))
             return redirect("/portal/pharmacy/")
 
         request.user.set_password(new_password)
         request.user.save()
         login(request, request.user, backend='django.contrib.auth.backends.ModelBackend')
-        messages.success(request, "Password updated successfully!")
+        messages.success(request, _("Password updated successfully."))
         return redirect("/portal/pharmacy/")
 
     return redirect("/portal/profile/")

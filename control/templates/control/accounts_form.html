@@ -72,7 +72,27 @@
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">{% trans "Phone" %}</label>
                 <div class="phone-field-row">
-                    {{ form.phone_prefix }}
+                    {# Hidden real select — JS keeps it in sync with the flag picker #}
+                    <div style="display:none">{{ form.phone_prefix }}</div>
+                    {# Custom flag-picker button + dropdown #}
+                    <div class="flag-picker" id="flag-picker">
+                        <button type="button" class="flag-btn" id="flag-btn"
+                                aria-haspopup="listbox" aria-expanded="false">
+                            <span class="fi" id="flag-icon"></span>
+                            <span class="flag-btn-code" id="flag-code"></span>
+                            <span class="material-icons-round flag-chevron">expand_more</span>
+                        </button>
+                        <div class="flag-menu" id="flag-menu">
+                            <div class="flag-search-wrap">
+                                <span class="material-icons-round flag-search-icon">search</span>
+                                <input type="text" id="flag-search" class="flag-search-inp"
+                                       placeholder="{% trans "Country or code…" %}"
+                                       autocomplete="off" spellcheck="false">
+                            </div>
+                            <ul id="flag-list" role="listbox"></ul>
+                            <div id="flag-no-results" class="flag-no-results" style="display:none">{% trans "No results" %}</div>
+                        </div>
+                    </div>
                     {{ form.phone }}
                 </div>
                 {% for e in form.phone.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
@@ -331,6 +351,7 @@
 
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
 <style>
     .section-label {
         font-size:0.75rem; font-weight:700; text-transform:uppercase;
@@ -340,9 +361,70 @@
     .form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 
     /* Phone prefix + local number side-by-side */
-    .phone-field-row { display:flex; gap:6px; }
-    .phone-field-row .phone-prefix-select { flex:0 0 auto; width:108px; }
-    .phone-field-row .form-input:not(.phone-prefix-select) { flex:1; min-width:0; }
+    .phone-field-row { display:flex; gap:6px; align-items:center; }
+    .phone-field-row .form-input { flex:1; min-width:0; }
+
+    /* ── Flag-picker dropdown ───────────────────────────────────────── */
+    .flag-picker { position:relative; flex:0 0 auto; }
+    .flag-btn {
+        display:flex; align-items:center; gap:5px;
+        height:38px; padding:0 8px 0 10px;
+        border:1px solid var(--card-border); border-radius:8px;
+        background:var(--card-bg); color:var(--text-primary);
+        cursor:pointer; font-family:inherit; font-size:0.83rem; white-space:nowrap;
+        transition:border-color 0.15s;
+    }
+    .flag-btn:hover, .flag-btn:focus { border-color:var(--accent); outline:none; }
+    .flag-btn-code { font-weight:500; letter-spacing:0.3px; }
+    .flag-chevron { font-size:16px !important; color:var(--text-secondary); transition:transform 0.15s; margin-left:1px; }
+    .flag-picker.open .flag-chevron { transform:rotate(180deg); }
+    /* ── Flag-menu dropdown shell ───────────────────────────────────── */
+    .flag-menu {
+        display:none; position:absolute; top:calc(100% + 4px); left:0;
+        min-width:230px; background:var(--card-bg);
+        border:1px solid var(--card-border); border-radius:8px;
+        box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:999;
+        overflow:hidden;
+    }
+    .flag-picker.open .flag-menu { display:block; }
+
+    /* ── Search box ─────────────────────────────────────────────────── */
+    .flag-search-wrap {
+        display:flex; align-items:center; gap:6px;
+        padding:7px 10px; border-bottom:1px solid var(--card-border);
+        background:var(--card-bg);
+    }
+    .flag-search-icon { font-size:15px !important; color:var(--text-secondary); flex-shrink:0; }
+    .flag-search-inp {
+        flex:1; border:none; outline:none; background:transparent;
+        font-size:0.83rem; color:var(--text-primary); font-family:inherit;
+    }
+    .flag-search-inp::placeholder { color:var(--text-secondary); opacity:0.7; }
+
+    /* ── Scrollable country list ────────────────────────────────────── */
+    #flag-list {
+        list-style:none; margin:0; padding:4px 0;
+        max-height:220px; overflow-y:auto;
+        scrollbar-width:thin; scrollbar-color:var(--card-border) transparent;
+    }
+    #flag-list::-webkit-scrollbar { width:5px; }
+    #flag-list::-webkit-scrollbar-thumb { background-color:var(--card-border); border-radius:3px; }
+
+    .flag-option {
+        display:flex; align-items:center; gap:9px;
+        padding:7px 13px; cursor:pointer; font-size:0.83rem;
+        color:var(--text-primary); transition:background 0.1s;
+        border:none; background:none; width:100%; text-align:left; font-family:inherit;
+    }
+    .flag-option:hover, .flag-option.selected { background:rgba(14,165,233,0.08); color:var(--accent); }
+    .flag-option .country-name { flex:1; }
+    .flag-option .dial { font-weight:500; color:var(--text-secondary); font-size:0.79rem; }
+
+    .flag-no-results {
+        padding:12px 13px; font-size:0.82rem;
+        color:var(--text-secondary); text-align:center;
+    }
+    .fi { flex-shrink:0; width:1.33em; height:1em; border-radius:2px; }
 
     /* Toggle switch */
     .toggle-label  { display:flex; align-items:center; gap:12px; cursor:pointer; }
@@ -447,6 +529,388 @@
 
 {% block extra_js %}
 <script>
+    /* ── Flag-picker ──────────────────────────────────────────────────── */
+    (function () {
+        // RAW: data-only — no hardcoded names (Intl.DisplayNames handles translation).
+        // maxLen mirrors _PHONE_DATA in forms.py. ISO codes are uppercase (alpha-2).
+        const RAW = [
+            { prefix: '+212', iso: 'MA',  maxLen:  9 },
+            { prefix: '+1',   iso: 'US',  maxLen: 10 },
+            { prefix: '+7',   iso: 'RU',  maxLen: 10 },
+            { prefix: '+20',  iso: 'EG',  maxLen: 10 },
+            { prefix: '+27',  iso: 'ZA',  maxLen:  9 },
+            { prefix: '+30',  iso: 'GR',  maxLen: 10 },
+            { prefix: '+31',  iso: 'NL',  maxLen:  9 },
+            { prefix: '+32',  iso: 'BE',  maxLen:  9 },
+            { prefix: '+33',  iso: 'FR',  maxLen:  9 },
+            { prefix: '+34',  iso: 'ES',  maxLen:  9 },
+            { prefix: '+36',  iso: 'HU',  maxLen:  9 },
+            { prefix: '+39',  iso: 'IT',  maxLen: 10 },
+            { prefix: '+40',  iso: 'RO',  maxLen:  9 },
+            { prefix: '+41',  iso: 'CH',  maxLen:  9 },
+            { prefix: '+43',  iso: 'AT',  maxLen: 10 },
+            { prefix: '+44',  iso: 'GB',  maxLen: 10 },
+            { prefix: '+45',  iso: 'DK',  maxLen:  8 },
+            { prefix: '+46',  iso: 'SE',  maxLen:  9 },
+            { prefix: '+47',  iso: 'NO',  maxLen:  8 },
+            { prefix: '+48',  iso: 'PL',  maxLen:  9 },
+            { prefix: '+49',  iso: 'DE',  maxLen: 11 },
+            { prefix: '+51',  iso: 'PE',  maxLen:  9 },
+            { prefix: '+52',  iso: 'MX',  maxLen: 10 },
+            { prefix: '+53',  iso: 'CU',  maxLen:  8 },
+            { prefix: '+54',  iso: 'AR',  maxLen: 10 },
+            { prefix: '+55',  iso: 'BR',  maxLen: 11 },
+            { prefix: '+56',  iso: 'CL',  maxLen:  9 },
+            { prefix: '+57',  iso: 'CO',  maxLen: 10 },
+            { prefix: '+58',  iso: 'VE',  maxLen: 10 },
+            { prefix: '+60',  iso: 'MY',  maxLen:  9 },
+            { prefix: '+61',  iso: 'AU',  maxLen:  9 },
+            { prefix: '+62',  iso: 'ID',  maxLen: 11 },
+            { prefix: '+63',  iso: 'PH',  maxLen: 10 },
+            { prefix: '+64',  iso: 'NZ',  maxLen:  9 },
+            { prefix: '+65',  iso: 'SG',  maxLen:  8 },
+            { prefix: '+66',  iso: 'TH',  maxLen:  9 },
+            { prefix: '+81',  iso: 'JP',  maxLen: 10 },
+            { prefix: '+82',  iso: 'KR',  maxLen: 10 },
+            { prefix: '+84',  iso: 'VN',  maxLen:  9 },
+            { prefix: '+86',  iso: 'CN',  maxLen: 11 },
+            { prefix: '+90',  iso: 'TR',  maxLen: 10 },
+            { prefix: '+91',  iso: 'IN',  maxLen: 10 },
+            { prefix: '+92',  iso: 'PK',  maxLen: 10 },
+            { prefix: '+93',  iso: 'AF',  maxLen:  9 },
+            { prefix: '+94',  iso: 'LK',  maxLen:  9 },
+            { prefix: '+95',  iso: 'MM',  maxLen:  9 },
+            { prefix: '+98',  iso: 'IR',  maxLen: 10 },
+            { prefix: '+213', iso: 'DZ',  maxLen:  9 },
+            { prefix: '+216', iso: 'TN',  maxLen:  8 },
+            { prefix: '+218', iso: 'LY',  maxLen:  9 },
+            { prefix: '+220', iso: 'GM',  maxLen:  7 },
+            { prefix: '+221', iso: 'SN',  maxLen:  9 },
+            { prefix: '+222', iso: 'MR',  maxLen:  8 },
+            { prefix: '+223', iso: 'ML',  maxLen:  8 },
+            { prefix: '+224', iso: 'GN',  maxLen:  9 },
+            { prefix: '+225', iso: 'CI',  maxLen: 10 },
+            { prefix: '+226', iso: 'BF',  maxLen:  8 },
+            { prefix: '+227', iso: 'NE',  maxLen:  8 },
+            { prefix: '+228', iso: 'TG',  maxLen:  8 },
+            { prefix: '+229', iso: 'BJ',  maxLen:  8 },
+            { prefix: '+230', iso: 'MU',  maxLen:  8 },
+            { prefix: '+231', iso: 'LR',  maxLen:  9 },
+            { prefix: '+232', iso: 'SL',  maxLen:  8 },
+            { prefix: '+233', iso: 'GH',  maxLen:  9 },
+            { prefix: '+234', iso: 'NG',  maxLen: 10 },
+            { prefix: '+235', iso: 'TD',  maxLen:  8 },
+            { prefix: '+236', iso: 'CF',  maxLen:  8 },
+            { prefix: '+237', iso: 'CM',  maxLen:  9 },
+            { prefix: '+238', iso: 'CV',  maxLen:  7 },
+            { prefix: '+239', iso: 'ST',  maxLen:  7 },
+            { prefix: '+240', iso: 'GQ',  maxLen:  9 },
+            { prefix: '+241', iso: 'GA',  maxLen:  7 },
+            { prefix: '+242', iso: 'CG',  maxLen:  9 },
+            { prefix: '+243', iso: 'CD',  maxLen:  9 },
+            { prefix: '+244', iso: 'AO',  maxLen:  9 },
+            { prefix: '+245', iso: 'GW',  maxLen:  9 },
+            { prefix: '+248', iso: 'SC',  maxLen:  7 },
+            { prefix: '+249', iso: 'SD',  maxLen:  9 },
+            { prefix: '+250', iso: 'RW',  maxLen:  9 },
+            { prefix: '+251', iso: 'ET',  maxLen:  9 },
+            { prefix: '+252', iso: 'SO',  maxLen:  9 },
+            { prefix: '+253', iso: 'DJ',  maxLen:  8 },
+            { prefix: '+254', iso: 'KE',  maxLen:  9 },
+            { prefix: '+255', iso: 'TZ',  maxLen:  9 },
+            { prefix: '+256', iso: 'UG',  maxLen:  9 },
+            { prefix: '+257', iso: 'BI',  maxLen:  8 },
+            { prefix: '+258', iso: 'MZ',  maxLen:  9 },
+            { prefix: '+260', iso: 'ZM',  maxLen:  9 },
+            { prefix: '+261', iso: 'MG',  maxLen:  9 },
+            { prefix: '+262', iso: 'RE',  maxLen:  9 },
+            { prefix: '+263', iso: 'ZW',  maxLen:  9 },
+            { prefix: '+264', iso: 'NA',  maxLen:  9 },
+            { prefix: '+265', iso: 'MW',  maxLen:  9 },
+            { prefix: '+266', iso: 'LS',  maxLen:  8 },
+            { prefix: '+267', iso: 'BW',  maxLen:  8 },
+            { prefix: '+268', iso: 'SZ',  maxLen:  8 },
+            { prefix: '+269', iso: 'KM',  maxLen:  7 },
+            { prefix: '+291', iso: 'ER',  maxLen:  7 },
+            { prefix: '+297', iso: 'AW',  maxLen:  7 },
+            { prefix: '+298', iso: 'FO',  maxLen:  6 },
+            { prefix: '+299', iso: 'GL',  maxLen:  6 },
+            { prefix: '+350', iso: 'GI',  maxLen:  8 },
+            { prefix: '+351', iso: 'PT',  maxLen:  9 },
+            { prefix: '+352', iso: 'LU',  maxLen:  9 },
+            { prefix: '+353', iso: 'IE',  maxLen:  9 },
+            { prefix: '+354', iso: 'IS',  maxLen:  7 },
+            { prefix: '+355', iso: 'AL',  maxLen:  9 },
+            { prefix: '+356', iso: 'MT',  maxLen:  8 },
+            { prefix: '+357', iso: 'CY',  maxLen:  8 },
+            { prefix: '+358', iso: 'FI',  maxLen: 10 },
+            { prefix: '+359', iso: 'BG',  maxLen:  9 },
+            { prefix: '+370', iso: 'LT',  maxLen:  8 },
+            { prefix: '+371', iso: 'LV',  maxLen:  8 },
+            { prefix: '+372', iso: 'EE',  maxLen:  8 },
+            { prefix: '+373', iso: 'MD',  maxLen:  8 },
+            { prefix: '+374', iso: 'AM',  maxLen:  8 },
+            { prefix: '+375', iso: 'BY',  maxLen:  9 },
+            { prefix: '+376', iso: 'AD',  maxLen:  6 },
+            { prefix: '+377', iso: 'MC',  maxLen:  8 },
+            { prefix: '+378', iso: 'SM',  maxLen: 10 },
+            { prefix: '+380', iso: 'UA',  maxLen:  9 },
+            { prefix: '+381', iso: 'RS',  maxLen:  9 },
+            { prefix: '+382', iso: 'ME',  maxLen:  8 },
+            { prefix: '+383', iso: 'XK',  maxLen:  8 },
+            { prefix: '+385', iso: 'HR',  maxLen:  9 },
+            { prefix: '+386', iso: 'SI',  maxLen:  8 },
+            { prefix: '+387', iso: 'BA',  maxLen:  8 },
+            { prefix: '+389', iso: 'MK',  maxLen:  8 },
+            { prefix: '+420', iso: 'CZ',  maxLen:  9 },
+            { prefix: '+421', iso: 'SK',  maxLen:  9 },
+            { prefix: '+423', iso: 'LI',  maxLen:  7 },
+            { prefix: '+501', iso: 'BZ',  maxLen:  7 },
+            { prefix: '+502', iso: 'GT',  maxLen:  8 },
+            { prefix: '+503', iso: 'SV',  maxLen:  8 },
+            { prefix: '+504', iso: 'HN',  maxLen:  8 },
+            { prefix: '+505', iso: 'NI',  maxLen:  8 },
+            { prefix: '+506', iso: 'CR',  maxLen:  8 },
+            { prefix: '+507', iso: 'PA',  maxLen:  8 },
+            { prefix: '+509', iso: 'HT',  maxLen:  8 },
+            { prefix: '+590', iso: 'GP',  maxLen:  9 },
+            { prefix: '+591', iso: 'BO',  maxLen:  8 },
+            { prefix: '+592', iso: 'GY',  maxLen:  7 },
+            { prefix: '+593', iso: 'EC',  maxLen:  9 },
+            { prefix: '+595', iso: 'PY',  maxLen:  9 },
+            { prefix: '+597', iso: 'SR',  maxLen:  7 },
+            { prefix: '+598', iso: 'UY',  maxLen:  8 },
+            { prefix: '+670', iso: 'TL',  maxLen:  8 },
+            { prefix: '+673', iso: 'BN',  maxLen:  7 },
+            { prefix: '+675', iso: 'PG',  maxLen:  8 },
+            { prefix: '+676', iso: 'TO',  maxLen:  7 },
+            { prefix: '+677', iso: 'SB',  maxLen:  7 },
+            { prefix: '+678', iso: 'VU',  maxLen:  7 },
+            { prefix: '+679', iso: 'FJ',  maxLen:  7 },
+            { prefix: '+680', iso: 'PW',  maxLen:  7 },
+            { prefix: '+685', iso: 'WS',  maxLen:  7 },
+            { prefix: '+686', iso: 'KI',  maxLen:  8 },
+            { prefix: '+688', iso: 'TV',  maxLen:  6 },
+            { prefix: '+689', iso: 'PF',  maxLen:  6 },
+            { prefix: '+691', iso: 'FM',  maxLen:  7 },
+            { prefix: '+692', iso: 'MH',  maxLen:  7 },
+            { prefix: '+850', iso: 'KP',  maxLen: 10 },
+            { prefix: '+852', iso: 'HK',  maxLen:  8 },
+            { prefix: '+853', iso: 'MO',  maxLen:  8 },
+            { prefix: '+855', iso: 'KH',  maxLen:  9 },
+            { prefix: '+856', iso: 'LA',  maxLen:  9 },
+            { prefix: '+880', iso: 'BD',  maxLen: 10 },
+            { prefix: '+886', iso: 'TW',  maxLen:  9 },
+            { prefix: '+960', iso: 'MV',  maxLen:  7 },
+            { prefix: '+961', iso: 'LB',  maxLen:  8 },
+            { prefix: '+962', iso: 'JO',  maxLen:  9 },
+            { prefix: '+963', iso: 'SY',  maxLen:  9 },
+            { prefix: '+964', iso: 'IQ',  maxLen: 10 },
+            { prefix: '+965', iso: 'KW',  maxLen:  8 },
+            { prefix: '+966', iso: 'SA',  maxLen:  9 },
+            { prefix: '+967', iso: 'YE',  maxLen:  9 },
+            { prefix: '+968', iso: 'OM',  maxLen:  8 },
+            { prefix: '+970', iso: 'PS',  maxLen:  9 },
+            { prefix: '+971', iso: 'AE',  maxLen:  9 },
+            { prefix: '+972', iso: 'IL',  maxLen:  9 },
+            { prefix: '+973', iso: 'BH',  maxLen:  8 },
+            { prefix: '+974', iso: 'QA',  maxLen:  8 },
+            { prefix: '+975', iso: 'BT',  maxLen:  8 },
+            { prefix: '+976', iso: 'MN',  maxLen:  8 },
+            { prefix: '+977', iso: 'NP',  maxLen: 10 },
+            { prefix: '+992', iso: 'TJ',  maxLen:  9 },
+            { prefix: '+993', iso: 'TM',  maxLen:  8 },
+            { prefix: '+994', iso: 'AZ',  maxLen:  9 },
+            { prefix: '+995', iso: 'GE',  maxLen:  9 },
+            { prefix: '+996', iso: 'KG',  maxLen:  9 },
+            { prefix: '+998', iso: 'UZ',  maxLen:  9 },
+        ];
+
+        // Resolve display language from Django's LANGUAGE_CODE (set on <html lang="…">).
+        const lang  = document.documentElement.lang || 'fr';
+        const namer = (typeof Intl !== 'undefined' && Intl.DisplayNames)
+            ? new Intl.DisplayNames([lang, 'en'], { type: 'region' })
+            : null;
+
+        // Build COUNTRIES: add translated name + lowercase code for flag-icons class.
+        // Kosovo (XK) is not an official ISO code — Intl.DisplayNames may return undefined.
+        const FALLBACK_NAMES = { XK: 'Kosovo' };
+        const COUNTRIES = RAW
+            .map(c => ({
+                prefix:    c.prefix,
+                iso:       c.iso,
+                code:      c.iso.toLowerCase(),          // flag-icons uses lowercase
+                maxLen:    c.maxLen,
+                name:      namer
+                    ? (namer.of(c.iso) || FALLBACK_NAMES[c.iso] || c.iso)
+                    : (FALLBACK_NAMES[c.iso] || c.iso),
+            }))
+            .sort((a, b) => {
+                if (a.prefix === '+212') return -1;      // Morocco always first
+                if (b.prefix === '+212') return  1;
+                return a.name.localeCompare(b.name, lang);
+            });
+
+        const realSelect = document.querySelector('[name="phone_prefix"]');
+        const picker     = document.getElementById('flag-picker');
+        const btn        = document.getElementById('flag-btn');
+        const icon       = document.getElementById('flag-icon');
+        const codeSpan   = document.getElementById('flag-code');
+        const flagList   = document.getElementById('flag-list');   // scrollable <ul>
+        const flagSearch = document.getElementById('flag-search');
+        const noResults  = document.getElementById('flag-no-results');
+        const phoneInp   = document.querySelector('[name="phone"]');
+
+        if (!realSelect || !picker) return;
+
+        // Build dropdown options — store lowercase search-key as data-name
+        COUNTRIES.forEach(c => {
+            const li = document.createElement('li');
+            li.className = 'flag-option';
+            li.setAttribute('role', 'option');
+            li.dataset.prefix = c.prefix;
+            li.dataset.name   = c.name.toLowerCase();   // used for search filtering
+            li.innerHTML =
+                `<span class="fi fi-${c.code}"></span>` +
+                `<span class="country-name">${c.name}</span>` +
+                `<span class="dial">${c.prefix}</span>`;
+            li.addEventListener('click', () => selectCountry(c));
+            flagList.appendChild(li);
+        });
+
+        function selectCountry(c) {
+            icon.className       = `fi fi-${c.code}`;
+            codeSpan.textContent = c.prefix;
+            realSelect.value     = c.prefix;
+            flagList.querySelectorAll('.flag-option').forEach(el =>
+                el.classList.toggle('selected', el.dataset.prefix === c.prefix)
+            );
+            if (phoneInp) {
+                phoneInp.maxLength   = c.maxLen;
+                phoneInp.placeholder = '0'.repeat(c.maxLen);
+                if (phoneInp.value.replace(/\D/g, '').length > c.maxLen)
+                    phoneInp.value = phoneInp.value.replace(/\D/g, '').slice(0, c.maxLen);
+            }
+            closeMenu();
+            phoneInp && phoneInp.focus();
+        }
+
+        function applyFilter(q) {
+            const term = q.trim().toLowerCase();
+            let any = false;
+            flagList.querySelectorAll('.flag-option').forEach(li => {
+                // Match translated name OR dial prefix (e.g. "+212" or "212")
+                const hit = !term
+                    || li.dataset.name.includes(term)
+                    || li.dataset.prefix.includes(term)
+                    || li.dataset.prefix.replace('+', '').startsWith(term.replace('+', ''));
+                li.style.display = hit ? '' : 'none';
+                if (hit) any = true;
+            });
+            noResults.style.display = any ? 'none' : '';
+            // Scroll the first visible match into view
+            if (any && term) {
+                const first = flagList.querySelector('.flag-option:not([style*="none"])');
+                if (first) first.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function openMenu() {
+            picker.classList.add('open');
+            btn.setAttribute('aria-expanded', 'true');
+            // Reset search and show all items
+            flagSearch.value = '';
+            applyFilter('');
+            // Scroll the currently-selected item into view, then focus search
+            const sel = flagList.querySelector('.flag-option.selected');
+            if (sel) sel.scrollIntoView({ block: 'nearest' });
+            requestAnimationFrame(() => flagSearch.focus());
+        }
+
+        function closeMenu() {
+            picker.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+        }
+
+        btn.addEventListener('click', () =>
+            picker.classList.contains('open') ? closeMenu() : openMenu()
+        );
+
+        // Live filtering as the user types
+        flagSearch.addEventListener('input', () => applyFilter(flagSearch.value));
+
+        // Keyboard shortcuts inside the search box
+        flagSearch.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { closeMenu(); btn.focus(); }
+            if (e.key === 'Enter') {
+                // Select first visible option
+                const first = flagList.querySelector('.flag-option:not([style*="none"])');
+                if (first) first.click();
+                e.preventDefault();
+            }
+            if (e.key === 'ArrowDown') {
+                // Move focus into the list
+                const first = flagList.querySelector('.flag-option:not([style*="none"])');
+                if (first) { first.focus(); e.preventDefault(); }
+            }
+        });
+
+        // Arrow-key navigation within the list itself
+        flagList.addEventListener('keydown', e => {
+            const items = [...flagList.querySelectorAll('.flag-option:not([style*="none"])')];
+            const idx   = items.indexOf(document.activeElement);
+            if (e.key === 'ArrowDown' && idx < items.length - 1) { items[idx + 1].focus(); e.preventDefault(); }
+            if (e.key === 'ArrowUp')  {
+                if (idx > 0) { items[idx - 1].focus(); e.preventDefault(); }
+                else         { flagSearch.focus();       e.preventDefault(); }
+            }
+            if (e.key === 'Enter' && idx >= 0) { items[idx].click(); e.preventDefault(); }
+            if (e.key === 'Escape') { closeMenu(); btn.focus(); }
+        });
+
+        document.addEventListener('click', e => {
+            if (!picker.contains(e.target)) closeMenu();
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && picker.classList.contains('open')) closeMenu();
+        });
+
+        // Initialise from the real select's current value
+        const initPrefix  = realSelect.value || '+212';
+        const initCountry = COUNTRIES.find(c => c.prefix === initPrefix) || COUNTRIES[0];
+        selectCountry(initCountry);
+
+        // Digits-only + strip leading trunk zero + enforce maxLen
+        if (phoneInp) {
+            phoneInp.addEventListener('input', function () {
+                const max = parseInt(this.maxLength, 10) || 9;
+                // Keep only digits, cap at max
+                let v = this.value.replace(/\D/g, '').slice(0, max);
+                // Strip leading trunk zero (e.g. 0698… → 698…)
+                if (v.startsWith('0')) v = v.slice(1);
+                this.value = v;
+            });
+
+            // Block non-digit keys upfront (allows navigation / clipboard keys)
+            phoneInp.addEventListener('keydown', function (e) {
+                const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
+                                 'Tab','Home','End','Enter'];
+                if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault();
+            });
+
+            // Sanitise pasted content
+            phoneInp.addEventListener('paste', function (e) {
+                e.preventDefault();
+                const max = parseInt(this.maxLength, 10) || 9;
+                let pasted = (e.clipboardData || window.clipboardData).getData('text');
+                let v = pasted.replace(/\D/g, '').slice(0, max);
+                if (v.startsWith('0')) v = v.slice(1);
+                this.value = v;
+            });
+        }
+    })();
+
     /* ---- Disable per-account auto-review toggle when global is off ---- */
     {% if not global_auto_review %}
     (function() {
