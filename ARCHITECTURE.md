@@ -15,7 +15,7 @@ Django pharmacy loyalty platform (PFE internship). Pharmacies push their daily s
 
 Verified from `FIDPHA001/settings.py`:
 
-- **Django 5.2** · **Python 3.x** · **SQLite** (`db.sqlite3`, dev only).
+- **Django 5.2** · **Python 3.x** · **Three-way DB backend** toggled by `DB_BACKEND` in `.env`: `sqlite` (default, local `db.sqlite3`), `local` (PostgreSQL on localhost, `wininpharma_db`), `neon` (Neon cloud PostgreSQL, AWS eu-west-2 London). `psycopg2-binary` required for PostgreSQL backends.
 - **DRF** — partially adopted: `APIView`, `Response`, `BaseAuthentication`, `BasePermission`, throttling, `URLPathVersioning`, serializers (used in `/api/portal/` and `/api/staff/` only). No viewsets, routers, or browsable API in production.
 - **django-allauth** — Google OAuth active; Apple planned (deferred).
 - **django-unfold** — themes Django admin (admin still registered for fallback; URL is commented out).
@@ -386,6 +386,7 @@ Per-row rejection reasons (in order):
 | control | 0002 | Alter SystemConfig.id → BigAutoField (Django 5.2 default) |
 | control | 0003 | **SystemConfig new fields** — `max_batch_size`, `ppv_tolerance_percent`, `rejection_rate_warn_threshold`, `rejection_rate_danger_threshold`, `api_token_rate_limit` |
 | control | 0004 | **SystemConfig default-off** — change all new field defaults to 0/None (disabled sentinel); RunPython resets existing singleton row |
+| fidpha | 0013 | **Product.ppv NOT NULL** — RunSQL backfills NULL ppv rows to 0.00 (quoted `"Product"` table name for PostgreSQL case-sensitivity); AlterField makes ppv required |
 
 ---
 
@@ -451,7 +452,7 @@ Known dev-only shortcuts (intentional; surface but don't silently fix):
 - `settings.py:9` — `DEBUG = False` (the comment is misleading; the value matches the comment).
 - `settings.py:11` — `ALLOWED_HOSTS = ['*', 'khalidbrx.pythonanywhere.com']` (wildcard).
 - `settings.py:81-82` — Gmail SMTP password in plain text.
-- SQLite as primary DB (dev only).
+- `DB_BACKEND` in `.env` controls the active database: `sqlite` (default), `local` (localhost PostgreSQL), `neon` (cloud). Testing server (PythonAnywhere) uses `sqlite`. Switch with one line — no code change needed.
 - `legacy_models.py` exists in `fidpha/`. **Inactive**, don't edit/import.
 
 Production hardening (when user requests): env-var secrets, restricted ALLOWED_HOSTS, swap DB engine, rotate SMTP password, add CSRF/HSTS settings.
