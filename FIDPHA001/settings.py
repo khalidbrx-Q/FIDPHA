@@ -116,6 +116,40 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# ---------------------------------------------------------------------------
+# Security headers
+# These tell browsers to enforce safety policies. HTTPS-related headers are
+# gated on `not DEBUG` so local HTTP dev still works unchanged.
+# CSP (Content-Security-Policy) is intentionally deferred until after the
+# React migration, since current templates use inline <script> blocks.
+# ---------------------------------------------------------------------------
+
+# Browser respects our Content-Type header — prevents MIME-sniffing attacks
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Enable browser's legacy XSS filter (defense in depth, low cost)
+SECURE_BROWSER_XSS_FILTER = True
+
+# Don't leak full URL as referrer to other origins
+SECURE_REFERRER_POLICY = "same-origin"
+
+# Block embedding in iframes — prevents clickjacking
+X_FRAME_OPTIONS = "DENY"
+
+# HTTPS-only settings — applied only in production (DEBUG=False)
+if not DEBUG:
+    # Redirect any HTTP request to HTTPS
+    SECURE_SSL_REDIRECT = True
+    # Tell browsers "use HTTPS only" for 1 year (with subdomains, preload-ready)
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    # Trust X-Forwarded-Proto header from reverse proxy (Railway, Render, Nginx)
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # Cookies only sent over HTTPS
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 LANGUAGE_CODE = "en"
 LANGUAGES = [
     ("en", "English"),
