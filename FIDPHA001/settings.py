@@ -9,6 +9,33 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-84==t^=mjl&51p8p)x)w%
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
+# ---------------------------------------------------------------------------
+# Sentry — initialized as early as possible so it captures errors raised
+# during the rest of settings.py loading (e.g. broken DB config, missing
+# secrets). When SENTRY_DSN is empty, Sentry is silently disabled.
+# ---------------------------------------------------------------------------
+_SENTRY_DSN = config('SENTRY_DSN', default='')
+if _SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=_SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        # Performance tracing: 100% in dev (cheap, low traffic),
+        # 10% in production (sample to control event volume + cost).
+        traces_sample_rate=1.0 if DEBUG else 0.1,
+        # Code profiling: find slow code paths. Same sampling rule.
+        profiles_sample_rate=1.0 if DEBUG else 0.1,
+        # GDPR-safe: no PII (cookies, IPs, user data) sent by default.
+        # Override per-event with sentry_sdk.set_user(...) when needed.
+        send_default_pii=False,
+        # Tag every event so we can filter dev vs staging vs production.
+        environment=config('SENTRY_ENVIRONMENT', default='dev' if DEBUG else 'production'),
+        # Optional: release version (set by CI/CD via git SHA).
+        release=config('SENTRY_RELEASE', default=None),
+    )
+
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*,khalidbrx.pythonanywhere.com', cast=Csv())
 
 INSTALLED_APPS = [
