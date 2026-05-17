@@ -148,6 +148,43 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ---------------------------------------------------------------------------
+# Cache + Sessions
+# When REDIS_URL is set: shared Redis cache (works across Gunicorn workers
+# and multiple server instances) + cached-DB sessions (fast reads from
+# Redis, durable writes to DB — survives Redis outages).
+# When REDIS_URL is empty: fall back to local in-memory cache + DB sessions.
+# Local fallback is safe for single-process dev but won't share state.
+# ---------------------------------------------------------------------------
+REDIS_URL = config('REDIS_URL', default='')
+
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                # If Redis is unreachable, raise the connection error instead
+                # of silently swallowing it (better for catching outages).
+                "IGNORE_EXCEPTIONS": False,
+            },
+            "KEY_PREFIX": "wininpharma",
+            "TIMEOUT": 300,  # default 5min; override per cache.set() call.
+        }
+    }
+    # cached_db: read from cache (fast), write to both cache + DB (durable).
+    # If Redis fails, falls back to DB only — no session loss.
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+    SESSION_CACHE_ALIAS = "default"
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+    # Leave SESSION_ENGINE at Django's default ("db") — safe for local dev.
+
+# ---------------------------------------------------------------------------
 # Logging
 # In DEBUG: human-readable lines to console (easy to scan during dev).
 # In prod : structured JSON to stdout (queryable by Sentry / Better Stack).
