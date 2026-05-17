@@ -15,7 +15,13 @@ Django pharmacy loyalty platform (PFE internship). Pharmacies push their daily s
 
 Verified from `FIDPHA001/settings.py`:
 
-- **Django 5.2** · **Python 3.x** · **SQLite** (`db.sqlite3`, dev only).
+- **Django 5.2** · **Python 3.x** · **SQLite** (`db.sqlite3`, dev only). PostgreSQL via `DB_BACKEND` toggle lives on `feature/postgres-migration`.
+- **WSGI server**: **Gunicorn** (`gunicorn.conf.py` — workers=(2×CPU)+1, sync class, 30s timeout, max-requests=1000+jitter, stdout logging). `runserver` still works locally for dev.
+- **Static files**: **WhiteNoise** middleware right after `SecurityMiddleware`. `CompressedManifestStaticFilesStorage` — compressed (gzip/brotli) + hashed filenames for unbreakable caching. In `DEBUG=True` mode it transparently lets `runserver` serve statics.
+- **Cache & sessions**: Redis (Upstash) when `REDIS_URL` is set — `django_redis.cache.RedisCache` + `cached_db` sessions (Redis-fast reads, DB-durable writes). Falls back to `LocMemCache` + DB sessions when `REDIS_URL` is empty.
+- **Error tracking**: **Sentry** (`sentry-sdk[django]`) initialized in `settings.py` when `SENTRY_DSN` is set. Auto-captures all unhandled exceptions via `DjangoIntegration`. `traces_sample_rate=1.0` in DEBUG, `0.1` in production. `send_default_pii=False` (GDPR-safe).
+- **Logging**: structured via `python-json-logger`. `LOGGING` dict in `settings.py`. Two formatters — `verbose` (human-readable, DEBUG mode) and `json` (production). Loggers under `wininpharma.*` namespace (e.g. `wininpharma.health`, `wininpharma.api`).
+- **Secrets management**: dual-mode. **Doppler** (cloud, project `fidpha`, config `dev`) via `doppler run -- <cmd>` — secrets injected as env vars. Falls back to local `.env` (gitignored) when Doppler isn't used. `python-decouple` reads from env first, then `.env`.
 - **DRF** — partially adopted: `APIView`, `Response`, `BaseAuthentication`, `BasePermission`, throttling, `URLPathVersioning`, serializers (used in `/api/portal/` and `/api/staff/` only). No viewsets, routers, or browsable API in production.
 - **django-allauth** — Google OAuth active; Apple planned (deferred).
 - **django-unfold** — themes Django admin (admin still registered for fallback; URL is commented out).
@@ -201,6 +207,7 @@ FIDPHA/                              ← repo root (git root) — manage.py is h
 | URL | Target |
 |---|---|
 | `/` | redirect → `/portal/login/` |
+| `/health/` | `FIDPHA001.health.health` — unauthenticated; returns `{db, cache, migrations}` status (200 ok / 503 degraded) |
 | `/admin/login/` | redirect → `/portal/login/` |
 | `/admin/logout/` | `fidpha_views.custom_logout` |
 | `/admin/welcome/` | `fidpha_views.admin_welcome` (OAuth post-login flash) |
@@ -445,31 +452,61 @@ Per-row rejection reasons (in order):
 
 ## 12. Settings / Security Notes
 
-Known dev-only shortcuts (intentional; surface but don't silently fix):
+### Hardening completed on `feature/production-hardening`
 
-- `settings.py:7` — SECRET_KEY hardcoded.
-- `settings.py:9` — `DEBUG = False` (the comment is misleading; the value matches the comment).
-- `settings.py:11` — `ALLOWED_HOSTS = ['*', 'khalidbrx.pythonanywhere.com']` (wildcard).
-- `settings.py:81-82` — Gmail SMTP password in plain text.
-- SQLite as primary DB (dev only).
+Phase 1 production hardening — 6 commits. Each is independent and reversible:
+
+- **Security headers** (`settings.py`): `SECURE_CONTENT_TYPE_NOSNIFF`, `SECURE_BROWSER_XSS_FILTER`, `SECURE_REFERRER_POLICY="same-origin"`, `X_FRAME_OPTIONS="DENY"`. HTTPS-gated set (`if not DEBUG`): `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS=31536000` (+ subdomains + preload), `SECURE_PROXY_SSL_HEADER`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`. CSP intentionally deferred until React migration (templates use inline `<script>` blocks).
+- **Production WSGI**: Gunicorn + WhiteNoise (`gunicorn.conf.py`, `WhiteNoiseMiddleware` after `SecurityMiddleware`, `STORAGES["staticfiles"]=CompressedManifestStaticFilesStorage`).
+- **Logging**: structured `LOGGING` dict in `settings.py`. `python-json-logger` JSON formatter in prod, verbose plain-text in DEBUG. `wininpharma.*` namespace.
+- **Health endpoint**: `/health/` checks db + cache + migrations. Unauthenticated, never cached.
+- **Sentry**: env-gated init in `settings.py` (`if SENTRY_DSN`). `DjangoIntegration`, `traces_sample_rate=1.0` in DEBUG / `0.1` in prod, `send_default_pii=False`.
+- **Redis (Upstash)**: env-gated CACHES + cached_db sessions (`if REDIS_URL`). Falls back to `LocMemCache` + DB sessions when empty. `KEY_PREFIX="wininpharma"`.
+- **Doppler**: cloud secret store, dual-mode with `.env`. Use `doppler run -- <cmd>` to inject from cloud; bare command reads local `.env`. Both work independently. No code changes — `python-decouple` reads env-var first.
+
+### Remaining known dev-only shortcuts (intentional; surface but don't silently fix)
+
+- `settings.py` — `SECRET_KEY` defaults to `django-insecure-...` literal (still warned by `manage.py check --deploy`). Will be replaced by Doppler-managed strong key for production deploys. To address in 1.7 follow-up or Phase 2.
+- `settings.py` — `ALLOWED_HOSTS=*` (wildcard default). Restrict per-environment when deploying.
 - `legacy_models.py` exists in `fidpha/`. **Inactive**, don't edit/import.
 
-Production hardening (when user requests): env-var secrets, restricted ALLOWED_HOSTS, swap DB engine, rotate SMTP password, add CSRF/HSTS settings.
+After Phase 1, `manage.py check --deploy` with `DEBUG=False` drops from **6 security warnings → 1** (only the SECRET_KEY warning remains).
 
 ---
 
 ## 13. Testing
 
+### Test suite location (relocated 2026-05-17)
+
+All tests live **outside the Django repo** at `../tests-suite/` to be passively excluded from production deploys without needing `.gitignore` entries. Layout:
+
+```
+tests-suite/                  ← outside the git root
+├── conftest.py               ← shared setup (DJANGO_ALLOW_ASYNC_UNSAFE for Playwright)
+├── unit/
+│   ├── __init__.py
+│   ├── test_api.py           ← extracted from feature/react-api
+│   ├── test_fidpha.py
+│   └── test_sales.py
+└── e2e/
+    ├── __init__.py
+    ├── conftest.py           ← Playwright + base_data fixtures
+    └── test_*.py             ← 8 files
+```
+
+`pytest.ini` (inside the repo) points `testpaths = ../tests-suite` and sets `DJANGO_SETTINGS_MODULE = FIDPHA001.settings`. Pytest finds tests external to the repo while Django still resolves settings normally.
+
 ### Unit Tests
-- `FIDPHA001/test_runner.py` defines `LoggingTestRunner` — appends to `test_log.txt`.
-- Unit tests live in each app's `tests.py` (`api/`, `fidpha/`, `sales/`, `control/`) — 313 tests, all passing.
-- Run: `python manage.py test api fidpha sales control` (from `FIDPHA001/FIDPHA001/`)
+- ~265 tests collected from `../tests-suite/unit/`.
+- Run: `pytest --ignore=../tests-suite/e2e` (from inside the repo)
+- **Known divergence:** tests were authored against `feature/react-api` code and assume views/serializers that don't exist on `develop` yet. On `develop`: 186 fail / 10 pass / 47 skip. This is **not a regression** — it's the test/feature merge gap. Will be resolved when `feature/react-api` lands on `develop`.
+- The 10 passing + 47 skipped + the test collector running cleanly are the canary signals — if those numbers change after a hardening commit, the change broke something.
 
 ### E2E Tests (Playwright)
-- **Status: Done** — 22 tests across 8 files, all passing.
-- Framework: `pytest-playwright` + `pytest-django`. Lives at `tests/e2e/`.
-- `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `tests/e2e/conftest.py` (required for Playwright + Django live server).
-- Run: `pytest tests/e2e/ -v` (from `FIDPHA001/FIDPHA001/`)
+- **Status: Done** — 22 tests across 8 files, all passing on `feature/react-api`.
+- Framework: `pytest-playwright` + `pytest-django`. Lives at `../tests-suite/e2e/`.
+- `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `../tests-suite/conftest.py` (required for Playwright + Django live server).
+- Run: `pytest ../tests-suite/e2e/` (from inside the repo)
 
 | File | Tests | What's covered |
 |---|---|---|

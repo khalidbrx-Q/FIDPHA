@@ -107,6 +107,8 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | `develop` | Active backend development |
 | `feature/react-ui` | React SPA (paused — do not merge without approval) |
 | `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
+| `feature/postgres-migration` | PostgreSQL + Neon DB backend (not merged yet) |
+| `feature/production-hardening` | Phase 1 production infra: security headers, Gunicorn/WhiteNoise, JSON logging, /health/, Sentry, Redis (Upstash), Doppler — not merged yet |
 
 - Never merge `feature/react-ui` into `develop` or `main` without explicit approval.
 - Never modify portal templates for React convenience — they are the production fallback.
@@ -149,22 +151,38 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | API token auth | `api/authentication.py` |
 | Control decorators | `control/decorators.py` |
 | Global config | `control/models.py` `SystemConfig.get()` |
-| E2E tests | `tests/e2e/` — 22 tests, 8 files |
-| Unit tests | `api/tests.py`, `fidpha/tests.py`, `sales/tests.py`, `control/tests.py` — 313 tests |
+| E2E tests | `../tests-suite/e2e/` — 22 tests, 8 files (outside repo) |
+| Unit tests | `../tests-suite/unit/` — `test_api.py`, `test_fidpha.py`, `test_sales.py` (~265 tests; outside repo) |
 | Code reviewer agent | `.claude/agents/code-reviewer.md` (outer `FIDPHA001/` folder) |
+| Health endpoint | `FIDPHA001/health.py` → `GET /health/` (db + cache + migrations probes) |
+| Sentry init | `FIDPHA001/settings.py` (env: `SENTRY_DSN`) |
+| Cache/Redis config | `FIDPHA001/settings.py` `CACHES` dict (env: `REDIS_URL`) |
+| Logging config | `FIDPHA001/settings.py` `LOGGING` dict; loggers under `wininpharma.*` |
+| Gunicorn config | `gunicorn.conf.py` (workers, timeouts, logging) |
 
 ---
 
 ## 9. Common Commands
 
 ```bash
-python manage.py runserver          # start Django dev server
+# Development
+python manage.py runserver          # dev server (reads .env)
+doppler run -- python manage.py runserver   # dev server (reads secrets from Doppler instead)
 python manage.py migrate            # apply migrations
 python manage.py makemigrations     # create new migration
 python manage.py compilemessages    # compile French translations
-python manage.py collectstatic      # collect static files
-python manage.py test api fidpha sales control   # run unit tests (313 tests)
-pytest tests/e2e/ -v                # run E2E Playwright tests (22 tests)
+python manage.py collectstatic      # collect static files (WhiteNoise compresses + hashes)
+
+# Production server (Linux/container only — gunicorn doesn't run natively on Windows)
+gunicorn FIDPHA001.wsgi:application -c gunicorn.conf.py
+
+# Tests (live in ../tests-suite/ — outside the repo)
+pytest                              # all tests (pytest.ini points to ../tests-suite/)
+pytest --ignore=../tests-suite/e2e  # unit tests only
+pytest ../tests-suite/e2e/          # e2e only (needs Playwright browsers)
+
+# Observability
+curl http://localhost:8000/health/  # health probe (db + cache + migrations)
 ```
 
 ---

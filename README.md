@@ -79,7 +79,7 @@ The platform has three user-facing layers:
 | Concern | Choice |
 |---|---|
 | Backend | Python 3.12, Django 5.2 |
-| Database | SQLite (dev) — upgradeable |
+| Database | SQLite (dev) — three-way `DB_BACKEND` toggle (sqlite/local/neon) on `feature/postgres-migration` |
 | REST API | Django REST Framework (partial adoption — no viewsets/routers) |
 | Authentication | django-allauth (Google OAuth + email/password) |
 | Admin theme | django-unfold (dormant — replaced by control panel) |
@@ -87,6 +87,12 @@ The platform has three user-facing layers:
 | CSS | Single `portal.css` shared by portal and control panel |
 | Email | Gmail SMTP — `EmailMultiAlternatives` (HTML + text) |
 | i18n | Django i18n + GNU gettext, `locale/fr/` |
+| Production WSGI | **Gunicorn** workers + **WhiteNoise** static files (on `feature/production-hardening`) |
+| Cache & sessions | **Redis (Upstash)** via `django-redis`, `cached_db` sessions; falls back to LocMemCache if no `REDIS_URL` |
+| Error tracking | **Sentry** (`sentry-sdk[django]`); auto-captures exceptions; env-gated by `SENTRY_DSN` |
+| Logging | Structured JSON in production (`python-json-logger`), verbose plain-text in DEBUG; `wininpharma.*` namespace |
+| Secrets | Dual-mode: **Doppler** cloud vault (`doppler run -- <cmd>`) or local `.env` — both work |
+| Health probe | `GET /health/` — db + cache + migrations check |
 | Deployment | PythonAnywhere + GitHub (PR-based workflow) |
 | React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (in progress, `feature/react-ui`) |
 
@@ -122,10 +128,21 @@ Create a `.env` file in `FIDPHA/` (same folder as `manage.py`):
 ```
 SECRET_KEY=your-secret-key
 DEBUG=True
+ALLOWED_HOSTS=*,localhost,127.0.0.1
+
+# Email
 EMAIL_HOST_USER=your@gmail.com
 EMAIL_HOST_PASSWORD=your-gmail-app-password
 DEFAULT_FROM_EMAIL=WinInPharma <your@gmail.com>
+
+# Optional — production hardening (leave empty to disable each)
+SENTRY_DSN=                         # error tracking; set Sentry DSN to enable
+SENTRY_ENVIRONMENT=dev              # tags events: dev / staging / production
+REDIS_URL=                          # rediss://... — enables Redis cache + cached_db sessions
+LOG_LEVEL=INFO                      # DEBUG / INFO / WARNING / ERROR
 ```
+
+> **Secrets management:** all of the above can also be served from [Doppler](https://doppler.com) instead of `.env`. After `doppler setup` in the repo, run any command with `doppler run -- <cmd>` to inject secrets from the cloud. `.env` stays as a local fallback when Doppler isn't used.
 
 ### 4.4 Initialize the Database
 
@@ -137,9 +154,13 @@ python manage.py runserver
 ```
 
 **Run tests:**
+
+Tests live **outside the repo** at `../tests-suite/` (passively excluded from production deploys). `pytest.ini` inside the repo points to that location.
+
 ```bash
-python manage.py test api fidpha sales control   # 313 unit tests
-pytest tests/e2e/ -v                            # 22 Playwright E2E tests (local only, requires browser)
+pytest                                          # all tests (unit + e2e)
+pytest --ignore=../tests-suite/e2e              # unit tests only (~265)
+pytest ../tests-suite/e2e/                      # e2e only (22 Playwright tests, needs browser)
 ```
 
 Visit `http://127.0.0.1:8000` — you will be redirected to `/portal/login/`.
@@ -405,6 +426,8 @@ Staff permissions are managed through Django Groups (called "Roles" in the contr
 | `develop` | Active backend development |
 | `feature/react-ui` | React SPA (paused — not merged to main) |
 | `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
+| `feature/postgres-migration` | PostgreSQL + Neon cloud DB backend (not merged yet) |
+| `feature/production-hardening` | Production infra: security headers, Gunicorn/WhiteNoise, JSON logging, /health/, Sentry, Redis (Upstash), Doppler (not merged yet) |
 
 ### 10.2 Merging to Main (via GitHub PR)
 
@@ -635,7 +658,7 @@ La plateforme comporte trois couches orientées utilisateur :
 | Concern | Choix |
 |---|---|
 | Backend | Python 3.12, Django 5.2 |
-| Base de données | SQLite (dev) — évolutif |
+| Base de données | SQLite (dev) — bascule trois voies `DB_BACKEND` (sqlite/local/neon) sur `feature/postgres-migration` |
 | API REST | Django REST Framework (adoption partielle — pas de viewsets/routers) |
 | Authentification | django-allauth (Google OAuth + email/mot de passe) |
 | Thème admin | django-unfold (inactif — remplacé par le panneau de contrôle) |
@@ -643,6 +666,12 @@ La plateforme comporte trois couches orientées utilisateur :
 | CSS | `portal.css` unique partagé portail et panneau de contrôle |
 | Email | Gmail SMTP — `EmailMultiAlternatives` (HTML + texte) |
 | i18n | Django i18n + GNU gettext, `locale/fr/` |
+| WSGI production | **Gunicorn** workers + **WhiteNoise** fichiers statiques (sur `feature/production-hardening`) |
+| Cache & sessions | **Redis (Upstash)** via `django-redis`, sessions `cached_db` ; fallback LocMemCache si pas de `REDIS_URL` |
+| Suivi des erreurs | **Sentry** (`sentry-sdk[django]`) ; capture auto des exceptions ; activé par `SENTRY_DSN` |
+| Logs | JSON structurés en prod (`python-json-logger`), plain-text verbose en DEBUG ; namespace `wininpharma.*` |
+| Secrets | Double mode : **Doppler** cloud (`doppler run -- <cmd>`) ou `.env` local — les deux fonctionnent |
+| Health probe | `GET /health/` — vérifie db + cache + migrations |
 | Déploiement | PythonAnywhere + GitHub (workflow par PR) |
 | React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (en cours, `feature/react-ui`) |
 
@@ -678,10 +707,21 @@ Créer un fichier `.env` dans `FIDPHA/` (même dossier que `manage.py`) :
 ```
 SECRET_KEY=votre-secret-key
 DEBUG=True
+ALLOWED_HOSTS=*,localhost,127.0.0.1
+
+# Email
 EMAIL_HOST_USER=votre@gmail.com
 EMAIL_HOST_PASSWORD=votre-mot-de-passe-application
 DEFAULT_FROM_EMAIL=WinInPharma <votre@gmail.com>
+
+# Optionnel — durcissement production (laisser vide pour désactiver)
+SENTRY_DSN=                         # suivi des erreurs ; renseigner le DSN Sentry
+SENTRY_ENVIRONMENT=dev              # tag des événements : dev / staging / production
+REDIS_URL=                          # rediss://... — active le cache Redis + sessions cached_db
+LOG_LEVEL=INFO                      # DEBUG / INFO / WARNING / ERROR
 ```
+
+> **Gestion des secrets :** toutes les variables ci-dessus peuvent aussi être servies par [Doppler](https://doppler.com) au lieu de `.env`. Après `doppler setup` dans le repo, exécuter toute commande avec `doppler run -- <cmd>` pour injecter les secrets depuis le cloud. `.env` reste le fallback local si Doppler n'est pas utilisé.
 
 ### 4.4 Initialiser la Base de Données
 
@@ -693,9 +733,13 @@ python manage.py runserver
 ```
 
 **Lancer les tests :**
+
+Les tests vivent **hors du repo** dans `../tests-suite/` (exclus passivement des déploiements prod). Le `pytest.ini` du repo pointe vers cet emplacement.
+
 ```bash
-python manage.py test api fidpha sales control   # 313 tests unitaires
-pytest tests/e2e/ -v                            # 22 tests E2E Playwright (local uniquement, nécessite un navigateur)
+pytest                                          # tous les tests (unit + e2e)
+pytest --ignore=../tests-suite/e2e              # tests unitaires uniquement (~265)
+pytest ../tests-suite/e2e/                      # e2e uniquement (22 tests Playwright, nécessite navigateur)
 ```
 
 Visitez `http://127.0.0.1:8000` — vous serez redirigé vers `/portal/login/`.
@@ -944,6 +988,8 @@ Les permissions du staff sont gérées via les groupes Django (appelés "Rôles"
 | `develop` | Développement backend actif |
 | `feature/react-ui` | SPA React (en pause — non mergée sur main) |
 | `feature/improvements` | Polish UI, améliorations SystemConfig, agent code-reviewer |
+| `feature/postgres-migration` | Backend PostgreSQL + Neon cloud (non mergée pour l'instant) |
+| `feature/production-hardening` | Infrastructure production : security headers, Gunicorn/WhiteNoise, logs JSON, /health/, Sentry, Redis (Upstash), Doppler (non mergée pour l'instant) |
 
 ### 10.2 Merger sur Main (via GitHub PR)
 
