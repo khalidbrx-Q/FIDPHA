@@ -121,6 +121,68 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ---------------------------------------------------------------------------
+# Logging
+# In DEBUG: human-readable lines to console (easy to scan during dev).
+# In prod : structured JSON to stdout (queryable by Sentry / Better Stack).
+# Application code uses logging.getLogger("wininpharma.<area>") e.g.
+#   logger = logging.getLogger("wininpharma.api")
+#   logger.info("Batch accepted", extra={"batch_id": ..., "rows": ...})
+# ---------------------------------------------------------------------------
+import os as _os
+LOG_LEVEL = _os.environ.get("LOG_LEVEL", "INFO").upper()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": "pythonjsonlogger.json.JsonFormatter",
+            "fmt": "%(asctime)s %(name)s %(levelname)s %(message)s %(pathname)s %(funcName)s %(lineno)d",
+            "rename_fields": {
+                "asctime": "time",
+                "levelname": "level",
+                "name": "logger",
+            },
+        },
+        "verbose": {
+            "format": "[{asctime}] {levelname:8} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose" if DEBUG else "json",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": LOG_LEVEL,
+    },
+    "loggers": {
+        # Django framework — silence the chatter, keep INFO and above.
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # 4xx/5xx HTTP errors — surface them clearly.
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # Our application namespace. All app code does
+        # logging.getLogger("wininpharma.<area>") to land here.
+        "wininpharma": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+}
+
+# ---------------------------------------------------------------------------
 # Security headers
 # These tell browsers to enforce safety policies. HTTPS-related headers are
 # gated on `not DEBUG` so local HTTP dev still works unchanged.
