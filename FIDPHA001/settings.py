@@ -37,6 +37,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # WhiteNoise must come right after SecurityMiddleware. It serves
+    # static files efficiently in production (compressed + cached),
+    # eliminating the need for a separate web server like Nginx.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -163,6 +167,19 @@ USE_I18N = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Static file storage — WhiteNoise's compressed + manifest backend.
+# - Generates gzip/brotli versions of every CSS/JS file at collectstatic time.
+# - Adds a content hash to filenames (e.g. portal.abc123.css) for unbreakable caching.
+# - In DEBUG mode, falls back to standard Django dev behavior automatically.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
