@@ -107,6 +107,7 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | `develop` | Active backend development |
 | `feature/react-ui` | React SPA (paused — do not merge without approval) |
 | `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
+| `feature/postgres-migration` | PostgreSQL + Neon DB backend (not merged into develop yet) |
 
 - Never merge `feature/react-ui` into `develop` or `main` without explicit approval.
 - Never modify portal templates for React convenience — they are the production fallback.

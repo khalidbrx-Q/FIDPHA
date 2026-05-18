@@ -79,7 +79,7 @@ The platform has three user-facing layers:
 | Concern | Choice |
 |---|---|
 | Backend | Python 3.12, Django 5.2 |
-| Database | SQLite (dev) — upgradeable |
+| Database | Three-way toggle via `DB_BACKEND` in `.env`: `sqlite` (default) · `local` (PostgreSQL localhost) · `neon` (Neon cloud, London) |
 | REST API | Django REST Framework (partial adoption — no viewsets/routers) |
 | Authentication | django-allauth (Google OAuth + email/password) |
 | Admin theme | django-unfold (dormant — replaced by control panel) |
@@ -122,6 +122,24 @@ Create a `.env` file in `FIDPHA/` (same folder as `manage.py`):
 ```
 SECRET_KEY=your-secret-key
 DEBUG=True
+
+# Database: sqlite | local | neon
+DB_BACKEND=sqlite
+
+# Local PostgreSQL (used when DB_BACKEND=local)
+LOCAL_DB_NAME=wininpharma_db
+LOCAL_DB_USER=your_pg_user
+LOCAL_DB_PASSWORD=your_pg_password
+LOCAL_DB_HOST=localhost
+LOCAL_DB_PORT=5432
+
+# Neon cloud PostgreSQL (used when DB_BACKEND=neon)
+NEON_DB_NAME=neondb
+NEON_DB_USER=neondb_owner
+NEON_DB_PASSWORD=your_neon_password
+NEON_DB_HOST=your-project.eu-west-2.aws.neon.tech
+NEON_DB_PORT=5432
+
 EMAIL_HOST_USER=your@gmail.com
 EMAIL_HOST_PASSWORD=your-gmail-app-password
 DEFAULT_FROM_EMAIL=WinInPharma <your@gmail.com>
@@ -405,6 +423,7 @@ Staff permissions are managed through Django Groups (called "Roles" in the contr
 | `develop` | Active backend development |
 | `feature/react-ui` | React SPA (paused — not merged to main) |
 | `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
+| `feature/postgres-migration` | PostgreSQL + Neon cloud DB backend (not merged yet) |
 
 ### 10.2 Merging to Main (via GitHub PR)
 
@@ -635,7 +654,7 @@ La plateforme comporte trois couches orientées utilisateur :
 | Concern | Choix |
 |---|---|
 | Backend | Python 3.12, Django 5.2 |
-| Base de données | SQLite (dev) — évolutif |
+| Base de données | Bascule trois voies via `DB_BACKEND` dans `.env` : `sqlite` (défaut) · `local` (PostgreSQL localhost) · `neon` (Neon cloud, Londres) |
 | API REST | Django REST Framework (adoption partielle — pas de viewsets/routers) |
 | Authentification | django-allauth (Google OAuth + email/mot de passe) |
 | Thème admin | django-unfold (inactif — remplacé par le panneau de contrôle) |
@@ -678,6 +697,24 @@ Créer un fichier `.env` dans `FIDPHA/` (même dossier que `manage.py`) :
 ```
 SECRET_KEY=votre-secret-key
 DEBUG=True
+
+# Base de données : sqlite | local | neon
+DB_BACKEND=sqlite
+
+# PostgreSQL local (utilisé quand DB_BACKEND=local)
+LOCAL_DB_NAME=wininpharma_db
+LOCAL_DB_USER=votre_utilisateur_pg
+LOCAL_DB_PASSWORD=votre_mot_de_passe_pg
+LOCAL_DB_HOST=localhost
+LOCAL_DB_PORT=5432
+
+# Neon cloud PostgreSQL (utilisé quand DB_BACKEND=neon)
+NEON_DB_NAME=neondb
+NEON_DB_USER=neondb_owner
+NEON_DB_PASSWORD=votre_mot_de_passe_neon
+NEON_DB_HOST=votre-projet.eu-west-2.aws.neon.tech
+NEON_DB_PORT=5432
+
 EMAIL_HOST_USER=votre@gmail.com
 EMAIL_HOST_PASSWORD=votre-mot-de-passe-application
 DEFAULT_FROM_EMAIL=WinInPharma <votre@gmail.com>
@@ -944,6 +981,7 @@ Les permissions du staff sont gérées via les groupes Django (appelés "Rôles"
 | `develop` | Développement backend actif |
 | `feature/react-ui` | SPA React (en pause — non mergée sur main) |
 | `feature/improvements` | Polish UI, améliorations SystemConfig, agent code-reviewer |
+| `feature/postgres-migration` | Backend PostgreSQL + Neon cloud (non mergée pour l'instant) |
 
 ### 10.2 Merger sur Main (via GitHub PR)
 

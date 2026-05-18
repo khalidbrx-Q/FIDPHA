@@ -102,12 +102,40 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "FIDPHA001.wsgi.application"
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# DB_BACKEND controls which database is used: sqlite | local | neon
+DB_BACKEND = config('DB_BACKEND', default='sqlite')
+
+if DB_BACKEND == 'local':
+    DATABASES = {
+        'default': {
+            'ENGINE':   'django.db.backends.postgresql',
+            'NAME':     config('LOCAL_DB_NAME'),
+            'USER':     config('LOCAL_DB_USER'),
+            'PASSWORD': config('LOCAL_DB_PASSWORD'),
+            'HOST':     config('LOCAL_DB_HOST', default='localhost'),
+            'PORT':     config('LOCAL_DB_PORT', default='5432'),
+            'OPTIONS':  {'sslmode': 'prefer'},
+        }
     }
-}
+elif DB_BACKEND == 'neon':
+    DATABASES = {
+        'default': {
+            'ENGINE':   'django.db.backends.postgresql',
+            'NAME':     config('NEON_DB_NAME'),
+            'USER':     config('NEON_DB_USER'),
+            'PASSWORD': config('NEON_DB_PASSWORD'),
+            'HOST':     config('NEON_DB_HOST'),
+            'PORT':     config('NEON_DB_PORT', default='5432'),
+            'OPTIONS':  {'sslmode': 'require'},
+        }
+    }
+else:  # sqlite (default)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME':   BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
