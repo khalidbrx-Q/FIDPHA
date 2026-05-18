@@ -12,6 +12,7 @@ from fidpha.admin_api import (
     available_products_api,
     add_contract_product_api,
 )
+from FIDPHA001.health import health
 
 def handler403(request, exception=None):
     return redirect("/control/")
@@ -24,6 +25,9 @@ handler403 = handler403
 
 
 urlpatterns = [
+    # Health check — load balancers, uptime monitors. Unauthenticated by design.
+    path("health/", health, name="health"),
+
     path("admin/login/", RedirectView.as_view(url="/portal/login/")),
     path("admin/logout/", fidpha_views.custom_logout),
     path("admin/welcome/", fidpha_views.admin_welcome),

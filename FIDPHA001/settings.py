@@ -9,6 +9,33 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-84==t^=mjl&51p8p)x)w%
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
+# ---------------------------------------------------------------------------
+# Sentry — initialized as early as possible so it captures errors raised
+# during the rest of settings.py loading (e.g. broken DB config, missing
+# secrets). When SENTRY_DSN is empty, Sentry is silently disabled.
+# ---------------------------------------------------------------------------
+_SENTRY_DSN = config('SENTRY_DSN', default='')
+if _SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=_SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        # Performance tracing: 100% in dev (cheap, low traffic),
+        # 10% in production (sample to control event volume + cost).
+        traces_sample_rate=1.0 if DEBUG else 0.1,
+        # Code profiling: find slow code paths. Same sampling rule.
+        profiles_sample_rate=1.0 if DEBUG else 0.1,
+        # GDPR-safe: no PII (cookies, IPs, user data) sent by default.
+        # Override per-event with sentry_sdk.set_user(...) when needed.
+        send_default_pii=False,
+        # Tag every event so we can filter dev vs staging vs production.
+        environment=config('SENTRY_ENVIRONMENT', default='dev' if DEBUG else 'production'),
+        # Optional: release version (set by CI/CD via git SHA).
+        release=config('SENTRY_RELEASE', default=None),
+    )
+
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*,khalidbrx.pythonanywhere.com', cast=Csv())
 
 INSTALLED_APPS = [
@@ -37,6 +64,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # WhiteNoise must come right after SecurityMiddleware. It serves
+    # static files efficiently in production (compressed + cached),
+    # eliminating the need for a separate web server like Nginx.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -144,6 +175,139 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# ---------------------------------------------------------------------------
+# Cache + Sessions
+# When REDIS_URL is set: shared Redis cache (works across Gunicorn workers
+# and multiple server instances) + cached-DB sessions (fast reads from
+# Redis, durable writes to DB — survives Redis outages).
+# When REDIS_URL is empty: fall back to local in-memory cache + DB sessions.
+# Local fallback is safe for single-process dev but won't share state.
+# ---------------------------------------------------------------------------
+REDIS_URL = config('REDIS_URL', default='')
+
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                # If Redis is unreachable, raise the connection error instead
+                # of silently swallowing it (better for catching outages).
+                "IGNORE_EXCEPTIONS": False,
+            },
+            "KEY_PREFIX": "wininpharma",
+            "TIMEOUT": 300,  # default 5min; override per cache.set() call.
+        }
+    }
+    # cached_db: read from cache (fast), write to both cache + DB (durable).
+    # If Redis fails, falls back to DB only — no session loss.
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+    SESSION_CACHE_ALIAS = "default"
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+    # Leave SESSION_ENGINE at Django's default ("db") — safe for local dev.
+
+# ---------------------------------------------------------------------------
+# Logging
+# In DEBUG: human-readable lines to console (easy to scan during dev).
+# In prod : structured JSON to stdout (queryable by Sentry / Better Stack).
+# Application code uses logging.getLogger("wininpharma.<area>") e.g.
+#   logger = logging.getLogger("wininpharma.api")
+#   logger.info("Batch accepted", extra={"batch_id": ..., "rows": ...})
+# ---------------------------------------------------------------------------
+import os as _os
+LOG_LEVEL = _os.environ.get("LOG_LEVEL", "INFO").upper()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": "pythonjsonlogger.json.JsonFormatter",
+            "fmt": "%(asctime)s %(name)s %(levelname)s %(message)s %(pathname)s %(funcName)s %(lineno)d",
+            "rename_fields": {
+                "asctime": "time",
+                "levelname": "level",
+                "name": "logger",
+            },
+        },
+        "verbose": {
+            "format": "[{asctime}] {levelname:8} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose" if DEBUG else "json",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": LOG_LEVEL,
+    },
+    "loggers": {
+        # Django framework — silence the chatter, keep INFO and above.
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # 4xx/5xx HTTP errors — surface them clearly.
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # Our application namespace. All app code does
+        # logging.getLogger("wininpharma.<area>") to land here.
+        "wininpharma": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+}
+
+# ---------------------------------------------------------------------------
+# Security headers
+# These tell browsers to enforce safety policies. HTTPS-related headers are
+# gated on `not DEBUG` so local HTTP dev still works unchanged.
+# CSP (Content-Security-Policy) is intentionally deferred until after the
+# React migration, since current templates use inline <script> blocks.
+# ---------------------------------------------------------------------------
+
+# Browser respects our Content-Type header — prevents MIME-sniffing attacks
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Enable browser's legacy XSS filter (defense in depth, low cost)
+SECURE_BROWSER_XSS_FILTER = True
+
+# Don't leak full URL as referrer to other origins
+SECURE_REFERRER_POLICY = "same-origin"
+
+# Block embedding in iframes — prevents clickjacking
+X_FRAME_OPTIONS = "DENY"
+
+# HTTPS-only settings — applied only in production (DEBUG=False)
+if not DEBUG:
+    # Redirect any HTTP request to HTTPS
+    SECURE_SSL_REDIRECT = True
+    # Tell browsers "use HTTPS only" for 1 year (with subdomains, preload-ready)
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    # Trust X-Forwarded-Proto header from reverse proxy (Railway, Render, Nginx)
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # Cookies only sent over HTTPS
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 LANGUAGE_CODE = "en"
 LANGUAGES = [
     ("en", "English"),
@@ -157,6 +321,19 @@ USE_I18N = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Static file storage — WhiteNoise's compressed + manifest backend.
+# - Generates gzip/brotli versions of every CSS/JS file at collectstatic time.
+# - Adds a content hash to filenames (e.g. portal.abc123.css) for unbreakable caching.
+# - In DEBUG mode, falls back to standard Django dev behavior automatically.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
