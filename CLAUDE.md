@@ -109,6 +109,7 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
 | `feature/postgres-migration` | PostgreSQL + Neon DB backend (not merged into develop yet) |
 | `feature/production-hardening` | Phase 1 production infra: security headers, Gunicorn/WhiteNoise, JSON logging, /health/, Sentry, Redis (Upstash), Doppler — not merged into develop yet |
+| `feature/deployment-automation` | Phase 2 in progress: Dockerfile + .dockerignore done (2.1). GitHub Actions CI + hosting + staging still pending. |
 | `integration` | Long-running integration branch — safe merge zone for combining feature branches before they reach develop. Local-only deploys (no auto-deploy). |
 
 - Never merge `feature/react-ui` into `develop` or `main` without explicit approval.
@@ -160,6 +161,8 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | Cache/Redis config | `FIDPHA001/settings.py` `CACHES` dict (env: `REDIS_URL`) |
 | Logging config | `FIDPHA001/settings.py` `LOGGING` dict; loggers under `wininpharma.*` |
 | Gunicorn config | `gunicorn.conf.py` (workers, timeouts, logging) |
+| Dockerfile | `Dockerfile` (multi-stage: builder + runtime, non-root `app` user, HEALTHCHECK on /health/) |
+| Docker ignore list | `.dockerignore` (excludes secrets, .venv, frontend, db.sqlite3, etc.) |
 
 ---
 
@@ -184,6 +187,15 @@ pytest ../tests-suite/e2e/          # e2e only (needs Playwright browsers)
 
 # Observability
 curl http://localhost:8000/health/  # health probe (db + cache + migrations)
+
+# Docker (production-equivalent local runs)
+docker build -t wininpharma:latest .                                  # build the image
+docker run -p 8000:8000 --env-file .env --name wininpharma-dev wininpharma:latest    # run with .env
+doppler run --mount secrets.env --mount-format docker -- \
+    docker run -p 8000:8000 --env-file secrets.env --name wininpharma-dev wininpharma:latest    # run with Doppler secrets
+docker ps                            # see (healthy)/(unhealthy) status
+docker logs wininpharma-dev          # container logs
+docker exec -it wininpharma-dev /bin/bash   # shell inside the container
 ```
 
 ---

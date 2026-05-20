@@ -93,7 +93,8 @@ The platform has three user-facing layers:
 | Logging | Structured JSON in production (`python-json-logger`), verbose plain-text in DEBUG; `wininpharma.*` namespace |
 | Secrets | Dual-mode: **Doppler** cloud vault (`doppler run -- <cmd>`) or local `.env` — both work |
 | Health probe | `GET /health/` — db + cache + migrations check |
-| Deployment | PythonAnywhere + GitHub (PR-based workflow) |
+| Containerization | **Dockerfile** + `.dockerignore` (multi-stage build, ~150 MB runtime image, non-root user, HEALTHCHECK on `/health/`) — on `feature/deployment-automation` |
+| Deployment | PythonAnywhere + GitHub (PR-based workflow); future: Railway via Docker image |
 | React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (in progress, `feature/react-ui`) |
 
 ---
@@ -445,6 +446,7 @@ Staff permissions are managed through Django Groups (called "Roles" in the contr
 | `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
 | `feature/postgres-migration` | PostgreSQL + Neon cloud DB backend (not merged yet) |
 | `feature/production-hardening` | Production infra: security headers, Gunicorn/WhiteNoise, JSON logging, /health/, Sentry, Redis (Upstash), Doppler (not merged yet) |
+| `feature/deployment-automation` | Phase 2 in progress: Dockerfile + .dockerignore done (2.1); GitHub Actions CI, Railway deploy, staging env still to do |
 | `integration` | Long-running integration branch — safe merge zone before develop |
 
 ### 10.2 Merging to Main (via GitHub PR)
@@ -690,7 +692,8 @@ La plateforme comporte trois couches orientées utilisateur :
 | Logs | JSON structurés en prod (`python-json-logger`), plain-text verbose en DEBUG ; namespace `wininpharma.*` |
 | Secrets | Double mode : **Doppler** cloud (`doppler run -- <cmd>`) ou `.env` local — les deux fonctionnent |
 | Health probe | `GET /health/` — vérifie db + cache + migrations |
-| Déploiement | PythonAnywhere + GitHub (workflow par PR) |
+| Conteneurisation | **Dockerfile** + `.dockerignore` (build multi-stage, image runtime ~150 MB, utilisateur non-root, HEALTHCHECK sur `/health/`) — sur `feature/deployment-automation` |
+| Déploiement | PythonAnywhere + GitHub (workflow par PR) ; futur : Railway via image Docker |
 | React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (en cours, `feature/react-ui`) |
 
 ---
@@ -1025,6 +1028,7 @@ Les permissions du staff sont gérées via les groupes Django (appelés "Rôles"
 | `feature/improvements` | Polish UI, améliorations SystemConfig, agent code-reviewer |
 | `feature/postgres-migration` | Backend PostgreSQL + Neon cloud (non mergée pour l'instant) |
 | `feature/production-hardening` | Infrastructure production : security headers, Gunicorn/WhiteNoise, logs JSON, /health/, Sentry, Redis (Upstash), Doppler (non mergée pour l'instant) |
+| `feature/deployment-automation` | Phase 2 en cours : Dockerfile + .dockerignore terminés (2.1) ; GitHub Actions CI, déploiement Railway, env de staging restants |
 | `integration` | Branche d'intégration long-running — zone de merge sûre avant develop |
 
 ### 10.2 Merger sur Main (via GitHub PR)
