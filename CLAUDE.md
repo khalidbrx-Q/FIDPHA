@@ -163,6 +163,7 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | Gunicorn config | `gunicorn.conf.py` (workers, timeouts, logging) |
 | Dockerfile | `Dockerfile` (multi-stage: builder + runtime, non-root `app` user, HEALTHCHECK on /health/) |
 | Docker ignore list | `.dockerignore` (excludes secrets, .venv, frontend, db.sqlite3, etc.) |
+| Docker Compose | `docker-compose.yml` (web service builds from Dockerfile + reads .env; optional commented postgres/redis for full offline mode) |
 
 ---
 
@@ -196,6 +197,14 @@ doppler run --mount secrets.env --mount-format docker -- \
 docker ps                            # see (healthy)/(unhealthy) status
 docker logs wininpharma-dev          # container logs
 docker exec -it wininpharma-dev /bin/bash   # shell inside the container
+
+# Docker Compose (preferred — shorter commands, same result)
+docker compose up                    # build + start (foreground)
+docker compose up -d                 # start detached
+docker compose down                  # stop + remove
+docker compose logs -f web           # tail web service logs
+docker compose exec web bash         # shell in web container
+docker compose ps                    # service-name-based status
 ```
 
 ---

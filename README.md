@@ -93,7 +93,7 @@ The platform has three user-facing layers:
 | Logging | Structured JSON in production (`python-json-logger`), verbose plain-text in DEBUG; `wininpharma.*` namespace |
 | Secrets | Dual-mode: **Doppler** cloud vault (`doppler run -- <cmd>`) or local `.env` — both work |
 | Health probe | `GET /health/` — db + cache + migrations check |
-| Containerization | **Dockerfile** + `.dockerignore` (multi-stage build, ~150 MB runtime image, non-root user, HEALTHCHECK on `/health/`) — on `feature/deployment-automation` |
+| Containerization | **Dockerfile** + `.dockerignore` + **docker-compose.yml** (multi-stage build, ~150 MB runtime image, non-root user, HEALTHCHECK on `/health/`; compose for local dev with optional commented-out postgres/redis) — on `feature/deployment-automation` |
 | Deployment | PythonAnywhere + GitHub (PR-based workflow); future: Railway via Docker image |
 | React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (in progress, `feature/react-ui`) |
 
@@ -692,7 +692,7 @@ La plateforme comporte trois couches orientées utilisateur :
 | Logs | JSON structurés en prod (`python-json-logger`), plain-text verbose en DEBUG ; namespace `wininpharma.*` |
 | Secrets | Double mode : **Doppler** cloud (`doppler run -- <cmd>`) ou `.env` local — les deux fonctionnent |
 | Health probe | `GET /health/` — vérifie db + cache + migrations |
-| Conteneurisation | **Dockerfile** + `.dockerignore` (build multi-stage, image runtime ~150 MB, utilisateur non-root, HEALTHCHECK sur `/health/`) — sur `feature/deployment-automation` |
+| Conteneurisation | **Dockerfile** + `.dockerignore` + **docker-compose.yml** (build multi-stage, image runtime ~150 MB, utilisateur non-root, HEALTHCHECK sur `/health/` ; compose pour dev local avec postgres/redis optionnels commentés) — sur `feature/deployment-automation` |
 | Déploiement | PythonAnywhere + GitHub (workflow par PR) ; futur : Railway via image Docker |
 | React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (en cours, `feature/react-ui`) |
 
