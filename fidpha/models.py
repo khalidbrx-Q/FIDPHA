@@ -174,9 +174,12 @@ class Contract(TraceableMixin, models.Model):
         years, rem = divmod(days, 365)
         months, d  = divmod(rem, 30)
         parts = []
-        if years:  parts.append(f"{years} year{'s' if years > 1 else ''}")
-        if months: parts.append(f"{months} month{'s' if months > 1 else ''}")
-        if d:      parts.append(f"{d} day{'s' if d > 1 else ''}")
+        if years:
+            parts.append(f"{years} year{'s' if years > 1 else ''}")
+        if months:
+            parts.append(f"{months} month{'s' if months > 1 else ''}")
+        if d:
+            parts.append(f"{d} day{'s' if d > 1 else ''}")
         return ", ".join(parts[:2])  # cap at 2 units for compactness
 
     def __str__(self):

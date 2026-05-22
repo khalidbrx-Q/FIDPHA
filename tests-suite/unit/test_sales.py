@@ -17,7 +17,6 @@ Author: FIDPHA Dev Team
 Last updated: April 2026
 """
 
-import unittest
 from datetime import timedelta
 
 from django.test import TestCase
@@ -285,7 +284,7 @@ class SubmitSalesBatchTests(TestCase):
 
     def test_duplicate_rows_in_batch_create_one_sale(self):
         row = make_row()
-        result = self._submit(rows=[row, row])
+        self._submit(rows=[row, row])
         self.assertEqual(Sale.objects.count(), 1)
         self.assertEqual(SaleImport.objects.count(), 2)
 
@@ -300,7 +299,8 @@ class SubmitSalesBatchTests(TestCase):
     # ── Inactive account raises AccountNotFoundError (D3) ──
 
     def test_raises_account_not_found_for_inactive_account(self):
-        inactive_account = make_account(code="PH-INACTIVE", status=STATUS_INACTIVE)
+        # Create the inactive account so the lookup can find it and reject it.
+        make_account(code="PH-INACTIVE", status=STATUS_INACTIVE)
         with self.assertRaises(AccountNotFoundError):
             self._submit(account_code="PH-INACTIVE")
 

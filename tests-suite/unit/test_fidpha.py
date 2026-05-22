@@ -192,7 +192,8 @@ class GetActiveContractServiceTests(TestCase):
 
     def test_raises_contract_not_found_when_account_has_no_contracts(self):
         """An account with zero contracts must raise ContractNotFoundError."""
-        empty_account = make_account(code="PH-002")
+        # Create the account so the lookup can find it but with no contracts.
+        make_account(code="PH-002")
 
         with self.assertRaises(ContractNotFoundError):
             get_active_contract("PH-002")
@@ -211,10 +212,10 @@ class GetActiveContractServiceTests(TestCase):
         This guards against a regression where status filtering is removed.
         """
         account = make_account(code="PH-004")
-        inactive_contract = make_contract(account, status=STATUS_INACTIVE)
+        make_contract(account, status=STATUS_INACTIVE)
 
         with self.assertRaises(ContractNotFoundError):
-            result = get_active_contract("PH-004")
+            get_active_contract("PH-004")
 
 
 # ---------------------------------------------------------------------------

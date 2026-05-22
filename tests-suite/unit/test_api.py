@@ -206,7 +206,6 @@ class ActiveContractViewTests(TestCase):
         self.assertEqual(data["contract"]["account_code"], "PH-001")
 
     def test_contract_dates_formatted_as_yyyy_mm_dd(self):
-        import re
         data = self.auth_client.get(self.API_URL, {"account_code": "PH-001"}).json()
         pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
         self.assertRegex(data["contract"]["start_date"], pattern)
@@ -566,8 +565,8 @@ class SalesSubmitViewTests(TestCase):
 
     def test_product_in_db_but_not_in_contract_is_rejected(self):
         """A product that exists globally but isn't linked to this contract must be rejected."""
-        other_product = make_product(code="PROD-OTHER", designation="Amoxicilline")
-        # other_product is NOT linked to self.contract
+        # Create the product but don't link it to self.contract — that's the test condition.
+        make_product(code="PROD-OTHER", designation="Amoxicilline")
         data = self._post(self._valid_payload(rows=[make_sale_row("PROD-OTHER")])).json()
         self.assertEqual(data["rejected"], 1)
 

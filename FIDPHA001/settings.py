@@ -220,8 +220,7 @@ else:
 #   logger = logging.getLogger("wininpharma.api")
 #   logger.info("Batch accepted", extra={"batch_id": ..., "rows": ...})
 # ---------------------------------------------------------------------------
-import os as _os
-LOG_LEVEL = _os.environ.get("LOG_LEVEL", "INFO").upper()
+LOG_LEVEL = config("LOG_LEVEL", default="INFO").upper()
 
 LOGGING = {
     "version": 1,

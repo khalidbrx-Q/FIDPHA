@@ -24,9 +24,8 @@ import json
 
 from django.http import JsonResponse, HttpRequest
 
-from fidpha.models import Contract, Contract_Product
+from fidpha.models import Contract
 from fidpha.services import (
-    STATUS_ACTIVE,
     STATUS_INACTIVE,
     get_available_products_for_contract,
     get_active_contracts_for_product,

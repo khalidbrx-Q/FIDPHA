@@ -14,12 +14,9 @@ from datetime import timedelta
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from api.models import APIToken
-from control.models import SystemConfig
 from fidpha.models import Account, Contract, Contract_Product, Product, UserProfile
 from fidpha.services import STATUS_ACTIVE
 from sales.models import Sale, SaleImport
-from sales.services import submit_sales_batch
 
 
 # ---------------------------------------------------------------------------
