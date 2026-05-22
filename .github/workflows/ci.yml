@@ -26,6 +26,10 @@ concurrency:
 # while still loading enough config for the test DB / cache to work.
 env:
   PYTHON_VERSION: "3.12"
+  # Tells settings.py to skip the production HTTPS-redirect block even
+  # though DEBUG=False. The Django test client + Playwright live_server
+  # both speak plain HTTP — without this, every request gets 301'd.
+  CI: "True"
   # Django settings:
   SECRET_KEY: "ci-dummy-secret-key-not-used-in-prod"
   DEBUG: "False"
