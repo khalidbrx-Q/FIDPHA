@@ -6,6 +6,8 @@
 
 # WinInPharma — Pharmacy Loyalty Platform
 
+[![CI](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml/badge.svg)](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml)
+
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
@@ -605,6 +607,8 @@ FIDPHA/                             ← git root (manage.py is here)
 <a name="français"></a>
 
 # WinInPharma — Plateforme de Fidélisation des Pharmacies
+
+[![CI](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml/badge.svg)](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml)
 
 ## Table des Matières
 
