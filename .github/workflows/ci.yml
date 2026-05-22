@@ -118,6 +118,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt -r requirements-dev.txt
 
+      - name: Collect static files
+        # WhiteNoise's CompressedManifestStaticFilesStorage reads
+        # staticfiles/staticfiles.json — without this step, any template
+        # using {% static '...' %} 500s under DEBUG=False.
+        run: python manage.py collectstatic --noinput --clear
+
       - name: Sanity-check Django config
         run: python manage.py check --deploy --fail-level WARNING || true
         # `|| true` keeps this step informational — we don't fail on
@@ -171,6 +177,12 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Collect static files
+        # WhiteNoise's CompressedManifestStaticFilesStorage reads
+        # staticfiles/staticfiles.json — without this step, any template
+        # using {% static '...' %} 500s under DEBUG=False.
+        run: python manage.py collectstatic --noinput --clear
 
       # Cache the Playwright browsers — saves ~90s per run after the first.
       - name: Cache Playwright browsers
