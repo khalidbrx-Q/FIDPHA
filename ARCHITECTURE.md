@@ -492,37 +492,42 @@ After Phase 1, `manage.py check --deploy` with `DEBUG=False` drops from **6 secu
 
 ## 13. Testing
 
-### Test suite location (relocated 2026-05-17)
+### Test suite location
 
-All tests live **outside the Django repo** at `../tests-suite/` to be passively excluded from production deploys without needing `.gitignore` entries. Layout:
+Tests live inside the Django repo at `tests-suite/`. Layout:
 
 ```
-tests-suite/                  ← outside the git root
-├── conftest.py               ← shared setup (DJANGO_ALLOW_ASYNC_UNSAFE for Playwright)
-├── unit/
-│   ├── __init__.py
-│   ├── test_api.py           ← extracted from feature/react-api
-│   ├── test_fidpha.py
-│   └── test_sales.py
-└── e2e/
-    ├── __init__.py
-    ├── conftest.py           ← Playwright + base_data fixtures
-    └── test_*.py             ← 8 files
+FIDPHA001/                    ← Django repo root
+├── manage.py
+├── pytest.ini                ← testpaths = tests-suite
+└── tests-suite/
+    ├── conftest.py           ← shared setup (DJANGO_ALLOW_ASYNC_UNSAFE for Playwright,
+    │                            autouse SystemConfig + cache reset per test)
+    ├── unit/
+    │   ├── __init__.py
+    │   ├── test_api.py
+    │   ├── test_control.py
+    │   ├── test_fidpha.py
+    │   └── test_sales.py
+    └── e2e/
+        ├── __init__.py
+        ├── conftest.py       ← Playwright + base_data fixtures
+        └── test_*.py         ← 8 files
 ```
 
-`pytest.ini` (inside the repo) points `testpaths = ../tests-suite` and sets `DJANGO_SETTINGS_MODULE = FIDPHA001.settings`. Pytest finds tests external to the repo while Django still resolves settings normally.
+> The suite was relocated outside the repo on 2026-05-17 to keep production deploys lean, then moved back on 2026-05-22 ahead of Phase 2.2 (GitHub Actions CI) so CI checkouts include it. Space saving wasn't worth the dual-repo coordination cost.
 
 ### Unit Tests
-- ~265 tests collected from `../tests-suite/unit/`.
-- Run: `pytest --ignore=../tests-suite/e2e` (from inside the repo)
-- **Known divergence:** tests were authored against `feature/react-api` code and assume views/serializers that don't exist on `develop` yet. On `develop`: 186 fail / 10 pass / 47 skip. This is **not a regression** — it's the test/feature merge gap. Will be resolved when `feature/react-api` lands on `develop`.
-- The 10 passing + 47 skipped + the test collector running cleanly are the canary signals — if those numbers change after a hardening commit, the change broke something.
+- ~197 active tests collected from `tests-suite/unit/`.
+- Run: `pytest --ignore=tests-suite/e2e` (from inside the repo)
+- Current baseline (verified 2026-05-21 on Neon Postgres): **197 passed / 1 skipped / 0 failed**.
+- The 1 skipped test is `test_same_contract_two_concurrent_batches` — deferred because the test's "both batches succeed" assertion conflicts with the strictly-after `last_sale_datetime` rule when thread ordering reverses. Production behavior is correct; the test needs a rewrite.
 
 ### E2E Tests (Playwright)
-- **Status: Done** — 22 tests across 8 files, all passing on `feature/react-api`.
-- Framework: `pytest-playwright` + `pytest-django`. Lives at `../tests-suite/e2e/`.
-- `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `../tests-suite/conftest.py` (required for Playwright + Django live server).
-- Run: `pytest ../tests-suite/e2e/` (from inside the repo)
+- **Status: Done** — 22 tests across 8 files, all passing on Neon Postgres + Chromium.
+- Framework: `pytest-playwright` + `pytest-django`. Lives at `tests-suite/e2e/`.
+- `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `tests-suite/conftest.py` (required for Playwright + Django live server).
+- Run: `pytest tests-suite/e2e/` (from inside the repo)
 
 | File | Tests | What's covered |
 |---|---|---|

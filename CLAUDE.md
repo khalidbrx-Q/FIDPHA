@@ -153,8 +153,8 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | API token auth | `api/authentication.py` |
 | Control decorators | `control/decorators.py` |
 | Global config | `control/models.py` `SystemConfig.get()` |
-| E2E tests | `../tests-suite/e2e/` — 22 tests, 8 files (outside repo) |
-| Unit tests | `../tests-suite/unit/` — `test_api.py`, `test_fidpha.py`, `test_sales.py` (~265 tests; outside repo) |
+| E2E tests | `tests-suite/e2e/` — 22 tests, 8 files |
+| Unit tests | `tests-suite/unit/` — `test_api.py`, `test_fidpha.py`, `test_sales.py`, `test_control.py` (~197 tests) |
 | Code reviewer agent | `.claude/agents/code-reviewer.md` (outer `FIDPHA001/` folder) |
 | Health endpoint | `FIDPHA001/health.py` → `GET /health/` (db + cache + migrations probes) |
 | Sentry init | `FIDPHA001/settings.py` (env: `SENTRY_DSN`) |
@@ -181,10 +181,10 @@ python manage.py collectstatic      # collect static files (WhiteNoise compresse
 # Production server (Linux/container only — gunicorn doesn't run natively on Windows)
 gunicorn FIDPHA001.wsgi:application -c gunicorn.conf.py
 
-# Tests (live in ../tests-suite/ — outside the repo)
-pytest                              # all tests (pytest.ini points to ../tests-suite/)
-pytest --ignore=../tests-suite/e2e  # unit tests only
-pytest ../tests-suite/e2e/          # e2e only (needs Playwright browsers)
+# Tests (live in tests-suite/ inside the repo)
+pytest                              # all tests (pytest.ini points to tests-suite/)
+pytest --ignore=tests-suite/e2e     # unit tests only
+pytest tests-suite/e2e/             # e2e only (needs Playwright browsers)
 
 # Observability
 curl http://localhost:8000/health/  # health probe (db + cache + migrations)

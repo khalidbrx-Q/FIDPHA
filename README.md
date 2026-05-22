@@ -43,7 +43,7 @@ Pharmacies submit their daily sales data via an API. Each sale is validated agai
 | French i18n | Portal available in French (EN/FR toggle) |
 | Audit trail | Every staff action logged via Django LogEntry; visible on control panel dashboard |
 | CSV / Excel import | Bulk product import and contract product import via file upload |
-| Automated testing | 313 unit tests + 22 Playwright E2E tests covering all major flows |
+| Automated testing | ~197 unit tests + 22 Playwright E2E tests covering all major flows |
 
 ---
 
@@ -173,12 +173,12 @@ python manage.py runserver
 
 **Run tests:**
 
-Tests live **outside the repo** at `../tests-suite/` (passively excluded from production deploys). `pytest.ini` inside the repo points to that location.
+Tests live inside the repo at `tests-suite/`. `pytest.ini` points there.
 
 ```bash
 pytest                                          # all tests (unit + e2e)
-pytest --ignore=../tests-suite/e2e              # unit tests only (~265)
-pytest ../tests-suite/e2e/                      # e2e only (22 Playwright tests, needs browser)
+pytest --ignore=tests-suite/e2e                 # unit tests only (~197)
+pytest tests-suite/e2e/                         # e2e only (22 Playwright tests, needs browser)
 ```
 
 Visit `http://127.0.0.1:8000` — you will be redirected to `/portal/login/`.
@@ -579,8 +579,9 @@ FIDPHA/                             ← git root (manage.py is here)
 ├── templates/
 │   ├── registration/               ← password reset templates
 │   └── react/                      ← SPA shell templates (index.html, staff_index.html)
-├── tests/
-│   └── e2e/                        ← 22 Playwright E2E tests (pytest tests/e2e/ -v, local only)
+├── tests-suite/                    ← all tests live here
+│   ├── unit/                       ← ~197 unit tests
+│   └── e2e/                        ← 22 Playwright E2E tests (pytest tests-suite/e2e/ -v)
 └── frontend/                       ← React SPA (feature/react-ui branch only)
     ├── src/
     │   ├── api/client.js           ← fetch wrapper (session + CSRF)
@@ -642,7 +643,7 @@ Les pharmacies soumettent leurs ventes quotidiennes via une API. Chaque vente es
 | i18n Français | Portail disponible en français (bascule FR/EN) |
 | Piste d'audit | Chaque action staff enregistrée via Django LogEntry ; visible sur le tableau de bord |
 | Import CSV / Excel | Import en masse de produits et de produits de contrats par fichier |
-| Tests automatisés | 313 tests unitaires + 22 tests E2E Playwright couvrant tous les flux principaux |
+| Tests automatisés | ~197 tests unitaires + 22 tests E2E Playwright couvrant tous les flux principaux |
 
 ---
 
@@ -772,12 +773,12 @@ python manage.py runserver
 
 **Lancer les tests :**
 
-Les tests vivent **hors du repo** dans `../tests-suite/` (exclus passivement des déploiements prod). Le `pytest.ini` du repo pointe vers cet emplacement.
+Les tests vivent dans le repo à `tests-suite/`. Le `pytest.ini` pointe vers cet emplacement.
 
 ```bash
 pytest                                          # tous les tests (unit + e2e)
-pytest --ignore=../tests-suite/e2e              # tests unitaires uniquement (~265)
-pytest ../tests-suite/e2e/                      # e2e uniquement (22 tests Playwright, nécessite navigateur)
+pytest --ignore=tests-suite/e2e                 # tests unitaires uniquement (~197)
+pytest tests-suite/e2e/                         # e2e uniquement (22 tests Playwright, nécessite navigateur)
 ```
 
 Visitez `http://127.0.0.1:8000` — vous serez redirigé vers `/portal/login/`.
@@ -1161,8 +1162,9 @@ FIDPHA/                             ← racine git (manage.py est ici)
 ├── templates/
 │   ├── registration/               ← templates réinitialisation mot de passe
 │   └── react/                      ← templates shell SPA (index.html, staff_index.html)
-├── tests/
-│   └── e2e/                        ← 22 tests E2E Playwright (pytest tests/e2e/ -v, local uniquement)
+├── tests-suite/                    ← tous les tests vivent ici
+│   ├── unit/                       ← ~197 tests unitaires
+│   └── e2e/                        ← 22 tests E2E Playwright (pytest tests-suite/e2e/ -v)
 └── frontend/                       ← SPA React (branche feature/react-ui uniquement)
     ├── src/
     │   ├── api/client.js           ← wrapper fetch (session + CSRF)
