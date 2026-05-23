@@ -21,7 +21,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator
-from django.db.models import Count, F, Q, Min, Max, Sum
+from django.db.models import Count, F, Q, Min, Max
 from django.db.models.functions import TruncDay, TruncHour
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -30,16 +30,20 @@ from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.sites.models import Site
 from allauth.socialaccount.models import SocialApp, SocialAccount, SocialToken
 
-from fidpha.models import Account, Contract, Contract_Product, Product, UserProfile, RoleProfile
+from fidpha.models import Account, Contract, Contract_Product, Product, RoleProfile
 from api.models import APIToken, APITokenUsageLog
 from sales.models import Sale, SaleImport
 from .decorators import staff_required, perm_required, superuser_required
+from .forms import RoleForm, UserForm, AccountForm, ContractForm, ContractProductForm, ContractProductFormSet, ProductForm, TokenForm, SocialAppForm, SiteForm
 from .models import SystemConfig
 
 
 def _export_response(rows, basename, fmt):
     """Build a CSV / XLSX / JSON download response from a list of rows (first row = headers)."""
-    import csv, io, json, zipfile
+    import csv
+    import io
+    import json
+    import zipfile
     from django.http import HttpResponse, StreamingHttpResponse
 
     headers = rows[0]
@@ -143,7 +147,6 @@ def _export_response(rows, basename, fmt):
         def write(self, value): return value
 
     writer = csv.writer(Echo())
-    from django.http import StreamingHttpResponse
     resp = StreamingHttpResponse(
         (writer.writerow(row) for row in rows),
         content_type="text/csv",
@@ -162,7 +165,6 @@ def _log(user, obj, flag, message=""):
         action_flag=flag,
         change_message=message,
     )
-from .forms import RoleForm, UserForm, AccountForm, ContractForm, ContractProductForm, ContractProductFormSet, ProductForm, TokenForm, SocialAppForm, SiteForm
 
 
 @staff_required
@@ -882,9 +884,12 @@ def _duration_str(start, end) -> str:
     years, rem = divmod(total_days, 365)
     months, days = divmod(rem, 30)
     parts = []
-    if years:  parts.append(f"{years} year{'s' if years > 1 else ''}")
-    if months: parts.append(f"{months} month{'s' if months > 1 else ''}")
-    if days:   parts.append(f"{days} day{'s' if days > 1 else ''}")
+    if years:
+        parts.append(f"{years} year{'s' if years > 1 else ''}")
+    if months:
+        parts.append(f"{months} month{'s' if months > 1 else ''}")
+    if days:
+        parts.append(f"{days} day{'s' if days > 1 else ''}")
     return ", ".join(parts)
 
 
@@ -1860,7 +1865,6 @@ def system_settings(request):
                 messages.success(request, _("System configuration updated."))
                 return redirect("control:system_settings")
             except Exception as e:
-                from django.core.exceptions import ValidationError
                 if hasattr(e, "message_dict"):
                     errors.update(e.message_dict)
                 else:

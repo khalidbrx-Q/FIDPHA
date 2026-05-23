@@ -1,8 +1,6 @@
-from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
-from django.shortcuts import redirect, render
-from django.contrib import messages
+from django.shortcuts import redirect
 from fidpha import views as fidpha_views
 from fidpha.views import CustomPasswordResetView, CustomPasswordResetConfirmView
 # These admin AJAX helpers live in admin_api.py, not admin.py —

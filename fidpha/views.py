@@ -45,7 +45,7 @@ def custom_login(request):
                     if not account.pharmacy_portal:
                         request.session["login_error"] = "Your account does not have portal access."
                         return redirect("/portal/login/")
-                except:
+                except UserProfile.DoesNotExist:
                     request.session["login_error"] = "Your account is not linked to any pharmacy."
                     return redirect("/portal/login/")
 
@@ -86,7 +86,7 @@ def setup_profile(request):
 
     try:
         profile = request.user.profile
-    except:
+    except UserProfile.DoesNotExist:
         return redirect("/portal/login/")
 
     if request.method == "POST":
@@ -142,7 +142,7 @@ def portal_profile(request):
 
     try:
         profile = request.user.profile
-    except:
+    except UserProfile.DoesNotExist:
         return redirect("/portal/login/")
 
     if request.method == "POST":
@@ -251,7 +251,7 @@ def verify_pending(request):
 
     try:
         profile = request.user.profile
-    except:
+    except UserProfile.DoesNotExist:
         return redirect("/portal/login/")
 
     if profile.email_verified:
@@ -305,7 +305,7 @@ def portal_dashboard(request):
 
     try:
         profile = request.user.profile
-    except:
+    except UserProfile.DoesNotExist:
         return redirect("/portal/login/")
 
     import json
@@ -498,8 +498,11 @@ def portal_dashboard(request):
         )}
         yr_pts   = [yr_pts_map.get(k, 0) for k in yr_keys]
         yr_units = [yr_units_map.get(k, 0) for k in yr_keys]
-        acc = cumul_carry; yr_cumul = []
-        for p in yr_pts: acc += p; yr_cumul.append(acc)
+        acc = cumul_carry
+        yr_cumul = []
+        for p in yr_pts:
+            acc += p
+            yr_cumul.append(acc)
         cumul_carry = acc  # carry this year's final total into the next year
 
         yr_products = [yr_products_map.get(k, 0) for k in yr_keys]
@@ -567,7 +570,7 @@ def portal_pharmacy(request):
         return redirect("/control/")
     try:
         profile = request.user.profile
-    except:
+    except UserProfile.DoesNotExist:
         return redirect("/portal/login/")
     return render(request, "fidpha/pharmacy.html", {
         "account": profile.account,
@@ -582,7 +585,7 @@ def portal_contracts(request):
 
     try:
         profile = request.user.profile
-    except:
+    except UserProfile.DoesNotExist:
         return redirect("/portal/login/")
 
     import json
@@ -697,8 +700,10 @@ def portal_contracts(request):
     if active_contract:
         start_d = active_contract.start_date
         end_d   = active_contract.end_date
-        if isinstance(start_d, datetime.datetime): start_d = start_d.date()
-        if isinstance(end_d,   datetime.datetime): end_d   = end_d.date()
+        if isinstance(start_d, datetime.datetime):
+            start_d = start_d.date()
+        if isinstance(end_d, datetime.datetime):
+            end_d = end_d.date()
         end_bound = end_d if end_d else now.date()
         month_dates = []
         cur    = datetime.datetime(start_d.year, start_d.month, 1, tzinfo=datetime.timezone.utc)
@@ -714,7 +719,9 @@ def portal_contracts(request):
         month_dates = []
         for i in range(11, -1, -1):
             m, y = now.month - i, now.year
-            while m <= 0: m += 12; y -= 1
+            while m <= 0:
+                m += 12
+                y -= 1
             month_dates.append(datetime.datetime(y, m, 1, tzinfo=datetime.timezone.utc))
         chart_period_label = "Last 12 months"
 
@@ -857,7 +864,8 @@ def portal_sales(request):
         m = now.month - i
         y = now.year
         while m <= 0:
-            m += 12; y -= 1
+            m += 12
+            y -= 1
         month_dates.append(datetime.datetime(y, m, 1, tzinfo=datetime.timezone.utc))
 
     monthly_qs = (
@@ -870,12 +878,17 @@ def portal_sales(request):
         .annotate(cnt=Count("id"))
         .order_by("month")
     )
-    m_acc = defaultdict(int); m_rej = defaultdict(int); m_pend = defaultdict(int)
+    m_acc = defaultdict(int)
+    m_rej = defaultdict(int)
+    m_pend = defaultdict(int)
     for r in monthly_qs:
         mk = r["month"].strftime("%Y-%m")
-        if r["status"] == Sale.STATUS_ACCEPTED: m_acc[mk] += r["cnt"]
-        elif r["status"] == Sale.STATUS_REJECTED:         m_rej[mk] += r["cnt"]
-        else:                                   m_pend[mk] += r["cnt"]
+        if r["status"] == Sale.STATUS_ACCEPTED:
+            m_acc[mk] += r["cnt"]
+        elif r["status"] == Sale.STATUS_REJECTED:
+            m_rej[mk] += r["cnt"]
+        else:
+            m_pend[mk] += r["cnt"]
 
     sales_month_keys     = [d.strftime("%Y-%m") for d in month_dates]
     sales_month_labels   = [d.strftime("%b %Y") for d in month_dates]
@@ -904,12 +917,17 @@ def portal_sales(request):
             .annotate(cnt=Count("id"))
             .order_by("month")
         )
-        ya = defaultdict(int); yr_rej = defaultdict(int); yp = defaultdict(int)
+        ya = defaultdict(int)
+        yr_rej = defaultdict(int)
+        yp = defaultdict(int)
         for r in yr_qs:
             mk = r["month"].strftime("%Y-%m")
-            if r["status"] == Sale.STATUS_ACCEPTED: ya[mk] += r["cnt"]
-            elif r["status"] == Sale.STATUS_REJECTED:         yr_rej[mk] += r["cnt"]
-            else:                                   yp[mk] += r["cnt"]
+            if r["status"] == Sale.STATUS_ACCEPTED:
+                ya[mk] += r["cnt"]
+            elif r["status"] == Sale.STATUS_REJECTED:
+                yr_rej[mk] += r["cnt"]
+            else:
+                yp[mk] += r["cnt"]
         years_data[str(yr)] = {
             "keys":     [d.strftime("%Y-%m") for d in yr_months],
             "labels":   [d.strftime("%b") for d in yr_months],
@@ -932,9 +950,12 @@ def portal_sales(request):
         d_int = r["day"].day
         if mk not in daily_map:
             daily_map[mk] = {"acc": {}, "rej": {}, "pend": {}}
-        if r["status"] == Sale.STATUS_ACCEPTED: bucket = "acc"
-        elif r["status"] == Sale.STATUS_REJECTED:         bucket = "rej"
-        else:                                   bucket = "pend"
+        if r["status"] == Sale.STATUS_ACCEPTED:
+            bucket = "acc"
+        elif r["status"] == Sale.STATUS_REJECTED:
+            bucket = "rej"
+        else:
+            bucket = "pend"
         daily_map[mk][bucket][d_int] = daily_map[mk][bucket].get(d_int, 0) + r["cnt"]
 
     drill_data = {}

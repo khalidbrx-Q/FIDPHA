@@ -6,6 +6,8 @@
 
 # WinInPharma — Pharmacy Loyalty Platform
 
+[![CI](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml/badge.svg)](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml)
+
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
@@ -43,7 +45,7 @@ Pharmacies submit their daily sales data via an API. Each sale is validated agai
 | French i18n | Portal available in French (EN/FR toggle) |
 | Audit trail | Every staff action logged via Django LogEntry; visible on control panel dashboard |
 | CSV / Excel import | Bulk product import and contract product import via file upload |
-| Automated testing | 313 unit tests + 22 Playwright E2E tests covering all major flows |
+| Automated testing | ~197 unit tests + 22 Playwright E2E tests covering all major flows |
 
 ---
 
@@ -93,7 +95,8 @@ The platform has three user-facing layers:
 | Logging | Structured JSON in production (`python-json-logger`), verbose plain-text in DEBUG; `wininpharma.*` namespace |
 | Secrets | Dual-mode: **Doppler** cloud vault (`doppler run -- <cmd>`) or local `.env` — both work |
 | Health probe | `GET /health/` — db + cache + migrations check |
-| Deployment | PythonAnywhere + GitHub (PR-based workflow) |
+| Containerization | **Dockerfile** + `.dockerignore` + **docker-compose.yml** (multi-stage build, ~150 MB runtime image, non-root user, HEALTHCHECK on `/health/`; compose for local dev with optional commented-out postgres/redis) — on `feature/deployment-automation` |
+| Deployment | PythonAnywhere + GitHub (PR-based workflow); future: Railway via Docker image |
 | React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (in progress, `feature/react-ui`) |
 
 ---
@@ -172,12 +175,12 @@ python manage.py runserver
 
 **Run tests:**
 
-Tests live **outside the repo** at `../tests-suite/` (passively excluded from production deploys). `pytest.ini` inside the repo points to that location.
+Tests live inside the repo at `tests-suite/`. `pytest.ini` points there.
 
 ```bash
 pytest                                          # all tests (unit + e2e)
-pytest --ignore=../tests-suite/e2e              # unit tests only (~265)
-pytest ../tests-suite/e2e/                      # e2e only (22 Playwright tests, needs browser)
+pytest --ignore=tests-suite/e2e                 # unit tests only (~197)
+pytest tests-suite/e2e/                         # e2e only (22 Playwright tests, needs browser)
 ```
 
 Visit `http://127.0.0.1:8000` — you will be redirected to `/portal/login/`.
@@ -437,29 +440,48 @@ Staff permissions are managed through Django Groups (called "Roles" in the contr
 
 ### 10.1 Branch Strategy
 
-| Branch | Purpose |
-|---|---|
-| `main` | Production — deployed to PythonAnywhere |
-| `develop` | Active backend development |
-| `feature/react-ui` | React SPA (paused — not merged to main) |
-| `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
-| `feature/postgres-migration` | PostgreSQL + Neon cloud DB backend (not merged yet) |
-| `feature/production-hardening` | Production infra: security headers, Gunicorn/WhiteNoise, JSON logging, /health/, Sentry, Redis (Upstash), Doppler (not merged yet) |
-| `integration` | Long-running integration branch — safe merge zone before develop |
+| Branch | Purpose | Protected? | Auto-deploy target |
+|---|---|---|---|
+| `main` | Production | ✅ require CI green | (future) `wininpharma.fly.dev` |
+| `develop` | Staging / preprod | ✅ require CI green | (future) `fidpha-staging.fly.dev` + PythonAnywhere (legacy) |
+| `integration` | Long-running merge / dev staging | — | **`fidpha-dev.fly.dev`** (live) |
+| `feature/*` | Active work | — | — |
 
-### 10.2 Merging to Main (via GitHub PR)
+### 10.2 CI/CD Pipeline
+
+On every push, `.github/workflows/ci.yml` runs 4 jobs:
+
+1. **Lint (ruff)** — code-style + bug-pattern check
+2. **Unit tests (pytest)** — 196 tests against ephemeral Postgres + Redis containers
+3. **E2E tests (Playwright)** — 22 browser tests against the same containers
+4. **Deploy (flyctl)** — only on push to `integration`: builds + deploys to `fidpha-dev`
+
+Branch protection on `develop` and `main` blocks merges until all 3 test jobs pass.
+
+### 10.3 Cloud Hosting (Fly.io)
+
+- **Dev:** `fidpha-dev.fly.dev` (live — auto-deploys from `integration`)
+- **Staging:** `fidpha-staging.fly.dev` (planned, after supervisor approval)
+- **Production:** `wininpharma.fly.dev` (planned, after supervisor approval)
+
+Each environment has its own Doppler config (`dev` / `stg` / `prd`), Neon DB branch, Upstash Redis DB, and Sentry environment tag. Same Dockerfile deploys to all three — only env vars differ.
+
+### 10.4 REPO REVIEWER (Claude routine)
+
+Automatic PR reviewer that posts a verdict comment + emails findings. Triggers on PRs opened/synchronized that target `develop` or `main`. Doesn't fire on PRs to `integration` (out of scope).
+
+### 10.5 Legacy: Merging to Main (via GitHub PR)
 
 Never merge locally. Always use a GitHub Pull Request:
 
 ```
 git push origin develop
 → Open PR on GitHub (develop → main)
+→ CI runs (lint + unit + e2e), branch protection enforces green
 → REPO REVIEWER routine fires (automated security + bug scan)
 → Read the review report
 → Click "Merge pull request" on GitHub
 ```
-
-The **REPO REVIEWER** is a Claude Code routine that automatically reviews every PR diff for security vulnerabilities and bugs, then posts a verdict comment on the PR.
 
 ### 10.3 Updating PythonAnywhere
 
@@ -577,8 +599,9 @@ FIDPHA/                             ← git root (manage.py is here)
 ├── templates/
 │   ├── registration/               ← password reset templates
 │   └── react/                      ← SPA shell templates (index.html, staff_index.html)
-├── tests/
-│   └── e2e/                        ← 22 Playwright E2E tests (pytest tests/e2e/ -v, local only)
+├── tests-suite/                    ← all tests live here
+│   ├── unit/                       ← ~197 unit tests
+│   └── e2e/                        ← 22 Playwright E2E tests (pytest tests-suite/e2e/ -v)
 └── frontend/                       ← React SPA (feature/react-ui branch only)
     ├── src/
     │   ├── api/client.js           ← fetch wrapper (session + CSRF)
@@ -602,6 +625,8 @@ FIDPHA/                             ← git root (manage.py is here)
 <a name="français"></a>
 
 # WinInPharma — Plateforme de Fidélisation des Pharmacies
+
+[![CI](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml/badge.svg)](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml)
 
 ## Table des Matières
 
@@ -640,7 +665,7 @@ Les pharmacies soumettent leurs ventes quotidiennes via une API. Chaque vente es
 | i18n Français | Portail disponible en français (bascule FR/EN) |
 | Piste d'audit | Chaque action staff enregistrée via Django LogEntry ; visible sur le tableau de bord |
 | Import CSV / Excel | Import en masse de produits et de produits de contrats par fichier |
-| Tests automatisés | 313 tests unitaires + 22 tests E2E Playwright couvrant tous les flux principaux |
+| Tests automatisés | ~197 tests unitaires + 22 tests E2E Playwright couvrant tous les flux principaux |
 
 ---
 
@@ -690,7 +715,8 @@ La plateforme comporte trois couches orientées utilisateur :
 | Logs | JSON structurés en prod (`python-json-logger`), plain-text verbose en DEBUG ; namespace `wininpharma.*` |
 | Secrets | Double mode : **Doppler** cloud (`doppler run -- <cmd>`) ou `.env` local — les deux fonctionnent |
 | Health probe | `GET /health/` — vérifie db + cache + migrations |
-| Déploiement | PythonAnywhere + GitHub (workflow par PR) |
+| Conteneurisation | **Dockerfile** + `.dockerignore` + **docker-compose.yml** (build multi-stage, image runtime ~150 MB, utilisateur non-root, HEALTHCHECK sur `/health/` ; compose pour dev local avec postgres/redis optionnels commentés) — sur `feature/deployment-automation` |
+| Déploiement | PythonAnywhere + GitHub (workflow par PR) ; futur : Railway via image Docker |
 | React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (en cours, `feature/react-ui`) |
 
 ---
@@ -769,12 +795,12 @@ python manage.py runserver
 
 **Lancer les tests :**
 
-Les tests vivent **hors du repo** dans `../tests-suite/` (exclus passivement des déploiements prod). Le `pytest.ini` du repo pointe vers cet emplacement.
+Les tests vivent dans le repo à `tests-suite/`. Le `pytest.ini` pointe vers cet emplacement.
 
 ```bash
 pytest                                          # tous les tests (unit + e2e)
-pytest --ignore=../tests-suite/e2e              # tests unitaires uniquement (~265)
-pytest ../tests-suite/e2e/                      # e2e uniquement (22 tests Playwright, nécessite navigateur)
+pytest --ignore=tests-suite/e2e                 # tests unitaires uniquement (~197)
+pytest tests-suite/e2e/                         # e2e uniquement (22 tests Playwright, nécessite navigateur)
 ```
 
 Visitez `http://127.0.0.1:8000` — vous serez redirigé vers `/portal/login/`.
@@ -1017,29 +1043,48 @@ Les permissions du staff sont gérées via les groupes Django (appelés "Rôles"
 
 ### 10.1 Stratégie de Branches
 
-| Branche | Rôle |
-|---|---|
-| `main` | Production — déployée sur PythonAnywhere |
-| `develop` | Développement backend actif |
-| `feature/react-ui` | SPA React (en pause — non mergée sur main) |
-| `feature/improvements` | Polish UI, améliorations SystemConfig, agent code-reviewer |
-| `feature/postgres-migration` | Backend PostgreSQL + Neon cloud (non mergée pour l'instant) |
-| `feature/production-hardening` | Infrastructure production : security headers, Gunicorn/WhiteNoise, logs JSON, /health/, Sentry, Redis (Upstash), Doppler (non mergée pour l'instant) |
-| `integration` | Branche d'intégration long-running — zone de merge sûre avant develop |
+| Branche | Rôle | Protégée ? | Déploiement auto |
+|---|---|---|---|
+| `main` | Production | ✅ requiert CI vert | (futur) `wininpharma.fly.dev` |
+| `develop` | Staging / préprod | ✅ requiert CI vert | (futur) `fidpha-staging.fly.dev` + PythonAnywhere (legacy) |
+| `integration` | Intégration / dev staging long-running | — | **`fidpha-dev.fly.dev`** (en service) |
+| `feature/*` | Travail actif | — | — |
 
-### 10.2 Merger sur Main (via GitHub PR)
+### 10.2 Pipeline CI/CD
+
+À chaque push, `.github/workflows/ci.yml` exécute 4 jobs :
+
+1. **Lint (ruff)** — vérification style + bugs probables
+2. **Tests unitaires (pytest)** — 196 tests contre Postgres + Redis éphémères
+3. **Tests E2E (Playwright)** — 22 tests navigateur contre les mêmes conteneurs
+4. **Deploy (flyctl)** — uniquement sur push vers `integration` : build + deploy sur `fidpha-dev`
+
+Les règles de protection sur `develop` et `main` bloquent les merges tant que les 3 jobs de test ne sont pas verts.
+
+### 10.3 Hébergement Cloud (Fly.io)
+
+- **Dev** : `fidpha-dev.fly.dev` (en service — auto-deploy depuis `integration`)
+- **Staging** : `fidpha-staging.fly.dev` (prévu, après accord de l'encadrant)
+- **Production** : `wininpharma.fly.dev` (prévu, après accord de l'encadrant)
+
+Chaque environnement a sa propre config Doppler (`dev` / `stg` / `prd`), branche Neon, base Upstash Redis, et tag d'environnement Sentry. Même Dockerfile pour les trois — seules les variables d'environnement diffèrent.
+
+### 10.4 REPO REVIEWER (routine Claude)
+
+Reviewer automatique de PR qui publie un commentaire de verdict + email des findings. Déclenché sur les PRs ouvertes/synchronisées ciblant `develop` ou `main`. Ne se déclenche pas sur les PRs vers `integration` (hors périmètre).
+
+### 10.5 Legacy : Merger sur Main (via GitHub PR)
 
 Ne jamais merger localement. Toujours passer par une Pull Request GitHub :
 
 ```
 git push origin develop
 → Ouvrir une PR sur GitHub (develop → main)
-→ La routine REPO REVIEWER se déclenche (analyse automatique de sécurité + bugs)
+→ CI s'exécute (lint + unit + e2e), la protection de branche impose le vert
+→ La routine REPO REVIEWER se déclenche (analyse auto sécurité + bugs)
 → Lire le rapport de revue
 → Cliquer "Merge pull request" sur GitHub
 ```
-
-Le **REPO REVIEWER** est une routine Claude Code qui analyse automatiquement chaque diff de PR pour détecter les vulnérabilités de sécurité et les bugs, puis publie un commentaire de verdict sur la PR.
 
 ### 10.3 Mettre à Jour PythonAnywhere
 
@@ -1157,8 +1202,9 @@ FIDPHA/                             ← racine git (manage.py est ici)
 ├── templates/
 │   ├── registration/               ← templates réinitialisation mot de passe
 │   └── react/                      ← templates shell SPA (index.html, staff_index.html)
-├── tests/
-│   └── e2e/                        ← 22 tests E2E Playwright (pytest tests/e2e/ -v, local uniquement)
+├── tests-suite/                    ← tous les tests vivent ici
+│   ├── unit/                       ← ~197 tests unitaires
+│   └── e2e/                        ← 22 tests E2E Playwright (pytest tests-suite/e2e/ -v)
 └── frontend/                       ← SPA React (branche feature/react-ui uniquement)
     ├── src/
     │   ├── api/client.js           ← wrapper fetch (session + CSRF)
