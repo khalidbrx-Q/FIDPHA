@@ -1,13 +1,17 @@
-# GitHub Actions CI for WinInPharma.
+# GitHub Actions CI/CD for WinInPharma.
 #
-# Runs three independent jobs in parallel on every push and on PRs to
+# Runs three independent test jobs in parallel on every push and on PRs to
 # develop / main:
 #   - lint     : ruff style + bug checks (fast, ~30s)
 #   - unit     : pytest unit suite against ephemeral Postgres + Redis
 #   - e2e      : Playwright E2E suite (Chromium against live_server)
 #
-# Branch protection on develop + main should require all three to pass.
-# See ruff.toml for lint config, pytest.ini for test config.
+# After all three pass, a fourth job auto-deploys to Fly.io:
+#   - deploy   : runs `flyctl deploy` to fidpha-dev (only on push to integration
+#                or feature/deployment-automation; never on PRs or other branches)
+#
+# Branch protection on develop + main should require lint/unit/e2e to pass.
+# See ruff.toml for lint config, pytest.ini for test config, fly.toml for deploy.
 
 name: CI
 
@@ -202,3 +206,43 @@ jobs:
 
       - name: Run E2E tests
         run: pytest tests-suite/e2e/ -v --tb=short
+
+  # ─── Job 4 ─── Deploy to Fly.io (fidpha-dev) ────────────────────────────
+  # Runs ONLY after lint + unit + e2e all pass. Skipped on:
+  #   - pull_request events (we never deploy from a PR)
+  #   - branches other than integration / feature/deployment-automation
+  #
+  # The feature/deployment-automation entry is temporary, kept while we
+  # validate the auto-deploy pipeline before merging to integration.
+  # Remove it once we're confident integration is the only trigger we want.
+  deploy:
+    name: Deploy to Fly.io (fidpha-dev)
+    runs-on: ubuntu-latest
+    needs: [lint, unit, e2e]
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/integration' ||
+       github.ref == 'refs/heads/feature/deployment-automation')
+    # GitHub's "concurrency" at the workflow level cancels older runs, but
+    # an additional deploy-specific guard ensures we never have two deploys
+    # racing each other against Fly.
+    concurrency:
+      group: deploy-fidpha-dev
+      cancel-in-progress: false  # let in-flight deploys finish
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to fidpha-dev
+        # --remote-only builds the Docker image on Fly's builders (not in
+        # the GitHub runner) — keeps the runner light and reuses Fly's
+        # build cache.
+        # fly.toml in the repo already specifies app=fidpha-dev, so no
+        # explicit -a flag is needed.
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
