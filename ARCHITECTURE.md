@@ -551,17 +551,80 @@ FIDPHA001/                    ← Django repo root
 
 ---
 
-## 14. Pending Work
+## 14. Deployment Pipeline
+
+### Branch topology
+
+```
+feature/* ──push──▶ integration ──PR──▶ develop ──PR──▶ main
+                       │                    │                │
+                       ▼                    ▼                ▼
+                  fidpha-dev          fidpha-staging    wininpharma
+                  (Fly.io, live)      (future)          (future)
+```
+
+`integration` is the merge/staging branch — pushes here trigger auto-deploy to `fidpha-dev`. `develop` and `main` are protected by GitHub branch rulesets that require 3 CI checks to pass before a PR can merge.
+
+### `.github/workflows/ci.yml` — four jobs
+
+| Job | Runs on | Time | Purpose |
+|---|---|---|---|
+| `lint` | every push, every PR to develop/main | ~30s | `ruff check .` |
+| `unit` | every push, every PR to develop/main | ~2 min | pytest on `tests-suite/unit/` against ephemeral postgres:16-alpine + redis:7-alpine service containers |
+| `e2e` | every push, every PR to develop/main | ~3 min | pytest on `tests-suite/e2e/` (Playwright Chromium) against the same service containers + Django live_server |
+| `deploy` | **push to `integration` only** | ~2 min | `flyctl deploy --remote-only` to `fidpha-dev`; `needs:` the other 3 jobs |
+
+Concurrency at the workflow level cancels old runs on rapid re-pushes; a separate `concurrency: deploy-fidpha-dev` group on the deploy job ensures only one deploy ever runs at a time.
+
+### Hosting — Fly.io
+
+- **App:** `fidpha-dev` in region `cdg` (Paris, closest to Neon's London region).
+- **Machines:** 2× `shared-cpu-1x@1GB` with `auto_stop_machines = 'stop'`. Idle machines sleep to free quota; wake on first incoming request (~3–5s cold start). Two machines enable zero-downtime deploys (one updates while the other serves).
+- **HTTPS:** Fly's edge handles TLS termination; the app receives plain HTTP from Fly's proxy. `SECURE_PROXY_SSL_HEADER` in settings.py is configured to trust `X-Forwarded-Proto`.
+- **release_command:** `python manage.py migrate --noinput` runs on a temporary machine before each deploy goes live. If migration fails, the deploy aborts and the previous version keeps serving.
+
+### Secrets — Doppler-Fly sync
+
+Source of truth for cloud secrets is **Doppler**. The Doppler-Fly sync integration pushes the `dev` config to the `fidpha-dev` Fly app automatically — secret changes propagate within seconds, and the affected machines auto-restart to pick up new values.
+
+Local development uses the `.env` file, independent of Doppler. The mapping is 1:1: one Doppler config per Fly app.
+
+### Environment matrix (planned)
+
+| Component | dev (current) | staging (future) | production (future) |
+|---|---|---|---|
+| Git branch | `integration` | `develop` | `main` |
+| Fly app | `fidpha-dev` | `fidpha-staging` | `wininpharma` |
+| Fly token (GH secret) | `FLY_API_TOKEN` | `FLY_API_TOKEN_STAGING` | `FLY_API_TOKEN_PROD` |
+| Doppler config | `dev` | `stg` | `prd` |
+| Neon DB | `neondb` (shared with local) | `neondb-staging` branch | `neondb-prod` branch |
+| Upstash Redis | shared DB #1 | DB #2 | DB #3 |
+| Sentry tag | `SENTRY_ENVIRONMENT=dev` | `SENTRY_ENVIRONMENT=staging` | `SENTRY_ENVIRONMENT=production` |
+
+Staging + prod are deferred until budget approval. The same Dockerfile + `fly.toml` pattern + `ci.yml` deploy-job template will be reused; only the app name, branch trigger, and token vary per environment.
+
+### REPO REVIEWER routines
+
+Two Claude routines (one per PR event — `opened` and `synchronize`), both with identical instructions. They fetch the PR diff, run a security + bug check tuned to the WinInPharma domain (PPV invariant, last_sale_datetime rule, one-active-contract-per-account, etc.), and post:
+- A PR comment with verdict (CLEAN / LOW_RISK / MEDIUM_RISK / HIGH_RISK) and a findings table
+- An email summary to `khalidbrx@icloud.com`
+
+Filtered by `Author = khalidbrx-Q` and `Base branch is one of: main, develop` — so feature → integration PRs don't fire a review (out of scope at that stage).
+
+---
+
+## 15. Pending Work
 
 - Apple OAuth provider.
 - Token detail page enhancements (usage chart; `APITokenUsageLog` model already in place).
 - `SystemConfig.ppv_tolerance_percent` enforcement — field is stored and configurable but the rejection check inside `submit_sales_batch` is still a no-op.
 - Sales Review UX backlog (remaining items).
 - React SPA (`feature/react-ui`) — portal and staff React UIs built, paused pending advisor approval to merge.
+- `fidpha-staging` + `wininpharma` (prod) Fly apps — deferred until supervisor approves the ~$10–25/mo budget for the 3-environment Fly.io setup.
 
 ---
 
-## 15. Key Files (file:line)
+## 16. Key Files (file:line)
 
 | Need | Location |
 |---|---|
