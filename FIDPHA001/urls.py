@@ -1,6 +1,6 @@
 from django.urls import path, include
 from django.views.generic import RedirectView
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from fidpha import views as fidpha_views
 from fidpha.views import CustomPasswordResetView, CustomPasswordResetConfirmView
 # These admin AJAX helpers live in admin_api.py, not admin.py —
@@ -16,6 +16,14 @@ def handler403(request, exception=None):
     return redirect("/control/")
 
 handler403 = handler403
+
+
+def spa_view(request, subpath=""):
+    return render(request, "react/index.html")
+
+
+def staff_spa_view(request, subpath=""):
+    return render(request, "react/staff_index.html")
 
 
 
@@ -45,6 +53,14 @@ urlpatterns = [
 
     path("i18n/", include("django.conf.urls.i18n")),
     path("api/v1/", include("api.urls")),
+    path("api/portal/", include("api.portal_urls")),
+    path("api/staff/", include("api.staff_urls")),
+
+    # SPA entry points — served once React bundles are built
+    path("app/", spa_view),
+    path("app/<path:subpath>", spa_view),
+    path("control-app/", staff_spa_view),
+    path("control-app/<path:subpath>", staff_spa_view),
 
     # Custom admin control panel — staff only, Django admin kept as fallback
     path("control/", include("control.urls")),

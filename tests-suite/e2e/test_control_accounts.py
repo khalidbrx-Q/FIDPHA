@@ -49,3 +49,67 @@ def test_create_account_lands_on_detail(live_server, page, staff_user, login_as)
     assert account.phone == "+212600000001", (
         f"Expected '+212600000001', got '{account.phone}'"
     )
+
+
+# ─── Tier 1 ───────────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db(transaction=True)
+def test_edit_account_name_persists(live_server, page, staff_user, base_data, login_as):
+    """Tier 1 · AC21 — edit an account's name via the form; DB + list reflect new value."""
+    account = base_data["account"]  # code=PH-TEST, name="Test Pharmacy"
+    new_name = "Test Pharmacy (Renamed)"
+
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/accounts/{account.pk}/edit/")
+
+    # Replace the name field and submit
+    page.fill("[name=name]", new_name)
+    page.locator("#submitBtn").click()
+    page.wait_for_load_state("networkidle")
+
+    # DB now holds the new name
+    account.refresh_from_db()
+    assert account.name == new_name, f"Expected {new_name!r}, got {account.name!r}"
+
+    # And it appears on the accounts list page
+    page.goto(f"{live_server.url}/control/accounts/")
+    expect(page.get_by_text(new_name).first).to_be_visible()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_edit_account_toggle_auto_review_persists(live_server, page, staff_user, base_data, login_as):
+    """Tier 1 · AC23 — toggle per-account auto_review_enabled and verify it persists.
+
+    Note: the per-account checkbox is DISABLED in the UI when the global
+    SystemConfig.auto_review_enabled is OFF (this is intentional — auto-review
+    requires BOTH flags to be on). The conftest reset turns the global flag off,
+    so we must enable it here before the per-account checkbox becomes editable.
+    """
+    from control.models import SystemConfig
+
+    # Enable global auto-review so the per-account checkbox is editable.
+    config = SystemConfig.get()
+    config.auto_review_enabled = True
+    config.save()
+
+    account = base_data["account"]
+    account.refresh_from_db()
+    initial_state = account.auto_review_enabled
+
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/accounts/{account.pk}/edit/")
+
+    # The real checkbox is visually hidden inside a custom toggle-switch UI
+    # (see accounts_form.html). Click the wrapping label — the actual click
+    # target a user would use — instead of the hidden <input> directly.
+    toggle = page.locator(".toggle-switch:has([name=auto_review_enabled])")
+    toggle.click()
+
+    page.locator("#submitBtn").click()
+    page.wait_for_load_state("networkidle")
+
+    account.refresh_from_db()
+    assert account.auto_review_enabled is (not initial_state), (
+        f"auto_review_enabled did not flip — still {account.auto_review_enabled}"
+    )

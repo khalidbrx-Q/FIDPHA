@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIDPHA React Architecture Flow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+  h1 { text-align: center; padding: 28px 0 6px; font-size: 1.35rem; font-weight: 700; color: #f8fafc; letter-spacing: .02em; }
+  .subtitle { text-align: center; font-size: .8rem; color: #64748b; margin-bottom: 30px; }
+
+  .canvas { display: flex; flex-direction: column; gap: 0; padding: 0 24px 40px; }
+
+  /* ── row helpers ── */
+  .row { display: flex; align-items: stretch; gap: 12px; margin-bottom: 0; }
+  .row.centered { justify-content: center; }
+  .row.spaced { justify-content: space-between; }
+
+  /* ── vertical arrow spacer ── */
+  .v-arrow { display: flex; justify-content: center; align-items: center; height: 44px; position: relative; }
+  .v-arrow::before { content: ''; position: absolute; top: 0; bottom: 18px; left: 50%; width: 2px; background: #334155; }
+  .v-arrow::after { content: '▼'; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); font-size: 14px; color: #475569; }
+  .v-arrow span { background: #1e293b; padding: 2px 10px; border-radius: 10px; font-size: .68rem; color: #94a3b8; position: relative; z-index: 1; margin-top: 4px; }
+
+  /* ── boxes ── */
+  .box {
+    border-radius: 10px;
+    padding: 14px 18px;
+    flex: 1;
+    min-width: 0;
+  }
+  .box .label { font-size: .65rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
+  .box .title { font-size: .92rem; font-weight: 700; margin-bottom: 4px; }
+  .box .desc { font-size: .72rem; line-height: 1.5; color: #94a3b8; }
+  .box .badge-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .badge { font-size: .62rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+
+  /* colour themes */
+  .theme-browser  { background: #1e293b; border: 1.5px solid #334155; }
+  .theme-portal   { background: #0f2744; border: 1.5px solid #1d4ed8; }
+  .theme-staff    { background: #1a1040; border: 1.5px solid #7c3aed; }
+  .theme-django   { background: #14291a; border: 1.5px solid #16a34a; }
+  .theme-db       { background: #271a0e; border: 1.5px solid #d97706; }
+  .theme-auth     { background: #2a1215; border: 1.5px solid #dc2626; }
+  .theme-neutral  { background: #1e293b; border: 1.5px solid #475569; }
+
+  .label.portal   { color: #60a5fa; }
+  .label.staff    { color: #a78bfa; }
+  .label.django   { color: #4ade80; }
+  .label.db       { color: #fbbf24; }
+  .label.auth     { color: #f87171; }
+  .label.browser  { color: #94a3b8; }
+
+  .badge.blue   { background: #1e3a5f; color: #93c5fd; border: 1px solid #1d4ed8; }
+  .badge.purple { background: #2e1065; color: #c4b5fd; border: 1px solid #7c3aed; }
+  .badge.green  { background: #052e16; color: #86efac; border: 1px solid #16a34a; }
+  .badge.amber  { background: #292000; color: #fcd34d; border: 1px solid #d97706; }
+  .badge.red    { background: #3b0000; color: #fca5a5; border: 1px solid #dc2626; }
+  .badge.gray   { background: #1e293b; color: #94a3b8; border: 1px solid #475569; }
+
+  /* ── divider ── */
+  .divider { border: none; border-top: 1px dashed #1e293b; margin: 20px 0; }
+
+  /* ── section label ── */
+  .section-label {
+    font-size: .65rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+    color: #475569; text-align: center; margin: 16px 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::before, .section-label::after { content: ''; flex: 1; border-top: 1px dashed #1e293b; }
+
+  /* ── two-col layout ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  /* ── connector lines (decorative) ── */
+  .connector { display: flex; justify-content: center; align-items: center; font-size: 1.1rem; color: #334155; padding: 2px 0; }
+
+  /* ── note box ── */
+  .note {
+    background: #1c1f26; border: 1px solid #2d3748; border-left: 3px solid #3b82f6;
+    border-radius: 6px; padding: 10px 14px; font-size: .71rem; line-height: 1.6; color: #94a3b8;
+    margin-top: 4px;
+  }
+  .note strong { color: #e2e8f0; }
+
+  /* ── flow arrow between columns ── */
+  .h-arrow { display: flex; align-items: center; justify-content: center; color: #475569; font-size: 1.2rem; padding: 0 4px; flex-shrink: 0; }
+
+  /* ── step number ── */
+  .step { display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%; font-size: .6rem; font-weight: 700;
+    flex-shrink: 0; margin-right: 5px; }
+  .step.blue { background: #1d4ed8; color: #fff; }
+  .step.purple { background: #7c3aed; color: #fff; }
+  .step.green { background: #16a34a; color: #fff; }
+  .step.amber { background: #d97706; color: #fff; }
+  .step.red { background: #dc2626; color: #fff; }
+
+  /* ── flow list ── */
+  .flow-list { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+  .flow-list li { display: flex; align-items: flex-start; font-size: .71rem; line-height: 1.5; color: #94a3b8; }
+  .flow-list li strong { color: #e2e8f0; }
+
+  /* ── endpoint list ── */
+  .ep-list { list-style: none; display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+  .ep-list li { font-size: .65rem; color: #64748b; font-family: monospace; }
+  .ep-list li span { color: #94a3b8; }
+
+  /* ── wide box ── */
+  .full-width { width: 100%; }
+
+  /* ── phase ribbon ── */
+  .phase-row { display: flex; gap: 10px; }
+  .phase { flex: 1; border-radius: 8px; padding: 12px 14px; }
+  .phase .p-label { font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+  .phase .p-title { font-size: .82rem; font-weight: 700; margin-bottom: 4px; }
+  .phase .p-desc { font-size: .68rem; color: #94a3b8; line-height: 1.5; }
+  .phase.done  { background: #0f2010; border: 1.5px solid #16a34a; }
+  .phase.now   { background: #0f2035; border: 1.5px solid #1d4ed8; }
+  .phase.next  { background: #1e1040; border: 1.5px solid #7c3aed; }
+  .phase.later { background: #1a1205; border: 1.5px solid #d97706; }
+  .phase.done .p-label  { color: #4ade80; }
+  .phase.now .p-label   { color: #60a5fa; }
+  .phase.next .p-label  { color: #a78bfa; }
+  .phase.later .p-label { color: #fbbf24; }
+
+</style>
+</head>
+<body>
+<h1>FIDPHA — React App Architecture & Flow</h1>
+<p class="subtitle">How the React front-end talks to the Django back-end (Option A — Session auth)</p>
+
+<div class="canvas">
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 1 — USER ENTRY
+  ════════════════════════════════════════════════ -->
+  <div class="section-label">1 · Two User Types, Two Apps</div>
+
+  <div class="two-col">
+    <div class="box theme-portal">
+      <div class="label portal">Pharmacy User</div>
+      <div class="title">Portal SPA</div>
+      <div class="desc">A pharmacy employee logs in at <code>/portal/login/</code> (existing Django login page). On success Django sets a session cookie and redirects to <code>/app/</code> — the React portal app.</div>
+      <div class="badge-row">
+        <span class="badge blue">is_staff = False</span>
+        <span class="badge blue">pharmacy_portal = True</span>
+        <span class="badge blue">account active</span>
+      </div>
+    </div>
+    <div class="box theme-staff">
+      <div class="label staff">Staff / Admin User</div>
+      <div class="title">Control SPA</div>
+      <div class="desc">A FIDPHA staff member logs in at <code>/portal/login/</code>. Same login page, different destination — redirected to <code>/control-app/</code> — the React control panel app.</div>
+      <div class="badge-row">
+        <span class="badge purple">is_staff = True</span>
+        <span class="badge purple">is_active = True</span>
+        <span class="badge purple">Django permissions</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="v-arrow"><span>browser loads SPA bundle</span></div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 2 — SPA SHELLS
+  ════════════════════════════════════════════════ -->
+  <div class="section-label">2 · Django Serves the SPA Shell</div>
+
+  <div class="two-col">
+    <div class="box theme-portal">
+      <div class="label portal">Portal Shell</div>
+      <div class="title">GET /app/ → index.html</div>
+      <div class="desc">Django renders <code>templates/react/index.html</code> — a bare HTML page that loads the React JS bundle. React Router then takes over all <code>/app/*</code> navigation client-side.</div>
+      <div class="badge-row">
+        <span class="badge blue">spa_view()</span>
+        <span class="badge blue">catch-all /app/&lt;path&gt;</span>
+      </div>
+    </div>
+    <div class="box theme-staff">
+      <div class="label staff">Control Shell</div>
+      <div class="title">GET /control-app/ → staff_index.html</div>
+      <div class="desc">Same pattern. Django serves <code>templates/react/staff_index.html</code>. React Router handles all <code>/control-app/*</code> sub-routes. No full-page reloads after initial load.</div>
+      <div class="badge-row">
+        <span class="badge purple">staff_spa_view()</span>
+        <span class="badge purple">catch-all /control-app/&lt;path&gt;</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="v-arrow"><span>React boots → calls /api/portal/ or /api/staff/</span></div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 3 — API CALLS
+  ════════════════════════════════════════════════ -->
+  <div class="section-label">3 · Every API Call</div>
+
+  <div class="box theme-neutral full-width">
+    <div class="label browser">Request pipeline — same for every fetch()</div>
+    <div class="badge-row" style="margin-bottom:10px;">
+      <span class="badge gray">same-origin</span>
+      <span class="badge gray">no CORS needed</span>
+      <span class="badge gray">no JWT token</span>
+      <span class="badge gray">automatic session cookie</span>
+    </div>
+    <ul class="flow-list">
+      <li><span class="step blue">1</span> React calls <code>fetch("/api/portal/dashboard/stats/", &#123; credentials: "include" &#125;)</code></li>
+      <li><span class="step blue">2</span> Browser automatically attaches <strong>sessionid</strong> cookie (set at login, HttpOnly)</li>
+      <li><span class="step blue">3</span> For POST/PATCH/DELETE React also reads <code>csrftoken</code> cookie and sends it as <strong>X-CSRFToken</strong> header</li>
+      <li><span class="step blue">4</span> Django <strong>SessionAuthentication</strong> validates the session → sets <code>request.user</code></li>
+      <li><span class="step blue">5</span> Permission class checks the user type (<code>PortalSessionPermission</code> or <code>StaffSessionPermission</code>)</li>
+      <li><span class="step blue">6</span> View executes → returns JSON → React re-renders</li>
+    </ul>
+  </div>
+
+  <div class="v-arrow"><span>routed by Django URL conf</span></div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 4 — API NAMESPACES
+  ════════════════════════════════════════════════ -->
+  <div class="section-label">4 · API Namespaces</div>
+
+  <div class="two-col">
+    <div class="box theme-portal">
+      <div class="label portal">/api/portal/ — 10 endpoints</div>
+      <div class="title">Pharmacy Portal API</div>
+      <div class="desc">Scoped to the logged-in pharmacy account. Every query is filtered by <code>request.user.profile.account</code> — a pharmacy can never see another account's data.</div>
+      <ul class="ep-list">
+        <li><span>GET</span> account/</li>
+        <li><span>GET</span> dashboard/stats/</li>
+        <li><span>GET</span> dashboard/charts/</li>
+        <li><span>GET</span> dashboard/recent-sales/</li>
+        <li><span>GET</span> contracts/</li>
+        <li><span>GET</span> contracts/active/</li>
+        <li><span>GET</span> contracts/&lt;pk&gt;/charts/</li>
+        <li><span>GET</span> sales/stats/</li>
+        <li><span>GET</span> sales/</li>
+        <li><span>GET</span> sales/charts/</li>
+      </ul>
+    </div>
+    <div class="box theme-staff">
+      <div class="label staff">/api/staff/ — 26 endpoints</div>
+      <div class="title">Control Panel API</div>
+      <div class="desc">Full management surface. Read + write operations on all domain objects. Superuser-only endpoints for sync log and system settings. All writes go through <code>full_clean()</code>.</div>
+      <ul class="ep-list">
+        <li><span>GET</span> dashboard/stats/ · dashboard/activity/</li>
+        <li><span>GET/POST</span> accounts/ · <span>GET/PATCH/DELETE</span> accounts/&lt;pk&gt;/</li>
+        <li><span>GET/POST</span> contracts/ · <span>GET/PATCH/DELETE</span> contracts/&lt;pk&gt;/</li>
+        <li><span>GET</span> contracts/&lt;pk&gt;/charts/</li>
+        <li><span>GET/POST</span> products/ · <span>GET/PATCH/DELETE</span> products/&lt;pk&gt;/</li>
+        <li><span>GET/POST</span> users/ · <span>GET/PATCH/DELETE</span> users/&lt;pk&gt;/</li>
+        <li><span>GET/POST</span> roles/ · <span>GET/PATCH/DELETE</span> roles/&lt;pk&gt;/</li>
+        <li><span>GET/POST</span> tokens/ · <span>GET/DELETE</span> tokens/&lt;pk&gt;/</li>
+        <li><span>POST</span> tokens/&lt;pk&gt;/revoke/ · reactivate/</li>
+        <li><span>GET</span> sales/batches/ · sales/</li>
+        <li><span>POST</span> sales/&lt;pk&gt;/accept/ · reject/ · bulk-update/</li>
+        <li><span>GET</span> sync-log/ · system-settings/ <span style="color:#f87171">(superuser)</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="v-arrow"><span>Django ORM queries → PostgreSQL / SQLite</span></div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 5 — DJANGO LAYERS
+  ════════════════════════════════════════════════ -->
+  <div class="section-label">5 · Django Backend Layers</div>
+
+  <div class="three-col">
+    <div class="box theme-django">
+      <div class="label django">Views layer</div>
+      <div class="title">api/portal_views.py<br>api/staff_views.py</div>
+      <div class="desc">Parse request → call service → serialize → return Response. No business logic lives here.</div>
+      <div class="badge-row">
+        <span class="badge green">APIView</span>
+        <span class="badge green">SessionAuthentication</span>
+        <span class="badge green">throttle_classes = []</span>
+      </div>
+    </div>
+    <div class="box theme-django">
+      <div class="label django">Services layer</div>
+      <div class="title">fidpha/services.py<br>sales/services.py</div>
+      <div class="desc">All domain logic: points formula, PPV snapshot, batch ingestion, contract validation, bulk import. Called by views and API views alike.</div>
+      <div class="badge-row">
+        <span class="badge green">no HttpRequest</span>
+        <span class="badge green">no JsonResponse</span>
+        <span class="badge green">fully testable</span>
+      </div>
+    </div>
+    <div class="box theme-django">
+      <div class="label django">Serializers</div>
+      <div class="title">api/serializers.py</div>
+      <div class="desc">DRF ModelSerializers for clean JSON output. Annotation-dependent fields use <code>getattr(obj, "field", 0)</code> — work whether the view uses ORM annotations or manually set attributes.</div>
+      <div class="badge-row">
+        <span class="badge green">portal serializers</span>
+        <span class="badge green">staff serializers</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="v-arrow"><span>SQL queries</span></div>
+
+  <div class="box theme-db full-width">
+    <div class="label db">Database</div>
+    <div class="title">PostgreSQL / SQLite — Single source of truth</div>
+    <div class="desc">All points math is done on the DB side via <code>annotate(pts=Round(...))</code>. React never recomputes anything — it only renders what the API returns.</div>
+    <div class="badge-row">
+      <span class="badge amber">Sale.product_ppv (snapshot)</span>
+      <span class="badge amber">points = qty × product_ppv × points_per_unit</span>
+      <span class="badge amber">only STATUS_ACCEPTED rows count</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 6 — AUTH DETAIL
+  ════════════════════════════════════════════════ -->
+  <div class="section-label">6 · Authentication — Option A (current) vs future</div>
+
+  <div class="three-col">
+    <div class="box theme-auth">
+      <div class="label auth">Option A · Now</div>
+      <div class="title">Django Session</div>
+      <div class="desc">Same-origin session cookie. Login via existing <code>/portal/login/</code> or Google OAuth. Zero extra dependencies. React just uses <code>fetch(..., &#123; credentials: "include" &#125;)</code>.</div>
+      <div class="badge-row">
+        <span class="badge red">sessionid cookie</span>
+        <span class="badge red">X-CSRFToken header</span>
+        <span class="badge red">HttpOnly</span>
+      </div>
+    </div>
+    <div class="box theme-auth">
+      <div class="label auth">Option B · Future</div>
+      <div class="title">JWT (djangorestframework-simplejwt)</div>
+      <div class="desc">When a mobile app or third-party client needs auth. Swap <code>SessionAuthentication</code> → <code>JWTAuthentication</code> in each view class. All 36 endpoints stay identical — only the auth mechanism changes.</div>
+      <div class="badge-row">
+        <span class="badge red">Authorization: Bearer &lt;token&gt;</span>
+        <span class="badge red">access + refresh tokens</span>
+      </div>
+    </div>
+    <div class="box theme-auth">
+      <div class="label auth">Option C · Vision</div>
+      <div class="title">Microservices</div>
+      <div class="desc">Each domain (accounts, sales, loyalty) becomes an independent service. An API gateway validates JWTs and routes requests. The Django endpoints become the foundation each service is extracted from.</div>
+      <div class="badge-row">
+        <span class="badge red">API gateway</span>
+        <span class="badge red">shared JWT issuer</span>
+        <span class="badge red">service mesh</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SECTION 7 — MIGRATION PHASES
+  ════════════════════════════════════════════════ -->
+  <div class="section-label">7 · React Migration Phases</div>
+
+  <div class="phase-row">
+    <div class="phase done">
+      <div class="p-label">✓ Phase 1 — Branch setup</div>
+      <div class="p-title">Experiment</div>
+      <div class="p-desc"><code>feature/react-ui</code> branch created. Django templates untouched. React scaffold pending.</div>
+    </div>
+    <div class="phase now">
+      <div class="p-label">→ Phase 2a — NOW COMPLETE</div>
+      <div class="p-title">Backend API prep</div>
+      <div class="p-desc">All 36 endpoints live on <code>feature/react-api</code>. Session auth wired. URL namespaces registered. SPA shells served.</div>
+    </div>
+    <div class="phase next">
+      <div class="p-label">Phase 2b — Next</div>
+      <div class="p-title">React scaffold</div>
+      <div class="p-desc">Create <code>FIDPHA001/frontend/</code>. Scaffold Vite + React. Wire up <code>fetch()</code> calls to the new API endpoints.</div>
+    </div>
+    <div class="phase later">
+      <div class="p-label">Phase 3 — Later</div>
+      <div class="p-title">Page-by-page replacement</div>
+      <div class="p-desc">Replace Django template pages one at a time. Django version survives one release behind a feature flag. Templates deleted only after React version is stable.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       NOTES
+  ════════════════════════════════════════════════ -->
+  <div class="section-label">Key Rules</div>
+
+  <div class="note">
+    <strong>React never computes points.</strong> The backend annotates <code>pts</code> on every Sale queryset using <code>round(qty × product_ppv × points_per_unit)</code>. React receives a number and renders it. If the formula ever changes it changes in one place — <code>fidpha/services.py:get_account_points_queryset()</code>.
+  </div>
+  <div class="note" style="margin-top: 8px; border-left-color: #7c3aed;">
+    <strong>The machine API (/api/v1/) is untouched.</strong> Pharmacy software submits sales via <code>POST /api/v1/sales/</code> using <code>Authorization: Token &lt;raw&gt;</code>. This flow is completely separate from the React session flow. Both coexist without conflict.
+  </div>
+  <div class="note" style="margin-top: 8px; border-left-color: #16a34a;">
+    <strong>Django templates stay alive during the migration.</strong> <code>/portal/</code> and <code>/control/</code> routes remain fully functional. React replaces pages one by one — there is no big-bang cutover.
+  </div>
+
+</div>
+</body>
+</html>

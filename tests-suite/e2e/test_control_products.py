@@ -33,3 +33,31 @@ def test_create_product_redirects_to_list(live_server, page, staff_user, login_a
 
     expect(page).to_have_url(f"{live_server.url}/control/products/")
     expect(page.get_by_role("cell", name="E2E Test Product")).to_be_visible()
+
+
+# ─── Tier 1 ───────────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db(transaction=True)
+def test_edit_product_ppv_persists(live_server, page, staff_user, base_data, login_as):
+    """Tier 1 · PR7 — edit a product's PPV; DB reflects the new value.
+
+    PPV is the canonical price-per-unit used by points calculation (see CLAUDE.md
+    'Sale.product_ppv' rule). A regression here silently changes points awarded.
+    """
+    from decimal import Decimal
+
+    product = base_data["product"]  # code=PROD-001, ppv=12.50 per conftest
+    new_ppv = "18.75"
+
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/products/{product.pk}/edit/")
+
+    page.fill("[name=ppv]", new_ppv)
+    page.locator("#submitBtn").click()
+    page.wait_for_load_state("networkidle")
+
+    product.refresh_from_db()
+    assert product.ppv == Decimal(new_ppv), (
+        f"Expected ppv={new_ppv}, got {product.ppv}"
+    )
