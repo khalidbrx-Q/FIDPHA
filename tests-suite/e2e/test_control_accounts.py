@@ -57,8 +57,6 @@ def test_create_account_lands_on_detail(live_server, page, staff_user, login_as)
 @pytest.mark.django_db(transaction=True)
 def test_edit_account_name_persists(live_server, page, staff_user, base_data, login_as):
     """Tier 1 · AC21 — edit an account's name via the form; DB + list reflect new value."""
-    from fidpha.models import Account
-
     account = base_data["account"]  # code=PH-TEST, name="Test Pharmacy"
     new_name = "Test Pharmacy (Renamed)"
 
@@ -89,7 +87,6 @@ def test_edit_account_toggle_auto_review_persists(live_server, page, staff_user,
     so we must enable it here before the per-account checkbox becomes editable.
     """
     from control.models import SystemConfig
-    from fidpha.models import Account
 
     # Enable global auto-review so the per-account checkbox is editable.
     config = SystemConfig.get()

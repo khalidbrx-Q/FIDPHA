@@ -3,7 +3,7 @@ import datetime
 from collections import defaultdict
 
 from django.core.paginator import Paginator
-from django.db.models import Count, F, FloatField, ExpressionWrapper, Q, Sum
+from django.db.models import Count, F, FloatField, ExpressionWrapper, Sum
 from django.db.models.functions import Round, TruncDay, TruncMonth, TruncYear
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -500,7 +500,6 @@ class ContractChartsView(APIView):
         product_labels = [cp.product.designation for cp in sorted(cps, key=lambda cp: -cp_pts_agg.get(cp.pk, 0))]
         product_data   = [cp_pts_agg.get(cp.pk, 0) for cp in sorted(cps, key=lambda cp: -cp_pts_agg.get(cp.pk, 0))]
 
-        now = timezone.now()
         if active_contract and active_contract.pk == contract.pk:
             start_d  = active_contract.start_date.date() if hasattr(active_contract.start_date, "date") else active_contract.start_date
             end_d    = active_contract.end_date.date() if hasattr(active_contract.end_date, "date") else active_contract.end_date
@@ -696,7 +695,6 @@ class SalesChartsView(APIView):
 
     def get(self, request):
         account     = _get_account(request)
-        now         = timezone.now()
         month_dates = _build_month_dates(12)
 
         monthly_qs = (
@@ -739,7 +737,9 @@ class SalesChartsView(APIView):
                 .annotate(month=TruncMonth("sale_datetime"))
                 .values("month", "status").annotate(cnt=Count("id"))
             )
-            ya = defaultdict(int); yr_rej = defaultdict(int); yp = defaultdict(int)
+            ya = defaultdict(int)
+            yr_rej = defaultdict(int)
+            yp = defaultdict(int)
             for r in yr_qs:
                 mk = r["month"].strftime("%Y-%m")
                 if r["status"] == Sale.STATUS_ACCEPTED:

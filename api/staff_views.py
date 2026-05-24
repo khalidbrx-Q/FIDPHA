@@ -15,7 +15,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from fidpha.models import Account, Contract, Contract_Product, Product, RoleProfile, UserProfile
+from fidpha.models import Account, Contract, Contract_Product, Product, RoleProfile
 from api.models import APIToken, APITokenUsageLog
 from sales.models import Sale, SaleImport
 from control.models import SystemConfig
@@ -31,7 +31,6 @@ from api.serializers import (
     StaffRoleSerializer,
     StaffAPITokenListSerializer,
     StaffSaleReviewSerializer,
-    StaffSaleBatchSerializer,
 )
 
 _AUTH  = [SessionAuthentication]
@@ -203,7 +202,7 @@ class StaffAccountDetailView(APIView):
         try:
             _log(request.user, account, DELETION)
             account.delete()
-        except ProtectedError as e:
+        except ProtectedError:
             return Response({"detail": "Cannot delete: account has related records."}, status=409)
         return Response(status=204)
 

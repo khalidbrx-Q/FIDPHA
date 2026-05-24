@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User, Group
-from django.db.models import Count, F, FloatField, ExpressionWrapper, Sum
+from django.db.models import F, FloatField, ExpressionWrapper, Sum
 from django.db.models.functions import Round
 
 from fidpha.models import Account, Contract, Contract_Product, Product

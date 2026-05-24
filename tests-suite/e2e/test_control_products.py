@@ -46,7 +46,6 @@ def test_edit_product_ppv_persists(live_server, page, staff_user, base_data, log
     'Sale.product_ppv' rule). A regression here silently changes points awarded.
     """
     from decimal import Decimal
-    from fidpha.models import Product
 
     product = base_data["product"]  # code=PROD-001, ppv=12.50 per conftest
     new_ppv = "18.75"
