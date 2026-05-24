@@ -1,0 +1,17 @@
+# Development & CI dependencies — NOT installed in the production image.
+# The Dockerfile only installs requirements.txt; this file is for local dev,
+# CI test runs, and contributor workstations.
+#
+# Install with:    pip install -r requirements.txt -r requirements-dev.txt
+
+# Linting / static analysis
+ruff==0.15.14
+
+# Test runner + Django integration
+pytest==9.0.3
+pytest-django==4.12.0
+
+# End-to-end testing (Playwright + browser controller)
+pytest-playwright==0.7.2
+pytest-base-url==2.1.0
+playwright==1.59.0

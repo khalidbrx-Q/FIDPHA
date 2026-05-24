@@ -22,6 +22,8 @@ Verified from `FIDPHA001/settings.py`:
 - **Error tracking**: **Sentry** (`sentry-sdk[django]`) initialized in `settings.py` when `SENTRY_DSN` is set. Auto-captures all unhandled exceptions via `DjangoIntegration`. `traces_sample_rate=1.0` in DEBUG, `0.1` in production. `send_default_pii=False` (GDPR-safe).
 - **Logging**: structured via `python-json-logger`. `LOGGING` dict in `settings.py`. Two formatters — `verbose` (human-readable, DEBUG mode) and `json` (production). Loggers under `wininpharma.*` namespace (e.g. `wininpharma.health`, `wininpharma.api`).
 - **Secrets management**: dual-mode. **Doppler** (cloud, project `fidpha`, config `dev`) via `doppler run -- <cmd>` — secrets injected as env vars. Falls back to local `.env` (gitignored) when Doppler isn't used. `python-decouple` reads from env first, then `.env`.
+- **Containerization** (on `feature/deployment-automation`): multi-stage `Dockerfile` at the repo root. Stage 1 (builder) = `python:3.12-slim` + build-essential + libpq-dev, builds `/opt/venv` with all pip deps. Stage 2 (runtime) = `python:3.12-slim` + libpq5 + curl + gettext, copies the venv from builder, runs as non-root `app` user (uid 1000), `collectstatic` at build time, `EXPOSE 8000`, `HEALTHCHECK` against `/health/` every 30s, `CMD` = `gunicorn FIDPHA001.wsgi:application -c gunicorn.conf.py`. Final image ~150 MB. `.dockerignore` excludes secrets/`.venv`/`frontend/`/`db.sqlite3`/`.git`/etc. Tested locally with `--env-file .env` and Neon + Upstash + Sentry — full cloud-services stack from a local Linux container.
+- **`docker-compose.yml`** (local dev only): declarative wrapper around `docker run`. Defines the `web` service (builds from Dockerfile + maps port 8000 + reads .env + restart=unless-stopped). Includes commented-out `postgres:16-alpine` + `redis:7-alpine` services with named volumes + healthchecks for full offline mode (uncomment and switch `.env` to `DB_BACKEND=local`, `LOCAL_DB_HOST=postgres`, `REDIS_URL=redis://redis:6379`). Production hosting (Railway/Render) reads the Dockerfile directly — compose is NOT used in production.
 - **DRF** — partially adopted: `APIView`, `Response`, `BaseAuthentication`, `BasePermission`, throttling, `URLPathVersioning`, serializers (used in `/api/portal/` and `/api/staff/` only). No viewsets, routers, or browsable API in production.
 - **django-allauth** — Google OAuth active; Apple planned (deferred).
 - **django-unfold** — themes Django admin (admin still registered for fallback; URL is commented out).
@@ -490,37 +492,42 @@ After Phase 1, `manage.py check --deploy` with `DEBUG=False` drops from **6 secu
 
 ## 13. Testing
 
-### Test suite location (relocated 2026-05-17)
+### Test suite location
 
-All tests live **outside the Django repo** at `../tests-suite/` to be passively excluded from production deploys without needing `.gitignore` entries. Layout:
+Tests live inside the Django repo at `tests-suite/`. Layout:
 
 ```
-tests-suite/                  ← outside the git root
-├── conftest.py               ← shared setup (DJANGO_ALLOW_ASYNC_UNSAFE for Playwright)
-├── unit/
-│   ├── __init__.py
-│   ├── test_api.py           ← extracted from feature/react-api
-│   ├── test_fidpha.py
-│   └── test_sales.py
-└── e2e/
-    ├── __init__.py
-    ├── conftest.py           ← Playwright + base_data fixtures
-    └── test_*.py             ← 8 files
+FIDPHA001/                    ← Django repo root
+├── manage.py
+├── pytest.ini                ← testpaths = tests-suite
+└── tests-suite/
+    ├── conftest.py           ← shared setup (DJANGO_ALLOW_ASYNC_UNSAFE for Playwright,
+    │                            autouse SystemConfig + cache reset per test)
+    ├── unit/
+    │   ├── __init__.py
+    │   ├── test_api.py
+    │   ├── test_control.py
+    │   ├── test_fidpha.py
+    │   └── test_sales.py
+    └── e2e/
+        ├── __init__.py
+        ├── conftest.py       ← Playwright + base_data fixtures
+        └── test_*.py         ← 8 files
 ```
 
-`pytest.ini` (inside the repo) points `testpaths = ../tests-suite` and sets `DJANGO_SETTINGS_MODULE = FIDPHA001.settings`. Pytest finds tests external to the repo while Django still resolves settings normally.
+> The suite was relocated outside the repo on 2026-05-17 to keep production deploys lean, then moved back on 2026-05-22 ahead of Phase 2.2 (GitHub Actions CI) so CI checkouts include it. Space saving wasn't worth the dual-repo coordination cost.
 
 ### Unit Tests
-- ~265 tests collected from `../tests-suite/unit/`.
-- Run: `pytest --ignore=../tests-suite/e2e` (from inside the repo)
-- **Known divergence:** tests were authored against `feature/react-api` code and assume views/serializers that don't exist on `develop` yet. On `develop`: 186 fail / 10 pass / 47 skip. This is **not a regression** — it's the test/feature merge gap. Will be resolved when `feature/react-api` lands on `develop`.
-- The 10 passing + 47 skipped + the test collector running cleanly are the canary signals — if those numbers change after a hardening commit, the change broke something.
+- ~197 active tests collected from `tests-suite/unit/`.
+- Run: `pytest --ignore=tests-suite/e2e` (from inside the repo)
+- Current baseline (verified 2026-05-21 on Neon Postgres): **197 passed / 1 skipped / 0 failed**.
+- The 1 skipped test is `test_same_contract_two_concurrent_batches` — deferred because the test's "both batches succeed" assertion conflicts with the strictly-after `last_sale_datetime` rule when thread ordering reverses. Production behavior is correct; the test needs a rewrite.
 
 ### E2E Tests (Playwright)
-- **Status: Done** — 22 tests across 8 files, all passing on `feature/react-api`.
-- Framework: `pytest-playwright` + `pytest-django`. Lives at `../tests-suite/e2e/`.
-- `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `../tests-suite/conftest.py` (required for Playwright + Django live server).
-- Run: `pytest ../tests-suite/e2e/` (from inside the repo)
+- **Status: Done** — 22 tests across 8 files, all passing on Neon Postgres + Chromium.
+- Framework: `pytest-playwright` + `pytest-django`. Lives at `tests-suite/e2e/`.
+- `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `tests-suite/conftest.py` (required for Playwright + Django live server).
+- Run: `pytest tests-suite/e2e/` (from inside the repo)
 
 | File | Tests | What's covered |
 |---|---|---|
@@ -544,17 +551,80 @@ tests-suite/                  ← outside the git root
 
 ---
 
-## 14. Pending Work
+## 14. Deployment Pipeline
+
+### Branch topology
+
+```
+feature/* ──push──▶ integration ──PR──▶ develop ──PR──▶ main
+                       │                    │                │
+                       ▼                    ▼                ▼
+                  fidpha-dev          fidpha-staging    wininpharma
+                  (Fly.io, live)      (future)          (future)
+```
+
+`integration` is the merge/staging branch — pushes here trigger auto-deploy to `fidpha-dev`. `develop` and `main` are protected by GitHub branch rulesets that require 3 CI checks to pass before a PR can merge.
+
+### `.github/workflows/ci.yml` — four jobs
+
+| Job | Runs on | Time | Purpose |
+|---|---|---|---|
+| `lint` | every push, every PR to develop/main | ~30s | `ruff check .` |
+| `unit` | every push, every PR to develop/main | ~2 min | pytest on `tests-suite/unit/` against ephemeral postgres:16-alpine + redis:7-alpine service containers |
+| `e2e` | every push, every PR to develop/main | ~3 min | pytest on `tests-suite/e2e/` (Playwright Chromium) against the same service containers + Django live_server |
+| `deploy` | **push to `integration` only** | ~2 min | `flyctl deploy --remote-only` to `fidpha-dev`; `needs:` the other 3 jobs |
+
+Concurrency at the workflow level cancels old runs on rapid re-pushes; a separate `concurrency: deploy-fidpha-dev` group on the deploy job ensures only one deploy ever runs at a time.
+
+### Hosting — Fly.io
+
+- **App:** `fidpha-dev` in region `cdg` (Paris, closest to Neon's London region).
+- **Machines:** 2× `shared-cpu-1x@1GB` with `auto_stop_machines = 'stop'`. Idle machines sleep to free quota; wake on first incoming request (~3–5s cold start). Two machines enable zero-downtime deploys (one updates while the other serves).
+- **HTTPS:** Fly's edge handles TLS termination; the app receives plain HTTP from Fly's proxy. `SECURE_PROXY_SSL_HEADER` in settings.py is configured to trust `X-Forwarded-Proto`.
+- **release_command:** `python manage.py migrate --noinput` runs on a temporary machine before each deploy goes live. If migration fails, the deploy aborts and the previous version keeps serving.
+
+### Secrets — Doppler-Fly sync
+
+Source of truth for cloud secrets is **Doppler**. The Doppler-Fly sync integration pushes the `dev` config to the `fidpha-dev` Fly app automatically — secret changes propagate within seconds, and the affected machines auto-restart to pick up new values.
+
+Local development uses the `.env` file, independent of Doppler. The mapping is 1:1: one Doppler config per Fly app.
+
+### Environment matrix (planned)
+
+| Component | dev (current) | staging (future) | production (future) |
+|---|---|---|---|
+| Git branch | `integration` | `develop` | `main` |
+| Fly app | `fidpha-dev` | `fidpha-staging` | `wininpharma` |
+| Fly token (GH secret) | `FLY_API_TOKEN` | `FLY_API_TOKEN_STAGING` | `FLY_API_TOKEN_PROD` |
+| Doppler config | `dev` | `stg` | `prd` |
+| Neon DB | `neondb` (shared with local) | `neondb-staging` branch | `neondb-prod` branch |
+| Upstash Redis | shared DB #1 | DB #2 | DB #3 |
+| Sentry tag | `SENTRY_ENVIRONMENT=dev` | `SENTRY_ENVIRONMENT=staging` | `SENTRY_ENVIRONMENT=production` |
+
+Staging + prod are deferred until budget approval. The same Dockerfile + `fly.toml` pattern + `ci.yml` deploy-job template will be reused; only the app name, branch trigger, and token vary per environment.
+
+### REPO REVIEWER routines
+
+Two Claude routines (one per PR event — `opened` and `synchronize`), both with identical instructions. They fetch the PR diff, run a security + bug check tuned to the WinInPharma domain (PPV invariant, last_sale_datetime rule, one-active-contract-per-account, etc.), and post:
+- A PR comment with verdict (CLEAN / LOW_RISK / MEDIUM_RISK / HIGH_RISK) and a findings table
+- An email summary to `khalidbrx@icloud.com`
+
+Filtered by `Author = khalidbrx-Q` and `Base branch is one of: main, develop` — so feature → integration PRs don't fire a review (out of scope at that stage).
+
+---
+
+## 15. Pending Work
 
 - Apple OAuth provider.
 - Token detail page enhancements (usage chart; `APITokenUsageLog` model already in place).
 - `SystemConfig.ppv_tolerance_percent` enforcement — field is stored and configurable but the rejection check inside `submit_sales_batch` is still a no-op.
 - Sales Review UX backlog (remaining items).
 - React SPA (`feature/react-ui`) — portal and staff React UIs built, paused pending advisor approval to merge.
+- `fidpha-staging` + `wininpharma` (prod) Fly apps — deferred until supervisor approves the ~$10–25/mo budget for the 3-environment Fly.io setup.
 
 ---
 
-## 15. Key Files (file:line)
+## 16. Key Files (file:line)
 
 | Need | Location |
 |---|---|

@@ -4,18 +4,6 @@ control/urls.py
 URL routes for the custom admin control panel.
 
 All routes are prefixed with /control/ in the main urls.py.
-New routes will be added here as each part of the control panel is built.
-
-Author: FIDPHA Dev Team
-Last updated: April 2026
-"""
-
-"""
-control/urls.py
----------------
-URL routes for the custom admin control panel.
-
-All routes are prefixed with /control/ in the main urls.py.
 Placeholder views (coming_soon) are used for sections not yet built —
 they will be replaced part by part as the control panel grows.
 

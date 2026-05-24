@@ -1,0 +1,246 @@
+# GitHub Actions CI/CD for WinInPharma.
+#
+# Runs three independent test jobs in parallel on every push and on PRs to
+# develop / main:
+#   - lint     : ruff style + bug checks (fast, ~30s)
+#   - unit     : pytest unit suite against ephemeral Postgres + Redis
+#   - e2e      : Playwright E2E suite (Chromium against live_server)
+#
+# After all three pass, a fourth job auto-deploys to Fly.io:
+#   - deploy   : runs `flyctl deploy` to fidpha-dev — ONLY on push to the
+#                integration branch (never on PRs, never on other branches)
+#
+# Branch protection on develop + main should require lint/unit/e2e to pass.
+# See ruff.toml for lint config, pytest.ini for test config, fly.toml for deploy.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [develop, main]
+
+# Cancel an in-progress run when a new commit lands on the same branch.
+# Saves CI minutes and keeps the queue short.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Default env shared by all jobs — keeps Django out of "real" prod mode
+# while still loading enough config for the test DB / cache to work.
+env:
+  PYTHON_VERSION: "3.12"
+  # Tells settings.py to skip the production HTTPS-redirect block even
+  # though DEBUG=False. The Django test client + Playwright live_server
+  # both speak plain HTTP — without this, every request gets 301'd.
+  CI: "True"
+  # Django settings:
+  SECRET_KEY: "ci-dummy-secret-key-not-used-in-prod"
+  DEBUG: "False"
+  ALLOWED_HOSTS: "*"
+  # DB: connect to the postgres service container (defined per-job below).
+  DB_BACKEND: "local"
+  LOCAL_DB_NAME: "wininpharma_test"
+  LOCAL_DB_USER: "postgres"
+  LOCAL_DB_PASSWORD: "postgres"
+  LOCAL_DB_HOST: "localhost"
+  LOCAL_DB_PORT: "5432"
+  # Redis: connect to the redis service container.
+  REDIS_URL: "redis://localhost:6379"
+  # Sentry: empty DSN disables it — we don't want CI errors in Sentry.
+  SENTRY_DSN: ""
+
+jobs:
+
+  # ─── Job 1 ─── Lint ─────────────────────────────────────────────────────
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install ruff
+        run: pip install -r requirements-dev.txt
+
+      - name: Run ruff
+        run: ruff check .
+
+  # ─── Job 2 ─── Unit tests ───────────────────────────────────────────────
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        # Wait until Postgres is ready before the job's steps start running.
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=5
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Collect static files
+        # WhiteNoise's CompressedManifestStaticFilesStorage reads
+        # staticfiles/staticfiles.json — without this step, any template
+        # using {% static '...' %} 500s under DEBUG=False.
+        run: python manage.py collectstatic --noinput --clear
+
+      - name: Sanity-check Django config
+        run: python manage.py check --deploy --fail-level WARNING || true
+        # `|| true` keeps this step informational — we don't fail on
+        # deploy warnings yet (we still have ~1 warning per Phase 1).
+
+      - name: Run unit tests
+        run: pytest tests-suite/unit/ -v --tb=short
+
+  # ─── Job 3 ─── End-to-end tests ─────────────────────────────────────────
+  e2e:
+    name: E2E tests (Playwright)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=5
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Collect static files
+        # WhiteNoise's CompressedManifestStaticFilesStorage reads
+        # staticfiles/staticfiles.json — without this step, any template
+        # using {% static '...' %} 500s under DEBUG=False.
+        run: python manage.py collectstatic --noinput --clear
+
+      # Cache the Playwright browsers — saves ~90s per run after the first.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('requirements-dev.txt') }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: playwright install --with-deps chromium
+
+      - name: Install Playwright OS deps (cached browsers)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: playwright install-deps chromium
+
+      - name: Run E2E tests
+        run: pytest tests-suite/e2e/ -v --tb=short
+
+  # ─── Job 4 ─── Deploy to Fly.io (fidpha-dev) ────────────────────────────
+  # Runs ONLY after lint + unit + e2e all pass. Skipped on:
+  #   - pull_request events (we never deploy from a PR)
+  #   - any branch other than integration
+  #
+  # In the future, similar deploy jobs (with their own conditions) will
+  # handle pushes to develop → fidpha-staging and main → fidpha-prod.
+  deploy:
+    name: Deploy to Fly.io (fidpha-dev)
+    runs-on: ubuntu-latest
+    needs: [lint, unit, e2e]
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/integration'
+    # GitHub's "concurrency" at the workflow level cancels older runs, but
+    # an additional deploy-specific guard ensures we never have two deploys
+    # racing each other against Fly.
+    concurrency:
+      group: deploy-fidpha-dev
+      cancel-in-progress: false  # let in-flight deploys finish
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to fidpha-dev
+        # --remote-only builds the Docker image on Fly's builders (not in
+        # the GitHub runner) — keeps the runner light and reuses Fly's
+        # build cache.
+        # fly.toml in the repo already specifies app=fidpha-dev, so no
+        # explicit -a flag is needed.
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

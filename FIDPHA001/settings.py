@@ -220,8 +220,7 @@ else:
 #   logger = logging.getLogger("wininpharma.api")
 #   logger.info("Batch accepted", extra={"batch_id": ..., "rows": ...})
 # ---------------------------------------------------------------------------
-import os as _os
-LOG_LEVEL = _os.environ.get("LOG_LEVEL", "INFO").upper()
+LOG_LEVEL = config("LOG_LEVEL", default="INFO").upper()
 
 LOGGING = {
     "version": 1,
@@ -294,8 +293,12 @@ SECURE_REFERRER_POLICY = "same-origin"
 # Block embedding in iframes — prevents clickjacking
 X_FRAME_OPTIONS = "DENY"
 
-# HTTPS-only settings — applied only in production (DEBUG=False)
-if not DEBUG:
+# HTTPS-only settings — applied only in production (DEBUG=False).
+# Skipped in CI even with DEBUG=False, because the Django test client and
+# Playwright's live_server both speak plain HTTP. The CI env var is set in
+# .github/workflows/ci.yml.
+_IS_CI = config("CI", default=False, cast=bool)
+if not DEBUG and not _IS_CI:
     # Redirect any HTTP request to HTTPS
     SECURE_SSL_REDIRECT = True
     # Tell browsers "use HTTPS only" for 1 year (with subdomains, preload-ready)
