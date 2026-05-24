@@ -73,3 +73,200 @@ def test_accepted_sale_no_longer_shows_as_pending(live_server, page, staff_user,
     # Table re-renders after accept; the accept button must be gone for this row
     page.wait_for_selector("#salesTableWrap", state="visible", timeout=10000)
     expect(page.locator(f"tr[data-pk='{pending_sale.pk}'] .ab-a")).to_have_count(0)
+
+
+# ─── Tier 1 ───────────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db(transaction=True)
+def test_sales_list_status_filter_hides_non_matching_batches(
+    live_server, page, staff_user, pending_sale, login_as
+):
+    """Tier 1 · SR2 — status pills filter the batch list client-side.
+
+    Setup has 1 batch with 1 PENDING sale. Clicking "accepted" should hide it
+    (no accepted sales); clicking "pending" should show it again.
+    """
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/sales/")
+
+    page.wait_for_selector("#blSpinner", state="hidden", timeout=10000)
+    page.wait_for_selector(".bl-batch", timeout=10000)
+    expect(page.locator(".bl-batch")).to_have_count(1)
+
+    # Click "Has accepted" → batch hides (no accepted sales)
+    page.locator("#sfStatusPills .sf-quick", has_text="accepted").first.click()
+    page.wait_for_timeout(500)
+    expect(page.locator(".bl-batch:visible")).to_have_count(0)
+
+    # Click "Has pending" → batch reappears
+    page.locator("#sfStatusPills .sf-quick", has_text="pending").first.click()
+    page.wait_for_timeout(500)
+    expect(page.locator(".bl-batch:visible")).to_have_count(1)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_sales_list_search_filters_by_batch_id(
+    live_server, page, staff_user, pending_sale, login_as
+):
+    """Tier 1 · SR4 — typing in the batch search input filters the list.
+
+    pending_sale fixture creates batch_id='E2E-BATCH-001'. Typing a non-match
+    hides the batch; typing a matching substring shows it again. This exercises
+    the same filter pipeline that the account/contract pickers use.
+    """
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/sales/")
+
+    page.wait_for_selector("#blSpinner", state="hidden", timeout=10000)
+    page.wait_for_selector(".bl-batch", timeout=10000)
+    expect(page.locator(".bl-batch")).to_have_count(1)
+
+    # Non-match → batch hides
+    page.fill("#sfBatchQ", "NOMATCH-XYZ")
+    page.wait_for_timeout(500)
+    expect(page.locator(".bl-batch:visible")).to_have_count(0)
+
+    # Match → batch reappears
+    page.fill("#sfBatchQ", "E2E-BATCH")
+    page.wait_for_timeout(500)
+    expect(page.locator(".bl-batch:visible")).to_have_count(1)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_bulk_accept_multiple_sales(live_server, page, staff_user, base_data, login_as):
+    """Tier 1 · SR14 — select multiple sales then bulk-accept; all flip to ACCEPTED."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from sales.models import SaleImport
+
+    cp = base_data["cp"]
+    product = base_data["product"]
+    contract = base_data["contract"]
+
+    # Create 3 pending sales in one batch
+    sales = []
+    for i in range(3):
+        dt = timezone.now() - timedelta(days=1, hours=i + 1)
+        si = SaleImport.objects.create(
+            batch_id="E2E-BULK-001",
+            account_code=contract.account.code,
+            external_designation=cp.external_designation,
+            sale_datetime=dt, creation_datetime=dt,
+            quantity=1, ppv=product.ppv,
+            status=SaleImport.STATUS_ACCEPTED,
+            contract_product=cp,
+        )
+        sales.append(Sale.objects.create(
+            sale_import=si, contract_product=cp,
+            sale_datetime=dt, creation_datetime=dt,
+            quantity=1, ppv=si.ppv, product_ppv=product.ppv,
+            status=Sale.STATUS_PENDING,
+        ))
+
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/sales/")
+    _open_batch_and_wait_for_table(page)
+
+    # Check all 3 row-level checkboxes (.row-chk is what bulkSelected() reads)
+    for sale in sales:
+        page.locator(f"tr[data-pk='{sale.pk}'] .row-chk").check()
+
+    # Click the bulk-accept button (becomes visible when rows are selected)
+    page.locator("#btnAccSel").click()
+
+    # bulkSelected() opens a confirm modal (#confirmModal); click "Confirm"
+    page.wait_for_selector("#confirmModal", state="visible", timeout=5000)
+    page.locator("#confirmOkBtn").click()
+    page.wait_for_load_state("networkidle")
+
+    # All three sales should now be ACCEPTED
+    for sale in sales:
+        sale.refresh_from_db()
+        assert sale.status == Sale.STATUS_ACCEPTED, (
+            f"Sale {sale.pk} expected ACCEPTED, got {sale.status}"
+        )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_sales_batch_submitted_via_api_appears_in_review_ui(
+    live_server, page, staff_user, base_data, login_as
+):
+    """⭐ Tier 1 · X1 — the core business flow end-to-end:
+
+    Pharmacy submits a batch via POST /api/v1/sales/ (the real REST endpoint,
+    with a real APIToken) → staff logs into the control panel → opens the
+    sales review page → the new batch is visible → opens the batch modal →
+    the submitted sale row is visible with the expected designation.
+
+    This is the single most important test in the suite. If this passes,
+    the whole product works.
+    """
+    import json
+    from datetime import timedelta
+    from django.test import Client
+    from django.utils import timezone
+    from api.models import APIToken
+    from sales.models import Sale, SaleImport
+
+    account = base_data["account"]
+    cp = base_data["cp"]  # external_designation = DOLI1000
+
+    # ── 1) Pharmacy side: POST a real batch via /api/v1/sales/ ──────────
+    # APIToken.save() generates a random raw token and stores its SHA-256 hash.
+    # The raw value is exposed once via the transient .raw_token attribute.
+    token_obj = APIToken(name="E2E API Token")
+    token_obj.save()
+    raw_token = token_obj.raw_token
+
+    api_client = Client()
+    sale_dt = (timezone.now() - timedelta(days=1, hours=2)).isoformat()
+    batch_id = "E2E-API-TO-UI-001"
+    payload = {
+        "account_code": account.code,
+        "batch_id":     batch_id,
+        "sales": [{
+            "external_designation": cp.external_designation,  # DOLI1000
+            "sale_datetime":        sale_dt,
+            "creation_datetime":    sale_dt,
+            "quantity":             2,
+            "ppv":                  12.50,
+        }],
+    }
+    response = api_client.post(
+        "/api/v1/sales/",
+        data=json.dumps(payload),
+        content_type="application/json",
+        # APITokenAuthentication expects 'Token <key>' (not Bearer).
+        # See api/authentication.py — case-insensitive match on "token".
+        HTTP_AUTHORIZATION=f"Token {raw_token}",
+    )
+    assert response.status_code == 200, (
+        f"API submission failed: {response.status_code} {response.content!r}"
+    )
+
+    # Confirm the records actually exist on the DB side before checking UI.
+    assert SaleImport.objects.filter(batch_id=batch_id).count() == 1
+    assert Sale.objects.filter(sale_import__batch_id=batch_id).count() == 1
+    submitted_sale = Sale.objects.get(sale_import__batch_id=batch_id)
+    assert submitted_sale.status == Sale.STATUS_PENDING  # auto-review disabled by default
+
+    # ── 2) Staff side: open the review page, find the batch, open the modal ─
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/sales/")
+    page.wait_for_selector("#blSpinner", state="hidden", timeout=10000)
+    page.wait_for_selector(".bl-batch", timeout=10000)
+
+    # The just-submitted batch is visible (search by batch_id to disambiguate)
+    page.fill("#sfBatchQ", batch_id)
+    page.wait_for_timeout(500)
+    expect(page.locator(".bl-batch:visible")).to_have_count(1)
+
+    # Open the batch modal
+    page.locator(".bl-batch:visible").first.click()
+    page.wait_for_selector("#salesTableWrap", state="visible", timeout=10000)
+
+    # The sale row is visible with the product's designation
+    expect(page.get_by_text("Doliprane 1000")).to_be_visible()
+    # And the row references the actual Sale PK we just created via API
+    expect(page.locator(f"tr[data-pk='{submitted_sale.pk}']")).to_be_visible()

@@ -44,3 +44,16 @@ def test_portal_pharmacy_page_shows_account_name(live_server, page, portal_user,
     login_as("portaluser", "PortalPass123!")
     page.goto(f"{live_server.url}/portal/pharmacy/")
     expect(page.locator(".card-title", has_text="E2E Pharmacy")).to_be_visible()
+
+
+# ─── Tier 1 ───────────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db(transaction=True)
+def test_portal_user_cannot_access_control_panel(live_server, page, portal_user, login_as):
+    """Tier 1 · P22 — portal users navigating to /control/ are bounced (no staff access)."""
+    login_as("portaluser", "PortalPass123!")
+    page.goto(f"{live_server.url}/control/")
+    # The exact target depends on staff_required's behaviour (login redirect or 403→handler).
+    # What matters: the user is NOT on /control/.
+    expect(page).not_to_have_url(f"{live_server.url}/control/")
