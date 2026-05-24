@@ -153,8 +153,8 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | API token auth | `api/authentication.py` |
 | Control decorators | `control/decorators.py` |
 | Global config | `control/models.py` `SystemConfig.get()` |
-| E2E tests | `tests-suite/e2e/` — 22 tests, 8 files |
-| Unit tests | `tests-suite/unit/` — `test_api.py`, `test_fidpha.py`, `test_sales.py`, `test_control.py` (~197 tests) |
+| E2E tests | `tests-suite/e2e/` — 40 tests, 8 files (Tier 1 shipped 2026-05-24; 43 more planned in Tiers 2-4) |
+| Unit tests | `tests-suite/unit/` — `test_api.py`, `test_fidpha.py`, `test_sales.py`, `test_control.py` (~196 tests, 1 skipped) |
 | Code reviewer agent | `.claude/agents/code-reviewer.md` (outer `FIDPHA001/` folder) |
 | Health endpoint | `FIDPHA001/health.py` → `GET /health/` (db + cache + migrations probes) |
 | Sentry init | `FIDPHA001/settings.py` (env: `SENTRY_DSN`) |

@@ -518,25 +518,25 @@ FIDPHA001/                    ← Django repo root
 > The suite was relocated outside the repo on 2026-05-17 to keep production deploys lean, then moved back on 2026-05-22 ahead of Phase 2.2 (GitHub Actions CI) so CI checkouts include it. Space saving wasn't worth the dual-repo coordination cost.
 
 ### Unit Tests
-- ~197 active tests collected from `tests-suite/unit/`.
+- ~196 active tests collected from `tests-suite/unit/`, 1 intentionally skipped.
 - Run: `pytest --ignore=tests-suite/e2e` (from inside the repo)
 - Current baseline (verified 2026-05-21 on Neon Postgres): **197 passed / 1 skipped / 0 failed**.
 - The 1 skipped test is `test_same_contract_two_concurrent_batches` — deferred because the test's "both batches succeed" assertion conflicts with the strictly-after `last_sale_datetime` rule when thread ordering reverses. Production behavior is correct; the test needs a rewrite.
 
 ### E2E Tests (Playwright)
-- **Status: Done** — 22 tests across 8 files, all passing on Neon Postgres + Chromium.
+- **Status: Tier 1 shipped (2026-05-24)** — 40 active tests across 8 files; Tier 2-4 (~43 more tests) planned. See the workspace-level `docs/e2e-coverage.html` for the full tiered plan.
 - Framework: `pytest-playwright` + `pytest-django`. Lives at `tests-suite/e2e/`.
 - `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `tests-suite/conftest.py` (required for Playwright + Django live server).
 - Run: `pytest tests-suite/e2e/` (from inside the repo)
 
 | File | Tests | What's covered |
 |---|---|---|
-| `test_auth.py` | 4 | Login redirect (staff + portal), wrong-password error, logout |
-| `test_portal.py` | 4 | Portal login → dashboard, stat cards, sales page, pharmacy name |
-| `test_sales_review.py` | 4 | Batch list loads, accept sale, reject sale, accepted row leaves pending queue |
-| `test_control_accounts.py` | 2 | Accounts list loads, create account → lands on detail page |
-| `test_control_products.py` | 2 | Products list loads, create product → redirects to list with row |
-| `test_control_contracts.py` | 2 | Contracts list loads, create contract → lands on detail page |
+| `test_auth.py` | 8 | Original: staff/portal login, wrong password. + Tier 1: P21 logout clears session, A2 anon→portal bounced, A12+A13 password reset request+confirm |
+| `test_portal.py` | 5 | Original: portal login → dashboard, stat cards, sales page, pharmacy name. + Tier 1: P22 portal user → /control/ → bounced |
+| `test_sales_review.py` | 8 | Original: batch list, single accept/reject, accepted-row-leaves-pending. + Tier 1: SR2 status filter, SR4 batch search, SR14 bulk accept, ⭐ X1 sales batch end-to-end (API → review UI) |
+| `test_control_accounts.py` | 4 | Original: list loads, create lands on detail. + Tier 1: AC21 edit name, AC23 toggle auto-review (needs global flag enabled first) |
+| `test_control_products.py` | 3 | Original: list loads, create redirects. + Tier 1: PR7 edit PPV |
+| `test_control_contracts.py` | 8 | Original: list loads, create lands on detail. + Tier 1: CT13 edit title, CT17 add product via formset (`cp-` prefix), CT22 AJAX unlink, E1/E2/E3 constraint UI errors |
 | `test_control_settings.py` | 2 | System settings page loads, toggle auto-review persists to DB |
 | `test_control_tokens.py` | 2 | Tokens list loads, create token → plain value revealed in banner |
 
