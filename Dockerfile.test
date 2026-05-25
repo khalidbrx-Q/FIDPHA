@@ -1,0 +1,39 @@
+# =============================================================================
+# WinInPharma — local test runner image
+# =============================================================================
+# Built on Microsoft's official Playwright Python image so Chromium + its
+# system libs are pre-installed (~1.5 GB), avoiding a `playwright install
+# --with-deps` step on every run. The image tag MUST stay in lock-step with
+# the `playwright==X` version pinned in requirements-dev.txt.
+#
+# IMPORTANT: use the `noble` (Ubuntu 24.04) variant — it ships Python 3.12,
+# which is what the project requires (`django-redis==6.0.0` is Python 3.12+).
+# The `jammy` variant ships Python 3.10 and fails on requirements.txt install.
+#
+# This image is for local-only test runs that mirror the CI environment.
+# It is NOT used in production (the production runtime ships from Dockerfile)
+# and NOT used by GitHub Actions (CI installs Python deps directly on the
+# ubuntu-latest runner — see .github/workflows/ci.yml).
+#
+# Build:        docker compose -f docker-compose.test.yml build
+# Run full:     docker compose -f docker-compose.test.yml up --abort-on-container-exit
+# Run e2e only: docker compose -f docker-compose.test.yml run --rm tests pytest tests-suite/e2e/ -v
+# Shell:        docker compose -f docker-compose.test.yml run --rm tests bash
+# =============================================================================
+
+FROM mcr.microsoft.com/playwright/python:v1.59.0-noble
+
+WORKDIR /app
+
+# Install runtime + dev dependencies first so this layer is cached when only
+# the source code changes. Without --no-cache-dir the layer grows ~80 MB.
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+
+# Pre-copy code so `docker run` works without a host mount. The compose file
+# overrides this with a bind-mount for fast iteration; the COPY is the fallback.
+COPY . .
+
+# Default command runs the full suite. Override with `command:` in compose
+# or `docker compose run tests pytest tests-suite/e2e/` to scope down.
+CMD ["pytest", "tests-suite/", "-v", "--tb=short"]
