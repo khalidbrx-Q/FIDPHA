@@ -45,7 +45,7 @@ Pharmacies submit their daily sales data via an API. Each sale is validated agai
 | French i18n | Portal available in French (EN/FR toggle) |
 | Audit trail | Every staff action logged via Django LogEntry; visible on control panel dashboard |
 | CSV / Excel import | Bulk product import and contract product import via file upload |
-| Automated testing | ~196 unit tests + 40 Playwright E2E tests covering all major flows (Tier 1 shipped 2026-05-24) |
+| Automated testing | 199 unit tests + 72 Playwright E2E tests covering all major flows (Tiers 1–3 shipped); local Docker runner mirrors CI exactly |
 
 ---
 
@@ -179,8 +179,11 @@ Tests live inside the repo at `tests-suite/`. `pytest.ini` points there.
 
 ```bash
 pytest                                          # all tests (unit + e2e)
-pytest --ignore=tests-suite/e2e                 # unit tests only (~196)
-pytest tests-suite/e2e/                         # e2e only (40 Playwright tests, needs browser)
+pytest --ignore=tests-suite/e2e                 # unit tests only (199)
+pytest tests-suite/e2e/                         # e2e only (72 Playwright tests, needs browser)
+
+# Local Docker test runner (same Postgres / Redis / Python / Playwright as CI)
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
 ```
 
 Visit `http://127.0.0.1:8000` — you will be redirected to `/portal/login/`.
@@ -452,8 +455,8 @@ Staff permissions are managed through Django Groups (called "Roles" in the contr
 On every push, `.github/workflows/ci.yml` runs 4 jobs:
 
 1. **Lint (ruff)** — code-style + bug-pattern check
-2. **Unit tests (pytest)** — ~196 tests against ephemeral Postgres + Redis containers
-3. **E2E tests (Playwright)** — 40 browser tests against the same containers
+2. **Unit tests (pytest)** — 199 tests against ephemeral Postgres + Redis containers
+3. **E2E tests (Playwright)** — 72 browser tests against the same containers
 4. **Deploy (flyctl)** — only on push to `integration`: builds + deploys to `fidpha-dev`
 
 Branch protection on `develop` and `main` blocks merges until all 3 test jobs pass.
@@ -597,11 +600,14 @@ FIDPHA/                             ← git root (manage.py is here)
 ├── locale/fr/LC_MESSAGES/          ← French translations (.po source + .mo compiled)
 ├── static/                         ← global static (admin.css, admin JS)
 ├── templates/
+│   ├── 404.html                    ← branded standalone error page (handler404)
 │   ├── registration/               ← password reset templates
 │   └── react/                      ← SPA shell templates (index.html, staff_index.html)
 ├── tests-suite/                    ← all tests live here
-│   ├── unit/                       ← ~196 unit tests
-│   └── e2e/                        ← 40 Playwright E2E tests (pytest tests-suite/e2e/ -v)
+│   ├── unit/                       ← 199 unit tests
+│   └── e2e/                        ← 72 Playwright E2E tests across 14 files
+├── Dockerfile.test                 ← local-only test runner image (matches CI)
+├── docker-compose.test.yml         ← postgres + redis + tests sidecars
 └── frontend/                       ← React SPA (feature/react-ui branch only)
     ├── src/
     │   ├── api/client.js           ← fetch wrapper (session + CSRF)
@@ -665,7 +671,7 @@ Les pharmacies soumettent leurs ventes quotidiennes via une API. Chaque vente es
 | i18n Français | Portail disponible en français (bascule FR/EN) |
 | Piste d'audit | Chaque action staff enregistrée via Django LogEntry ; visible sur le tableau de bord |
 | Import CSV / Excel | Import en masse de produits et de produits de contrats par fichier |
-| Tests automatisés | ~196 tests unitaires + 40 tests E2E Playwright couvrant tous les flux principaux (Tier 1 livré 2026-05-24) |
+| Tests automatisés | 199 tests unitaires + 72 tests E2E Playwright couvrant tous les flux principaux (Tiers 1–3 livrés) ; exécuteur Docker local qui reproduit la CI |
 
 ---
 
@@ -799,8 +805,11 @@ Les tests vivent dans le repo à `tests-suite/`. Le `pytest.ini` pointe vers cet
 
 ```bash
 pytest                                          # tous les tests (unit + e2e)
-pytest --ignore=tests-suite/e2e                 # tests unitaires uniquement (~196)
-pytest tests-suite/e2e/                         # e2e uniquement (40 tests Playwright, nécessite navigateur)
+pytest --ignore=tests-suite/e2e                 # tests unitaires uniquement (199)
+pytest tests-suite/e2e/                         # e2e uniquement (72 tests Playwright, nécessite navigateur)
+
+# Exécuteur Docker local (mêmes Postgres / Redis / Python / Playwright que la CI)
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
 ```
 
 Visitez `http://127.0.0.1:8000` — vous serez redirigé vers `/portal/login/`.
@@ -1055,8 +1064,8 @@ Les permissions du staff sont gérées via les groupes Django (appelés "Rôles"
 À chaque push, `.github/workflows/ci.yml` exécute 4 jobs :
 
 1. **Lint (ruff)** — vérification style + bugs probables
-2. **Tests unitaires (pytest)** — 196 tests contre Postgres + Redis éphémères
-3. **Tests E2E (Playwright)** — 40 tests navigateur contre les mêmes conteneurs
+2. **Tests unitaires (pytest)** — 199 tests contre Postgres + Redis éphémères
+3. **Tests E2E (Playwright)** — 72 tests navigateur contre les mêmes conteneurs
 4. **Deploy (flyctl)** — uniquement sur push vers `integration` : build + deploy sur `fidpha-dev`
 
 Les règles de protection sur `develop` et `main` bloquent les merges tant que les 3 jobs de test ne sont pas verts.
@@ -1200,11 +1209,14 @@ FIDPHA/                             ← racine git (manage.py est ici)
 ├── locale/fr/LC_MESSAGES/          ← traductions françaises (.po source + .mo compilé)
 ├── static/                         ← statiques globaux (admin.css, JS admin)
 ├── templates/
+│   ├── 404.html                    ← page d'erreur autonome stylisée (handler404)
 │   ├── registration/               ← templates réinitialisation mot de passe
 │   └── react/                      ← templates shell SPA (index.html, staff_index.html)
 ├── tests-suite/                    ← tous les tests vivent ici
-│   ├── unit/                       ← ~196 tests unitaires
-│   └── e2e/                        ← 40 tests E2E Playwright (pytest tests-suite/e2e/ -v)
+│   ├── unit/                       ← 199 tests unitaires
+│   └── e2e/                        ← 72 tests E2E Playwright répartis sur 14 fichiers
+├── Dockerfile.test                 ← image d'exécuteur de tests locale (reproduit la CI)
+├── docker-compose.test.yml         ← sidecars postgres + redis + tests
 └── frontend/                       ← SPA React (branche feature/react-ui uniquement)
     ├── src/
     │   ├── api/client.js           ← wrapper fetch (session + CSRF)

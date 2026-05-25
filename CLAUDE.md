@@ -109,8 +109,8 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
 | `feature/postgres-migration` | PostgreSQL + Neon DB backend (not merged into develop yet) |
 | `feature/production-hardening` | Phase 1 production infra: security headers, Gunicorn/WhiteNoise, JSON logging, /health/, Sentry, Redis (Upstash), Doppler — not merged into develop yet |
-| `feature/deployment-automation` | Phase 2 in progress: Dockerfile + .dockerignore done (2.1). GitHub Actions CI + hosting + staging still pending. |
-| `integration` | Long-running integration branch — safe merge zone for combining feature branches before they reach develop. Local-only deploys (no auto-deploy). |
+| `feature/deployment-automation` | Phase 2 — merged via PR #2 (2026-05-23). Dockerfile, GitHub Actions CI (lint+unit+e2e+deploy), Fly.io hosting (fidpha-dev.fly.dev), Doppler-Fly sync. |
+| `integration` | Long-running integration branch — safe merge zone for combining feature branches before they reach develop. Auto-deploys to fidpha-dev.fly.dev on every push (Fly trial currently suspended, deploy job fails until billing resolved). |
 
 - Never merge `feature/react-ui` into `develop` or `main` without explicit approval.
 - Never modify portal templates for React convenience — they are the production fallback.
@@ -153,8 +153,8 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | API token auth | `api/authentication.py` |
 | Control decorators | `control/decorators.py` |
 | Global config | `control/models.py` `SystemConfig.get()` |
-| E2E tests | `tests-suite/e2e/` — 40 tests, 8 files (Tier 1 shipped 2026-05-24; 43 more planned in Tiers 2-4) |
-| Unit tests | `tests-suite/unit/` — `test_api.py`, `test_fidpha.py`, `test_sales.py`, `test_control.py` (~196 tests, 1 skipped) |
+| E2E tests | `tests-suite/e2e/` — 72 tests, 14 files (Tiers 1–3 shipped). See `docs/e2e-coverage.html` (workspace doc) for the 4-tier plan + remaining ~10 in Tier 4. |
+| Unit tests | `tests-suite/unit/` — `test_api.py`, `test_fidpha.py`, `test_sales.py`, `test_control.py` (199 passed, 2 skipped) |
 | Code reviewer agent | `.claude/agents/code-reviewer.md` (outer `FIDPHA001/` folder) |
 | Health endpoint | `FIDPHA001/health.py` → `GET /health/` (db + cache + migrations probes) |
 | Sentry init | `FIDPHA001/settings.py` (env: `SENTRY_DSN`) |
@@ -164,6 +164,9 @@ Filters via query params. Aggregations as sub-resources. Reuse the existing erro
 | Dockerfile | `Dockerfile` (multi-stage: builder + runtime, non-root `app` user, HEALTHCHECK on /health/) |
 | Docker ignore list | `.dockerignore` (excludes secrets, .venv, frontend, db.sqlite3, etc.) |
 | Docker Compose | `docker-compose.yml` (web service builds from Dockerfile + reads .env; optional commented postgres/redis for full offline mode) |
+| Docker test runner | `Dockerfile.test` + `docker-compose.test.yml` — local-only image based on `mcr.microsoft.com/playwright/python:v1.59.0-noble`, runs the full test suite (unit + e2e) inside containers that mirror CI. Run: `docker compose -f docker-compose.test.yml up --build --abort-on-container-exit`. |
+| Custom 404 page | `templates/404.html` + `handler404` in `FIDPHA001/urls.py`. Standalone branded card matching the login style. Only fires when `DEBUG=False`. |
+| Custom 403 page | `control/templates/control/403.html` rendered by `@perm_required` / `@superuser_required` in `control/decorators.py`. |
 | CI/CD workflow | `.github/workflows/ci.yml` — 4 jobs: lint (ruff) + unit (pytest) + e2e (Playwright) + deploy (flyctl). Deploy only fires on push to `integration`. |
 | Ruff config | `ruff.toml` (target py312, line 120, E402 ignored in setup-pattern scripts) |
 | Dev/runtime split | `requirements.txt` (runtime only — what ships in Docker image) + `requirements-dev.txt` (pytest, ruff, playwright — CI/local only) |
@@ -190,6 +193,12 @@ gunicorn FIDPHA001.wsgi:application -c gunicorn.conf.py
 pytest                              # all tests (pytest.ini points to tests-suite/)
 pytest --ignore=tests-suite/e2e     # unit tests only
 pytest tests-suite/e2e/             # e2e only (needs Playwright browsers)
+
+# Tests via Docker (mirrors CI exactly — postgres 16 + redis 7 + python 3.12 + chromium)
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
+# Scope to one layer:
+docker compose -f docker-compose.test.yml run --rm tests pytest tests-suite/unit/
+docker compose -f docker-compose.test.yml run --rm tests pytest tests-suite/e2e/
 
 # Observability
 curl http://localhost:8000/health/  # health probe (db + cache + migrations)
