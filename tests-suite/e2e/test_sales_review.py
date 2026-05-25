@@ -288,3 +288,113 @@ def test_sales_batch_submitted_via_api_appears_in_review_ui(
     expect(page.get_by_text("Doliprane 1000")).to_be_visible()
     # And the row references the actual Sale PK we just created via API
     expect(page.locator(f"tr[data-pk='{submitted_sale.pk}']")).to_be_visible()
+
+
+# ─── Tier 3 ───────────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db(transaction=True)
+def test_sales_batch_list_date_filter_hides_out_of_range_batches(
+    live_server, page, staff_user, pending_sale, login_as
+):
+    """Tier 3 · SR3 — setting `#sfFrom` to a future date hides all current
+    batches (none have received_at >= tomorrow). Clearing the filter restores
+    the list. Verifies the date_from/date_to → batches-v2 JSON pipeline.
+    """
+    from datetime import date, timedelta
+
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/sales/")
+    page.wait_for_selector("#blSpinner", state="hidden", timeout=10000)
+    page.wait_for_selector(".bl-batch", timeout=10000)
+    expect(page.locator(".bl-batch")).to_have_count(1)
+
+    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+
+    # Filling #sfFrom dispatches change → fetchBatches() → /sales/api/batches-v2/
+    # We wait for the API to land before asserting on visibility.
+    with page.expect_response(lambda r: "/control/sales/api/batches-v2/" in r.url):
+        page.locator("#sfFrom").fill(tomorrow)
+
+    expect(page.locator(".bl-batch:visible")).to_have_count(0)
+    expect(page.locator("#blEmpty")).to_be_visible()
+
+    # Click the "Clear dates" button (only visible when a date filter is set)
+    with page.expect_response(lambda r: "/control/sales/api/batches-v2/" in r.url):
+        page.locator("#sfClearDate").click()
+
+    expect(page.locator(".bl-batch:visible")).to_have_count(1)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_sales_list_csv_export_returns_attachment(
+    live_server, page, staff_user, pending_sale, login_as
+):
+    """Tier 3 · SR19 — the "Export all" option downloads a CSV attachment.
+
+    The button lives inside an .exp-menu dropdown; we open it then click the
+    second item (`doListExport(true)`). Playwright's `expect_download` catches
+    the browser download; we assert the suggested filename matches the
+    sales-export naming convention.
+    """
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/sales/")
+    page.wait_for_selector("#blSpinner", state="hidden", timeout=10000)
+
+    # Open the export dropdown
+    page.locator("button.exp-sort-btn", has_text="Export").first.click()
+
+    with page.expect_download() as dl_info:
+        page.locator(".exp-opt", has_text="Export all").click()
+
+    download = dl_info.value
+    assert download.suggested_filename.endswith(".csv"), (
+        f"Expected a .csv attachment, got: {download.suggested_filename}"
+    )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_sales_list_shows_ppv_mismatch_anomaly_badge(
+    live_server, page, staff_user, base_data, login_as
+):
+    """Tier 3 · SR9 — when a sale's submitted `ppv` differs from the linked
+    product's current PPV, the JSON API's `ppv_mismatch` count is > 0 and the
+    batch row renders the `.bc-ppv` "PPV mismatch" badge.
+
+    `base_data` creates a product with ppv=12.50; we submit a Sale with
+    ppv=99.99 to force the anomaly. The mismatch detection lives entirely
+    inside `sales_api_batches_v2`'s annotate clause — no submit-time check.
+    """
+    from datetime import timedelta
+    from django.utils import timezone
+    from sales.models import Sale, SaleImport
+
+    cp = base_data["cp"]
+    product = base_data["product"]
+    contract = base_data["contract"]
+    dt = timezone.now() - timedelta(days=1, hours=2)
+    si = SaleImport.objects.create(
+        batch_id="SR9-MISMATCH-001",
+        account_code=contract.account.code,
+        external_designation=cp.external_designation,
+        sale_datetime=dt, creation_datetime=dt,
+        quantity=1, ppv="99.99",  # ← deliberately differs from product.ppv (12.50)
+        status=SaleImport.STATUS_ACCEPTED, contract_product=cp,
+    )
+    Sale.objects.create(
+        sale_import=si, contract_product=cp,
+        sale_datetime=dt, creation_datetime=dt,
+        quantity=1, ppv=si.ppv,
+        product_ppv=product.ppv,  # snapshot retains catalogue value
+        status=Sale.STATUS_PENDING,
+    )
+
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/sales/")
+    page.wait_for_selector("#blSpinner", state="hidden", timeout=10000)
+    page.wait_for_selector(".bl-batch", timeout=10000)
+
+    # The batch row carries a PPV-mismatch indicator. In the row it's a span
+    # with `title="N PPV mismatch"` next to a warning icon (the .bc-ppv badge
+    # is reused in the batch modal chips, not the row).
+    expect(page.locator(".bl-batch [title$='PPV mismatch']").first).to_be_visible()
