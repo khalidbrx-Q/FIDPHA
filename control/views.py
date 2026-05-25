@@ -156,14 +156,18 @@ def _export_response(rows, basename, fmt):
 
 
 def _log(user, obj, flag, message=""):
-    """Write an entry to Django's admin LogEntry audit table."""
-    LogEntry.objects.log_action(
+    """Write an entry to Django's admin LogEntry audit table.
+
+    Uses `log_actions()` (the post-Django-5.1 API). `log_action()` is deprecated
+    and removed in Django 6. `log_actions()` derives content_type / object_id /
+    object_repr from the object itself.
+    """
+    LogEntry.objects.log_actions(
         user_id=user.pk,
-        content_type_id=ContentType.objects.get_for_model(obj).pk,
-        object_id=obj.pk,
-        object_repr=str(obj)[:200],
+        queryset=[obj],
         action_flag=flag,
         change_message=message,
+        single_object=True,
     )
 
 
