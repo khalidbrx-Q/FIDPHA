@@ -42,8 +42,15 @@ def test_staff_can_accept_a_sale(live_server, page, staff_user, pending_sale, lo
     page.goto(f"{live_server.url}/control/sales/")
     _open_batch_and_wait_for_table(page)
 
-    page.locator(f"tr[data-pk='{pending_sale.pk}'] .ab-a").click()
-    page.wait_for_load_state("networkidle")
+    # Accept/reject hit dedicated AJAX endpoints. `networkidle` is unreliable
+    # against XHR-heavy pages — wait on the specific response instead so the
+    # subsequent DB read sees the committed status.
+    # sale_accept returns a 302 redirect (browser fetch sees r.redirected=true),
+    # so don't constrain on status — match the URL alone.
+    with page.expect_response(
+        lambda r: f"/control/sales/{pending_sale.pk}/accept/" in r.url
+    ):
+        page.locator(f"tr[data-pk='{pending_sale.pk}'] .ab-a").click()
 
     pending_sale.refresh_from_db()
     assert pending_sale.status == Sale.STATUS_ACCEPTED
@@ -55,8 +62,10 @@ def test_staff_can_reject_a_sale(live_server, page, staff_user, pending_sale, lo
     page.goto(f"{live_server.url}/control/sales/")
     _open_batch_and_wait_for_table(page)
 
-    page.locator(f"tr[data-pk='{pending_sale.pk}'] .ab-r").click()
-    page.wait_for_load_state("networkidle")
+    with page.expect_response(
+        lambda r: f"/control/sales/{pending_sale.pk}/reject/" in r.url
+    ):
+        page.locator(f"tr[data-pk='{pending_sale.pk}'] .ab-r").click()
 
     pending_sale.refresh_from_db()
     assert pending_sale.status == Sale.STATUS_REJECTED
@@ -68,8 +77,12 @@ def test_accepted_sale_no_longer_shows_as_pending(live_server, page, staff_user,
     page.goto(f"{live_server.url}/control/sales/")
     _open_batch_and_wait_for_table(page)
 
-    page.locator(f"tr[data-pk='{pending_sale.pk}'] .ab-a").click()
-    page.wait_for_load_state("networkidle")
+    # sale_accept returns a 302 redirect (browser fetch sees r.redirected=true),
+    # so don't constrain on status — match the URL alone.
+    with page.expect_response(
+        lambda r: f"/control/sales/{pending_sale.pk}/accept/" in r.url
+    ):
+        page.locator(f"tr[data-pk='{pending_sale.pk}'] .ab-a").click()
     # Table re-renders after accept; the accept button must be gone for this row
     page.wait_for_selector("#salesTableWrap", state="visible", timeout=10000)
     expect(page.locator(f"tr[data-pk='{pending_sale.pk}'] .ab-a")).to_have_count(0)
@@ -175,10 +188,15 @@ def test_bulk_accept_multiple_sales(live_server, page, staff_user, base_data, lo
     # Click the bulk-accept button (becomes visible when rows are selected)
     page.locator("#btnAccSel").click()
 
-    # bulkSelected() opens a confirm modal (#confirmModal); click "Confirm"
+    # bulkSelected() opens a confirm modal (#confirmModal); click "Confirm".
+    # The confirm triggers a POST to /control/sales/bulk-update/ — we wait on
+    # that response specifically (networkidle is unreliable here and was the
+    # root cause of the original flake under full-suite load).
     page.wait_for_selector("#confirmModal", state="visible", timeout=5000)
-    page.locator("#confirmOkBtn").click()
-    page.wait_for_load_state("networkidle")
+    with page.expect_response(
+        lambda r: "/control/sales/bulk-update/" in r.url
+    ):
+        page.locator("#confirmOkBtn").click()
 
     # All three sales should now be ACCEPTED
     for sale in sales:
