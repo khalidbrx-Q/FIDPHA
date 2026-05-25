@@ -18,6 +18,18 @@ def handler403(request, exception=None):
 handler403 = handler403
 
 
+def handler404(request, exception=None):
+    """Brand-styled 404 page for unknown URLs.
+
+    Uses a standalone template (templates/404.html) — does NOT extend
+    portal/base or control/base because most 404 hits come from anonymous
+    users who don't have a session-bound layout. The page links back to /.
+    """
+    return render(request, "404.html", status=404)
+
+handler404 = handler404
+
+
 def spa_view(request, subpath=""):
     return render(request, "react/index.html")
 

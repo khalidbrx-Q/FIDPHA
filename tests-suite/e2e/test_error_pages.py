@@ -16,17 +16,24 @@ from django.contrib.auth.models import User
 
 
 @pytest.mark.django_db(transaction=True)
-def test_unknown_url_returns_404(live_server, page):
-    """Tier 3 · A21 — Django's default 404 handler kicks in for unknown URLs.
+def test_unknown_url_renders_styled_404_page(live_server, page):
+    """Tier 3 · A21 — unknown URLs return 404 AND render the custom branded
+    404 template (templates/404.html) wired via `handler404` in
+    FIDPHA001/urls.py.
 
-    No custom `handler404` is defined, so Django returns its built-in 404 page
-    (or the technical debug page when DEBUG=True). What we pin is the HTTP
-    status code — 404 is the contract."""
+    pytest-django's `live_server` runs with DEBUG=False, so Django's
+    technical debug page is bypassed and our handler fires.
+    """
     response = page.goto(f"{live_server.url}/this-url-does-not-exist-anywhere/")
     assert response is not None
     assert response.status == 404, (
         f"Expected 404 for unknown URL, got {response.status}"
     )
+    # The branded template renders — verify both the code badge and the
+    # CTA back to home are visible.
+    expect(page.get_by_text("Error 404").first).to_be_visible()
+    expect(page.get_by_text("Page not found").first).to_be_visible()
+    expect(page.get_by_role("link", name="Back to home")).to_be_visible()
 
 
 @pytest.mark.django_db(transaction=True)
