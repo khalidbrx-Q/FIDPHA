@@ -42,22 +42,38 @@ Verified from `FIDPHA001/settings.py`:
 FIDPHA/                              ← repo root (git root) — manage.py is here
 ├── CLAUDE.md
 ├── ARCHITECTURE.md                  ← this file
+├── README.md
 ├── manage.py
 ├── db.sqlite3
 ├── requirements.txt
+├── requirements-dev.txt
+├── Dockerfile                       ← production runtime image (Gunicorn, multi-stage, ~150 MB)
+├── Dockerfile.test                  ← local test runner image (playwright/python:v1.59-noble + dev deps)
+├── docker-compose.yml               ← local app stack (web + optional postgres/redis sidecars)
+├── docker-compose.test.yml          ← local test stack (postgres + redis + tests runner)
+├── fly.toml                         ← Fly.io config for fidpha-dev
+├── gunicorn.conf.py
+├── ruff.toml
+├── pytest.ini
 ├── FIDPHA001/                       ← Django project package
 │   ├── settings.py
-│   ├── urls.py
-│   ├── test_runner.py
+│   ├── urls.py                      ← includes handler404 (templates/404.html) and handler403
+│   ├── health.py                    ← /health/ probe (db + cache + migrations)
 │   └── asgi.py / wsgi.py
 ├── fidpha/                          ← core: models, portal views, services, allauth adapters
 ├── api/                             ← REST API layer (token auth v1 + session auth portal/staff)
 ├── sales/                           ← ingestion + Sale/SaleImport models
 ├── control/                         ← staff control panel (CRUD + sales review + sync log)
-├── templates/registration/          ← password reset (project-level)
-├── templates/react/                 ← index.html + staff_index.html (SPA shells, served by Django)
+├── templates/                       ← project-level templates
+│   ├── 404.html                     ← branded standalone error page
+│   ├── registration/                ← password reset
+│   └── react/                       ← SPA shells served by Django
 ├── locale/fr/LC_MESSAGES/           ← French translations (.po source + .mo compiled)
 ├── static/                          ← admin.css, admin/*.js (django-unfold enhancements)
+├── tests-suite/                     ← pytest tests (unit + e2e)
+│   ├── conftest.py
+│   ├── unit/                        ← test_api / test_control / test_fidpha / test_sales
+│   └── e2e/                         ← 14 Playwright test files
 └── frontend/                        ← React SPA (Vite 6 + React 18), feature/react-ui only
     ├── src/
     │   ├── api/client.js            ← fetch wrapper (session + CSRF)
@@ -228,6 +244,8 @@ FIDPHA/                              ← repo root (git root) — manage.py is h
 | `/app/` and `/app/<path>/` | `spa_view` → serves `templates/react/index.html` |
 | `/control-app/` and `/control-app/<path>/` | `staff_spa_view` → serves `templates/react/staff_index.html` |
 | `/control/` | `control.urls` |
+| _(any unknown path)_ | `handler404` (rendering `templates/404.html` with status 404) when `DEBUG=False`. Falls back to Django's technical debug page when `DEBUG=True`. |
+| _(PermissionDenied)_ | `handler403` (redirects to `/control/`). Not used by `@perm_required` — that decorator renders `control/403.html` directly. |
 
 ### 6.2 Portal (`fidpha/urls.py`, `app_name="fidpha"`)
 
@@ -454,7 +472,8 @@ Per-row rejection reasons (in order):
 ## 11. Common Patterns (Implementation Quirks)
 
 - **PRG with session stash** for control forms: redirect on POST, hydrate from `request.session.pop("_<form>_<pk>")` on GET. See `accounts_create`, `contracts_edit`, `products_create`.
-- **Audit logging**: `_log(user, obj, flag, msg)` (`control/views.py:36`) writes Django `LogEntry`. Use on every create/edit/delete in control panel.
+- **Audit logging**: `_log(user, obj, flag, msg)` (`control/views.py`) writes Django `LogEntry`. Uses `log_actions()` (post-Django-5.1 API; `log_action()` was deprecated and is removed in Django 6). Use `_log()` on every create/edit/delete in the control panel.
+- **Dashboard activity filtering**: `recent_activity` on `/control/` is filtered by the viewer's `view_*` permissions to prevent information disclosure. Non-superusers only see LogEntry rows whose `content_type__app_label` + `content_type__model` matches a `view_<model>` permission they hold. Superusers see everything. Mirrors the sidebar visibility rules.
 - **TraceableMixin**: stamp `created_by` on creation, `modified_by` on edit, before save.
 - **CSV export**: `StreamingHttpResponse` + generator. Don't build CSV in memory. See `sales_export_csv`, `sync_log` export branch.
 - **Batch API endpoints**: return `{"items":[...], "total":..., "page":..., "pages":..., "has_prev":..., "has_next":...}`. Match shape.
@@ -512,33 +531,40 @@ FIDPHA001/                    ← Django repo root
     └── e2e/
         ├── __init__.py
         ├── conftest.py       ← Playwright + base_data fixtures
-        └── test_*.py         ← 8 files
+        └── test_*.py         ← 14 files
 ```
 
 > The suite was relocated outside the repo on 2026-05-17 to keep production deploys lean, then moved back on 2026-05-22 ahead of Phase 2.2 (GitHub Actions CI) so CI checkouts include it. Space saving wasn't worth the dual-repo coordination cost.
 
 ### Unit Tests
-- ~196 active tests collected from `tests-suite/unit/`, 1 intentionally skipped.
+- 199 active tests, 2 intentionally skipped.
 - Run: `pytest --ignore=tests-suite/e2e` (from inside the repo)
-- Current baseline (verified 2026-05-21 on Neon Postgres): **197 passed / 1 skipped / 0 failed**.
-- The 1 skipped test is `test_same_contract_two_concurrent_batches` — deferred because the test's "both batches succeed" assertion conflicts with the strictly-after `last_sale_datetime` rule when thread ordering reverses. Production behavior is correct; the test needs a rewrite.
+- Current baseline (verified 2026-05-25): **199 passed / 2 skipped / 0 failed** in ~3 min.
+- The 1 long-standing skip is `test_same_contract_two_concurrent_batches` — deferred because the test's "both batches succeed" assertion conflicts with the strictly-after `last_sale_datetime` rule when thread ordering reverses. Production behaviour is correct; the test needs a rewrite.
 
 ### E2E Tests (Playwright)
-- **Status: Tier 1 shipped (2026-05-24)** — 40 active tests across 8 files; Tier 2-4 (~43 more tests) planned. See the workspace-level `docs/e2e-coverage.html` for the full tiered plan.
+- **Status: Tiers 1–3 shipped** — 72 active tests across 14 files (40 original + 18 Tier 2 on 2026-05-25 + 14 Tier 3 on 2026-05-25). Tier 4 (~10 more, polish) planned. See the workspace-level `docs/e2e-coverage.html` for the full tiered plan.
 - Framework: `pytest-playwright` + `pytest-django`. Lives at `tests-suite/e2e/`.
 - `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `tests-suite/conftest.py` (required for Playwright + Django live server).
 - Run: `pytest tests-suite/e2e/` (from inside the repo)
+- **Local Docker runner**: `docker compose -f docker-compose.test.yml up --build --abort-on-container-exit` — same Postgres 16 / Redis 7 / Python 3.12 / Playwright 1.59 as CI. ~7 min after the one-time image pull.
 
 | File | Tests | What's covered |
 |---|---|---|
-| `test_auth.py` | 8 | Original: staff/portal login, wrong password. + Tier 1: P21 logout clears session, A2 anon→portal bounced, A12+A13 password reset request+confirm |
-| `test_portal.py` | 5 | Original: portal login → dashboard, stat cards, sales page, pharmacy name. + Tier 1: P22 portal user → /control/ → bounced |
-| `test_sales_review.py` | 8 | Original: batch list, single accept/reject, accepted-row-leaves-pending. + Tier 1: SR2 status filter, SR4 batch search, SR14 bulk accept, ⭐ X1 sales batch end-to-end (API → review UI) |
-| `test_control_accounts.py` | 4 | Original: list loads, create lands on detail. + Tier 1: AC21 edit name, AC23 toggle auto-review (needs global flag enabled first) |
-| `test_control_products.py` | 3 | Original: list loads, create redirects. + Tier 1: PR7 edit PPV |
-| `test_control_contracts.py` | 8 | Original: list loads, create lands on detail. + Tier 1: CT13 edit title, CT17 add product via formset (`cp-` prefix), CT22 AJAX unlink, E1/E2/E3 constraint UI errors |
-| `test_control_settings.py` | 2 | System settings page loads, toggle auto-review persists to DB |
-| `test_control_tokens.py` | 2 | Tokens list loads, create token → plain value revealed in banner |
+| `test_auth.py` | 8 | Staff/portal login, wrong password. Tier 1: P21 logout clears session, A2 anon→portal bounced, A12+A13 password reset request+confirm. |
+| `test_portal.py` | 12 | Tier 0: portal login, dashboard cards, sales page, pharmacy name. Tier 1: P22 portal user → /control/ → bounced. Tier 2: P9 contracts page renders, P10 monthly chart visible, P11 chart drill-down by month (uses `ec.trigger('click', params)`). Tier 3: P3 year selector swaps chart labels, P13 edit email, P15 change password + re-login, P18 EN↔FR language switch. |
+| `test_sales_review.py` | 11 | Tier 0: batch list, accept/reject single sale, accepted row leaves pending. Tier 1: SR2 status filter, SR4 batch search, SR14 bulk accept, ⭐ X1 sales batch end-to-end (API → review UI). Tier 3: SR3 date range filter, SR19 CSV export download, SR9 PPV-mismatch anomaly badge. The 4 accept/reject tests use `page.expect_response()` (replaced flaky `wait_for_load_state('networkidle')`). |
+| `test_control_accounts.py` | 5 | Tier 0: list loads, create lands on detail. Tier 1: AC21 edit name, AC23 toggle auto-review. Tier 3: GAP12 per-account auto-review checkbox locked when global SystemConfig flag is off. |
+| `test_control_products.py` | 3 | Tier 0: list loads, create redirects. Tier 1: PR7 edit PPV. |
+| `test_control_contracts.py` | 8 | Tier 0: list loads, create lands on detail. Tier 1: CT13 edit title, CT17 add product via formset (`cp-` prefix), CT22 AJAX unlink, E1/E2/E3 constraint UI errors. |
+| `test_control_settings.py` | 6 | Tier 0: system settings page loads, toggle auto-review persists. Tier 3: S3 max_batch_size, S4 api_token_rate_limit, S5 ppv_tolerance_percent, S7 dirty-dot indicator. |
+| `test_control_tokens.py` | 5 | Tier 0: list loads, create token reveals plain value once. Tier 2: T6 revoke → API 401, T7 reactivate → API 200, T10 usage_count reflected in detail page. |
+| `test_control_users.py` | 4 | Tier 2: U6 staff create with role, U7 portal create with account link, U13 edit role updates groups, U14 deactivate user blocks login. |
+| `test_control_roles.py` | 2 | Tier 2: R3 create Group + RoleProfile, R4 `_EXCLUDED_APPS` hidden from permission picker. |
+| `test_control_dashboard.py` | 2 | Tier 2: D2 KPI cards show real counts, D3 Recent Activity widget lists CRUD events. |
+| `test_control_empty_states.py` | 2 | Tier 2: AC8 accounts list shows "No accounts yet" when empty, SR23 sales list shows `#blEmpty` when no batches. |
+| `test_modal_ux.py` | 2 | Tier 2: batch modal closes on X button + Escape key. |
+| `test_error_pages.py` | 2 | Tier 3: A21 unknown URL renders branded 404 template (handler404 + templates/404.html), A22 perm-denied view renders `control/403.html` with status 403. |
 
 **Gotchas for future test authoring:**
 - Sales list is a JS SPA — batches load via fetch into `#blRows`; sales table only appears inside a modal after clicking a batch row.
@@ -548,6 +574,9 @@ FIDPHA001/                    ← Django repo root
 - Language-switcher `[type=submit]` conflicts → always use `#submitBtn` for form submit buttons.
 - `UserProfile` has no auto-creation signal — `UserProfile.objects.create(...)` explicitly in fixtures.
 - `Contract.clean()` enforces one active contract per account — contract create tests need a fresh account.
+- **Visually-hidden form controls**: the `user_type` radios and `is_active` toggle (and the settings `*_enabled` toggles) sit inside styled labels with `opacity:0` inputs. `Locator.check()` fails on these. Use `evaluate("el => { el.checked = true; el.dispatchEvent(new Event('change', {bubbles:true})) }")` instead.
+- **ECharts click handlers**: `page.mouse.click()` cannot reliably hit SVG bars. Use `ec.trigger('click', params)` via `page.evaluate` — the chart instance is itself an `Eventful`, so calling `trigger` fires registered `on('click', fn)` handlers with the same params shape.
+- **AJAX response waiting**: prefer `page.expect_response(lambda r: <url match>)` over `wait_for_load_state('networkidle')` for any test that depends on a state mutation. `networkidle` is unreliable under XHR load and was the root cause of the original sales-review flake.
 
 ---
 
@@ -571,7 +600,7 @@ feature/* ──push──▶ integration ──PR──▶ develop ──PR─�
 |---|---|---|---|
 | `lint` | every push, every PR to develop/main | ~30s | `ruff check .` |
 | `unit` | every push, every PR to develop/main | ~2 min | pytest on `tests-suite/unit/` against ephemeral postgres:16-alpine + redis:7-alpine service containers |
-| `e2e` | every push, every PR to develop/main | ~3 min | pytest on `tests-suite/e2e/` (Playwright Chromium) against the same service containers + Django live_server |
+| `e2e` | every push, every PR to develop/main | ~5–7 min | pytest on `tests-suite/e2e/` (Playwright Chromium) against the same service containers + Django live_server |
 | `deploy` | **push to `integration` only** | ~2 min | `flyctl deploy --remote-only` to `fidpha-dev`; `needs:` the other 3 jobs |
 
 Concurrency at the workflow level cancels old runs on rapid re-pushes; a separate `concurrency: deploy-fidpha-dev` group on the deploy job ensures only one deploy ever runs at a time.
