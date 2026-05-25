@@ -198,8 +198,35 @@ def dashboard(request):
         "tokens_total": APIToken.objects.count(),
     }
 
+    # Recent Activity is filtered by the viewer's view-permissions so a staff
+    # user with limited access doesn't see audit entries on resources they
+    # have no permission to view (information disclosure). Superusers see
+    # everything (unchanged behaviour). Mirrors the sidebar's visibility rules.
+    if request.user.is_superuser:
+        activity_qs = LogEntry.objects.all()
+    else:
+        allowed_pairs: set[tuple[str, str]] = set()
+        for perm in request.user.get_all_permissions():
+            try:
+                app_label, codename = perm.split(".", 1)
+            except ValueError:
+                continue
+            if codename.startswith("view_"):
+                allowed_pairs.add((app_label, codename[len("view_"):]))
+
+        if not allowed_pairs:
+            activity_qs = LogEntry.objects.none()
+        else:
+            perm_filter = Q()
+            for app_label, model in allowed_pairs:
+                perm_filter |= Q(
+                    content_type__app_label=app_label,
+                    content_type__model=model,
+                )
+            activity_qs = LogEntry.objects.filter(perm_filter)
+
     recent_activity = (
-        LogEntry.objects
+        activity_qs
         .select_related("user", "content_type")
         .exclude(change_message__startswith="[")
         .order_by("-action_time")[:25]
