@@ -113,3 +113,34 @@ def test_edit_account_toggle_auto_review_persists(live_server, page, staff_user,
     assert account.auto_review_enabled is (not initial_state), (
         f"auto_review_enabled did not flip — still {account.auto_review_enabled}"
     )
+
+
+# ─── Tier 3 ───────────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db(transaction=True)
+def test_account_auto_review_checkbox_is_disabled_when_global_off(
+    live_server, page, staff_user, login_as
+):
+    """Tier 3 · GAP12 — when `SystemConfig.auto_review_enabled` is False (the
+    default), the per-account `auto_review_enabled` checkbox is locked.
+
+    The accounts_form.html template adds a `toggle-label-disabled` class on the
+    wrapping label and runs an inline IIFE that sets `cb.disabled = true` —
+    intentional UX: auto-review requires both flags, so the per-account toggle
+    is meaningless until the global one is on.
+    """
+    from control.models import SystemConfig
+
+    # Default state is already off, but assert explicitly to be defensive.
+    config = SystemConfig.get()
+    assert config.auto_review_enabled is False
+
+    login_as("staff", "StaffPass123!")
+    page.goto(f"{live_server.url}/control/accounts/new/")
+
+    checkbox = page.locator("[name=auto_review_enabled]")
+    # The IIFE runs on page load; wait for it to take effect.
+    expect(checkbox).to_be_disabled()
+    # And the wrapping label carries the disabled class for visual styling.
+    expect(page.locator("label.toggle-label-disabled")).to_have_count(1)
