@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WinInPharma 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-25 09:40+0100\n"
+"POT-Creation-Date: 2026-09-26 15:50+0200\n"
 "PO-Revision-Date: 2026-05-04 23:42+0100\n"
 "Last-Translator: WinInPharma\n"
 "Language-Team: French\n"
@@ -1229,11 +1229,15 @@ msgid "External Designation"
 msgstr "Désignation externe"
 
 #: .\control\templates\control\contracts_detail.html:213
+#: .\control\templates\control\products_list.html:95
 #: .\control\templates\control\products_list.html:136
-#: .\control\templates\control\sales_list.html:1075
-#: .\control\templates\control\sync_log.html:356
-msgid "PPV"
-msgstr "PPV"
+#: .\control\templates\control\contracts_detail.html:213
+#: .\control\templates\control\products_list.html:95
+#: .\control\templates\control\products_list.html:136
+#: .\fidpha\templates\fidpha\dashboard.html:173
+#: .\fidpha\templates\fidpha\sales.html:201
+msgid "PU"
+msgstr "PU"
 
 #: .\control\templates\control\contracts_detail.html:214
 msgid "Factor"
@@ -1335,8 +1339,8 @@ msgstr "seuls les produits actifs non encore liés à ce contrat sont listés"
 
 #: .\control\templates\control\contracts_form.html:166
 #: .\control\templates\control\contracts_form.html:200
-msgid "Points multiplier per dirham of PPV (default 1)"
-msgstr "Multiplicateur de points par dirham de PPV (défaut 1)"
+msgid "Points multiplier per dirham of PU (default 1)"
+msgstr "Multiplicateur de points par dirham de PU (défaut 1)"
 
 #: .\control\templates\control\contracts_form.html:166
 #: .\control\templates\control\contracts_form.html:200
@@ -1628,15 +1632,15 @@ msgid "Full product name as it appears in the system."
 msgstr "Nom complet du produit tel qu'il apparaît dans le système."
 
 #: .\control\templates\control\products_form.html:67
-msgid "PPV (Price per unit, MAD)"
-msgstr "PPV (Prix par unité, MAD)"
+msgid "PU (Unit price, MAD)"
+msgstr "PU (Prix Unitaire, MAD)"
 
 #: .\control\templates\control\products_form.html:70
 msgid ""
-"Used to calculate loyalty points: round(PPV × quantity). Leave blank if not "
+"Used to calculate loyalty points: round(PU × quantity). Leave blank if not "
 "applicable."
 msgstr ""
-"Utilisé pour calculer les points de fidélité : arrondi(PPV × quantité). "
+"Utilisé pour calculer les points de fidélité : arrondi(PU × quantité). "
 "Laisser vide si non applicable."
 
 #: .\control\templates\control\products_list.html:14
@@ -2117,6 +2121,11 @@ msgstr "Date de vente"
 msgid "Qty"
 msgstr "Qté"
 
+#: .\control\templates\control\sales_list.html:1075
+#: .\control\templates\control\sync_log.html:356
+msgid "PPV"
+msgstr "PPV"
+
 #: .\control\templates\control\sales_list.html:1076
 msgid "Pts"
 msgstr "Pts"
@@ -2143,12 +2152,12 @@ msgid "Awaiting review"
 msgstr "En attente de révision"
 
 #: .\control\templates\control\sales_list.html:1154
-msgid "submitted"
-msgstr "soumis"
+msgid "submitted PPV"
+msgstr "PPV soumis"
 
 #: .\control\templates\control\sales_list.html:1154
-msgid "contract"
-msgstr "contrat"
+msgid "catalogue PU"
+msgstr "PU catalogue"
 
 #: .\control\templates\control\sales_list.html:1208
 msgid "selected"
@@ -2644,10 +2653,10 @@ msgstr "Tolérance PPV"
 #: .\control\templates\control\system_settings.html:93
 msgid ""
 "Reject rows where the submitted PPV deviates more than this percentage from "
-"the catalogue value. Leave blank to disable the check."
+"the catalogue PU. Leave blank to disable the check."
 msgstr ""
 "Rejeter les lignes dont le PPV soumis s'écarte de plus de ce pourcentage du "
-"PPV catalogue. Laisser vide pour désactiver."
+"PU catalogue. Laisser vide pour désactiver."
 
 #: .\control\templates\control\system_settings.html:120
 msgid "Review Thresholds"
@@ -3260,16 +3269,16 @@ msgstr "Aucun utilisateur du portail ne correspond à votre filtre."
 msgid "No portal users yet"
 msgstr "Aucun utilisateur du portail pour l'instant"
 
-#: .\control\views.py:1822 .\control\views.py:1844 .\control\views.py:1852
-#: .\control\views.py:1861
+#: .\control\views.py:1849 .\control\views.py:1871 .\control\views.py:1879
+#: .\control\views.py:1888
 msgid "Must be a whole number."
 msgstr "Doit être un nombre entier."
 
-#: .\control\views.py:1832
+#: .\control\views.py:1859
 msgid "Must be a valid number."
 msgstr "Doit être un nombre valide."
 
-#: .\control\views.py:1869
+#: .\control\views.py:1896
 msgid "System configuration updated."
 msgstr "Configuration système mise à jour."
 
@@ -4006,19 +4015,19 @@ msgstr "Le mot de passe doit contenir au moins un caractère spécial."
 msgid "Password updated successfully."
 msgstr "Mot de passe mis à jour avec succès."
 
-#: .\templates\404.html:10 .\templates\404.html:102
+#: .\templates\404.html:13 .\templates\404.html:104
 msgid "Page not found"
 msgstr "Page introuvable"
 
-#: .\templates\404.html:101
+#: .\templates\404.html:103
 msgid "Error 404"
 msgstr "Erreur 404"
 
-#: .\templates\404.html:104
+#: .\templates\404.html:106
 msgid "The page you're looking for doesn't exist or has been moved."
 msgstr "La page que vous recherchez n'existe pas ou a été déplacée."
 
-#: .\templates\404.html:108
+#: .\templates\404.html:110
 msgid "Back to home"
 msgstr "Retour à l'accueil"
 

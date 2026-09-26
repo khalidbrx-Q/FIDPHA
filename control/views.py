@@ -2187,7 +2187,7 @@ def sales_export_csv(request):
 
     def generate_rows():
         yield ["Batch ID", "Product", "External Designation", "Sale Date",
-               "Qty", "PPV", "Contract PPV", "PPV OK", "Points",
+               "Qty", "PPV", "Contract PU", "PPV OK", "Points",
                "Status", "Reviewed By", "Reviewed At"]
         for s in qs.iterator():
             cp           = s.contract_product

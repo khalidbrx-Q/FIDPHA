@@ -236,7 +236,7 @@ class Contract_Product(models.Model):
     external_designation = models.CharField(max_length=255)
     points_per_unit = models.DecimalField(
         max_digits=6, decimal_places=2, default=1,
-        help_text="Points multiplier per dirham of PPV. Default 1 = 1 pt/MAD.",
+        help_text="Points multiplier per dirham of PU. Default 1 = 1 pt/MAD.",
     )
     target_quantity = models.PositiveIntegerField(null=True, blank=True)
 

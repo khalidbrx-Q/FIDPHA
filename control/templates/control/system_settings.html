@@ -90,7 +90,7 @@
         <div class="s-row">
             <div class="s-left">
                 <div class="s-title">{% trans "PPV tolerance" %} <span class="unit-label">%</span></div>
-                <div class="s-desc">{% trans "Reject rows where the submitted PPV deviates more than this percentage from the catalogue value. Leave blank to disable the check." %}</div>
+                <div class="s-desc">{% trans "Reject rows where the submitted PPV deviates more than this percentage from the catalogue PU. Leave blank to disable the check." %}</div>
                 {% if errors.ppv_tolerance_percent %}<div class="field-error">{{ errors.ppv_tolerance_percent }}</div>{% endif %}
             </div>
             <div class="s-right">
