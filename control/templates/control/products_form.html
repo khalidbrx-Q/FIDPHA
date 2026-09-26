@@ -64,10 +64,10 @@
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">{% trans "PPV (Price per unit, MAD)" %}</label>
+            <label class="form-label">{% trans "PU (Unit price, MAD)" %}</label>
             {{ form.ppv }}
             {% for e in form.ppv.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
-            <div class="form-help">{% trans "Used to calculate loyalty points: round(PPV × quantity). Leave blank if not applicable." %}</div>
+            <div class="form-help">{% trans "Used to calculate loyalty points: round(PU × quantity). Leave blank if not applicable." %}</div>
         </div>
     </div>
 

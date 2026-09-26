@@ -198,7 +198,7 @@
                     <th>{% trans "Contract" %}</th>
                     <th>{% trans "Product" %}</th>
                     <th>{% trans "Ext. Ref" %}</th>
-                    <th style="text-align:center;">PPV</th>
+                    <th style="text-align:center;">{% trans "PU" %}</th>
                     <th style="text-align:center;">{% trans "Qty" %}</th>
                     <th style="text-align:center;">{% trans "Points" %}</th>
                     <th style="text-align:center;">{% trans "Status" %}</th>
@@ -218,7 +218,7 @@
                     <td style="text-align:center; font-weight:600;">{{ sale.quantity }}</td>
                     <td style="text-align:center;">
                         {% if sale.status == "accepted" %}
-                            <span style="display:inline-flex;align-items:center;gap:3px;color:#22c55e;font-weight:700;font-size:0.88rem;" title="{{ sale.points|floatformat:2 }} pts (PPV × Qty × multiplier)">
+                            <span style="display:inline-flex;align-items:center;gap:3px;color:#22c55e;font-weight:700;font-size:0.88rem;" title="{{ sale.points|floatformat:2 }} pts (PU × Qty × multiplier)">
                                 <span class="material-icons-round" style="font-size:13px;">star</span>{{ sale.points|floatformat:0 }}
                             </span>
                         {% else %}
