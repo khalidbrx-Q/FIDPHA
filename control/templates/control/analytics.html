@@ -1,0 +1,1939 @@
+{% extends "control/base.html" %}
+{% load i18n l10n %}
+
+{% block page_title %}{% trans "Points" %}{% endblock %}
+{% block page_breadcrumb %}{% trans "Points" %}{% endblock %}
+{% block nav_analytics %}active{% endblock %}
+
+{% block content %}
+
+<style>
+    .anl-filter-bar {
+        background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+        padding: 10px 12px; margin-bottom: 14px;
+        display: flex; flex-direction: column; gap: 8px;
+    }
+    .anl-filter-row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+    .anl-row-top    { justify-content: space-between; }
+    .anl-row-scope  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    @media (max-width: 1000px) {
+        .anl-row-scope { grid-template-columns: 1fr 1fr; }
+    }
+    .anl-fld { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .anl-fld label {
+        font-size: 0.68rem; color: var(--text-secondary); font-weight: 600;
+        letter-spacing: 0.3px; text-transform: uppercase;
+    }
+    .anl-fld > input, .anl-fld > select {
+        padding: 6px 10px; border: 1px solid var(--card-border); border-radius: 8px;
+        background: var(--content-bg); color: var(--text-primary); font-size: 0.82rem;
+        font-family: 'Inter', sans-serif; min-width: 0; width: 100%;
+    }
+    .anl-fld > input:focus, .anl-fld > select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(27,103,155,0.15); }
+    .anl-quick-row { display: flex; flex-wrap: wrap; gap: 5px; }
+
+    /* Searchable combobox */
+    .anl-combo { position: relative; }
+    .anl-combo-input {
+        padding: 6px 28px 6px 32px; border: 1px solid var(--card-border); border-radius: 8px;
+        background: var(--content-bg); color: var(--text-primary); font-size: 0.82rem;
+        font-family: 'Inter', sans-serif; width: 100%;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m21 21-4.3-4.3'/></svg>");
+        background-repeat: no-repeat; background-position: 10px center;
+    }
+    .anl-combo-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(27,103,155,0.15); }
+    .anl-combo-input.selected { font-weight: 600; }
+    .anl-combo-clear {
+        position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+        cursor: pointer; color: var(--text-secondary); font-size: 16px; line-height: 1;
+        padding: 2px 4px; border-radius: 4px; display: none;
+    }
+    .anl-combo-clear:hover { background: var(--card-border); color: var(--text-primary); }
+    .anl-combo.has-value .anl-combo-clear { display: inline; }
+    .anl-combo-list {
+        position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
+        background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.35); max-height: 280px; overflow-y: auto;
+        padding: 4px; display: none;
+    }
+    .anl-combo-list.open { display: block; }
+    .anl-combo-opt {
+        padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 0.84rem;
+    }
+    .anl-combo-opt:hover, .anl-combo-opt.active { background: var(--sidebar-hover); }
+    .anl-combo-opt.selected { background: rgba(27,103,155,0.15); color: var(--accent); }
+    .anl-combo-opt.hidden { display: none; }
+
+    .anl-badge-active {
+        padding: 1px 7px; border-radius: 999px; background: rgba(34,197,94,0.18);
+        color: #22c55e; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2px;
+    }
+    .anl-badge-inactive {
+        padding: 1px 7px; border-radius: 999px; background: rgba(148,163,184,0.18);
+        color: var(--text-secondary); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2px;
+    }
+
+    /* Chart context subtitle under each card title — one line per filter */
+    .anl-ctx-sub {
+        font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;
+        display: flex; flex-direction: column; gap: 1px;
+    }
+    .anl-ctx-sub .row { display: flex; gap: 6px; align-items: baseline; }
+    .anl-ctx-sub .lbl { color: var(--text-secondary); opacity: 0.75; min-width: 56px; }
+    .anl-ctx-sub .val { color: var(--text-primary); font-weight: 500; }
+    .anl-quick-btn {
+        padding: 3px 10px; border-radius: 999px; border: 1px solid var(--card-border);
+        background: transparent; color: var(--text-secondary); font-size: 0.72rem;
+        font-family: 'Inter', sans-serif; cursor: pointer;
+    }
+    .anl-quick-btn:hover { background: var(--sidebar-hover); color: var(--text-primary); }
+    .anl-quick-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .anl-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .anl-btn-ghost {
+        padding: 6px 10px; border-radius: 8px; border: 1px solid var(--card-border);
+        background: transparent; color: var(--text-secondary); font-size: 0.78rem;
+        cursor: pointer; text-decoration: none; font-family: 'Inter', sans-serif;
+        display: inline-flex; align-items: center; gap: 4px;
+    }
+    .anl-btn-ghost:hover { background: var(--sidebar-hover); color: var(--text-primary); }
+
+    /* Colored action buttons for the filter bar */
+    .anl-btn-reset {
+        padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.4);
+        background: rgba(239,68,68,0.1); color: #ef4444; font-size: 0.78rem;
+        cursor: pointer; text-decoration: none; font-family: 'Inter', sans-serif;
+        font-weight: 600; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .anl-btn-reset:hover { background: rgba(239,68,68,0.2); color: #f87171; }
+    .anl-btn-save {
+        padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(34,197,94,0.4);
+        background: rgba(34,197,94,0.1); color: #22c55e; font-size: 0.78rem;
+        cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 4px;
+    }
+    .anl-btn-save:hover { background: rgba(34,197,94,0.2); color: #4ade80; }
+    /* Preset dropdown (custom panel, not a native <select>) */
+    .anl-preset-wrap { position: relative; }
+    .anl-preset-btn {
+        padding: 6px 12px 6px 10px; border-radius: 8px; border: 1px solid rgba(27,103,155,0.4);
+        background: rgba(27,103,155,0.12); color: var(--accent); font-size: 0.78rem;
+        font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 6px;
+    }
+    .anl-preset-btn:hover { background: rgba(27,103,155,0.2); }
+    .anl-preset-panel {
+        position: absolute; top: calc(100% + 4px); left: 0;
+        min-width: 240px; max-width: 360px; z-index: 50;
+        background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.35); padding: 4px; display: none;
+        max-height: 320px; overflow-y: auto;
+    }
+    .anl-preset-panel.open { display: block; }
+    .anl-preset-row {
+        display: flex; align-items: center; gap: 6px;
+        padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 0.84rem;
+    }
+    .anl-preset-row:hover { background: var(--sidebar-hover); }
+    .anl-preset-row-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .anl-preset-row-del {
+        padding: 3px 6px; border-radius: 4px; border: none; background: transparent;
+        color: var(--text-secondary); cursor: pointer; opacity: 0.6; font-size: 15px;
+    }
+    .anl-preset-row-del:hover { background: rgba(239,68,68,0.15); color: #ef4444; opacity: 1; }
+    .anl-preset-empty {
+        padding: 14px; text-align: center; color: var(--text-secondary); font-size: 0.82rem;
+    }
+    .anl-toggle { display: inline-flex; border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden; }
+    .anl-toggle button {
+        padding: 6px 12px; border: none; background: transparent;
+        color: var(--text-secondary); font-size: 0.78rem; cursor: pointer; font-family: 'Inter', sans-serif;
+    }
+    .anl-toggle button.active { background: var(--accent); color: white; font-weight: 600; }
+
+    /* Chips row */
+    .anl-chips-bar {
+        display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        margin-bottom: 14px; min-height: 32px;
+        justify-content: space-between;
+    }
+    .anl-chips-left  { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1; min-width: 0; }
+    .anl-chips-right { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .anl-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px; border-radius: 999px;
+        background: rgba(27,103,155,0.15); color: var(--accent);
+        font-size: 0.76rem; font-weight: 600;
+    }
+    .anl-chip-x { cursor: pointer; opacity: 0.7; }
+    .anl-chip-x:hover { opacity: 1; }
+    .anl-chip-clear {
+        padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(239,68,68,0.5);
+        background: rgba(239,68,68,0.12); color: #ef4444; font-size: 0.74rem;
+        cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 4px;
+    }
+    .anl-chip-clear:hover { background: rgba(239,68,68,0.22); color: #f87171; }
+
+    .anl-pending-sub {
+        display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
+        background: rgba(245,158,11,0.15); color: #f59e0b; font-size: 0.68rem; font-weight: 700;
+    }
+
+    .anl-tbl { width: 100%; border-collapse: collapse; }
+    .anl-tbl th, .anl-tbl td { padding: 10px 12px; border-bottom: 1px solid var(--card-border); font-size: 0.86rem; }
+    .anl-tbl th {
+        text-align: left; color: var(--text-secondary); font-weight: 600;
+        font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.3px;
+        position: sticky; top: 0; background: var(--card-bg); z-index: 1;
+    }
+    .anl-tbl th.sortable { cursor: pointer; user-select: none; }
+    .anl-tbl th.sortable:hover { color: var(--text-primary); }
+    .anl-tbl th.sorted { color: var(--accent); }
+    .anl-tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .anl-tbl tbody tr:hover { background: var(--sidebar-hover); }
+    .anl-help {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 14px; height: 14px; border-radius: 50%;
+        background: var(--card-border); color: var(--text-secondary);
+        font-size: 10px; font-weight: 700; cursor: help; vertical-align: 1px; margin-left: 4px;
+    }
+    .anl-help:hover { background: var(--accent); color: white; }
+    .anl-prod-link { color: var(--accent); cursor: pointer; }
+    .anl-prod-link:hover { text-decoration: underline; }
+    .anl-pts { color: #22c55e; font-weight: 700; }
+    .anl-code-chip {
+        font-family: monospace; font-size: 0.76rem; color: var(--text-secondary);
+        background: var(--content-bg); padding: 2px 6px; border-radius: 4px;
+    }
+    /* Belt-and-suspenders: nothing on this page should push the viewport wider */
+    .card { max-width: 100%; overflow: hidden; min-width: 0; }
+    .grid-2 { min-width: 0; }
+    .grid-2 > * { min-width: 0; }
+    #awardedChart, #heatmapChart, #monthlyChart, #productsChart,
+    #accountsChart, #submitChart { max-width: 100%; min-width: 0; }
+    #kpiSection > .stat-card { min-width: 0; overflow: hidden; }
+    #kpiSection .stat-value { min-width: 0; word-break: break-word; }
+    .anl-chips-bar { max-width: 100%; min-width: 0; }
+    .anl-chips-left { min-width: 0; overflow: hidden; }
+    /* Hard stop: clip any residual overflow on this page's content frame. */
+    body { overflow-x: hidden; }
+    .anl-scope-note {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 8px; border-radius: 999px;
+        background: rgba(27,103,155,0.12); color: var(--accent);
+        font-size: 0.72rem; font-weight: 600; margin-left: 6px;
+    }
+
+    .anl-stale { opacity: 0.55; pointer-events: none; transition: opacity .15s ease; }
+    .anl-spinner {
+        display: none; width: 14px; height: 14px; border: 2px solid var(--card-border);
+        border-top-color: var(--accent); border-radius: 50%; animation: anlspin 0.7s linear infinite;
+        vertical-align: -2px; margin-left: 6px;
+    }
+    .anl-spinner.on { display: inline-block; }
+    @keyframes anlspin { to { transform: rotate(360deg); } }
+    .anl-pill {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 8px; border-radius: 999px;
+        background: rgba(27,103,155,0.15); color: var(--accent);
+        font-size: 0.7rem; font-weight: 600;
+    }
+
+    /* Modal */
+    .anl-modal-backdrop {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+        display: none; align-items: center; justify-content: center; z-index: 1000;
+    }
+    .anl-modal-backdrop.open { display: flex; }
+    .anl-modal {
+        background: var(--card-bg); border: 1px solid var(--card-border);
+        border-radius: 12px; width: 90%; max-width: 720px; max-height: 85vh;
+        display: flex; flex-direction: column; overflow: hidden;
+    }
+    .anl-modal-header {
+        padding: 16px 20px; border-bottom: 1px solid var(--card-border);
+        display: flex; align-items: center; gap: 10px;
+    }
+    .anl-modal-body { padding: 20px; overflow-y: auto; }
+    .anl-modal-close {
+        margin-left: auto; background: transparent; border: none; cursor: pointer;
+        color: var(--text-secondary); font-size: 24px;
+    }
+    .anl-modal-close:hover { color: var(--text-primary); }
+
+    /* Pagination */
+    .anl-pager { display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-size: 0.84rem; }
+    .anl-pager button {
+        padding: 4px 10px; border: 1px solid var(--card-border); border-radius: 6px;
+        background: transparent; color: var(--text-secondary); cursor: pointer;
+        font-family: 'Inter', sans-serif; font-size: 0.78rem;
+    }
+    .anl-pager button:disabled { opacity: 0.35; cursor: not-allowed; }
+    .anl-pager button:hover:not(:disabled) { background: var(--sidebar-hover); color: var(--text-primary); }
+
+    @media (max-width: 900px) {
+        #kpiSection { grid-template-columns: repeat(2, 1fr) !important; }
+    }
+
+    /* ─── Tablet / narrow desktop (≤ 1100 px) ────────────────────────
+       Chart cards get too cramped side-by-side below this width: titles
+       wrap mid-word, ctx-sub lines stack 4-deep, right-aligned header
+       widgets eat the title's room. Collapse the chart rows to 1 column
+       so each card gets the full viewport width to breathe. */
+    @media (max-width: 1100px) {
+        .grid-2 { grid-template-columns: 1fr !important; }
+    }
+
+    /* ─── Mobile layout (≤ 640 px) ──────────────────────────────────── */
+    @media (max-width: 640px) {
+        .anl-filter-bar  { padding: 10px; gap: 10px; }
+        .anl-filter-row  { gap: 8px; }
+        /* Dates stack above full-width Quick-range */
+        .anl-row-top > div:first-child { width: 100%; }
+        .anl-row-top > div:first-child .anl-fld { flex: 1; }
+        .anl-row-top > div:first-child .anl-fld[style*="flex:1"] { flex-basis: 100%; }
+        /* Quick-range buttons: not useful on a phone where tapping dates is
+           just as fast — hide them to free vertical space. */
+        .anl-row-top > div:first-child .anl-fld:last-child { display: none; }
+        /* Scope row: one column per field */
+        .anl-row-scope { grid-template-columns: 1fr; }
+
+        /* Chips bar stacks: active-filter chips on their own line, Presets/Save/CSV below.
+           Each chip stays on one line (no mid-word wrap) and ellipsizes if too long. */
+        .anl-chips-bar  { flex-direction: column; align-items: stretch; gap: 10px; }
+        .anl-chips-left { width: 100%; }
+        .anl-chip {
+            flex: 0 0 auto; max-width: 100%;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .anl-preset-btn, .anl-btn-save, .anl-btn-ghost { font-size: 0.72rem; padding: 5px 8px; }
+
+        /* KPI cards: 2 cols → compact text */
+        #kpiSection { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+        #kpiSection .stat-value { font-size: 1.1rem; }
+        #kpiSection .stat-label { font-size: 0.7rem; }
+        #kpiSection .stat-sub   { font-size: 0.68rem; }
+
+        /* Chart rows → 1 column stacked */
+        .grid-2 { grid-template-columns: 1fr !important; gap: 14px; }
+
+        /* Shrink chart heights so a card fits on screen without scrolling */
+        #monthlyChart, #productsChart, #accountsChart,
+        #submitChart, #awardedChart { height: 200px !important; }
+        #heatmapChart { height: 160px !important; }
+
+        /* Card titles smaller + context subtitle more compact */
+        .card-title    { font-size: 0.95rem; }
+        .anl-ctx-sub   { font-size: 0.68rem; }
+        .anl-scope-note { font-size: 0.66rem; padding: 1px 6px; }
+
+        /* Save-preset modal: fill width */
+        .anl-modal { width: 92%; }
+    }
+
+    /* ─── Very narrow phones (≤ 400 px) ─────────────────────────────── */
+    @media (max-width: 400px) {
+        #kpiSection { grid-template-columns: 1fr !important; }
+        #kpiSection .stat-card { padding: 12px; }
+    }
+
+    /* Mobile heatmap: hide the vertical colour bar + stretch to full width.
+       The legend is nice-to-have; the calendar cells are the primary value. */
+    @media (max-width: 640px) {
+        #heatmapCard .card { padding: 10px !important; }
+    }
+</style>
+
+<!-- FILTER BAR -->
+<form id="anlForm" onsubmit="return false;">
+<div class="anl-filter-bar">
+
+    <!-- Row 1: dates + quick range ← → presets + reset -->
+    <div class="anl-filter-row anl-row-top">
+        <div style="display:flex; gap:10px; align-items:end; flex-wrap:wrap; flex:1; min-width:0;">
+            <div class="anl-fld" style="width:140px;">
+                <label>{% trans "From" %}</label>
+                <input type="date" name="date_from" value="{{ f_date_from }}" id="fldDateFrom"
+                       max="{{ f_date_to }}" data-fire>
+            </div>
+            <div class="anl-fld" style="width:140px;">
+                <label>{% trans "To" %}</label>
+                <input type="date" name="date_to" value="{{ f_date_to }}" id="fldDateTo"
+                       min="{{ f_date_from }}" data-fire>
+            </div>
+            <div class="anl-fld" style="flex:1; min-width:0;">
+                <label>{% trans "Quick range" %}</label>
+                <div class="anl-quick-row">
+                    <button type="button" class="anl-quick-btn" data-quick="today">{% trans "Today" %}</button>
+                    <button type="button" class="anl-quick-btn" data-quick="month">{% trans "This month" %}</button>
+                    <button type="button" class="anl-quick-btn" data-quick="year">{% trans "This year" %}</button>
+                    <button type="button" class="anl-quick-btn" data-quick="clear">{% trans "Clear" %}</button>
+                </div>
+            </div>
+        </div>
+        <div class="anl-actions">
+            <span class="anl-spinner" id="anlSpinner"></span>
+        </div>
+    </div>
+
+    <!-- Row 2: account → contract → product (general → precise) -->
+    <div class="anl-filter-row anl-row-scope">
+
+        <div class="anl-fld">
+            <label>{% trans "Account" %}</label>
+            <div class="anl-combo" data-combo="account">
+                <input type="text" class="anl-combo-input" id="comboAccountInput"
+                       placeholder="{% trans 'All accounts' %}" autocomplete="off">
+                <span class="anl-combo-clear" data-combo-clear="account" title="{% trans 'Clear' %}">×</span>
+                <input type="hidden" name="account" id="fldAccount" value="{{ f_account }}" data-fire>
+                <div class="anl-combo-list" id="comboAccountList">
+                    <div class="anl-combo-opt" data-value="" data-search="all accounts">{% trans "All accounts" %}</div>
+                    {% for a in all_accounts %}
+                    <div class="anl-combo-opt" data-value="{{ a.id }}"
+                         data-search="{{ a.name|lower }} {{ a.code|lower }} {{ a.city|default_if_none:''|lower }}"
+                         data-label="{{ a.name|default:a.code }}">
+                        <div style="font-weight:600;">{{ a.name|default:a.code }}</div>
+                        <div style="font-size:0.72rem; color:var(--text-secondary);">
+                            {{ a.code }}{% if a.city %} · {{ a.city }}{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="anl-fld">
+            <label>{% trans "Contract" %}</label>
+            <div class="anl-combo" data-combo="contract">
+                <input type="text" class="anl-combo-input" id="comboContractInput"
+                       placeholder="{% trans 'All contracts' %}" autocomplete="off">
+                <span class="anl-combo-clear" data-combo-clear="contract" title="{% trans 'Clear' %}">×</span>
+                <input type="hidden" name="contract" id="fldContract" value="{{ f_contract }}" data-fire>
+                <div class="anl-combo-list" id="comboContractList">
+                    <div class="anl-combo-opt" data-value="" data-search="all contracts">{% trans "All contracts" %}</div>
+                    {% for c in all_contracts %}
+                    <div class="anl-combo-opt" data-value="{{ c.id }}" data-account="{{ c.account_id }}"
+                         data-search="{{ c.title|lower }} {{ c.account__code|default_if_none:''|lower }}"
+                         data-label="{{ c.title }}">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-weight:600;">{{ c.title }}</span>
+                            {% if c.status == 'active' %}
+                            <span class="anl-badge-active">{% trans "Active" %}</span>
+                            {% else %}
+                            <span class="anl-badge-inactive">{% trans "Inactive" %}</span>
+                            {% endif %}
+                        </div>
+                        {% if c.account__code %}
+                        <div style="font-size:0.72rem; color:var(--text-secondary);">{{ c.account__code }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="anl-fld">
+            <label>{% trans "Product" %}</label>
+            <div class="anl-combo" data-combo="product">
+                <input type="text" class="anl-combo-input" id="comboProductInput"
+                       placeholder="{% trans 'All products' %}" autocomplete="off">
+                <span class="anl-combo-clear" data-combo-clear="product" title="{% trans 'Clear' %}">×</span>
+                <input type="hidden" name="product" id="fldProduct" value="{{ f_product }}" data-fire>
+                <div class="anl-combo-list" id="comboProductList">
+                    <div class="anl-combo-opt" data-value="" data-search="all products">{% trans "All products" %}</div>
+                    {% for p in all_products %}
+                    <div class="anl-combo-opt" data-value="{{ p.designation }}"
+                         data-search="{{ p.designation|lower }} {{ p.code|lower }}"
+                         data-contracts="{{ p.contracts }}"
+                         data-accounts="{{ p.accounts }}"
+                         data-label="{{ p.designation }}">
+                        <div style="font-weight:600;">{{ p.designation }}</div>
+                        <div style="font-size:0.72rem; color:var(--text-secondary);">{{ p.code }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <input type="hidden" name="sort"   id="fldSort"   value="{{ f_sort }}">
+    <input type="hidden" name="metric" id="fldMetric" value="{{ product_metric }}">
+    <input type="hidden" name="tbl_q"  id="fldTblQ"   value="{{ breakdown_q }}">
+    <input type="hidden" name="page"   id="fldPage"   value="{{ breakdown_page }}">
+
+</div>
+</form>
+
+<!-- FILTER CHIPS -->
+<div class="anl-chips-bar">
+    <div class="anl-preset-wrap">
+        <button type="button" id="anlPresetBtn" class="anl-preset-btn" title="{% trans 'My saved presets' %}">
+            <span class="material-icons-round" style="font-size:16px;">bookmarks</span>
+            {% trans "Presets" %}
+            <span class="material-icons-round" style="font-size:16px;">arrow_drop_down</span>
+        </button>
+        <div class="anl-preset-panel" id="anlPresetPanel"></div>
+    </div>
+    <div class="anl-chips-left" id="chipsBar"></div>
+    <button type="button" id="anlPresetSave" class="anl-btn-save" title="{% trans 'Save current filters as a preset' %}" style="display:none;">
+        <span class="material-icons-round" style="font-size:14px;">bookmark_add</span>
+        {% trans "Save" %}
+    </button>
+    <a href="{% url 'control:analytics_export_csv' %}{{ export_qs }}" class="anl-btn-ghost" id="csvExportLink"
+       title="{% trans 'Download accepted sales matching the current filter' %}">
+        <span class="material-icons-round" style="font-size:14px;">download</span> CSV
+    </a>
+</div>
+
+<!-- SAVE PRESET MODAL -->
+<div class="anl-modal-backdrop" id="savePresetModal">
+    <div class="anl-modal" style="max-width:420px;">
+        <div class="anl-modal-header">
+            <span class="material-icons-round" style="color:#22c55e;">bookmark_add</span>
+            <div style="font-weight:700;">{% trans "Save filter preset" %}</div>
+            <button type="button" class="anl-modal-close" id="savePresetClose">×</button>
+        </div>
+        <div class="anl-modal-body">
+            <div style="font-size:0.84rem; color:var(--text-secondary); margin-bottom:12px;">
+                {% trans "Name this combination of filters so you can jump back to it anytime." %}
+            </div>
+            <input type="text" id="savePresetName" placeholder="{% trans 'e.g. Casablanca pharmacies — Q1 2026' %}"
+                   style="width:100%; padding:9px 12px; border:1px solid var(--card-border); border-radius:8px;
+                          background:var(--content-bg); color:var(--text-primary); font-size:0.9rem; font-family:'Inter',sans-serif;">
+            <div id="savePresetWarn" style="margin-top:8px; font-size:0.78rem; color:#f59e0b; display:none;"></div>
+            <div id="savePresetSummary" style="margin-top:14px; padding:10px 12px; background:var(--content-bg);
+                                              border-radius:8px; font-size:0.78rem; color:var(--text-secondary);"></div>
+            <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" id="savePresetCancel" class="anl-btn-ghost">{% trans "Cancel" %}</button>
+                <button type="button" id="savePresetConfirm" class="anl-btn-save">
+                    <span class="material-icons-round" style="font-size:14px;">check</span>
+                    {% trans "Save" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI CARDS -->
+<div id="kpiSection" style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px;">
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#f59e0b,#ef4444); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">emoji_events</span>
+        </div>
+        <div>
+            <div class="stat-label">{% trans "Total Points" %}</div>
+            <div class="stat-value" id="kpiTotalPoints">{{ kpi_total_points }}</div>
+            <div class="stat-sub">
+                {% trans "within filter scope" %}<span class="anl-pending-sub" id="kpiPending" style="display:none;"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#22c55e,#16a34a); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">trending_up</span>
+        </div>
+        <div>
+            <div class="stat-label">{% trans "Daily Average" %}</div>
+            <div class="stat-value" id="kpiDailyAvg">{{ kpi_daily_avg }}</div>
+            <div class="stat-sub"><span id="kpiAvgDays">{{ kpi_avg_days }}</span> {% trans "days in scope" %}</div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#3b82f6,#6366f1); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">category</span>
+        </div>
+        <div>
+            <div class="stat-label">{% trans "Total Products" %}</div>
+            <div class="stat-value" id="kpiTotalProducts">{{ kpi_total_products }}</div>
+            <div class="stat-sub">{% trans "distinct in scope" %}</div>
+        </div>
+    </div>
+
+    <div class="stat-card" style="display:flex; align-items:center; gap:14px;">
+        <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#8b5cf6,#a855f7); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons-round" style="font-size:22px; color:white;">store</span>
+        </div>
+        <div>
+            <div class="stat-label">{% trans "Total Accounts" %}</div>
+            <div class="stat-value" id="kpiTotalAccounts">{{ kpi_total_accounts }}</div>
+            <div class="stat-sub">{% trans "distinct in scope" %}</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- POINTS AWARDED (now right under the 4 KPI cards) -->
+<div class="card" style="margin-bottom:20px;" id="awardedCard">
+    <div class="card-header" style="flex-wrap:wrap;">
+        <div class="card-header-icon"><span class="material-icons-round">show_chart</span></div>
+        <div style="flex:1; min-width:0;">
+            <div class="card-title">
+                {% trans "Points Awarded" %}
+                <span class="anl-scope-note" data-scope-note></span>
+            </div>
+            <div class="anl-ctx-sub" data-ctx-sub data-ctx-scoped></div>
+        </div>
+    </div>
+    <div id="awardedChart" style="height:240px; cursor:grab;"></div>
+</div>
+
+<!-- HEATMAP (right after Points Awarded) -->
+<div class="card" style="margin-bottom:20px;" id="heatmapCard">
+    <div class="card-header" style="flex-wrap:wrap;">
+        <div class="card-header-icon"><span class="material-icons-round">calendar_month</span></div>
+        <div style="flex:1; min-width:0;">
+            <div class="card-title">
+                {% trans "Daily Points" %}
+                <span class="anl-scope-note" data-scope-note></span>
+            </div>
+            <div class="anl-ctx-sub" data-ctx-sub data-ctx-scoped></div>
+        </div>
+    </div>
+    <div id="heatmapChart" style="height:200px; cursor:pointer;" title="{% trans 'Click a day to filter the dashboard to that date' %}"></div>
+</div>
+
+<!-- CHART ROW 1 -->
+<div class="grid-2" style="margin-bottom:20px;" id="chartsRow1">
+    <div class="card">
+        <div class="card-header" style="flex-wrap:wrap;">
+            <div class="card-header-icon"><span class="material-icons-round">bar_chart</span></div>
+            <div style="flex:1; min-width:0;">
+                <div class="card-title" id="timelineTitle">{% trans "Monthly Overview" %}</div>
+                <div class="anl-ctx-sub" data-ctx-sub></div>
+            </div>
+            <button type="button" id="drillUpBtn" class="anl-btn-ghost" style="display:none; padding:3px 8px;">
+                <span class="material-icons-round" style="font-size:13px;">arrow_upward</span>
+                {% trans "Up" %}
+            </button>
+        </div>
+        <div id="monthlyChart" style="height:260px; cursor:pointer;" title="{% trans 'Click a month to zoom into its daily breakdown' %}"></div>
+    </div>
+    <div class="card">
+        <div class="card-header" style="flex-wrap:wrap;">
+            <div class="card-header-icon"><span class="material-icons-round">grid_view</span></div>
+            <div style="flex:1; min-width:0;">
+                <div class="card-title">{% trans "Top Products" %}</div>
+                <div class="anl-ctx-sub" data-ctx-sub></div>
+            </div>
+            <div class="anl-toggle">
+                <button type="button" data-metric="points" id="metBtnP" class="{% if product_metric == 'points' %}active{% endif %}" title="{% trans 'Points generated by this product' %}">{% trans "Points" %}</button>
+                <button type="button" data-metric="qty"    id="metBtnQ" class="{% if product_metric == 'qty' %}active{% endif %}" title="{% trans 'Units sold' %}">{% trans "Qty" %}</button>
+            </div>
+        </div>
+        <div id="productsChart" style="height:260px; cursor:pointer;" title="{% trans 'Click to drill' %}"></div>
+    </div>
+</div>
+
+<!-- CHART ROW 2 -->
+<div class="grid-2" style="margin-bottom:20px;" id="chartsRow2">
+    <div class="card">
+        <div class="card-header" style="flex-wrap:wrap;">
+            <div class="card-header-icon"><span class="material-icons-round">leaderboard</span></div>
+            <div style="flex:1; min-width:0;">
+                <div class="card-title">{% trans "Points per Account" %}</div>
+                <div class="anl-ctx-sub" data-ctx-sub></div>
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-secondary);">{% trans "top 20" %}</div>
+        </div>
+        <div id="accountsChart" style="height:260px;"></div>
+    </div>
+    <div class="card">
+        <div class="card-header" style="flex-wrap:wrap;">
+            <div class="card-header-icon"><span class="material-icons-round">upload_file</span></div>
+            <div style="flex:1; min-width:0;">
+                <div class="card-title">{% trans "Submission Frequency" %}</div>
+                <div class="anl-ctx-sub" data-ctx-sub></div>
+            </div>
+            <button type="button" id="subDrillUpBtn" class="anl-btn-ghost" style="display:none; padding:3px 8px;">
+                <span class="material-icons-round" style="font-size:13px;">arrow_upward</span>
+                {% trans "Up" %}
+            </button>
+            <div style="font-size:0.78rem; color:var(--text-secondary);">{% trans "batches/month" %}</div>
+        </div>
+        <div id="submitChart" style="height:260px; cursor:pointer;" title="{% trans 'Click a month to zoom into its daily breakdown' %}"></div>
+    </div>
+</div>
+
+
+
+<!-- PRODUCT DETAIL MODAL -->
+<div class="anl-modal-backdrop" id="prodModal">
+    <div class="anl-modal">
+        <div class="anl-modal-header">
+            <span class="material-icons-round" style="color:var(--accent);">medication</span>
+            <div style="font-weight:700;" id="prodModalTitle">—</div>
+            <button type="button" class="anl-modal-close" id="prodModalClose">×</button>
+        </div>
+        <div class="anl-modal-body">
+            <div id="prodModalMeta" style="font-size:0.84rem; color:var(--text-secondary); margin-bottom:14px;"></div>
+            <div style="font-weight:600; margin-bottom:6px;">{% trans "Monthly trend (last 12 months)" %}</div>
+            <div id="prodModalChart" style="height:200px; margin-bottom:16px;"></div>
+            <div style="font-weight:600; margin-bottom:6px;">{% trans "Top accounts" %}</div>
+            <table class="anl-tbl" id="prodModalAccTbl">
+                <thead><tr>
+                    <th>{% trans "Account" %}</th>
+                    <th class="num">{% trans "Qty" %}</th>
+                    <th class="num">{% trans "Points" %}</th>
+                </tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script id="initBreakdownData" type="application/json">{{ breakdown_json|safe }}</script>
+<script id="initChartTopProducts" type="application/json">{{ chart_top_products_json|safe }}</script>
+<script id="initHeatmapData" type="application/json">{{ heatmap_data_json|safe }}</script>
+<script id="initAcctLookup" type="application/json">{{ acct_lookup_json|safe }}</script>
+<script id="initContractLookup" type="application/json">{{ contract_lookup_json|safe }}</script>
+<script id="initKpiPrev" type="application/json">{{ kpi_prev_json|safe }}</script>
+<script>
+(function () {
+    'use strict';
+
+    var isDark     = document.documentElement.dataset.theme !== 'light';
+    var labelColor = isDark ? '#94a3b8' : '#64748b';
+    var gridLine   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    var axisLine   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+    var palette    = ['#1b679b','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#14b8a6','#a855f7'];
+
+    // All translated strings used inside JS are passed through |escapejs so
+    // apostrophes/quotes in translations (common in French) don't break the
+    // enclosing JS literal.
+    {% trans "Points" as l1 %}{% trans "Products" as l2 %}{% trans "batches" as l3 %}
+    {% trans "No data in scope" as l4 %}{% trans "awarded" as l5 %}{% trans "No points in scope" as l4b %}
+    {% trans "Page" as l6 %}{% trans "of" as l7 %}{% trans "total" as l8 %}
+    {% trans "pending" as l9 %}{% trans "Link copied!" as l10 %}
+    {% trans "Preset name:" as l11 %}
+    var LBL_POINTS    = '{{ l1|escapejs }}';
+    var LBL_PRODUCTS  = '{{ l2|escapejs }}';
+    var LBL_BATCHES   = '{{ l3|escapejs }}';
+    var LBL_NO_DATA   = '{{ l4|escapejs }}';
+    var LBL_NO_POINTS = '{{ l4b|escapejs }}';
+    var HEATMAP_MONTH_NAMES = (document.documentElement.lang || 'en').toLowerCase().indexOf('fr') === 0
+        ? ['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc']
+        : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var LBL_AWARDED   = '{{ l5|escapejs }}';
+    var LBL_PAGE      = '{{ l6|escapejs }}';
+    var LBL_OF        = '{{ l7|escapejs }}';
+    var LBL_TOTAL     = '{{ l8|escapejs }}';
+    var LBL_PENDING   = '{{ l9|escapejs }}';
+    var LBL_COPIED    = '{{ l10|escapejs }}';
+    var LBL_PRESET_NAME = '{{ l11|escapejs }}';
+
+    var DATA_URL          = '{% url "control:analytics_data" %}';
+    var EXPORT_CSV_URL    = '{% url "control:analytics_export_csv" %}';
+    var EXPORT_XLSX_URL   = '{% url "control:analytics_export_xlsx" %}';
+    var PRODUCT_URL_TMPL  = '/control/analytics/product/PK/';
+
+    function parseJSON(id, fallback) {
+        try { var el = document.getElementById(id); return el ? JSON.parse(el.textContent || 'null') : fallback; }
+        catch (e) { return fallback; }
+    }
+
+    {% localize off %}
+    var state = {
+        chart_timeline_lbls:  {{ chart_timeline_lbls|safe }},
+        chart_timeline_keys:  {{ chart_timeline_keys|safe }},
+        chart_timeline_pts:   {{ chart_timeline_pts|safe }},
+        chart_timeline_prods: {{ chart_timeline_prods|safe }},
+        chart_cumulative:     {{ chart_cumulative|safe }},
+        chart_granularity:    '{{ chart_granularity }}',
+        chart_submissions:    {{ chart_submissions|safe }},
+        awarded_lbls:         {{ awarded_lbls|safe }},
+        awarded_vals:         {{ awarded_vals|safe }},
+        chart_top_products:  parseJSON('initChartTopProducts', {points:[], qty:[], revenue:[]}),
+        chart_acct_labels:   {{ chart_acct_labels|safe }},
+        chart_acct_data:     {{ chart_acct_data|safe }},
+        chart_acct_ids:      {{ chart_acct_ids|safe }},
+        heatmap_data:        parseJSON('initHeatmapData', []),
+        heatmap_range:       {{ heatmap_range|safe }},
+        heatmap_scope_label: '{{ heatmap_scope_label }}',
+        breakdown:           parseJSON('initBreakdownData', []),
+        breakdown_total:     {{ breakdown_total }},
+        breakdown_page:      {{ breakdown_page }},
+        breakdown_pages:     {{ breakdown_pages }},
+        breakdown_page_size: {{ breakdown_page_size }},
+        kpi_total_points:    {{ kpi_total_points }},
+        kpi_daily_avg:       {{ kpi_daily_avg }},
+        kpi_avg_days:        {{ kpi_avg_days }},
+        kpi_total_products:  {{ kpi_total_products }},
+        kpi_total_accounts:  {{ kpi_total_accounts }},
+        kpi_pending_points:  {{ kpi_pending_points }},
+        kpi_prev:            parseJSON('initKpiPrev', {}),
+        f_sort:              '{{ f_sort }}',
+        product_metric:      '{{ product_metric }}'
+    };
+    {% endlocalize %}
+
+    var acctLookup     = parseJSON('initAcctLookup', {});
+    var contractLookup = parseJSON('initContractLookup', {});
+
+    var monthChart   = echarts.init(document.getElementById('monthlyChart'), null, { renderer: 'svg' });
+    var prodChart    = echarts.init(document.getElementById('productsChart'), null, { renderer: 'svg' });
+    var acctChart    = echarts.init(document.getElementById('accountsChart'), null, { renderer: 'svg' });
+    var subChart     = echarts.init(document.getElementById('submitChart'),   null, { renderer: 'svg' });
+    var heatChart    = echarts.init(document.getElementById('heatmapChart'),  null, { renderer: 'svg' });
+    var awardedChart = echarts.init(document.getElementById('awardedChart'),  null, { renderer: 'svg' });
+    var prodModalChart = null;
+
+    function emptyOpt(title) {
+        return { graphic: [{ type: 'text', left: 'center', top: 'middle',
+                 style: { text: title, fill: labelColor, font: '12px Inter, sans-serif' } }] };
+    }
+
+    function xLabelsFor(lbls, isDaily, keys) {
+        // For daily granularity, strip to just the day number (01, 02, …);
+        // vertical rotation so all fit without truncation.
+        if (isDaily) {
+            return lbls.map(function (s) { var m = /(\d{1,2})/.exec(s); return m ? m[1] : s; });
+        }
+        // Monthly: rebuild from ISO keys so month names honour the UI locale
+        // instead of the server's strftime output.
+        if (keys && keys.length) {
+            return keys.map(function (k) {
+                if (!k || k.length < 7) return k;
+                try {
+                    var d = new Date(parseInt(k.slice(0, 4), 10),
+                                     parseInt(k.slice(5, 7), 10) - 1, 1);
+                    return d.toLocaleDateString(UI_LOCALE, { month: 'short', year: 'numeric' });
+                } catch (e) { return k; }
+            });
+        }
+        return lbls;
+    }
+
+    function renderMonth() {
+        // Prefer chart-local drill state when present; otherwise use the shared state.
+        var src = _monthDrill || {
+            pts:   state.chart_timeline_pts,
+            prods: state.chart_timeline_prods,
+            lbls:  state.chart_timeline_lbls,
+            keys:  state.chart_timeline_keys,
+            gran:  state.chart_granularity
+        };
+        var pts   = src.pts   || [];
+        var prods = src.prods || [];
+        var keys  = src.keys  || [];
+        var isDaily = src.gran === 'day';
+        var lbls  = xLabelsFor(src.lbls || [], isDaily, keys);
+        // Always draw the axes + bars (even all-zero) so an empty filter
+        // scope shows a flat zeroed chart instead of a "No data" overlay.
+        var opt = {
+            tooltip: {
+                trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function (p) {
+                    var idx = p[0].dataIndex;
+                    var head = fmtTimelineKey(keys[idx]) || (src.lbls || [])[idx] || p[0].name;
+                    return head + '<br/>'
+                        + '<span style="color:' + palette[0] + ';">●</span> ' + LBL_POINTS + ': <b>' + pts[idx] + '</b><br/>'
+                        + '<span style="color:' + palette[1] + ';">●</span> ' + LBL_PRODUCTS + ': <b>' + prods[idx] + '</b>';
+                }
+            },
+            legend: { data: [LBL_POINTS, LBL_PRODUCTS], textStyle: { color: labelColor } },
+            grid: { left: 45, right: 45, bottom: 72, top: 36 },
+            xAxis: {
+                type: 'category', data: lbls,
+                axisLine: { lineStyle: { color: axisLine } },
+                axisLabel: { color: labelColor, fontSize: 11, rotate: 90, interval: 0 }
+            },
+            yAxis: [
+                { type: 'value', name: LBL_POINTS, nameTextStyle: { color: labelColor }, axisLine: { show: false }, splitLine: { lineStyle: { color: gridLine } }, axisLabel: { color: labelColor, fontSize: 11 } },
+                { type: 'value', name: LBL_PRODUCTS, nameTextStyle: { color: labelColor }, axisLine: { show: false }, splitLine: { show: false }, axisLabel: { color: labelColor, fontSize: 11 } }
+            ],
+            series: [
+                { name: LBL_POINTS, type: 'bar', data: pts, itemStyle: { color: palette[0], borderRadius: [4,4,0,0] }, barMaxWidth: isDaily ? 16 : 24 },
+                { name: LBL_PRODUCTS, type: 'bar', data: prods, itemStyle: { color: palette[1], borderRadius: [4,4,0,0] }, yAxisIndex: 1, barMaxWidth: isDaily ? 16 : 24 }
+            ]
+        };
+        monthChart.setOption(opt, true);
+    }
+
+    function renderProd() {
+        var data = (state.chart_top_products || {})[state.product_metric] || [];
+        var opt = data.length ? {
+            tooltip: { formatter: function (p) { return p.name + '<br/><b>' + (p.value || 0).toLocaleString() + '</b>'; } },
+            series: [{
+                type: 'treemap', data: data,
+                roam: false,                     // no wheel/pinch zoom or pan
+                nodeClick: 'zoomToNode',         // click a tile → auto-zoom to it
+                breadcrumb: { show: false },
+                label: { show: true, color: '#fff', fontSize: 11, fontWeight: 600,
+                         formatter: function (p) { return p.name + '\n' + (p.value || 0).toLocaleString(); } },
+                itemStyle: { borderColor: isDark ? '#0f172a' : '#f1f5f9', borderWidth: 2, gapWidth: 2 },
+                levels: [{ color: palette, colorMappingBy: 'index' }]
+            }]
+        } : Object.assign({ series: [] }, emptyOpt(LBL_NO_POINTS));
+        prodChart.setOption(opt, true);
+    }
+
+    function renderAcct() {
+        var lbls = state.chart_acct_labels || [];
+        var data = state.chart_acct_data   || [];
+        var opt = data.length ? {
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
+                       formatter: function (p) { var d = p[0]; return d.name + '<br/><b>' + (d.value || 0).toLocaleString() + '</b> ' + LBL_POINTS; } },
+            grid: { left: 110, right: 24, bottom: 24, top: 10 },
+            xAxis: { type: 'value', splitLine: { lineStyle: { color: gridLine } }, axisLabel: { color: labelColor, fontSize: 11 } },
+            yAxis: { type: 'category', data: lbls.slice().reverse(), axisLabel: { color: labelColor, fontSize: 11, width: 100, overflow: 'truncate' }, axisLine: { lineStyle: { color: axisLine } } },
+            series: [{ type: 'bar', data: data.slice().reverse(), itemStyle: { color: palette[2], borderRadius: [0,4,4,0] }, barMaxWidth: 18 }]
+        } : Object.assign({ grid: { left: 110, right: 24, bottom: 24, top: 10 }, xAxis: { show: false }, yAxis: { show: false }, series: [] }, emptyOpt(LBL_NO_POINTS));
+        acctChart.setOption(opt, true);
+    }
+
+    function renderSub() {
+        var src = _subDrill || {
+            data: state.chart_submissions,
+            lbls: state.chart_timeline_lbls,
+            keys: state.chart_timeline_keys,
+            gran: state.chart_granularity
+        };
+        var data = src.data || [];
+        var raw  = src.lbls || [];
+        var keys = src.keys || [];
+        var isDaily = src.gran === 'day';
+        var lbls = xLabelsFor(raw, isDaily, keys);
+        var opt = {
+            tooltip: {
+                trigger: 'axis', axisPointer: { type: 'shadow' },
+                formatter: function (p) {
+                    var idx = p[0].dataIndex;
+                    var head = fmtTimelineKey(keys[idx]) || raw[idx];
+                    return head + '<br/><b>' + p[0].value + '</b> ' + LBL_BATCHES;
+                }
+            },
+            grid: { left: 40, right: 20, bottom: 70, top: 20 },
+            xAxis: {
+                type: 'category', data: lbls,
+                axisLabel: { color: labelColor, fontSize: 11, rotate: 90, interval: 0 },
+                axisLine: { lineStyle: { color: axisLine } }
+            },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: gridLine } }, axisLabel: { color: labelColor, fontSize: 11 } },
+            series: [{ type: 'bar', data: data, itemStyle: { color: palette[5], borderRadius: [4,4,0,0] }, barMaxWidth: isDaily ? 16 : 24 }]
+        };
+        subChart.setOption(opt, true);
+    }
+
+    // Rebuild the x-axis label config based on the visible range (full data
+    // length when not zoomed; narrower slice when the user has zoomed in).
+    function awardedAxisLabel(visibleLen) {
+        var dayMode   = visibleLen <= 31;    // zoomed in → full readable date
+        var monthMode = visibleLen > 60;     // too many for day-level labels
+        // Fewer labels when the format is wide ("04 mai 2026" takes more space)
+        var labelCount = dayMode ? 5 : 8;
+        return {
+            color: labelColor, fontSize: 10,
+            interval: Math.max(0, Math.floor(visibleLen / labelCount) - 1),
+            hideOverlap: true,
+            formatter: function (iso) {
+                try {
+                    var d = new Date(iso + 'T00:00:00');
+                    if (dayMode) {
+                        return d.toLocaleDateString(UI_LOCALE,
+                            { day: '2-digit', month: 'long', year: 'numeric' });
+                    }
+                    if (monthMode) return d.toLocaleDateString(UI_LOCALE, { month: 'short', year: '2-digit' });
+                    return d.toLocaleDateString(UI_LOCALE, { day: '2-digit', month: 'short' });
+                } catch (e) { return iso; }
+            }
+        };
+    }
+
+    function renderAwarded() {
+        var raw  = state.awarded_lbls || [];
+        var data = state.awarded_vals || [];
+        // 0 at top, cumulative value grows downward (inverse Y-axis). The
+        // series data stays positive — ECharts flips the visual direction.
+        var has = data.length > 0 && data[data.length - 1] > 0;
+        var opt = has ? {
+            tooltip: {
+                trigger: 'axis',
+                formatter: function (p) {
+                    return fmtDateLong(raw[p[0].dataIndex]) + '<br/><b>'
+                        + p[0].value.toLocaleString() + '</b> ' + LBL_POINTS + ' ' + LBL_AWARDED;
+                }
+            },
+            grid: { left: 65, right: 20, bottom: 40, top: 20 },
+            xAxis: {
+                type: 'category', data: raw,
+                boundaryGap: false,
+                axisLine: { show: true, lineStyle: { color: axisLine } },
+                axisTick: { show: false },
+                axisLabel: awardedAxisLabel(raw.length)
+            },
+            yAxis: {
+                type: 'value',
+                inverse: true,                // 0 at top, large values at bottom
+                splitLine: { lineStyle: { color: gridLine } },
+                axisLabel: { color: labelColor, fontSize: 11,
+                             formatter: function (v) { return v.toLocaleString(); } }
+            },
+            // Pinch zoom only (two-finger touch); mouse-wheel zoom disabled
+            // so page scrolling doesn't accidentally zoom the chart.
+            dataZoom: [{
+                type: 'inside', xAxisIndex: 0,
+                zoomOnMouseWheel: false,
+                moveOnMouseMove: false,
+                moveOnMouseWheel: false,
+                filterMode: 'none',
+                minValueSpan: 7
+            }],
+            series: [{
+                // Thin line + visible dots at each sampled day — makes the
+                // discrete nature of the data obvious and gives the user
+                // something to visually anchor to without x-axis labels.
+                type: 'line', data: data, smooth: false, symbol: 'circle', symbolSize: 5,
+                step: 'end',
+                itemStyle: { color: palette[1], borderColor: palette[1] },
+                lineStyle: { color: palette[1], width: 1.5 },
+                areaStyle: {
+                    color: {
+                        type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [
+                            { offset: 0, color: 'rgba(34,197,94,0.45)' },
+                            { offset: 1, color: 'rgba(34,197,94,0.02)' }
+                        ]
+                    }
+                }
+            }]
+        } : Object.assign({ grid: { left: 55, right: 20, bottom: 24, top: 20 }, xAxis: { show: false }, yAxis: { show: false }, series: [] }, emptyOpt(LBL_NO_DATA));
+        awardedChart.setOption(opt, true);
+    }
+
+    function renderHeat() {
+        var data = state.heatmap_data || [];
+        var range = state.heatmap_range || [];
+        // Keep rendering the calendar for the range even with no data — the
+        // user still sees the month grid (empty squares) instead of a blank
+        // "No data" overlay.
+        if (!data.length) data = [];
+        var vals = data.map(function (d) { return d[1]; });
+        var maxV = Math.max.apply(null, vals.concat([1]));
+        var isMobile = window.innerWidth <= 640;
+        heatChart.setOption({
+            tooltip: {
+                padding: [6, 10],
+                textStyle: { fontSize: 11 },
+                formatter: function (p) {
+                    return '<span style="color:' + labelColor + ';font-size:10px;">'
+                         + fmtDateLong(p.value[0]) + '</span>'
+                         + '<br/><b>' + (p.value[1] || 0).toLocaleString() + '</b> ' + LBL_POINTS;
+                }
+            },
+            visualMap: {
+                // Gradient starts at 1 so a single-point day is already visible,
+                // but the starting colour is only lightly saturated so the full
+                // range still looks graduated (not uniformly green).
+                min: 1, max: Math.max(maxV, 1), calculable: false,
+                show: !isMobile,              // hide the legend on phones
+                orient: 'vertical', right: 8, top: 'middle',
+                itemWidth: 10, itemHeight: 120,
+                textStyle: { color: labelColor, fontSize: 10 },
+                inRange: { color: isDark
+                    ? ['#17331f', '#1f6b35', '#2ea043', '#39d353', '#4ade80']
+                    : ['#dcfce7', '#9be9a8', '#4ade80', '#22c55e', '#15803d'] }
+            },
+            calendar: {
+                top: 20, left: isMobile ? 24 : 40,
+                right: isMobile ? 10 : 60,    // reclaim right space on mobile
+                bottom: 20, cellSize: ['auto', isMobile ? 12 : 15],
+                range: range,
+                splitLine: {
+                    show: true,
+                    lineStyle: { color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)', width: 1.5, type: 'solid' }
+                },
+                itemStyle: { borderWidth: 1, borderColor: isDark ? '#0f172a' : '#f8fafc',
+                             color: isDark ? '#1b2238' : '#ebedf0' },
+                yearLabel: { show: false },
+                monthLabel: { color: labelColor, fontSize: 10, nameMap: HEATMAP_MONTH_NAMES, position: 'top', margin: 8 },
+                dayLabel: { color: labelColor, fontSize: 9, firstDay: 1 }
+            },
+            series: [{ type: 'heatmap', coordinateSystem: 'calendar', data: data }]
+        }, true);
+    }
+
+    function esc(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).replace(/[&<>"']/g, function (c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+
+    function renderBreakdown() {
+        // Breakdown table removed from the layout; keep the function harmless.
+        if (!document.getElementById('breakdownBody')) return;
+        var body = document.getElementById('breakdownBody');
+        var empty = document.getElementById('breakdownEmpty');
+        var pill = document.getElementById('rowCountPill');
+        var rows = state.breakdown || [];
+        pill.textContent = state.breakdown_total;
+        if (!rows.length) {
+            body.innerHTML = ''; empty.style.display = '';
+        } else {
+            empty.style.display = 'none';
+            body.innerHTML = rows.map(function (r) {
+                var accCode = r.account_code ? '<div style="font-size:0.74rem;color:var(--text-secondary);"><span class="anl-code-chip">' + esc(r.account_code) + '</span></div>' : '';
+                var prodCode = r.product_code ? '<div style="font-size:0.74rem;color:var(--text-secondary);"><span class="anl-code-chip">' + esc(r.product_code) + '</span></div>' : '';
+                return '<tr>'
+                    + '<td><div style="font-weight:600;">' + esc(r.account_name || '—') + '</div>' + accCode + '</td>'
+                    + '<td><div class="anl-prod-link" data-pid="' + r.product_id + '" style="font-weight:500;">' + esc(r.product_name) + '</div>' + prodCode + '</td>'
+                    + '<td class="num">' + r.total_qty + '</td>'
+                    + '<td class="num">' + r.avg_pu + '</td>'
+                    + '<td class="num"><span class="anl-pts">' + r.total_pts + '</span></td>'
+                    + '</tr>';
+            }).join('');
+            body.querySelectorAll('.anl-prod-link').forEach(function (el) {
+                el.addEventListener('click', function () { openProductModal(el.dataset.pid); });
+            });
+        }
+        document.querySelectorAll('.anl-sort-ind').forEach(function (el) {
+            el.textContent = (state.f_sort === el.dataset.for) ? ' ↓' : '';
+        });
+        document.querySelectorAll('.anl-tbl th.sortable').forEach(function (th) {
+            th.classList.toggle('sorted', th.dataset.sortcol === state.f_sort);
+        });
+        document.getElementById('pgInfo').textContent =
+            LBL_PAGE + ' ' + state.breakdown_page + ' ' + LBL_OF + ' ' + state.breakdown_pages
+            + ' · ' + state.breakdown_total + ' ' + LBL_TOTAL;
+        document.getElementById('pgPrev').disabled = state.breakdown_page <= 1;
+        document.getElementById('pgNext').disabled = state.breakdown_page >= state.breakdown_pages;
+    }
+
+    function renderKPIs() {
+        document.getElementById('kpiTotalPoints').textContent    = state.kpi_total_points;
+        document.getElementById('kpiDailyAvg').textContent       = state.kpi_daily_avg;
+        document.getElementById('kpiAvgDays').textContent        = state.kpi_avg_days;
+        document.getElementById('kpiTotalProducts').textContent  = state.kpi_total_products;
+        document.getElementById('kpiTotalAccounts').textContent  = state.kpi_total_accounts;
+        var pend = document.getElementById('kpiPending');
+        if (state.kpi_pending_points > 0) {
+            pend.style.display = 'inline-block';
+            pend.textContent = '+' + state.kpi_pending_points + ' ' + LBL_PENDING;
+        } else {
+            pend.style.display = 'none';
+        }
+    }
+
+    function renderChips() {
+        var bar = document.getElementById('chipsBar');
+        var _form = document.getElementById('anlForm');
+        var fd = new FormData(_form);
+        var chips = [];
+        var labels = {
+            date_from: '{% trans "From" %}', date_to: '{% trans "To" %}',
+            product: '{% trans "Product" %}', account: '{% trans "Account" %}',
+            contract: '{% trans "Contract" %}',
+            tbl_q: '{% trans "Search" %}',
+        };
+        function chip(key, label, value) {
+            chips.push('<span class="anl-chip">' + esc(label) + ': ' + esc(value)
+                + ' <span class="anl-chip-x" data-chip="' + key + '">×</span></span>');
+        }
+        if (fd.get('date_from'))  chip('date_from', labels.date_from, fmtDateLong(fd.get('date_from')));
+        if (fd.get('date_to'))    chip('date_to',   labels.date_to,   fmtDateLong(fd.get('date_to')));
+        if (fd.get('account'))    chip('account',   labels.account,   acctLookup[fd.get('account')] || fd.get('account'));
+        if (fd.get('contract'))   chip('contract',  labels.contract,  contractLookup[fd.get('contract')] || fd.get('contract'));
+        if (fd.get('product'))    chip('product',   labels.product,   fd.get('product'));
+        if (fd.get('tbl_q'))      chip('tbl_q',     labels.tbl_q,     fd.get('tbl_q'));
+
+        if (chips.length) {
+            chips.push('<button type="button" class="anl-chip-clear" id="chipsClearBtn">'
+                + '<span class="material-icons-round" style="font-size:14px;">close</span> {% trans "Clear all" %}</button>');
+        }
+        bar.innerHTML = chips.join('');
+
+        // Save-preset button only matters when at least one filter is set
+        var saveBtn = document.getElementById('anlPresetSave');
+        if (saveBtn) saveBtn.style.display = chips.length ? 'inline-flex' : 'none';
+
+        bar.querySelectorAll('[data-chip]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                var key = el.dataset.chip;
+                var input = _form.querySelector('[name="' + key + '"]');
+                if (input) {
+                    input.value = '';
+                    if (key === 'account' || key === 'contract' || key === 'product') {
+                        var api = _combos[key]; if (api) api.syncLabel();
+                    }
+                }
+                fireFilterChange(true);
+            });
+        });
+        var cc = document.getElementById('chipsClearBtn');
+        if (cc) cc.addEventListener('click', function () {
+            window.location.href = window.location.pathname;
+        });
+    }
+
+    function renderDrillState() {
+        var monthDrilled = !!_monthDrill;
+        var monthIsDaily = (monthDrilled ? _monthDrill.gran : state.chart_granularity) === 'day';
+        document.getElementById('timelineTitle').textContent =
+            monthIsDaily ? '{% trans "Daily Overview" %}' : '{% trans "Monthly Overview" %}';
+        document.getElementById('drillUpBtn').style.display = monthDrilled ? 'inline-flex' : 'none';
+        document.getElementById('subDrillUpBtn').style.display = _subDrill ? 'inline-flex' : 'none';
+    }
+
+    // Readable "10 September 2026" style; honours the page's lang attribute.
+    var UI_LOCALE = (document.documentElement.lang || 'en-GB');
+    function fmtDateLong(iso) {
+        if (!iso) return '';
+        try {
+            var d = new Date(iso + 'T00:00:00');
+            if (isNaN(d.getTime())) return iso;
+            return d.toLocaleDateString(UI_LOCALE, { day: 'numeric', month: 'long', year: 'numeric' });
+        } catch (e) { return iso; }
+    }
+
+    // Format a timeline key (YYYY-MM for months, YYYY-MM-DD for days) into
+    // a readable, locale-aware label used in chart tooltips.
+    function fmtTimelineKey(key) {
+        if (!key) return '';
+        try {
+            if (key.length === 7) {   // "YYYY-MM" → "March 2026"
+                var d = new Date(parseInt(key.slice(0, 4), 10),
+                                 parseInt(key.slice(5, 7), 10) - 1, 1);
+                return d.toLocaleDateString(UI_LOCALE, { month: 'long', year: 'numeric' });
+            }
+            // "YYYY-MM-DD" → "04 April 2026"
+            var d2 = new Date(key + 'T00:00:00');
+            return d2.toLocaleDateString(UI_LOCALE, { day: '2-digit', month: 'long', year: 'numeric' });
+        } catch (e) { return key; }
+    }
+
+    function renderCtxSub() {
+        var _form = document.getElementById('anlForm');
+        if (!_form) return;
+        var fd = new FormData(_form);
+        var acc = fd.get('account');
+        var con = fd.get('contract');
+        var prod = (fd.get('product') || '').trim();
+        var from = fd.get('date_from');
+        var to   = fd.get('date_to');
+
+        // Pre-format the enclosing-month label (readable in current locale).
+        var scopedPeriod = '';
+        var raw = state.heatmap_scope_label;
+        if (raw) {
+            var parts = raw.split('-');
+            if (parts.length === 2) {
+                var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
+                scopedPeriod = d.toLocaleDateString(UI_LOCALE, { month: 'long', year: 'numeric' });
+            }
+        }
+
+        function buildRows(useScopedPeriod) {
+            var rows = [];
+            function row(lbl, val) {
+                rows.push('<div class="row"><span class="lbl">' + esc(lbl) + ':</span> <span class="val">' + val + '</span></div>');
+            }
+            if (acc)  row('{% trans "Account" %}',  esc(acctLookup[acc] || acc));
+            if (con)  row('{% trans "Contract" %}', esc(contractLookup[con] || con));
+            if (prod) row('{% trans "Product" %}',  esc(prod));
+
+            // On the heatmap/awarded cards, when the filter expands to a full
+            // calendar month, show "May 2026" instead of "2 May → 2 May".
+            if (useScopedPeriod && scopedPeriod) {
+                row('{% trans "Period" %}', esc(scopedPeriod));
+            } else if (from && to && from === to) {
+                // Same day on both ends → show just the day, not "X → X"
+                row('{% trans "Period" %}', esc(fmtDateLong(from)));
+            } else if (from && to) {
+                row('{% trans "Period" %}', esc(fmtDateLong(from)) + ' → ' + esc(fmtDateLong(to)));
+            } else if (from) {
+                row('{% trans "From" %}',   esc(fmtDateLong(from)));
+            } else if (to) {
+                row('{% trans "Until" %}',  esc(fmtDateLong(to)));
+            }
+            if (!rows.length) rows.push('<div class="row"><span class="lbl">{% trans "All accounts, all contracts, last 12 months" %}</span></div>');
+            return rows.join('');
+        }
+
+        var htmlDefault = buildRows(false);
+        var htmlScoped  = buildRows(true);
+        document.querySelectorAll('[data-ctx-sub]').forEach(function (el) {
+            el.innerHTML = el.hasAttribute('data-ctx-scoped') ? htmlScoped : htmlDefault;
+        });
+    }
+
+    function renderScopeNote() {
+        var label = state.heatmap_scope_label;
+        var text = '';
+        if (label) {
+            // "YYYY-MM" → readable "September 2026" in current locale
+            var parts = label.split('-');
+            if (parts.length === 2) {
+                var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
+                text = d.toLocaleDateString(UI_LOCALE, { month: 'long', year: 'numeric' });
+            } else {
+                text = label;
+            }
+        }
+        document.querySelectorAll('[data-scope-note]').forEach(function (el) {
+            if (text) { el.style.display = 'inline-flex'; el.textContent = text; }
+            else      { el.style.display = 'none'; el.textContent = ''; }
+        });
+    }
+
+    function renderAll() {
+        renderMonth(); renderProd(); renderAcct(); renderSub(); renderHeat();
+        renderAwarded(); renderKPIs(); renderChips(); renderDrillState();
+        renderCtxSub(); renderScopeNote();
+    }
+
+    renderAll();
+
+    // ── Live-filter machinery ────────────────────────────────────────────
+    var form     = document.getElementById('anlForm');
+    var spinner  = document.getElementById('anlSpinner');
+    var kpiSec   = document.getElementById('kpiSection');
+    var r1       = document.getElementById('chartsRow1');
+    var r2       = document.getElementById('chartsRow2');
+    var hmCard   = document.getElementById('heatmapCard');
+    var awCard   = document.getElementById('awardedCard');
+
+    function currentParams(overrides) {
+        var fd = new FormData(form);
+        var params = new URLSearchParams();
+        for (var pair of fd.entries()) {
+            if (pair[1]) params.set(pair[0], pair[1]);
+        }
+        if (overrides) {
+            Object.keys(overrides).forEach(function (k) {
+                if (overrides[k]) params.set(k, overrides[k]); else params.delete(k);
+            });
+        }
+        return params;
+    }
+
+    function setStale(on) {
+        [kpiSec, r1, r2, hmCard, awCard].forEach(function (el) {
+            if (el) el.classList.toggle('anl-stale', on);
+        });
+        spinner.classList.toggle('on', on);
+    }
+
+    var fetchToken = 0;
+    function doFetch() {
+        var params = currentParams();
+        var qs = params.toString();
+        var newUrl = window.location.pathname + (qs ? '?' + qs : '');
+        window.history.replaceState(null, '', newUrl);
+
+        var exportParams = new URLSearchParams(params);
+        exportParams.delete('sort'); exportParams.delete('page'); exportParams.delete('tbl_q');
+        var expQs = exportParams.toString();
+        var csvLink = document.getElementById('csvExportLink');
+        if (csvLink) csvLink.href = EXPORT_CSV_URL + (expQs ? '?' + expQs : '');
+
+        setStale(true);
+        var myToken = ++fetchToken;
+        fetch(DATA_URL + '?' + qs, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (myToken !== fetchToken) return;
+                Object.assign(state, data);
+                renderAll();
+                setStale(false);
+            })
+            .catch(function () { if (myToken === fetchToken) setStale(false); });
+    }
+
+    var debounceTimer = null;
+    function fireFilterChange(immediate) {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        if (immediate) { doFetch(); return; }
+        debounceTimer = setTimeout(doFetch, 300);
+    }
+
+    // ── Searchable combobox ──────────────────────────────────────────────
+    // setupCombo(name, preFilter?) — preFilter(opt) → false hides the option
+    // regardless of search text (used for Account→Contract chaining).
+    var _combos = {};
+    function setupCombo(name, preFilter) {
+        var wrap   = document.querySelector('[data-combo="' + name + '"]');
+        if (!wrap) return;
+        var input  = wrap.querySelector('.anl-combo-input');
+        var hidden = wrap.querySelector('input[type=hidden]');
+        var list   = wrap.querySelector('.anl-combo-list');
+        var clear  = wrap.querySelector('[data-combo-clear]');
+
+        function labelFor(value) {
+            if (!value) return '';
+            var opt = list.querySelector('.anl-combo-opt[data-value="' + CSS.escape(value) + '"]');
+            return opt ? (opt.dataset.label || '') : value;
+        }
+        function syncLabel() {
+            var v = hidden.value;
+            input.value = labelFor(v);
+            input.classList.toggle('selected', !!v);
+            wrap.classList.toggle('has-value', !!v);
+            list.querySelectorAll('.anl-combo-opt').forEach(function (o) {
+                o.classList.toggle('selected', o.dataset.value === v);
+            });
+        }
+        function openList() { list.classList.add('open'); filterList(''); input.select(); }
+        function closeList() { list.classList.remove('open'); syncLabel(); }
+        function filterList(q) {
+            q = (q || '').toLowerCase().trim();
+            list.querySelectorAll('.anl-combo-opt').forEach(function (o) {
+                var searchOk = !q || (o.dataset.search || '').indexOf(q) !== -1;
+                var passPre  = !preFilter || preFilter(o);
+                o.classList.toggle('hidden', !searchOk || !passPre);
+            });
+        }
+        function pick(opt) {
+            hidden.value = opt.dataset.value;
+            closeList();
+            hidden.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        input.addEventListener('focus', openList);
+        input.addEventListener('input', function () { openList(); filterList(input.value); });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { closeList(); input.blur(); }
+            else if (e.key === 'Enter') {
+                e.preventDefault();
+                var first = list.querySelector('.anl-combo-opt:not(.hidden)');
+                if (first) pick(first);
+            }
+        });
+        list.addEventListener('mousedown', function (e) {
+            var opt = e.target.closest('.anl-combo-opt');
+            if (opt && !opt.classList.contains('hidden')) { e.preventDefault(); pick(opt); }
+        });
+        if (clear) clear.addEventListener('click', function (e) {
+            e.stopPropagation();
+            hidden.value = '';
+            syncLabel();
+            hidden.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        document.addEventListener('click', function (e) {
+            if (!wrap.contains(e.target)) closeList();
+        });
+
+        var api = {
+            reapply: function () {
+                filterList(input.value);
+                if (hidden.value) {
+                    var sel = list.querySelector('.anl-combo-opt[data-value="' + CSS.escape(hidden.value) + '"]');
+                    if (sel && sel.classList.contains('hidden')) {
+                        hidden.value = '';
+                        syncLabel();
+                        hidden.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            },
+            syncLabel: syncLabel
+        };
+        _combos[name] = api;
+        syncLabel();
+    }
+
+    // ── Account ⇄ Contract chaining ──────────────────────────────────────
+    var _accountFilter = '';
+    setupCombo('account');
+    setupCombo('contract', function (opt) {
+        if (!opt.dataset.value) return true; // placeholder stays visible
+        if (!_accountFilter) return true;
+        return (opt.dataset.account || '') === _accountFilter;
+    });
+    // Product combo narrows by Account/Contract selection via preFilter:
+    //   · placeholder always visible
+    //   · if a contract is picked → show only products in that contract
+    //   · else if an account is picked → show only products in that account's contracts
+    setupCombo('product', function (opt) {
+        if (!opt.dataset.value) return true;
+        var contractId = document.getElementById('fldContract').value;
+        var accountId  = document.getElementById('fldAccount').value;
+        if (contractId) {
+            var cs = (opt.dataset.contracts || '').split(',').filter(Boolean);
+            return cs.indexOf(contractId) !== -1;
+        }
+        if (accountId) {
+            var as = (opt.dataset.accounts || '').split(',').filter(Boolean);
+            return as.indexOf(accountId) !== -1;
+        }
+        return true;
+    });
+
+    document.getElementById('fldAccount').addEventListener('change', function (e) {
+        _accountFilter = e.target.value || '';
+        if (_combos.contract) _combos.contract.reapply();
+        if (_combos.product)  _combos.product.reapply();
+    });
+    document.getElementById('fldContract').addEventListener('change', function () {
+        if (_combos.product) _combos.product.reapply();
+    });
+    document.getElementById('fldContract').addEventListener('change', function (e) {
+        var v = e.target.value;
+        if (!v) return;
+        var list = document.querySelector('[data-combo="contract"] .anl-combo-list');
+        var opt  = list.querySelector('.anl-combo-opt[data-value="' + CSS.escape(v) + '"]');
+        if (opt && opt.dataset.account) {
+            var acc = document.getElementById('fldAccount');
+            if (acc.value !== opt.dataset.account) {
+                acc.value = opt.dataset.account;
+                _accountFilter = opt.dataset.account;
+                if (_combos.account) _combos.account.syncLabel();
+                if (_combos.contract) _combos.contract.reapply();
+            }
+        }
+    });
+    _accountFilter = document.getElementById('fldAccount').value || '';
+    if (_combos.contract) _combos.contract.reapply();
+
+    form.querySelectorAll('[data-fire]').forEach(function (el) {
+        var isDebounced = el.hasAttribute('data-debounce');
+        el.addEventListener(isDebounced ? 'input' : 'change', function () {
+            document.getElementById('fldPage').value = 1;
+            fireFilterChange(!isDebounced);
+        });
+    });
+
+    // Date pickers: enforce from ≤ to by cross-linking min/max
+    (function () {
+        var fromEl = document.getElementById('fldDateFrom');
+        var toEl   = document.getElementById('fldDateTo');
+        function sync() {
+            toEl.min   = fromEl.value || '';
+            fromEl.max = toEl.value   || '';
+        }
+        fromEl.addEventListener('change', sync);
+        toEl.addEventListener('change', sync);
+        sync();
+    })();
+
+    function fmt(d) {
+        // Build the YYYY-MM-DD string from LOCAL date parts. toISOString()
+        // would convert to UTC first — in a +01 timezone, "May 1 00:00 local"
+        // becomes "April 30 23:00 UTC" → wrong drill target.
+        var y  = d.getFullYear();
+        var m  = String(d.getMonth() + 1).padStart(2, '0');
+        var dd = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + dd;
+    }
+    document.querySelectorAll('[data-quick]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var from = document.getElementById('fldDateFrom');
+            var to   = document.getElementById('fldDateTo');
+            var now  = new Date();
+            var preset = btn.dataset.quick;
+            if (preset === 'clear')      { from.value = ''; to.value = ''; }
+            else if (preset === 'today') { var d = fmt(now); from.value = d; to.value = d; }
+            else if (preset === 'yesterday') { var y = new Date(now); y.setDate(y.getDate()-1); var ys = fmt(y); from.value = ys; to.value = ys; }
+            else if (preset === 'week')  { var d2 = new Date(now); var day = d2.getDay()||7; d2.setDate(d2.getDate()-(day-1)); from.value = fmt(d2); to.value = fmt(now); }
+            else if (preset === 'month') { var d3 = new Date(now.getFullYear(), now.getMonth(), 1); from.value = fmt(d3); to.value = fmt(now); }
+            else if (preset === 'year') {
+                from.value = now.getFullYear() + '-01-01';
+                to.value   = now.getFullYear() + '-12-31';
+            }
+            document.querySelectorAll('[data-quick]').forEach(function (b) { b.classList.toggle('active', b === btn && preset !== 'clear'); });
+            document.getElementById('fldPage').value = 1;
+            fireFilterChange(true);
+        });
+    });
+
+    // Drill-up buttons restore the chart's own view (chart-local; no filter change).
+    document.getElementById('drillUpBtn').addEventListener('click', monthChartDrillUp);
+    document.getElementById('subDrillUpBtn').addEventListener('click', subChartDrillUp);
+
+    // Sort
+    document.querySelectorAll('.anl-tbl th.sortable').forEach(function (th) {
+        th.addEventListener('click', function () {
+            document.getElementById('fldSort').value = th.dataset.sortcol;
+            fireFilterChange(true);
+        });
+    });
+
+    // Metric toggle for Top Products
+    document.querySelectorAll('[data-metric]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var m = btn.dataset.metric;
+            document.getElementById('fldMetric').value = m;
+            state.product_metric = m;
+            document.querySelectorAll('[data-metric]').forEach(function (b) { b.classList.toggle('active', b.dataset.metric === m); });
+            // Local re-render if we already have the three sets, else fetch
+            if (state.chart_top_products && state.chart_top_products[m]) {
+                renderProd();
+                // Still update URL so share link reflects metric
+                var p = currentParams(); window.history.replaceState(null, '', window.location.pathname + '?' + p.toString());
+            } else {
+                fireFilterChange(true);
+            }
+        });
+    });
+
+    // (Breakdown table was removed — CSV/XLSX export links in the chips row
+    // still work via the existing analytics_export_csv / analytics_export_xlsx
+    // view endpoints.)
+    // Reset is handled by the "Clear all" chip (see renderChips)
+
+    // ── Chart drill-down clicks ─────────────────────────────────────────
+    // ── Chart-local drill (per chart, independent of the global filter) ──
+    // _monthDrill / _subDrill hold the drilled dataset for each chart; when
+    // null the chart falls back to the shared state arrays. Fetching for a
+    // specific drill only updates that chart.
+    var _monthDrill = null;
+    var _subDrill   = null;
+    function _drillFetch(year, month, which) {
+        var from = fmt(new Date(year, month, 1));
+        var to   = fmt(new Date(year, month + 1, 0));
+        var params = currentParams();
+        params.set('date_from', from);
+        params.set('date_to',   to);
+        setStale(true);
+        fetch(DATA_URL + '?' + params.toString(), {
+            credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            if (which === 'month') {
+                _monthDrill = {
+                    lbls:  d.chart_timeline_lbls,
+                    keys:  d.chart_timeline_keys,
+                    pts:   d.chart_timeline_pts,
+                    prods: d.chart_timeline_prods,
+                    gran:  d.chart_granularity
+                };
+                renderMonth(); renderDrillState();
+            } else {
+                _subDrill = {
+                    lbls: d.chart_timeline_lbls,
+                    keys: d.chart_timeline_keys,
+                    data: d.chart_submissions,
+                    gran: d.chart_granularity
+                };
+                renderSub(); renderDrillState();
+            }
+            setStale(false);
+        }).catch(function () { setStale(false); });
+    }
+    function monthChartDrillUp() { _monthDrill = null; renderMonth(); renderDrillState(); }
+    function subChartDrillUp()   { _subDrill   = null; renderSub();   renderDrillState(); }
+
+    function setFilterToMonth(year, month /* 0-indexed */) {
+        var from = fmt(new Date(year, month, 1));
+        var to   = fmt(new Date(year, month + 1, 0));
+        document.getElementById('fldDateFrom').value = from;
+        document.getElementById('fldDateTo').value   = to;
+        document.getElementById('fldPage').value = 1;
+        fireFilterChange(true);
+    }
+
+    // Chart-local drill (no filter change). Clicking a month bar in the
+    // Monthly Overview or Submission Frequency chart swaps that chart's
+    // data to the daily breakdown of the clicked month. The "Up" buttons
+    // (see renderDrillState) restore the previous view.
+    monthChart.on('click', function (p) {
+        if (p.dataIndex === undefined) return;
+        var curGran = (_monthDrill || state).gran || state.chart_granularity;
+        if (curGran !== 'month') return;
+        var key = (state.chart_timeline_keys || [])[p.dataIndex];
+        if (!key) return;
+        var parts = key.split('-');
+        if (parts.length !== 2) return;
+        _drillFetch(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 'month');
+    });
+    subChart.on('click', function (p) {
+        if (p.dataIndex === undefined) return;
+        var curGran = (_subDrill || state).gran || state.chart_granularity;
+        if (curGran !== 'month') return;
+        var key = (state.chart_timeline_keys || [])[p.dataIndex];
+        if (!key) return;
+        var parts = key.split('-');
+        if (parts.length !== 2) return;
+        _drillFetch(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 'sub');
+    });
+    function setFilterToDay(iso) {
+        document.getElementById('fldDateFrom').value = iso;
+        document.getElementById('fldDateTo').value   = iso;
+        document.getElementById('fldPage').value = 1;
+        fireFilterChange(true);
+    }
+    // Click a heatmap day → set the global filter to that single day.
+    heatChart.on('click', function (p) {
+        if (!p || !p.value || !p.value[0]) return;
+        setFilterToDay(p.value[0]);
+    });
+    // Click a heatmap month label (the "Oct", "Nov"… row above the cells) →
+    // set the filter to that whole month. ECharts calendar doesn't surface a
+    // native event for label clicks, so we listen on zrender and resolve the
+    // underlying date by nudging the click Y down into the cells.
+    // Heatmap: only fire the month-filter when the user actually clicked a
+    // month label (text node whose content is a month abbreviation). Empty
+    // cells, calendar gridlines, and whitespace do nothing.
+    heatChart.getZr().on('click', function (evt) {
+        var MONTH_ABBR = HEATMAP_MONTH_NAMES;
+        var isMonthLabel = false;
+        var el = evt.target;
+        for (var i = 0; i < 8 && el; i++) {
+            var txt = el && el.style && typeof el.style.text === 'string' ? el.style.text.trim() : '';
+            if (txt && MONTH_ABBR.indexOf(txt) !== -1) { isMonthLabel = true; break; }
+            el = el.parent;
+        }
+        if (!isMonthLabel) return;
+
+        var pt = [evt.offsetX, evt.offsetY];
+        var tsRaw;
+        try { tsRaw = heatChart.convertFromPixel({ calendarIndex: 0 }, pt); } catch (e) {}
+        if (tsRaw == null) return;
+        var ts = (typeof tsRaw === 'number') ? tsRaw : Date.parse(tsRaw);
+        if (!ts || isNaN(ts)) return;
+        var d = new Date(ts);
+        setFilterToMonth(d.getFullYear(), d.getMonth());
+    });
+    // Treemap click: do NOT change the filter — treemap tooltip is enough to
+    // inspect a product. (User-requested behavior.)
+    // Points-per-Account chart: read-only. (No click handler — user wants
+    // the account bar chart to inform, not drive filters.)
+
+    // ── Presets (localStorage) ──────────────────────────────────────────
+    var PRESET_KEY = 'wip_analytics_presets_v1';
+    function loadPresets() {
+        try { return JSON.parse(localStorage.getItem(PRESET_KEY) || '{}'); } catch (e) { return {}; }
+    }
+    function savePresets(obj) {
+        try { localStorage.setItem(PRESET_KEY, JSON.stringify(obj)); } catch (e) {}
+    }
+    // Custom preset dropdown panel: list rows with inline × delete
+    var presetBtn   = document.getElementById('anlPresetBtn');
+    var presetPanel = document.getElementById('anlPresetPanel');
+
+    function renderPresetPanel() {
+        var presets = loadPresets();
+        var names = Object.keys(presets).sort();
+        if (!names.length) {
+            presetPanel.innerHTML = '<div class="anl-preset-empty">{% trans "No presets saved yet. Use the Save button once you set some filters." %}</div>';
+            return;
+        }
+        presetPanel.innerHTML = names.map(function (n) {
+            return '<div class="anl-preset-row" data-name="' + esc(n) + '">'
+                 + '<span class="material-icons-round" style="font-size:16px; color:var(--accent); flex-shrink:0;">bookmark</span>'
+                 + '<span class="anl-preset-row-label" title="' + esc(n) + '">' + esc(n) + '</span>'
+                 + '<button type="button" class="anl-preset-row-del" data-del="' + esc(n) + '" title="{% trans "Delete this preset" %}">'
+                 + '<span class="material-icons-round" style="font-size:15px;">delete</span></button>'
+                 + '</div>';
+        }).join('');
+    }
+    function refreshPresetSelect() { renderPresetPanel(); }
+
+    presetBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        renderPresetPanel();
+        presetPanel.classList.toggle('open');
+    });
+    document.addEventListener('click', function (e) {
+        if (!presetPanel.contains(e.target) && e.target !== presetBtn && !presetBtn.contains(e.target)) {
+            presetPanel.classList.remove('open');
+        }
+    });
+    presetPanel.addEventListener('click', function (e) {
+        var delBtn = e.target.closest('[data-del]');
+        if (delBtn) {
+            var name = delBtn.dataset.del;
+            var presets = loadPresets();
+            if (presets[name] !== undefined) {
+                delete presets[name];
+                savePresets(presets);
+                renderPresetPanel();
+            }
+            return;
+        }
+        var row = e.target.closest('[data-name]');
+        if (row) {
+            var presets = loadPresets();
+            var qs = presets[row.dataset.name];
+            if (qs !== undefined) {
+                window.location.href = window.location.pathname + qs;
+            }
+        }
+    });
+    // ── Save-preset modal ───────────────────────────────────────────────
+    var spModal   = document.getElementById('savePresetModal');
+    var spInput   = document.getElementById('savePresetName');
+    var spWarn    = document.getElementById('savePresetWarn');
+    var spSummary = document.getElementById('savePresetSummary');
+
+    function currentFilterSummary() {
+        var _form = document.getElementById('anlForm');
+        var fd = new FormData(_form);
+        var parts = [];
+        var acc = fd.get('account');
+        var con = fd.get('contract');
+        var prod = (fd.get('product') || '').trim();
+        var from = fd.get('date_from');
+        var to   = fd.get('date_to');
+        if (acc)  parts.push('<b>{% trans "Account" %}:</b> ' + esc(acctLookup[acc] || acc));
+        if (con)  parts.push('<b>{% trans "Contract" %}:</b> ' + esc(contractLookup[con] || con));
+        if (prod) parts.push('<b>{% trans "Product" %}:</b> ' + esc(prod));
+        if (from && to) parts.push('<b>{% trans "Period" %}:</b> ' + esc(fmtDateLong(from)) + ' → ' + esc(fmtDateLong(to)));
+        else if (from)  parts.push('<b>{% trans "From" %}:</b> ' + esc(fmtDateLong(from)));
+        else if (to)    parts.push('<b>{% trans "Until" %}:</b> ' + esc(fmtDateLong(to)));
+        return parts.join('<br/>') || '{% trans "No filters set" %}';
+    }
+
+    function openSaveModal() {
+        spInput.value = '';
+        spSummary.innerHTML = currentFilterSummary();
+        // If the current filter set is identical to an already-saved preset,
+        // warn up front — no need to make the user discover the collision by typing.
+        var presets = loadPresets();
+        var current = window.location.search || '';
+        var dup = null;
+        Object.keys(presets).some(function (n) { if (presets[n] === current) { dup = n; return true; } });
+        if (dup) {
+            spWarn.style.display = 'block';
+            {% trans "This exact filter set is already saved as" as infoMsg %}
+            spWarn.innerHTML = '<span class="material-icons-round" style="font-size:14px; vertical-align:-3px;">info</span> '
+                + '{{ infoMsg|escapejs }} <b>' + esc(dup) + '</b>.';
+        } else {
+            spWarn.style.display = 'none';
+        }
+        spModal.classList.add('open');
+        setTimeout(function () { spInput.focus(); }, 50);
+    }
+    function closeSaveModal() { spModal.classList.remove('open'); }
+
+    document.getElementById('anlPresetSave').addEventListener('click', openSaveModal);
+    document.getElementById('savePresetClose').addEventListener('click', closeSaveModal);
+    document.getElementById('savePresetCancel').addEventListener('click', closeSaveModal);
+    spModal.addEventListener('click', function (e) { if (e.target === spModal) closeSaveModal(); });
+
+    spInput.addEventListener('input', function () {
+        var name = spInput.value.trim();
+        var presets = loadPresets();
+        if (name && presets[name] !== undefined) {
+            spWarn.style.display = 'block';
+            spWarn.style.color = '#f59e0b';
+            {% trans "A preset with this name already exists. Saving will overwrite it." as warnMsg %}
+            spWarn.innerHTML = '<span class="material-icons-round" style="font-size:14px; vertical-align:-3px;">warning</span> '
+                + '{{ warnMsg|escapejs }}';
+        } else {
+            // If the modal was opened with a "same filter already saved" notice,
+            // leave it; otherwise hide.
+            if (spWarn.style.color !== 'rgb(96, 165, 250)' && spWarn.style.color !== '#60a5fa') {
+                // keep the "already saved as X" blue info if user hasn't typed anything new
+                var current = window.location.search || '';
+                var dup = null;
+                Object.keys(presets).some(function (n) { if (presets[n] === current) { dup = n; return true; } });
+                if (!name && dup) {
+                    spWarn.style.display = 'block';
+                    spWarn.style.color = '#60a5fa';
+                    {% trans "This exact filter set is already saved as" as infoMsg2 %}
+                    spWarn.innerHTML = '<span class="material-icons-round" style="font-size:14px; vertical-align:-3px;">info</span> '
+                        + '{{ infoMsg2|escapejs }} <b>' + esc(dup) + '</b>.';
+                } else {
+                    spWarn.style.display = 'none';
+                }
+            }
+        }
+    });
+    spInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('savePresetConfirm').click(); }
+    });
+
+    document.getElementById('savePresetConfirm').addEventListener('click', function () {
+        var name = spInput.value.trim();
+        if (!name) { spInput.focus(); return; }
+        var presets = loadPresets();
+        presets[name] = window.location.search || '';
+        savePresets(presets);
+        refreshPresetSelect();
+        closeSaveModal();
+    });
+    renderPresetPanel();
+
+    // ── Product detail modal ────────────────────────────────────────────
+    function openProductModal(pk) {
+        var modal = document.getElementById('prodModal');
+        modal.classList.add('open');
+        var body = modal.querySelector('.anl-modal-body');
+        document.getElementById('prodModalTitle').textContent = '…';
+        document.getElementById('prodModalMeta').textContent  = '';
+        document.getElementById('prodModalAccTbl').querySelector('tbody').innerHTML = '';
+        if (!prodModalChart) {
+            prodModalChart = echarts.init(document.getElementById('prodModalChart'), null, { renderer: 'svg' });
+        }
+        prodModalChart.clear();
+        fetch(PRODUCT_URL_TMPL.replace('PK', pk), { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                document.getElementById('prodModalTitle').textContent = d.designation + '  (' + d.code + ')';
+                document.getElementById('prodModalMeta').innerHTML =
+                    '<b>' + d.total_points.toLocaleString() + '</b> ' + LBL_POINTS
+                    + '  ·  <b>' + d.total_qty.toLocaleString() + '</b> qty'
+                    + (d.ppv !== null ? '  ·  PU: <b>' + d.ppv + '</b>' : '');
+                prodModalChart.setOption({
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: 40, right: 20, bottom: 30, top: 20 },
+                    xAxis: { type: 'category', data: d.month_labels, axisLabel: { color: labelColor, fontSize: 10 } },
+                    yAxis: { type: 'value', splitLine: { lineStyle: { color: gridLine } }, axisLabel: { color: labelColor, fontSize: 10 } },
+                    series: [{ type: 'line', data: d.month_pts, smooth: true, areaStyle: { opacity: 0.2 }, itemStyle: { color: palette[0] }, lineStyle: { color: palette[0] } }]
+                }, true);
+                document.getElementById('prodModalAccTbl').querySelector('tbody').innerHTML =
+                    d.top_accounts.map(function (a) {
+                        return '<tr><td>' + esc(a.name) + ' <span class="anl-code-chip">' + esc(a.code) + '</span></td>'
+                            + '<td class="num">' + a.qty + '</td>'
+                            + '<td class="num"><span class="anl-pts">' + a.pts + '</span></td></tr>';
+                    }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:20px;">—</td></tr>';
+            });
+    }
+    document.getElementById('prodModalClose').addEventListener('click', function () {
+        document.getElementById('prodModal').classList.remove('open');
+    });
+    document.getElementById('prodModal').addEventListener('click', function (e) {
+        if (e.target === this) this.classList.remove('open');
+    });
+
+    // Resize
+    window.addEventListener('resize', function () {
+        monthChart.resize(); prodChart.resize(); acctChart.resize();
+        subChart.resize(); heatChart.resize(); awardedChart.resize();
+        if (prodModalChart) prodModalChart.resize();
+    });
+
+    // Adapt the Points-Awarded x-axis labels on zoom: if the user zooms in
+    // to ≤ 31 visible days, switch to pure day-number labels (02, 03, 04…).
+    awardedChart.on('dataZoom', function () {
+        var raw = state.awarded_lbls || [];
+        if (!raw.length) return;
+        var opt = awardedChart.getOption();
+        var dz  = opt.dataZoom && opt.dataZoom[0];
+        if (!dz) return;
+        var startPct = dz.start || 0, endPct = dz.end || 100;
+        var visibleLen = Math.max(1, Math.round(raw.length * (endPct - startPct) / 100));
+        awardedChart.setOption({ xAxis: [{ axisLabel: awardedAxisLabel(visibleLen) }] });
+    });
+
+    // Heatmap is purely informational for now — click behavior intentionally
+    // disabled. (A proper per-day drill will be added once the data model
+    // around sale-date vs received-date is sorted out.)
+
+    // Theme-change observer: when the user flips light/dark via the sidebar
+    // toggle, the ECharts palette (built once at init time) stays stale. We
+    // watch the <html data-theme=".."> attribute and re-render all charts so
+    // colors, grid lines, labels, axis colors, etc. all pick up the new theme.
+    (function () {
+        var mo = new MutationObserver(function () {
+            isDark     = document.documentElement.dataset.theme !== 'light';
+            labelColor = isDark ? '#94a3b8' : '#64748b';
+            gridLine   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+            axisLine   = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+            // Dispose and re-init so background and all theme-dependent bits reset
+            [monthChart, prodChart, acctChart, subChart, heatChart, awardedChart].forEach(function (c) {
+                try { c.clear(); } catch (e) {}
+            });
+            renderAll();
+        });
+        mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    })();
+})();
+</script>
+{% endblock %}

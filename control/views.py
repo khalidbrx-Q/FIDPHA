@@ -2564,3 +2564,794 @@ def sync_log(request):
         "STATUS_ACCEPTED":  SaleImport.STATUS_ACCEPTED,
         "STATUS_REJECTED":  SaleImport.STATUS_REJECTED,
     })
+
+
+# ===========================================================================
+# Staff Analytics Dashboard
+# ---------------------------------------------------------------------------
+# Cross-account points analytics with filters, charts, grouped breakdown
+# and CSV export. Permission-gated by control.view_analytics (superuser
+# bypass handled by @perm_required).
+# ===========================================================================
+
+def _parse_date(s):
+    """Return a date from an ISO 'YYYY-MM-DD' string, or None if invalid."""
+    from datetime import datetime
+    if not s:
+        return None
+    try:
+        return datetime.strptime(s, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+
+
+def _analytics_filters(request):
+    """
+    Parse GET params and return (sale_qs, context_dict).
+
+    sale_qs is the Sale queryset narrowed by every active filter EXCEPT the
+    status toggle (status is applied downstream where it matters so each
+    section can decide — e.g. point KPIs always use accepted-only, while
+    the grouped table follows the toggle).
+
+    context_dict carries the raw filter values back to the template so form
+    controls can be re-populated.
+    """
+    from django.db.models import F, ExpressionWrapper, FloatField
+    from django.db.models.functions import Round
+
+    date_from     = _parse_date(request.GET.get("date_from"))
+    date_to       = _parse_date(request.GET.get("date_to"))
+    product_q     = (request.GET.get("product") or "").strip()
+    account_id    = (request.GET.get("account") or "").strip()
+    contract_id   = (request.GET.get("contract") or "").strip()
+    sort_mode     = (request.GET.get("sort") or "points").strip()
+    if sort_mode not in ("points", "account"):
+        sort_mode = "points"
+
+    qs = Sale.objects.filter(product_ppv__isnull=False)
+
+    if date_from:
+        qs = qs.filter(sale_datetime__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(sale_datetime__date__lte=date_to)
+    if product_q:
+        qs = qs.filter(
+            Q(contract_product__product__designation__icontains=product_q)
+            | Q(contract_product__product__code__icontains=product_q)
+        )
+    try:
+        if account_id:
+            qs = qs.filter(contract_product__contract__account_id=int(account_id))
+    except (TypeError, ValueError):
+        account_id = ""
+    try:
+        if contract_id:
+            qs = qs.filter(contract_product__contract_id=int(contract_id))
+    except (TypeError, ValueError):
+        contract_id = ""
+
+    qs = qs.annotate(pts=Round(ExpressionWrapper(
+        F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
+        output_field=FloatField(),
+    )))
+
+    ctx = {
+        "f_date_from":   date_from.isoformat() if date_from else "",
+        "f_date_to":     date_to.isoformat() if date_to else "",
+        "f_product":     product_q,
+        "f_account":     account_id,
+        "f_contract":    contract_id,
+        "f_sort":        sort_mode,
+    }
+    return qs, ctx
+
+
+def _month_window(date_from, date_to, now):
+    """
+    Return (month_dates, month_keys, month_labels, window_start_dt) for the
+    monthly chart. Anchors to the filter date range when both bounds are set
+    (clamped to 24 months to stay sane); otherwise defaults to trailing 12.
+    """
+    from datetime import datetime, timezone as dt_tz
+    if date_from and date_to and date_to >= date_from:
+        start = datetime(date_from.year, date_from.month, 1, tzinfo=dt_tz.utc)
+        end   = datetime(date_to.year,   date_to.month,   1, tzinfo=dt_tz.utc)
+    else:
+        end   = datetime(now.year, now.month, 1, tzinfo=dt_tz.utc)
+        y, m  = end.year, end.month - 11
+        while m <= 0:
+            m += 12
+            y -= 1
+        start = datetime(y, m, 1, tzinfo=dt_tz.utc)
+    months = []
+    cur = start
+    while cur <= end and len(months) < 24:
+        months.append(cur)
+        if cur.month == 12:
+            cur = datetime(cur.year + 1, 1, 1, tzinfo=dt_tz.utc)
+        else:
+            cur = datetime(cur.year, cur.month + 1, 1, tzinfo=dt_tz.utc)
+    if not months:
+        months = [start]
+    keys  = [d.strftime("%Y-%m") for d in months]
+    lbls  = [d.strftime("%b %Y") for d in months]
+    return months, keys, lbls, start
+
+
+def _previous_period(date_from, date_to):
+    """Return (prev_from, prev_to) for the equal-length window just before."""
+    from datetime import timedelta
+    if not (date_from and date_to) or date_to < date_from:
+        return None, None
+    span = (date_to - date_from).days + 1
+    prev_to   = date_from - timedelta(days=1)
+    prev_from = prev_to   - timedelta(days=span - 1)
+    return prev_from, prev_to
+
+
+def _points_sum(request_qs):
+    from django.db.models import Sum
+    return int(request_qs.filter(status=Sale.STATUS_ACCEPTED).aggregate(t=Sum("pts"))["t"] or 0)
+
+
+def _compute_analytics(request):
+    """
+    Core data computation. Enhancements over the first version:
+      · month window follows the filter date range when set
+      · previous-period comparison KPIs
+      · pending-points KPI
+      · daily heatmap data
+      · top products with 3 metric alternatives (points / qty / revenue)
+      · breakdown pagination + inline search
+    """
+    from datetime import datetime, timezone as dt_tz, timedelta
+    from django.db.models import Sum, Count, Avg, Min, F, ExpressionWrapper, FloatField
+    from django.db.models.functions import TruncMonth, TruncDay, TruncYear, Round
+
+    qs, filt_ctx = _analytics_filters(request)
+    sort_mode     = filt_ctx["f_sort"]
+
+    product_metric = (request.GET.get("metric") or "points").strip()
+    if product_metric not in ("points", "qty", "revenue"):
+        product_metric = "points"
+    tbl_q = (request.GET.get("tbl_q") or "").strip()
+    try:
+        page = max(1, int(request.GET.get("page") or 1))
+    except (TypeError, ValueError):
+        page = 1
+    try:
+        page_size = min(500, max(10, int(request.GET.get("page_size") or 50)))
+    except (TypeError, ValueError):
+        page_size = 50
+
+    # Everything on this page is accepted-sales-only (that's what generates
+    # points). scope_qs is kept as an alias so downstream aggregation code
+    # stays readable.
+    accepted_qs = qs.filter(status=Sale.STATUS_ACCEPTED)
+    pending_qs  = qs.filter(status=Sale.STATUS_PENDING)
+    scope_qs    = accepted_qs
+
+    now = timezone.now()
+    date_from = _parse_date(filt_ctx["f_date_from"])
+    date_to   = _parse_date(filt_ctx["f_date_to"])
+
+    # ── KPIs ────────────────────────────────────────────────────────────────
+    total_points   = int(accepted_qs.aggregate(t=Sum("pts"))["t"] or 0)
+    total_products = scope_qs.values("contract_product__product").distinct().count()
+    total_accounts = scope_qs.values("contract_product__contract__account").distinct().count()
+    pending_points = int(pending_qs.aggregate(t=Sum("pts"))["t"] or 0)
+
+    # Dynamic second KPI: daily average of accepted points over the active
+    # window. If date_from/date_to are set, that's the window; otherwise we
+    # span the whole data range in scope (earliest sale → today) so the
+    # average reflects real activity rather than an arbitrary 30-day slice
+    # that may contain no data.
+    if date_from and date_to and date_to >= date_from:
+        avg_days = (date_to - date_from).days + 1
+        total_for_avg = total_points
+    else:
+        earliest = accepted_qs.aggregate(m=Min("sale_datetime"))["m"]
+        if earliest:
+            avg_days = max(1, (now.date() - earliest.date()).days + 1)
+            total_for_avg = total_points
+        else:
+            avg_days = 1
+            total_for_avg = 0
+    daily_avg_points = round(total_for_avg / max(1, avg_days), 1)
+
+    # Previous-period comparison (only when both date bounds set)
+    def _pct(curr, prev):
+        if not prev:
+            return None
+        return round(((curr - prev) / prev) * 100.0, 1)
+
+    kpi_prev = {"points": None, "month": None, "products": None, "accounts": None,
+                "from": None, "to": None}
+    prev_from, prev_to = _previous_period(date_from, date_to)
+    if prev_from and prev_to:
+        kpi_prev["from"] = prev_from.strftime("%Y-%m-%d")
+        kpi_prev["to"]   = prev_to.strftime("%Y-%m-%d")
+        # Re-filter the base qs for the previous window; keep account/product/contract filters.
+        prev_qs = Sale.objects.filter(product_ppv__isnull=False,
+                                      sale_datetime__date__gte=prev_from,
+                                      sale_datetime__date__lte=prev_to)
+        if filt_ctx["f_product"]:
+            prev_qs = prev_qs.filter(
+                Q(contract_product__product__designation__icontains=filt_ctx["f_product"])
+                | Q(contract_product__product__code__icontains=filt_ctx["f_product"])
+            )
+        if filt_ctx["f_account"]:
+            try:
+                prev_qs = prev_qs.filter(contract_product__contract__account_id=int(filt_ctx["f_account"]))
+            except ValueError:
+                pass
+        if filt_ctx["f_contract"]:
+            try:
+                prev_qs = prev_qs.filter(contract_product__contract_id=int(filt_ctx["f_contract"]))
+            except ValueError:
+                pass
+        prev_qs = prev_qs.annotate(pts=Round(ExpressionWrapper(
+            F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
+            output_field=FloatField(),
+        )))
+        prev_acc  = prev_qs.filter(status=Sale.STATUS_ACCEPTED)
+        prev_scope = prev_acc
+        kpi_prev["points"]   = _pct(total_points,      int(prev_acc.aggregate(t=Sum("pts"))["t"] or 0))
+        kpi_prev["products"] = _pct(total_products,    prev_scope.values("contract_product__product").distinct().count())
+        kpi_prev["accounts"] = _pct(total_accounts,    prev_scope.values("contract_product__contract__account").distinct().count())
+
+    # ── Timeline chart — adaptive granularity ──────────────────────────────
+    # Switch to daily bars when the filtered window is ≤ 60 days; otherwise
+    # fall back to monthly (default 12 months when nothing is filtered).
+    use_daily = bool(date_from and date_to and (date_to - date_from).days <= 60)
+
+    if use_daily:
+        granularity = "day"
+        day_count = (date_to - date_from).days + 1
+        day_dates = [date_from + timedelta(days=i) for i in range(day_count)]
+        timeline_keys  = [d.strftime("%Y-%m-%d") for d in day_dates]
+        timeline_lbls  = [d.strftime("%d %b") for d in day_dates]
+        window_start   = datetime(date_from.year, date_from.month, date_from.day, tzinfo=dt_tz.utc)
+
+        daily_qs = (
+            accepted_qs.filter(sale_datetime__date__gte=date_from, sale_datetime__date__lte=date_to)
+            .annotate(bucket=TruncDay("sale_datetime"))
+            .values("bucket")
+            .annotate(total_pts=Sum("pts"),
+                      unique_products=Count("contract_product__product", distinct=True))
+        )
+        dmap = {r["bucket"].strftime("%Y-%m-%d"): r for r in daily_qs}
+        chart_timeline_pts   = [int(dmap.get(k, {}).get("total_pts") or 0) for k in timeline_keys]
+        chart_timeline_prods = [dmap.get(k, {}).get("unique_products") or 0 for k in timeline_keys]
+
+        sub_daily = (
+            scope_qs.filter(sale_datetime__date__gte=date_from, sale_datetime__date__lte=date_to)
+            .annotate(bucket=TruncDay("sale_datetime"))
+            .values("bucket")
+            .annotate(batches=Count("sale_import__batch_id", distinct=True))
+        )
+        smap = {r["bucket"].strftime("%Y-%m-%d"): int(r["batches"] or 0) for r in sub_daily}
+        chart_submissions = [smap.get(k, 0) for k in timeline_keys]
+    else:
+        granularity = "month"
+        month_dates, timeline_keys, timeline_lbls, window_start = _month_window(date_from, date_to, now)
+        monthly_qs = (
+            accepted_qs.filter(sale_datetime__gte=window_start)
+            .annotate(bucket=TruncMonth("sale_datetime"))
+            .values("bucket")
+            .annotate(total_pts=Sum("pts"),
+                      unique_products=Count("contract_product__product", distinct=True))
+        )
+        mmap = {r["bucket"].strftime("%Y-%m"): r for r in monthly_qs}
+        chart_timeline_pts   = [int(mmap.get(k, {}).get("total_pts") or 0) for k in timeline_keys]
+        chart_timeline_prods = [mmap.get(k, {}).get("unique_products") or 0 for k in timeline_keys]
+
+        sub_qs = (
+            scope_qs.filter(sale_datetime__gte=window_start)
+            .annotate(bucket=TruncMonth("sale_datetime"))
+            .values("bucket")
+            .annotate(batches=Count("sale_import__batch_id", distinct=True))
+        )
+        submap = {r["bucket"].strftime("%Y-%m"): int(r["batches"] or 0) for r in sub_qs}
+        chart_submissions = [submap.get(k, 0) for k in timeline_keys]
+
+    # Cumulative points — running sum of chart_timeline_pts; same granularity.
+    cumulative_pts = []
+    _running = 0
+    for v in chart_timeline_pts:
+        _running += int(v or 0)
+        cumulative_pts.append(_running)
+
+    # ── Top products — 3 metric alternatives (points | qty | revenue) ──────
+    tp_qs = (
+        accepted_qs.values("contract_product__product_id",
+                           "contract_product__product__designation")
+        .annotate(points=Sum("pts"),
+                  qty=Sum("quantity"),
+                  revenue=Sum(ExpressionWrapper(
+                      F("product_ppv") * F("quantity"), output_field=FloatField()
+                  )))
+    )
+    tp_rows = list(tp_qs)
+    def _top(metric_key, n=30):
+        out = []
+        for r in sorted(tp_rows, key=lambda x: -(float(x[metric_key] or 0)))[:n]:
+            v = float(r[metric_key] or 0)
+            if v <= 0:
+                continue
+            out.append({
+                "id": r["contract_product__product_id"],
+                "name": r["contract_product__product__designation"] or "—",
+                "value": round(v, 2) if metric_key == "revenue" else int(v),
+            })
+        return out
+    top_products_sets = {
+        "points":  _top("points"),
+        "qty":     _top("qty"),
+        "revenue": _top("revenue"),
+    }
+
+    # ── Points per account ─────────────────────────────────────────────────
+    acct_rows = list(
+        accepted_qs.values("contract_product__contract__account_id",
+                           "contract_product__contract__account__code",
+                           "contract_product__contract__account__name")
+        .annotate(pts=Sum("pts")).order_by("-pts")[:20]
+    )
+    chart_acct_labels = [(r["contract_product__contract__account__name"]
+                          or r["contract_product__contract__account__code"] or "—") for r in acct_rows]
+    chart_acct_data   = [int(r["pts"] or 0) for r in acct_rows]
+    chart_acct_ids    = [r["contract_product__contract__account_id"] for r in acct_rows]
+
+    # ── Daily heatmap — respects account/product/contract filters but applies
+    # smart date logic:
+    #   · no date filter          → last 365 days (long context)
+    #   · filter >= 28 days       → the filter range itself
+    #   · filter < 28 days        → expand to the enclosing month(s) so a
+    #                                single-day or single-week filter still
+    #                                shows context around it, not an empty strip.
+    import calendar as _cal
+    if date_from and date_to:
+        span_days = (date_to - date_from).days + 1
+        if span_days >= 28:
+            heatmap_start = date_from
+            heatmap_end   = date_to
+        else:
+            heatmap_start = date_from.replace(day=1)
+            last_day = _cal.monthrange(date_to.year, date_to.month)[1]
+            heatmap_end = date_to.replace(day=last_day)
+    else:
+        heatmap_end  = now.date()
+        heatmap_start = heatmap_end - timedelta(days=364)
+
+    hm_qs = (accepted_qs
+             .filter(sale_datetime__date__gte=heatmap_start,
+                     sale_datetime__date__lte=heatmap_end)
+             .annotate(day=TruncDay("sale_datetime"))
+             .values("day").annotate(pts=Sum("pts")))
+    heatmap_data = [[r["day"].strftime("%Y-%m-%d"), int(r["pts"] or 0)] for r in hm_qs]
+    heatmap_range = [heatmap_start.strftime("%Y-%m-%d"), heatmap_end.strftime("%Y-%m-%d")]
+
+    # Human-readable scope label used by the heatmap / Points-Awarded cards.
+    # When the window matches exactly one calendar month, show just that month;
+    # otherwise show the full ISO range.
+    if (heatmap_start.day == 1
+            and heatmap_end.day == _cal.monthrange(heatmap_end.year, heatmap_end.month)[1]
+            and heatmap_start.year == heatmap_end.year
+            and heatmap_start.month == heatmap_end.month):
+        # Single calendar month → just "YYYY-MM" (the client formats it readably)
+        heatmap_scope_label = heatmap_start.strftime("%Y-%m")
+    else:
+        heatmap_scope_label = ""  # client falls back to "from → to" from heatmap_range
+
+    # Points-Awarded cumulative — shares the heatmap's smart date scope and
+    # daily resolution. Reads the same hm_qs result to avoid a second query.
+    _by_day = {r["day"].strftime("%Y-%m-%d"): int(r["pts"] or 0) for r in hm_qs}
+
+    # Pre-filter baseline: cumulative points earned by the same account /
+    # contract / product scope before the heatmap window begins. Shown as
+    # the starting value of the Points-Awarded line, so when the filter
+    # lands on an empty range the chart still carries the historical total.
+    _baseline_qs = Sale.objects.filter(
+        status=Sale.STATUS_ACCEPTED,
+        product_ppv__isnull=False,
+        sale_datetime__date__lt=heatmap_start,
+    ).annotate(_bpts=ExpressionWrapper(
+        F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
+        output_field=FloatField(),
+    ))
+    if filt_ctx["f_account"]:
+        _baseline_qs = _baseline_qs.filter(contract_product__contract__account_id=int(filt_ctx["f_account"]))
+    if filt_ctx["f_contract"]:
+        _baseline_qs = _baseline_qs.filter(contract_product__contract_id=int(filt_ctx["f_contract"]))
+    if filt_ctx["f_product"]:
+        _pq = filt_ctx["f_product"]
+        _baseline_qs = _baseline_qs.filter(
+            Q(contract_product__product__designation__icontains=_pq)
+            | Q(contract_product__product__code__icontains=_pq)
+        )
+    awarded_baseline = int(round(_baseline_qs.aggregate(t=Sum("_bpts"))["t"] or 0))
+
+    awarded_lbls, awarded_vals = [], []
+    _cum, _d = awarded_baseline, heatmap_start
+    while _d <= heatmap_end:
+        key = _d.strftime("%Y-%m-%d")
+        _cum += _by_day.get(key, 0)
+        awarded_lbls.append(key)
+        awarded_vals.append(_cum)
+        _d = _d + timedelta(days=1)
+
+    # ── Grouped breakdown ──────────────────────────────────────────────────
+    grouped_rows = list(
+        scope_qs.values(
+            "contract_product__contract__account_id",
+            "contract_product__contract__account__code",
+            "contract_product__contract__account__name",
+            "contract_product__product_id",
+            "contract_product__product__code",
+            "contract_product__product__designation",
+        ).annotate(total_qty=Sum("quantity"),
+                   avg_pu=Avg("product_ppv"),
+                   total_pts=Sum("pts"))
+    )
+
+    def _sort_key(r):
+        if sort_mode == "account":
+            return ((r["contract_product__contract__account__name"] or "").lower(),
+                    (r["contract_product__product__designation"] or "").lower())
+        return (-int(r["total_pts"] or 0),
+                (r["contract_product__contract__account__name"] or "").lower())
+    grouped_rows.sort(key=_sort_key)
+
+    breakdown_all = [
+        {"account_id":   r["contract_product__contract__account_id"],
+         "account_code": r["contract_product__contract__account__code"] or "",
+         "account_name": r["contract_product__contract__account__name"] or "",
+         "product_id":   r["contract_product__product_id"],
+         "product_code": r["contract_product__product__code"] or "",
+         "product_name": r["contract_product__product__designation"] or "",
+         "total_qty":    int(r["total_qty"] or 0),
+         "avg_pu":       round(float(r["avg_pu"] or 0), 2),
+         "total_pts":    int(r["total_pts"] or 0)}
+        for r in grouped_rows
+    ]
+
+    # Table-local search (over account_name OR product_name)
+    if tbl_q:
+        tbl_q_low = tbl_q.lower()
+        breakdown_all = [r for r in breakdown_all
+                         if tbl_q_low in r["account_name"].lower()
+                         or tbl_q_low in r["product_name"].lower()
+                         or tbl_q_low in r["account_code"].lower()
+                         or tbl_q_low in r["product_code"].lower()]
+
+    total_rows = len(breakdown_all)
+    pages = max(1, (total_rows + page_size - 1) // page_size)
+    page = min(page, pages)
+    offset = (page - 1) * page_size
+    breakdown = breakdown_all[offset:offset + page_size]
+
+    # ── Dropdowns ──────────────────────────────────────────────────────────
+    all_accounts = list(Account.objects.order_by("name", "code").values("id", "code", "name", "city"))
+    # All contracts loaded; the client narrows the dropdown by account_id so
+    # the chaining works without an extra round-trip.
+    all_contracts = list(
+        Contract.objects.select_related("account").order_by("-start_date")
+        .values("id", "title", "account_id", "account__code", "status")[:500]
+    )
+
+    # Products list for the Product combo. Each entry carries the set of
+    # contract_ids and account_ids that cover the product, so the combo can
+    # narrow itself when an account or contract filter is active.
+    all_products_raw = list(
+        Product.objects.filter(status=Product.STATUS_ACTIVE)
+        .order_by("designation").values("code", "designation")[:1000]
+    )
+    cp_rows = list(
+        Contract_Product.objects
+        .select_related("contract")
+        .values("product__designation", "contract_id", "contract__account_id")
+    )
+    _prod_contracts, _prod_accounts = {}, {}
+    for r in cp_rows:
+        pname = r["product__designation"]
+        if not pname:
+            continue
+        _prod_contracts.setdefault(pname, set()).add(r["contract_id"])
+        _prod_accounts.setdefault(pname, set()).add(r["contract__account_id"])
+    all_products = []
+    for p in all_products_raw:
+        pname = p["designation"]
+        all_products.append({
+            "code": p["code"],
+            "designation": pname,
+            "contracts": ",".join(str(x) for x in sorted(_prod_contracts.get(pname, []))),
+            "accounts":  ",".join(str(x) for x in sorted(_prod_accounts.get(pname, []))),
+        })
+
+    # Years available for the Monthly Overview quick picker (distinct years of
+    # accepted sales in the base scope — ignores date filter so switching year
+    # is a shortcut to override it).
+    year_rows = (Sale.objects.filter(status=Sale.STATUS_ACCEPTED, product_ppv__isnull=False)
+                 .annotate(y=TruncYear("sale_datetime"))
+                 .values("y").distinct().order_by("-y"))
+    years_list = sorted({r["y"].year for r in year_rows if r["y"]}, reverse=True)
+
+    # Lookup maps for filter chips (name resolution client-side via these)
+    acct_lookup = {a["id"]: (a["name"] or a["code"]) for a in all_accounts}
+    contract_lookup = {c["id"]: c["title"] for c in all_contracts}
+
+    from urllib.parse import urlencode
+    export_params = {k.replace("f_", ""): v for k, v in filt_ctx.items() if v and k != "f_sort"}
+    export_url = f"?{urlencode(export_params)}" if export_params else ""
+
+    return {
+        **filt_ctx,
+        # KPIs
+        "kpi_total_points":    total_points,
+        "kpi_daily_avg":       daily_avg_points,
+        "kpi_avg_days":        avg_days,
+        "kpi_total_products":  total_products,
+        "kpi_total_accounts":  total_accounts,
+        "kpi_pending_points":  pending_points,
+        "kpi_prev":            kpi_prev,
+        # Charts
+        "chart_timeline_lbls":  timeline_lbls,
+        "chart_timeline_keys":  timeline_keys,
+        "chart_timeline_pts":   chart_timeline_pts,
+        "chart_timeline_prods": chart_timeline_prods,
+        "chart_cumulative":     cumulative_pts,
+        "chart_granularity":    granularity,
+        "chart_submissions":    chart_submissions,
+        # Points-Awarded chart (own scope: matches heatmap window)
+        "awarded_lbls":         awarded_lbls,
+        "awarded_vals":         awarded_vals,
+        "chart_top_products":  top_products_sets,
+        "chart_acct_labels":   chart_acct_labels,
+        "chart_acct_data":     chart_acct_data,
+        "chart_acct_ids":      chart_acct_ids,
+        "heatmap_data":        heatmap_data,
+        "heatmap_range":       heatmap_range,
+        "heatmap_scope_label": heatmap_scope_label,
+        # Breakdown + pagination
+        "breakdown":           breakdown,
+        "breakdown_total":     total_rows,
+        "breakdown_page":      page,
+        "breakdown_pages":     pages,
+        "breakdown_page_size": page_size,
+        "breakdown_q":         tbl_q,
+        "product_metric":      product_metric,
+        # Dropdowns
+        "all_accounts":        all_accounts,
+        "all_contracts":       all_contracts,
+        "all_products":        all_products,
+        "years_list":          years_list,
+        "acct_lookup":         acct_lookup,
+        "contract_lookup":     contract_lookup,
+        "export_qs":           export_url,
+    }
+
+
+@perm_required("control.view_analytics")
+def analytics_dashboard(request):
+    """
+    Cross-account points analytics dashboard — initial server-render.
+    Live updates after load go through analytics_data (JSON endpoint).
+    """
+    data = _compute_analytics(request)
+    # Payloads that are read by the template via <script type="application/json">
+    data["breakdown_json"]          = json.dumps(data["breakdown"])
+    data["chart_top_products_json"] = json.dumps(data["chart_top_products"])
+    data["heatmap_data_json"]       = json.dumps(data["heatmap_data"])
+    data["acct_lookup_json"]        = json.dumps(data["acct_lookup"])
+    data["contract_lookup_json"]    = json.dumps(data["contract_lookup"])
+    data["kpi_prev_json"]           = json.dumps(data["kpi_prev"])
+    # Chart arrays inlined inside the main <script>
+    for k in ("chart_timeline_lbls", "chart_timeline_keys", "chart_timeline_pts",
+              "chart_timeline_prods", "chart_submissions", "chart_cumulative",
+              "chart_acct_labels", "chart_acct_data", "chart_acct_ids",
+              "heatmap_range", "awarded_lbls", "awarded_vals"):
+        data[k] = json.dumps(data[k])
+    return render(request, "control/analytics.html", data)
+
+
+@perm_required("control.view_analytics")
+def analytics_data(request):
+    """JSON endpoint for live filter updates — same shape as initial context."""
+    data = _compute_analytics(request)
+    # Drop dropdown data (static client-side); keep everything else as plain
+    # Python types so JsonResponse can serialise them.
+    data.pop("all_accounts", None)
+    data.pop("all_contracts", None)
+    return JsonResponse(data)
+
+
+@perm_required("control.view_analytics")
+def analytics_export_csv(request):
+    """
+    Streaming CSV export of accepted sales matching the current filter —
+    one row per sale, chronological. Respects every active filter (date
+    range, account, contract, product).
+    """
+    import csv
+    from django.http import StreamingHttpResponse
+
+    qs, filt_ctx = _analytics_filters(request)
+    sales = (qs.filter(status=Sale.STATUS_ACCEPTED)
+             .select_related("contract_product__product",
+                             "contract_product__contract",
+                             "contract_product__contract__account")
+             .order_by("sale_datetime", "pk"))
+
+    class _Echo:
+        def write(self, value): return value
+    writer = csv.writer(_Echo())
+
+    bits = []
+    if filt_ctx["f_date_from"]:
+        bits.append(filt_ctx["f_date_from"])
+    if filt_ctx["f_date_to"]:
+        bits.append(filt_ctx["f_date_to"])
+    date_stamp = "_".join(bits) if bits else "all"
+    filename = f'points_{date_stamp}.csv'
+
+    def _rows():
+        yield writer.writerow([
+            "Sale Date", "Account Code", "Account Name",
+            "Contract", "Product Code", "Product",
+            "Qty", "PU", "Points",
+        ])
+        for s in sales.iterator():
+            cp  = s.contract_product
+            acc = cp.contract.account if cp and cp.contract else None
+            yield writer.writerow([
+                s.sale_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                acc.code if acc else "",
+                acc.name if acc else "",
+                cp.contract.title if cp and cp.contract else "",
+                cp.product.code if cp and cp.product else "",
+                cp.product.designation if cp and cp.product else "",
+                s.quantity,
+                str(s.product_ppv) if s.product_ppv is not None else "",
+                round(float(s.product_ppv or 0) * float(s.quantity or 0) * float(cp.points_per_unit or 0)) if cp else 0,
+            ])
+
+    resp = StreamingHttpResponse(_rows(), content_type="text/csv")
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return resp
+
+
+@perm_required("control.view_analytics")
+def analytics_export_xlsx(request):
+    """XLSX export of the current analytics grouped breakdown (via openpyxl)."""
+    from django.db.models import Sum, Avg
+    from django.http import HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+    import io
+
+    qs, filt_ctx = _analytics_filters(request)
+    sort_mode     = filt_ctx["f_sort"]
+    scope_qs      = qs.filter(status=Sale.STATUS_ACCEPTED)
+
+    grouped = list(
+        scope_qs.values(
+            "contract_product__contract__account__code",
+            "contract_product__contract__account__name",
+            "contract_product__product__code",
+            "contract_product__product__designation",
+        ).annotate(total_qty=Sum("quantity"),
+                   avg_pu=Avg("product_ppv"),
+                   total_pts=Sum("pts"))
+    )
+    def _sort_key(r):
+        if sort_mode == "account":
+            return ((r["contract_product__contract__account__name"] or "").lower(),
+                    (r["contract_product__product__designation"] or "").lower())
+        return (-int(r["total_pts"] or 0),
+                (r["contract_product__contract__account__name"] or "").lower())
+    grouped.sort(key=_sort_key)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Points Breakdown"
+    headers = ["Account Code", "Account Name", "Product Code", "Product Designation",
+               "Total Qty", "Avg PU", "Total Points"]
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="1B679B")
+    for col_idx, h in enumerate(headers, start=1):
+        c = ws.cell(row=1, column=col_idx, value=h)
+        c.font = header_font
+        c.fill = header_fill
+        c.alignment = Alignment(horizontal="center")
+    for row_idx, r in enumerate(grouped, start=2):
+        ws.cell(row=row_idx, column=1, value=r["contract_product__contract__account__code"] or "")
+        ws.cell(row=row_idx, column=2, value=r["contract_product__contract__account__name"] or "")
+        ws.cell(row=row_idx, column=3, value=r["contract_product__product__code"] or "")
+        ws.cell(row=row_idx, column=4, value=r["contract_product__product__designation"] or "")
+        ws.cell(row=row_idx, column=5, value=int(r["total_qty"] or 0))
+        ws.cell(row=row_idx, column=6, value=round(float(r["avg_pu"] or 0), 2))
+        ws.cell(row=row_idx, column=7, value=int(r["total_pts"] or 0))
+    for col_idx in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = 22
+    ws.freeze_panes = "A2"
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    resp = HttpResponse(buf.read(),
+                        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    resp["Content-Disposition"] = 'attachment; filename="analytics_breakdown.xlsx"'
+    return resp
+
+
+@perm_required("control.view_analytics")
+def analytics_product_detail(request, pk):
+    """
+    JSON payload for the product drill modal: monthly trend over the last
+    12 months + top 10 accounts for this product (accepted-only).
+    """
+    from datetime import datetime, timezone as dt_tz
+    from django.db.models import Sum, F, ExpressionWrapper, FloatField
+    from django.db.models.functions import Round, TruncMonth
+
+    product = get_object_or_404(Product, pk=pk)
+
+    base = Sale.objects.filter(
+        contract_product__product_id=pk,
+        status=Sale.STATUS_ACCEPTED,
+        product_ppv__isnull=False,
+    ).annotate(pts=Round(ExpressionWrapper(
+        F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
+        output_field=FloatField(),
+    )))
+
+    now = timezone.now()
+    months = []
+    for i in range(11, -1, -1):
+        m, y = now.month - i, now.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        months.append(datetime(y, m, 1, tzinfo=dt_tz.utc))
+    month_keys = [d.strftime("%Y-%m") for d in months]
+    month_lbls = [d.strftime("%b %Y") for d in months]
+
+    mqs = (base.filter(sale_datetime__gte=months[0])
+           .annotate(month=TruncMonth("sale_datetime"))
+           .values("month").annotate(pts=Sum("pts"), qty=Sum("quantity")))
+    mmap = {r["month"].strftime("%Y-%m"): r for r in mqs}
+    month_pts = [int(mmap.get(k, {}).get("pts") or 0) for k in month_keys]
+    month_qty = [int(mmap.get(k, {}).get("qty") or 0) for k in month_keys]
+
+    top_acc = list(
+        base.values("contract_product__contract__account_id",
+                    "contract_product__contract__account__code",
+                    "contract_product__contract__account__name")
+        .annotate(pts=Sum("pts"), qty=Sum("quantity"))
+        .order_by("-pts")[:10]
+    )
+    top_accounts = [
+        {"id":   r["contract_product__contract__account_id"],
+         "code": r["contract_product__contract__account__code"] or "",
+         "name": r["contract_product__contract__account__name"] or "—",
+         "pts":  int(r["pts"] or 0),
+         "qty":  int(r["qty"] or 0)}
+        for r in top_acc
+    ]
+
+    totals = base.aggregate(t=Sum("pts"), q=Sum("quantity"))
+    return JsonResponse({
+        "id":           product.pk,
+        "code":         product.code,
+        "designation":  product.designation,
+        "ppv":          float(product.ppv) if product.ppv is not None else None,
+        "total_points": int(totals["t"] or 0),
+        "total_qty":    int(totals["q"] or 0),
+        "month_labels": month_lbls,
+        "month_pts":    month_pts,
+        "month_qty":    month_qty,
+        "top_accounts": top_accounts,
+    })
