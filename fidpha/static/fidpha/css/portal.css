@@ -29,7 +29,9 @@ body {
 /* ---- SIDEBAR ---- */
 .sidebar {
     width: 260px;
-    min-height: 100vh;
+    height: 100vh;
+    position: sticky;
+    top: 0;
     background-color: var(--sidebar-bg);
     border-right: 1px solid var(--card-border);
     display: flex;
@@ -77,6 +79,8 @@ body {
 .sidebar-nav {
     padding: 16px 12px;
     flex: 1;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 .nav-section-title {

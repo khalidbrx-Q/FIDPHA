@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WinInPharma 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 15:50+0200\n"
+"POT-Creation-Date: 2026-10-12 02:12+0200\n"
 "PO-Revision-Date: 2026-05-04 23:42+0100\n"
 "Last-Translator: WinInPharma\n"
 "Language-Team: French\n"
@@ -30,8 +30,6 @@ msgid ""
 msgstr ""
 
 #: .\control\models.py:22
-#, fuzzy
-#| msgid "Maximum sale rows accepted per API batch (1–100,000)."
 msgid "Maximum sale rows accepted per API batch (1–100,000). 0 = no limit."
 msgstr "Nombre maximum de lignes de vente acceptées par lot API (1–100 000)."
 
@@ -44,8 +42,6 @@ msgstr ""
 "catalogue. Laisser vide pour désactiver."
 
 #: .\control\models.py:36
-#, fuzzy
-#| msgid "Rejection rate % above which a yellow warning badge is shown (1–99)."
 msgid ""
 "Rejection rate % above which a yellow warning badge is shown (1–99). 0 = "
 "disabled."
@@ -55,10 +51,6 @@ msgstr ""
 "(1–99)."
 
 #: .\control\models.py:42
-#, fuzzy
-#| msgid ""
-#| "Rejection rate % above which a red danger badge is shown (must exceed "
-#| "warn threshold)."
 msgid ""
 "Rejection rate % above which a red danger badge is shown (must exceed warn "
 "threshold). 0 = disabled."
@@ -67,33 +59,31 @@ msgstr ""
 "dépasser le seuil d'avertissement)."
 
 #: .\control\models.py:48
-#, fuzzy
-#| msgid "Maximum API requests per token per hour (1–10,000)."
 msgid "Maximum API requests per token per hour (1–10,000). 0 = unlimited."
 msgstr "Nombre maximum de requêtes API par jeton par heure (1–10 000)."
 
-#: .\control\models.py:73
+#: .\control\models.py:76
 msgid "Must be between 1 and 100,000, or 0 for no limit."
 msgstr "Doit être compris entre 1 et 100 000, ou 0 pour sans limite."
 
-#: .\control\models.py:78
+#: .\control\models.py:81
 msgid "Must be between 0.01 and 100."
 msgstr "Doit être compris entre 0,01 et 100."
 
-#: .\control\models.py:85
+#: .\control\models.py:88
 msgid "Must be between 1 and 99, or 0 to disable."
 msgstr "Doit être compris entre 1 et 99, ou 0 pour désactiver."
 
-#: .\control\models.py:87
+#: .\control\models.py:90
 msgid "Must be between 1 and 100, or 0 to disable."
 msgstr "Doit être compris entre 1 et 100, ou 0 pour désactiver."
 
-#: .\control\models.py:95
+#: .\control\models.py:98
 msgid "Danger threshold must be strictly greater than the warn threshold."
 msgstr ""
 "Le seuil de danger doit être strictement supérieur au seuil d’avertissement."
 
-#: .\control\models.py:101
+#: .\control\models.py:104
 msgid "Must be between 1 and 10,000, or 0 for no limit."
 msgstr "Doit être compris entre 1 et 10 000, ou 0 pour illimité."
 
@@ -125,7 +115,7 @@ msgstr "Supprimer le compte"
 #: .\control\templates\control\accounts_form.html:6
 #: .\control\templates\control\accounts_list.html:4
 #: .\control\templates\control\accounts_list.html:5
-#: .\control\templates\control\base.html:526
+#: .\control\templates\control\base.html:533
 #: .\control\templates\control\dashboard.html:19
 msgid "Accounts"
 msgstr "Comptes"
@@ -259,6 +249,7 @@ msgstr "Oui, supprimer le compte"
 #: .\control\templates\control\accounts_confirm_delete.html:71
 #: .\control\templates\control\accounts_form.html:170
 #: .\control\templates\control\accounts_form.html:172
+#: .\control\templates\control\analytics.html:508
 #: .\control\templates\control\contracts_confirm_delete.html:82
 #: .\control\templates\control\contracts_form.html:33
 #: .\control\templates\control\contracts_form.html:284
@@ -290,6 +281,7 @@ msgstr "Annuler"
 #: .\control\templates\control\accounts_form.html:328
 #: .\control\templates\control\accounts_list.html:57
 #: .\control\templates\control\accounts_list.html:104
+#: .\control\templates\control\analytics.html:421
 #: .\control\templates\control\contracts_detail.html:22
 #: .\control\templates\control\contracts_detail.html:84
 #: .\control\templates\control\contracts_detail.html:189
@@ -333,6 +325,7 @@ msgstr "Actif"
 #: .\control\templates\control\accounts_form.html:330
 #: .\control\templates\control\accounts_list.html:58
 #: .\control\templates\control\accounts_list.html:106
+#: .\control\templates\control\analytics.html:423
 #: .\control\templates\control\contracts_detail.html:24
 #: .\control\templates\control\contracts_detail.html:85
 #: .\control\templates\control\contracts_detail.html:190
@@ -524,7 +517,7 @@ msgstr "révision manuelle"
 #: .\control\templates\control\accounts_detail.html:99
 #: .\control\templates\control\accounts_form.html:185
 #: .\control\templates\control\accounts_list.html:85
-#: .\control\templates\control\base.html:533
+#: .\control\templates\control\base.html:540
 #: .\control\templates\control\contracts_confirm_delete.html:6
 #: .\control\templates\control\contracts_detail.html:6
 #: .\control\templates\control\contracts_form.html:6
@@ -676,6 +669,11 @@ msgstr "Dernière modification"
 #: .\control\templates\control\accounts_form.html:4
 #: .\control\templates\control\accounts_form.html:18
 #: .\control\templates\control\accounts_form.html:167
+#: .\control\templates\control\analytics.html:383
+#: .\control\templates\control\analytics.html:670
+#: .\control\templates\control\analytics.html:1105
+#: .\control\templates\control\analytics.html:1208
+#: .\control\templates\control\analytics.html:1700
 #: .\control\templates\control\contracts_detail.html:58
 #: .\control\templates\control\contracts_form.html:92
 #: .\control\templates\control\products_detail.html:101
@@ -709,14 +707,10 @@ msgid "Unique identifier, e.g. \\"
 msgstr "Identifiant unique, ex. \\"
 
 #: .\control\templates\control\accounts_form.html:89
-#, fuzzy
-#| msgid "Search by name or code…"
 msgid "Country or code…"
 msgstr "Rechercher par nom ou code…"
 
 #: .\control\templates\control\accounts_form.html:93
-#, fuzzy
-#| msgid "results"
 msgid "No results"
 msgstr "résultats"
 
@@ -880,7 +874,7 @@ msgid "Clear filters"
 msgstr "Réinitialiser les filtres"
 
 #: .\control\templates\control\accounts_list.html:86
-#: .\control\templates\control\base.html:514
+#: .\control\templates\control\base.html:521
 #: .\control\templates\control\dashboard.html:70
 #: .\control\templates\control\users_confirm_delete.html:6
 #: .\control\templates\control\users_detail.html:6
@@ -910,43 +904,266 @@ msgstr "Aucun compte pour l'instant"
 msgid "Add a pharmacy account to get started."
 msgstr "Ajoutez un compte pharmacie pour commencer."
 
-#: .\control\templates\control\base.html:485
-#: .\control\templates\control\base.html:666
-msgid "Control Panel"
-msgstr "Panneau de contrôle"
+#: .\control\templates\control\analytics.html:4
+#: .\control\templates\control\analytics.html:5
+#: .\control\templates\control\analytics.html:619
+#: .\control\templates\control\analytics.html:672
+#: .\control\templates\control\analytics.html:703
+#: .\control\templates\control\base.html:503
+#: .\fidpha\templates\fidpha\base.html:44
+#: .\fidpha\templates\fidpha\contracts.html:238
+#: .\fidpha\templates\fidpha\contracts.html:426
+#: .\fidpha\templates\fidpha\dashboard.html:174
+#: .\fidpha\templates\fidpha\dashboard.html:222
+#: .\fidpha\templates\fidpha\sales.html:203
+msgid "Points"
+msgstr "Points"
 
-#: .\control\templates\control\base.html:493
-#: .\fidpha\templates\fidpha\base.html:31
-msgid "Overview"
-msgstr "Aperçu"
+#: .\control\templates\control\analytics.html:355
+#: .\control\templates\control\analytics.html:1104
+#: .\control\templates\control\analytics.html:1222
+#: .\control\templates\control\analytics.html:1704
+msgid "From"
+msgstr "Date de début"
 
-#: .\control\templates\control\base.html:497
-#: .\control\templates\control\base.html:664
-#: .\control\templates\control\base.html:666
-#: .\control\templates\control\dashboard.html:4
-#: .\control\templates\control\dashboard.html:5
-#: .\fidpha\templates\fidpha\base.html:34
-#: .\fidpha\templates\fidpha\base.html:126
-#: .\fidpha\templates\fidpha\base.html:127
-#: .\fidpha\templates\fidpha\dashboard.html:5
-#: .\fidpha\templates\fidpha\dashboard.html:6
-msgid "Dashboard"
-msgstr "Tableau de bord"
+#: .\control\templates\control\analytics.html:360
+#: .\control\templates\control\analytics.html:1104
+msgid "To"
+msgstr "Date de fin"
 
-#: .\control\templates\control\base.html:502
-msgid "Authentication"
-msgstr "Authentification"
+#: .\control\templates\control\analytics.html:365
+msgid "Quick range"
+msgstr "Plage rapide"
 
-#: .\control\templates\control\base.html:507
-#: .\control\templates\control\roles_confirm_delete.html:6
-#: .\control\templates\control\roles_detail.html:6
-#: .\control\templates\control\roles_form.html:6
-#: .\control\templates\control\roles_list.html:4
-#: .\control\templates\control\roles_list.html:5
-msgid "Roles"
-msgstr "Rôles"
+#: .\control\templates\control\analytics.html:367
+#: .\control\templates\control\sales_list.html:45
+#: .\control\templates\control\tokens_detail.html:162
+msgid "Today"
+msgstr "Aujourd'hui"
 
-#: .\control\templates\control\base.html:540
+#: .\control\templates\control\analytics.html:368
+#: .\control\templates\control\sales_list.html:48
+msgid "This month"
+msgstr "Ce mois-ci"
+
+#: .\control\templates\control\analytics.html:369
+msgid "This year"
+msgstr "Cette semaine"
+
+#: .\control\templates\control\analytics.html:370
+#: .\control\templates\control\analytics.html:387
+#: .\control\templates\control\analytics.html:410
+#: .\control\templates\control\analytics.html:440
+#: .\control\templates\control\products_list.html:26
+#: .\control\templates\control\sync_log.html:336
+msgid "Clear"
+msgstr "Effacer"
+
+#: .\control\templates\control\analytics.html:386
+#: .\control\templates\control\analytics.html:390
+#: .\control\templates\control\sales_list.html:67
+#: .\control\templates\control\sales_list.html:73
+#: .\control\templates\control\sales_list.html:756
+#: .\control\templates\control\sales_list.html:845
+msgid "All accounts"
+msgstr "Tous les comptes"
+
+#: .\control\templates\control\analytics.html:406
+#: .\control\templates\control\analytics.html:1106
+#: .\control\templates\control\analytics.html:1209
+#: .\control\templates\control\analytics.html:1701
+#: .\control\templates\control\contracts_form.html:40
+#: .\control\templates\control\contracts_form.html:327
+#: .\control\templates\control\products_detail.html:100
+#: .\control\templates\control\sales_list.html:86
+#: .\control\templates\control\sales_list.html:161
+#: .\control\templates\control\sync_log.html:273
+#: .\control\templates\control\sync_log.html:353
+#: .\fidpha\templates\fidpha\base.html:40
+#: .\fidpha\templates\fidpha\contracts.html:5
+#: .\fidpha\templates\fidpha\contracts.html:6
+#: .\fidpha\templates\fidpha\dashboard.html:170
+#: .\fidpha\templates\fidpha\sales.html:198
+msgid "Contract"
+msgstr "Contrat"
+
+#: .\control\templates\control\analytics.html:409
+#: .\control\templates\control\analytics.html:413
+#: .\control\templates\control\sales_list.html:90
+#: .\control\templates\control\sales_list.html:96
+#: .\control\templates\control\sales_list.html:759
+#: .\control\templates\control\sales_list.html:760
+#: .\control\templates\control\sales_list.html:776
+#: .\control\templates\control\sales_list.html:784
+#: .\control\templates\control\sales_list.html:846
+#: .\control\templates\control\sales_list.html:847
+#: .\control\templates\control\sync_log.html:277
+#: .\control\templates\control\sync_log.html:283
+#: .\fidpha\templates\fidpha\contracts.html:205
+msgid "All contracts"
+msgstr "Tous les contrats"
+
+#: .\control\templates\control\analytics.html:436
+#: .\control\templates\control\analytics.html:1105
+#: .\control\templates\control\analytics.html:1210
+#: .\control\templates\control\analytics.html:1702
+#: .\control\templates\control\contracts_detail.html:210
+#: .\control\templates\control\contracts_form.html:157
+#: .\control\templates\control\contracts_form.html:191
+#: .\control\templates\control\products_form.html:4
+#: .\control\templates\control\products_form.html:18
+#: .\control\templates\control\sales_list.html:1072
+#: .\fidpha\templates\fidpha\contracts.html:117
+#: .\fidpha\templates\fidpha\dashboard.html:171
+#: .\fidpha\templates\fidpha\sales.html:199
+msgid "Product"
+msgstr "Produit"
+
+#: .\control\templates\control\analytics.html:439
+#: .\control\templates\control\analytics.html:443
+msgid "All products"
+msgstr "Tous les produits"
+
+#: .\control\templates\control\analytics.html:471
+msgid "My saved presets"
+msgstr "Enregistrer un préréglage"
+
+#: .\control\templates\control\analytics.html:473
+msgid "Presets"
+msgstr "Préréglages…"
+
+#: .\control\templates\control\analytics.html:479
+msgid "Save current filters as a preset"
+msgstr "Enregistrer les filtres actuels comme préréglage"
+
+#: .\control\templates\control\analytics.html:481
+#: .\control\templates\control\analytics.html:511
+#: .\control\templates\control\tokens_detail.html:56
+msgid "Save"
+msgstr "Enregistrer"
+
+#: .\control\templates\control\analytics.html:484
+msgid "Download accepted sales matching the current filter"
+msgstr "Aucune vente ne correspond aux filtres actuels."
+
+#: .\control\templates\control\analytics.html:494
+msgid "Save filter preset"
+msgstr "Enregistrer un préréglage"
+
+#: .\control\templates\control\analytics.html:499
+msgid "Name this combination of filters so you can jump back to it anytime."
+msgstr "Nommez cette combinaison de filtres pour y revenir à tout moment."
+
+#: .\control\templates\control\analytics.html:501
+msgid "e.g. Casablanca pharmacies — Q1 2026"
+msgstr "ex. Pharmacies de Casablanca — T1 2026"
+
+#: .\control\templates\control\analytics.html:526
+#: .\fidpha\templates\fidpha\dashboard.html:44
+msgid "Total Points"
+msgstr "Points totaux"
+
+#: .\control\templates\control\analytics.html:529
+msgid "within filter scope"
+msgstr "selon les filtres"
+
+#: .\control\templates\control\analytics.html:539
+msgid "Daily Average"
+msgstr "Moyenne quotidienne"
+
+#: .\control\templates\control\analytics.html:541
+msgid "days in scope"
+msgstr "jours dans la portée"
+
+#: .\control\templates\control\analytics.html:550
+#: .\fidpha\templates\fidpha\dashboard.html:66
+msgid "Total Products"
+msgstr "Total produits"
+
+#: .\control\templates\control\analytics.html:552
+#: .\control\templates\control\analytics.html:563
+msgid "distinct in scope"
+msgstr "distincts dans la portée"
+
+#: .\control\templates\control\analytics.html:561
+msgid "Total Accounts"
+msgstr "Total Comptes"
+
+#: .\control\templates\control\analytics.html:575
+msgid "Points Awarded"
+msgstr "Points attribués"
+
+#: .\control\templates\control\analytics.html:590
+msgid "Daily Points"
+msgstr "Points journaliers"
+
+#: .\control\templates\control\analytics.html:596
+msgid "Click a day to filter the dashboard to that date"
+msgstr "Cliquez sur un jour pour filtrer le tableau de bord sur cette date"
+
+#: .\control\templates\control\analytics.html:605
+#: .\control\templates\control\analytics.html:1152
+#: .\fidpha\templates\fidpha\dashboard.html:95
+msgid "Monthly Overview"
+msgstr "Aperçu mensuel"
+
+#: .\control\templates\control\analytics.html:609
+msgid "Click a month to filter the dashboard to that month"
+msgstr "Cliquez sur un mois pour filtrer le tableau de bord sur ce mois"
+
+#: .\control\templates\control\analytics.html:615
+#: .\fidpha\templates\fidpha\dashboard.html:113
+msgid "Top Products"
+msgstr "Top produits"
+
+#: .\control\templates\control\analytics.html:619
+msgid "Points generated by this product"
+msgstr "Points par produit"
+
+#: .\control\templates\control\analytics.html:620
+msgid "Units sold"
+msgstr "Unités vendues"
+
+#: .\control\templates\control\analytics.html:620
+#: .\control\templates\control\analytics.html:671
+#: .\control\templates\control\sales_list.html:1074
+#: .\control\templates\control\sync_log.html:355
+#: .\fidpha\templates\fidpha\dashboard.html:172
+#: .\fidpha\templates\fidpha\sales.html:202
+msgid "Qty"
+msgstr "Qté"
+
+#: .\control\templates\control\analytics.html:623
+msgid "Click to drill"
+msgstr "Cliquez pour explorer"
+
+#: .\control\templates\control\analytics.html:633
+msgid "Points per Account"
+msgstr "Points par compte"
+
+#: .\control\templates\control\analytics.html:636
+msgid "top 20"
+msgstr "top 20"
+
+#: .\control\templates\control\analytics.html:644
+#: .\fidpha\templates\fidpha\dashboard.html:141
+msgid "Submission Frequency"
+msgstr "Fréquence de soumission"
+
+#: .\control\templates\control\analytics.html:647
+msgid "batches/month"
+msgstr "lots/mois"
+
+#: .\control\templates\control\analytics.html:665
+msgid "Monthly trend (last 12 months)"
+msgstr "Tendance mensuelle (12 derniers mois)"
+
+#: .\control\templates\control\analytics.html:667
+msgid "Top accounts"
+msgstr "Meilleurs comptes"
+
+#: .\control\templates\control\analytics.html:703
+#: .\control\templates\control\base.html:547
 #: .\control\templates\control\contracts_detail.html:183
 #: .\control\templates\control\contracts_form.html:132
 #: .\control\templates\control\contracts_list.html:82
@@ -962,12 +1179,154 @@ msgstr "Rôles"
 msgid "Products"
 msgstr "Produits"
 
-#: .\control\templates\control\base.html:547
+#: .\control\templates\control\analytics.html:703
+#: .\fidpha\templates\fidpha\dashboard.html:226
+msgid "batches"
+msgstr "lots"
+
+#: .\control\templates\control\analytics.html:704
+msgid "No data in scope"
+msgstr "Aucune donnée"
+
+#: .\control\templates\control\analytics.html:704
+msgid "No points in scope"
+msgstr "Aucun point"
+
+#: .\control\templates\control\analytics.html:704
+msgid "awarded"
+msgstr "attribués"
+
+#: .\control\templates\control\analytics.html:705
+#: .\control\templates\control\sales_list.html:893
+msgid "Page"
+msgstr "Page"
+
+#: .\control\templates\control\analytics.html:705
+#: .\fidpha\templates\fidpha\contracts.html:268
+#: .\fidpha\templates\fidpha\sales.html:398
+msgid "of"
+msgstr "sur"
+
+#: .\control\templates\control\analytics.html:705
+#: .\control\templates\control\sales_list.html:893
+msgid "total"
+msgstr "total"
+
+#: .\control\templates\control\analytics.html:706
+#: .\control\templates\control\sales_list.html:904
+#: .\control\templates\control\sales_list.html:976
+#: .\control\templates\control\sales_list.html:1107
+#: .\control\templates\control\sales_list.html:1262
+#: .\control\templates\control\sales_list.html:1340
+#: .\control\templates\control\sales_list.html:1341
+msgid "pending"
+msgstr "en attente"
+
+#: .\control\templates\control\analytics.html:706
+msgid "Link copied!"
+msgstr "Lien copié !"
+
+#: .\control\templates\control\analytics.html:707
+msgid "Preset name:"
+msgstr "Nom du préréglage :"
+
+#: .\control\templates\control\analytics.html:1107
+msgid "Search"
+msgstr "Recherche"
+
+#: .\control\templates\control\analytics.html:1122
+#: .\control\templates\control\roles_form.html:86
+msgid "Clear all"
+msgstr "Tout effacer"
+
+#: .\control\templates\control\analytics.html:1152
+msgid "Daily Overview"
+msgstr "Vue journalière"
+
+#: .\control\templates\control\analytics.html:1215
+#: .\control\templates\control\analytics.html:1218
+#: .\control\templates\control\analytics.html:1220
+#: .\control\templates\control\analytics.html:1703
+#: .\control\templates\control\contracts_detail.html:70
+#: .\control\templates\control\contracts_list.html:80
+#: .\control\templates\control\products_detail.html:103
+msgid "Period"
+msgstr "Période"
+
+#: .\control\templates\control\analytics.html:1224
+#: .\control\templates\control\analytics.html:1705
+msgid "Until"
+msgstr "Fin"
+
+#: .\control\templates\control\analytics.html:1226
+msgid "All accounts, all contracts, last 12 months"
+msgstr "Tous les comptes, tous les contrats, 12 derniers mois"
+
+#: .\control\templates\control\analytics.html:1640
+msgid "No presets saved yet. Use the Save button once you set some filters."
+msgstr ""
+"Aucun préréglage enregistré. Utilisez le bouton Enregistrer une fois des "
+"filtres définis."
+
+#: .\control\templates\control\analytics.html:1647
+msgid "Delete this preset"
+msgstr "Supprimer un préréglage"
+
+#: .\control\templates\control\analytics.html:1706
+msgid "No filters set"
+msgstr "Aucun fichier sélectionné"
+
+#: .\control\templates\control\analytics.html:1720
+#: .\control\templates\control\analytics.html:1756
+msgid "This exact filter set is already saved as"
+msgstr "Cette combinaison exacte de filtres est déjà enregistrée sous"
+
+#: .\control\templates\control\analytics.html:1742
+msgid "A preset with this name already exists. Saving will overwrite it."
+msgstr "Un préréglage avec ce nom existe déjà. Il sera remplacé."
+
+#: .\control\templates\control\base.html:485
+#: .\control\templates\control\base.html:673
+msgid "Control Panel"
+msgstr "Panneau de contrôle"
+
+#: .\control\templates\control\base.html:493
+#: .\fidpha\templates\fidpha\base.html:31
+msgid "Overview"
+msgstr "Aperçu"
+
+#: .\control\templates\control\base.html:497
+#: .\control\templates\control\base.html:671
+#: .\control\templates\control\base.html:673
+#: .\control\templates\control\dashboard.html:4
+#: .\control\templates\control\dashboard.html:5
+#: .\fidpha\templates\fidpha\base.html:34
+#: .\fidpha\templates\fidpha\base.html:126
+#: .\fidpha\templates\fidpha\base.html:127
+#: .\fidpha\templates\fidpha\dashboard.html:5
+#: .\fidpha\templates\fidpha\dashboard.html:6
+msgid "Dashboard"
+msgstr "Tableau de bord"
+
+#: .\control\templates\control\base.html:509
+msgid "Authentication"
+msgstr "Authentification"
+
+#: .\control\templates\control\base.html:514
+#: .\control\templates\control\roles_confirm_delete.html:6
+#: .\control\templates\control\roles_detail.html:6
+#: .\control\templates\control\roles_form.html:6
+#: .\control\templates\control\roles_list.html:4
+#: .\control\templates\control\roles_list.html:5
+msgid "Roles"
+msgstr "Rôles"
+
+#: .\control\templates\control\base.html:554
 #: .\control\templates\control\sales_list.html:162
 msgid "Sales"
 msgstr "Ventes"
 
-#: .\control\templates\control\base.html:558
+#: .\control\templates\control\base.html:565
 #: .\control\templates\control\dashboard.html:87
 #: .\control\templates\control\tokens_confirm_delete.html:6
 #: .\control\templates\control\tokens_detail.html:6
@@ -977,7 +1336,7 @@ msgstr "Ventes"
 msgid "API Tokens"
 msgstr "Jetons API"
 
-#: .\control\templates\control\base.html:564
+#: .\control\templates\control\base.html:571
 #: .\control\templates\control\site_edit.html:5
 #: .\control\templates\control\social_accounts_list.html:5
 #: .\control\templates\control\social_apps_list.html:5
@@ -985,7 +1344,7 @@ msgstr "Jetons API"
 msgid "Configuration"
 msgstr "Configuration"
 
-#: .\control\templates\control\base.html:568
+#: .\control\templates\control\base.html:575
 #: .\control\templates\control\social_apps_confirm_delete.html:6
 #: .\control\templates\control\social_apps_detail.html:6
 #: .\control\templates\control\social_apps_form.html:6
@@ -995,40 +1354,40 @@ msgstr "Configuration"
 msgid "Social Applications"
 msgstr "Applications sociales"
 
-#: .\control\templates\control\base.html:573
+#: .\control\templates\control\base.html:580
 #: .\control\templates\control\social_accounts_list.html:4
 #: .\control\templates\control\social_accounts_list.html:5
 #: .\control\templates\control\social_accounts_list.html:12
 msgid "Social Accounts"
 msgstr "Comptes sociaux"
 
-#: .\control\templates\control\base.html:578
+#: .\control\templates\control\base.html:585
 #: .\control\templates\control\site_edit.html:5
 msgid "Site"
 msgstr "Site"
 
-#: .\control\templates\control\base.html:583
+#: .\control\templates\control\base.html:590
 #: .\control\templates\control\system_settings.html:5
 msgid "System"
 msgstr "Système"
 
-#: .\control\templates\control\base.html:588
+#: .\control\templates\control\base.html:595
 #: .\control\templates\control\sync_log.html:4
 #: .\control\templates\control\sync_log.html:5
 #: .\control\templates\control\sync_log.html:237
 msgid "Sync Import Log"
 msgstr "Journal d'import"
 
-#: .\control\templates\control\base.html:606
+#: .\control\templates\control\base.html:613
 msgid "Toggle Theme"
 msgstr "Changer le thème"
 
-#: .\control\templates\control\base.html:634
+#: .\control\templates\control\base.html:641
 #: .\fidpha\templates\fidpha\base.html:109
 msgid "Log Out"
 msgstr "Déconnexion"
 
-#: .\control\templates\control\base.html:643
+#: .\control\templates\control\base.html:650
 #: .\control\templates\control\users_detail.html:122
 #: .\control\templates\control\users_detail.html:161
 #: .\control\templates\control\users_form.html:41
@@ -1037,7 +1396,7 @@ msgstr "Déconnexion"
 msgid "Superuser"
 msgstr "Super-administrateur"
 
-#: .\control\templates\control\base.html:643
+#: .\control\templates\control\base.html:650
 #: .\control\templates\control\users_detail.html:124
 #: .\control\templates\control\users_form.html:50
 #: .\control\templates\control\users_list.html:51
@@ -1131,12 +1490,6 @@ msgstr "Informations sur le contrat"
 msgid "Title"
 msgstr "Titre"
 
-#: .\control\templates\control\contracts_detail.html:70
-#: .\control\templates\control\contracts_list.html:80
-#: .\control\templates\control\products_detail.html:103
-msgid "Period"
-msgstr "Période"
-
 #: .\control\templates\control\contracts_detail.html:89
 #: .\control\templates\control\contracts_form.html:99
 msgid "Description"
@@ -1205,18 +1558,6 @@ msgstr "Gérer"
 msgid "Search products…"
 msgstr "Rechercher des produits…"
 
-#: .\control\templates\control\contracts_detail.html:210
-#: .\control\templates\control\contracts_form.html:157
-#: .\control\templates\control\contracts_form.html:191
-#: .\control\templates\control\products_form.html:4
-#: .\control\templates\control\products_form.html:18
-#: .\control\templates\control\sales_list.html:1072
-#: .\fidpha\templates\fidpha\contracts.html:117
-#: .\fidpha\templates\fidpha\dashboard.html:171
-#: .\fidpha\templates\fidpha\sales.html:199
-msgid "Product"
-msgstr "Produit"
-
 #: .\control\templates\control\contracts_detail.html:211
 msgid "Internal Code"
 msgstr "Code interne"
@@ -1228,9 +1569,6 @@ msgstr "Code interne"
 msgid "External Designation"
 msgstr "Désignation externe"
 
-#: .\control\templates\control\contracts_detail.html:213
-#: .\control\templates\control\products_list.html:95
-#: .\control\templates\control\products_list.html:136
 #: .\control\templates\control\contracts_detail.html:213
 #: .\control\templates\control\products_list.html:95
 #: .\control\templates\control\products_list.html:136
@@ -1288,21 +1626,6 @@ msgstr ""
 #: .\control\templates\control\contracts_form.html:31
 msgid "Yes, unlink"
 msgstr "Oui, dissocier"
-
-#: .\control\templates\control\contracts_form.html:40
-#: .\control\templates\control\contracts_form.html:327
-#: .\control\templates\control\products_detail.html:100
-#: .\control\templates\control\sales_list.html:86
-#: .\control\templates\control\sales_list.html:161
-#: .\control\templates\control\sync_log.html:273
-#: .\control\templates\control\sync_log.html:353
-#: .\fidpha\templates\fidpha\base.html:40
-#: .\fidpha\templates\fidpha\contracts.html:5
-#: .\fidpha\templates\fidpha\contracts.html:6
-#: .\fidpha\templates\fidpha\dashboard.html:170
-#: .\fidpha\templates\fidpha\sales.html:198
-msgid "Contract"
-msgstr "Contrat"
 
 #: .\control\templates\control\contracts_form.html:42
 #, python-format
@@ -1647,11 +1970,6 @@ msgstr ""
 msgid "Search by code or designation…"
 msgstr "Rechercher par code ou désignation…"
 
-#: .\control\templates\control\products_list.html:26
-#: .\control\templates\control\sync_log.html:336
-msgid "Clear"
-msgstr "Effacer"
-
 #: .\control\templates\control\products_list.html:49
 #: .\control\templates\control\products_list.html:106
 msgid "Import"
@@ -1783,10 +2101,6 @@ msgstr "Un nom court et descriptif, ex. \\"
 msgid "Select all"
 msgstr "Tout sélectionner"
 
-#: .\control\templates\control\roles_form.html:86
-msgid "Clear all"
-msgstr "Tout effacer"
-
 #: .\control\templates\control\roles_form.html:94
 msgid "Search permissions…"
 msgstr "Rechercher des permissions…"
@@ -1847,11 +2161,6 @@ msgstr "Effacer les dates"
 msgid "Quick"
 msgstr "Rapide"
 
-#: .\control\templates\control\sales_list.html:45
-#: .\control\templates\control\tokens_detail.html:162
-msgid "Today"
-msgstr "Aujourd'hui"
-
 #: .\control\templates\control\sales_list.html:46
 msgid "Yesterday"
 msgstr "Hier"
@@ -1859,10 +2168,6 @@ msgstr "Hier"
 #: .\control\templates\control\sales_list.html:47
 msgid "This week"
 msgstr "Cette semaine"
-
-#: .\control\templates\control\sales_list.html:48
-msgid "This month"
-msgstr "Ce mois-ci"
 
 #: .\control\templates\control\sales_list.html:55
 #: .\control\templates\control\sales_list.html:159
@@ -1877,30 +2182,9 @@ msgstr "ID lot"
 msgid "Search…"
 msgstr "Rechercher…"
 
-#: .\control\templates\control\sales_list.html:67
-#: .\control\templates\control\sales_list.html:73
-#: .\control\templates\control\sales_list.html:756
-#: .\control\templates\control\sales_list.html:845
-msgid "All accounts"
-msgstr "Tous les comptes"
-
 #: .\control\templates\control\sales_list.html:71
 msgid "Search account…"
 msgstr "Rechercher un compte…"
-
-#: .\control\templates\control\sales_list.html:90
-#: .\control\templates\control\sales_list.html:96
-#: .\control\templates\control\sales_list.html:759
-#: .\control\templates\control\sales_list.html:760
-#: .\control\templates\control\sales_list.html:776
-#: .\control\templates\control\sales_list.html:784
-#: .\control\templates\control\sales_list.html:846
-#: .\control\templates\control\sales_list.html:847
-#: .\control\templates\control\sync_log.html:277
-#: .\control\templates\control\sync_log.html:283
-#: .\fidpha\templates\fidpha\contracts.html:205
-msgid "All contracts"
-msgstr "Tous les contrats"
 
 #: .\control\templates\control\sales_list.html:94
 msgid "Search contract…"
@@ -1980,23 +2264,6 @@ msgstr "Motif de rejet (optionnel)"
 #: .\control\templates\control\sales_list.html:224
 msgid "e.g. duplicate batch, wrong product codes…"
 msgstr "ex. lot en double, codes produit incorrects…"
-
-#: .\control\templates\control\sales_list.html:893
-msgid "Page"
-msgstr "Page"
-
-#: .\control\templates\control\sales_list.html:893
-msgid "total"
-msgstr "total"
-
-#: .\control\templates\control\sales_list.html:904
-#: .\control\templates\control\sales_list.html:976
-#: .\control\templates\control\sales_list.html:1107
-#: .\control\templates\control\sales_list.html:1262
-#: .\control\templates\control\sales_list.html:1340
-#: .\control\templates\control\sales_list.html:1341
-msgid "pending"
-msgstr "en attente"
 
 #: .\control\templates\control\sales_list.html:905
 #: .\control\templates\control\sales_list.html:977
@@ -2113,13 +2380,6 @@ msgstr "Chargement…"
 #: .\control\templates\control\sales_list.html:1073
 msgid "Sale Date"
 msgstr "Date de vente"
-
-#: .\control\templates\control\sales_list.html:1074
-#: .\control\templates\control\sync_log.html:355
-#: .\fidpha\templates\fidpha\dashboard.html:172
-#: .\fidpha\templates\fidpha\sales.html:202
-msgid "Qty"
-msgstr "Qté"
 
 #: .\control\templates\control\sales_list.html:1075
 #: .\control\templates\control\sync_log.html:356
@@ -2731,8 +2991,6 @@ msgid "Save settings"
 msgstr "Enregistrer les paramètres"
 
 #: .\control\templates\control\system_settings.html:403
-#, fuzzy
-#| msgid "Save Changes"
 msgid "Unsaved change"
 msgstr "Enregistrer"
 
@@ -2789,10 +3047,6 @@ msgstr "Êtes-vous sûr ?"
 #: .\control\templates\control\tokens_detail.html:44
 msgid "Rename"
 msgstr "Renommer"
-
-#: .\control\templates\control\tokens_detail.html:56
-msgid "Save"
-msgstr "Enregistrer"
 
 #: .\control\templates\control\tokens_detail.html:83
 #: .\control\templates\control\tokens_list.html:133
@@ -3290,15 +3544,6 @@ msgstr "Portail Pharmacie"
 msgid "My Program"
 msgstr "Mon Programme"
 
-#: .\fidpha\templates\fidpha\base.html:44
-#: .\fidpha\templates\fidpha\contracts.html:238
-#: .\fidpha\templates\fidpha\contracts.html:426
-#: .\fidpha\templates\fidpha\dashboard.html:174
-#: .\fidpha\templates\fidpha\dashboard.html:222
-#: .\fidpha\templates\fidpha\sales.html:203
-msgid "Points"
-msgstr "Points"
-
 #: .\fidpha\templates\fidpha\base.html:50
 #: .\fidpha\templates\fidpha\profile.html:209
 msgid "Pharmacy"
@@ -3390,11 +3635,6 @@ msgstr "Points par contrat"
 msgid "Showing"
 msgstr "Affichage"
 
-#: .\fidpha\templates\fidpha\contracts.html:268
-#: .\fidpha\templates\fidpha\sales.html:398
-msgid "of"
-msgstr "sur"
-
 #: .\fidpha\templates\fidpha\contracts.html:427
 msgid "Unique Products"
 msgstr "Produits uniques"
@@ -3422,10 +3662,6 @@ msgstr ""
 msgid "Verify now"
 msgstr "Vérifier maintenant"
 
-#: .\fidpha\templates\fidpha\dashboard.html:44
-msgid "Total Points"
-msgstr "Points totaux"
-
 #: .\fidpha\templates\fidpha\dashboard.html:46
 msgid "all-time accumulated"
 msgstr "total cumulé"
@@ -3439,10 +3675,6 @@ msgid "unit"
 msgid_plural "units"
 msgstr[0] "unité"
 msgstr[1] "unités"
-
-#: .\fidpha\templates\fidpha\dashboard.html:66
-msgid "Total Products"
-msgstr "Total produits"
 
 #: .\fidpha\templates\fidpha\dashboard.html:68
 msgid "unique products with points"
@@ -3461,14 +3693,6 @@ msgstr "se termine le %(date)s"
 msgid "no active contract"
 msgstr "aucun contrat actif"
 
-#: .\fidpha\templates\fidpha\dashboard.html:95
-msgid "Monthly Overview"
-msgstr "Aperçu mensuel"
-
-#: .\fidpha\templates\fidpha\dashboard.html:113
-msgid "Top Products"
-msgstr "Top produits"
-
 #: .\fidpha\templates\fidpha\dashboard.html:114
 msgid "all-time · top 30"
 msgstr "de toujours · top 30"
@@ -3476,10 +3700,6 @@ msgstr "de toujours · top 30"
 #: .\fidpha\templates\fidpha\dashboard.html:127
 msgid "Cumulative Points"
 msgstr "Points cumulés"
-
-#: .\fidpha\templates\fidpha\dashboard.html:141
-msgid "Submission Frequency"
-msgstr "Fréquence de soumission"
 
 #: .\fidpha\templates\fidpha\dashboard.html:162
 msgid "Recent Accepted"
@@ -3497,10 +3717,6 @@ msgstr "Aucun enregistrement pour l'instant."
 #: .\fidpha\templates\fidpha\dashboard.html:225
 msgid "batch"
 msgstr "lot"
-
-#: .\fidpha\templates\fidpha\dashboard.html:226
-msgid "batches"
-msgstr "lots"
 
 #: .\fidpha\templates\fidpha\dashboard.html:227
 msgid "No accepted data yet"

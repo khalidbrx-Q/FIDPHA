@@ -111,4 +111,11 @@ urlpatterns = [
 
     # Sync Import Log (superuser debug)
     path("sync-log/", views.sync_log, name="sync_log"),
+
+    # Analytics dashboard (cross-account points analytics; perm: control.view_analytics)
+    path("analytics/",                     views.analytics_dashboard,     name="analytics_dashboard"),
+    path("analytics/data/",                views.analytics_data,          name="analytics_data"),
+    path("analytics/export/",              views.analytics_export_csv,    name="analytics_export_csv"),
+    path("analytics/export-xlsx/",         views.analytics_export_xlsx,   name="analytics_export_xlsx"),
+    path("analytics/product/<int:pk>/",    views.analytics_product_detail, name="analytics_product_detail"),
 ]
