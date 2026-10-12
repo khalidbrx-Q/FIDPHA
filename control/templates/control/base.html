@@ -496,6 +496,13 @@
                 <span class="material-icons-round">dashboard</span>
                 {% trans "Dashboard" %}
             </a>
+            {% if perms.control.view_analytics %}
+            <a href="{% url 'control:analytics_dashboard' %}"
+               class="nav-item {% block nav_analytics %}{% endblock %}">
+                <span class="material-icons-round">insights</span>
+                {% trans "Points" %}
+            </a>
+            {% endif %}
 
             <!-- Authentication -->
             {% if perms.auth.view_group or perms.auth.view_user %}

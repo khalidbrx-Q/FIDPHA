@@ -6,6 +6,8 @@
 
 # WinInPharma — Pharmacy Loyalty Platform
 
+[![CI](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml/badge.svg)](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml)
+
 ## Table of Contents
 
 1. [Project Overview](#1-project-overview)
@@ -43,7 +45,7 @@ Pharmacies submit their daily sales data via an API. Each sale is validated agai
 | French i18n | Portal available in French (EN/FR toggle) |
 | Audit trail | Every staff action logged via Django LogEntry; visible on control panel dashboard |
 | CSV / Excel import | Bulk product import and contract product import via file upload |
-| Automated testing | 313 unit tests + 22 Playwright E2E tests covering all major flows |
+| Automated testing | 199 unit tests + 72 Playwright E2E tests covering all major flows (Tiers 1–3 shipped); local Docker runner mirrors CI exactly |
 
 ---
 
@@ -79,7 +81,7 @@ The platform has three user-facing layers:
 | Concern | Choice |
 |---|---|
 | Backend | Python 3.12, Django 5.2 |
-| Database | SQLite (dev) — upgradeable |
+| Database | Three-way toggle via `DB_BACKEND` in `.env`: `sqlite` (default) · `local` (PostgreSQL localhost) · `neon` (Neon cloud, London) |
 | REST API | Django REST Framework (partial adoption — no viewsets/routers) |
 | Authentication | django-allauth (Google OAuth + email/password) |
 | Admin theme | django-unfold (dormant — replaced by control panel) |
@@ -87,7 +89,14 @@ The platform has three user-facing layers:
 | CSS | Single `portal.css` shared by portal and control panel |
 | Email | Gmail SMTP — `EmailMultiAlternatives` (HTML + text) |
 | i18n | Django i18n + GNU gettext, `locale/fr/` |
-| Deployment | PythonAnywhere + GitHub (PR-based workflow) |
+| Production WSGI | **Gunicorn** workers + **WhiteNoise** static files (on `feature/production-hardening`) |
+| Cache & sessions | **Redis (Upstash)** via `django-redis`, `cached_db` sessions; falls back to LocMemCache if no `REDIS_URL` |
+| Error tracking | **Sentry** (`sentry-sdk[django]`); auto-captures exceptions; env-gated by `SENTRY_DSN` |
+| Logging | Structured JSON in production (`python-json-logger`), verbose plain-text in DEBUG; `wininpharma.*` namespace |
+| Secrets | Dual-mode: **Doppler** cloud vault (`doppler run -- <cmd>`) or local `.env` — both work |
+| Health probe | `GET /health/` — db + cache + migrations check |
+| Containerization | **Dockerfile** + `.dockerignore` + **docker-compose.yml** (multi-stage build, ~150 MB runtime image, non-root user, HEALTHCHECK on `/health/`; compose for local dev with optional commented-out postgres/redis) — on `feature/deployment-automation` |
+| Deployment | PythonAnywhere + GitHub (PR-based workflow); future: Railway via Docker image |
 | React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (in progress, `feature/react-ui`) |
 
 ---
@@ -122,10 +131,38 @@ Create a `.env` file in `FIDPHA/` (same folder as `manage.py`):
 ```
 SECRET_KEY=your-secret-key
 DEBUG=True
+ALLOWED_HOSTS=*,localhost,127.0.0.1
+
+# Database: sqlite | local | neon
+DB_BACKEND=sqlite
+
+# Local PostgreSQL (used when DB_BACKEND=local)
+LOCAL_DB_NAME=wininpharma_db
+LOCAL_DB_USER=your_pg_user
+LOCAL_DB_PASSWORD=your_pg_password
+LOCAL_DB_HOST=localhost
+LOCAL_DB_PORT=5432
+
+# Neon cloud PostgreSQL (used when DB_BACKEND=neon)
+NEON_DB_NAME=neondb
+NEON_DB_USER=neondb_owner
+NEON_DB_PASSWORD=your_neon_password
+NEON_DB_HOST=your-project.eu-west-2.aws.neon.tech
+NEON_DB_PORT=5432
+
+# Email
 EMAIL_HOST_USER=your@gmail.com
 EMAIL_HOST_PASSWORD=your-gmail-app-password
 DEFAULT_FROM_EMAIL=WinInPharma <your@gmail.com>
+
+# Optional — production hardening (leave empty to disable each)
+SENTRY_DSN=                         # error tracking; set Sentry DSN to enable
+SENTRY_ENVIRONMENT=dev              # tags events: dev / staging / production
+REDIS_URL=                          # rediss://... — enables Redis cache + cached_db sessions
+LOG_LEVEL=INFO                      # DEBUG / INFO / WARNING / ERROR
 ```
+
+> **Secrets management:** all of the above can also be served from [Doppler](https://doppler.com) instead of `.env`. After `doppler setup` in the repo, run any command with `doppler run -- <cmd>` to inject secrets from the cloud. `.env` stays as a local fallback when Doppler isn't used.
 
 ### 4.4 Initialize the Database
 
@@ -137,9 +174,16 @@ python manage.py runserver
 ```
 
 **Run tests:**
+
+Tests live inside the repo at `tests-suite/`. `pytest.ini` points there.
+
 ```bash
-python manage.py test api fidpha sales control   # 313 unit tests
-pytest tests/e2e/ -v                            # 22 Playwright E2E tests (local only, requires browser)
+pytest                                          # all tests (unit + e2e)
+pytest --ignore=tests-suite/e2e                 # unit tests only (199)
+pytest tests-suite/e2e/                         # e2e only (72 Playwright tests, needs browser)
+
+# Local Docker test runner (same Postgres / Redis / Python / Playwright as CI)
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
 ```
 
 Visit `http://127.0.0.1:8000` — you will be redirected to `/portal/login/`.
@@ -399,26 +443,48 @@ Staff permissions are managed through Django Groups (called "Roles" in the contr
 
 ### 10.1 Branch Strategy
 
-| Branch | Purpose |
-|---|---|
-| `main` | Production — deployed to PythonAnywhere |
-| `develop` | Active backend development |
-| `feature/react-ui` | React SPA (paused — not merged to main) |
-| `feature/improvements` | UI polish, SystemConfig enhancements, code-reviewer agent |
+| Branch | Purpose | Protected? | Auto-deploy target |
+|---|---|---|---|
+| `main` | Production | ✅ require CI green | (future) `wininpharma.fly.dev` |
+| `develop` | Staging / preprod | ✅ require CI green | (future) `fidpha-staging.fly.dev` + PythonAnywhere (legacy) |
+| `integration` | Long-running merge / dev staging | — | **`fidpha-dev.fly.dev`** (live) |
+| `feature/*` | Active work | — | — |
 
-### 10.2 Merging to Main (via GitHub PR)
+### 10.2 CI/CD Pipeline
+
+On every push, `.github/workflows/ci.yml` runs 4 jobs:
+
+1. **Lint (ruff)** — code-style + bug-pattern check
+2. **Unit tests (pytest)** — 199 tests against ephemeral Postgres + Redis containers
+3. **E2E tests (Playwright)** — 72 browser tests against the same containers
+4. **Deploy (flyctl)** — only on push to `integration`: builds + deploys to `fidpha-dev`
+
+Branch protection on `develop` and `main` blocks merges until all 3 test jobs pass.
+
+### 10.3 Cloud Hosting (Fly.io)
+
+- **Dev:** `fidpha-dev.fly.dev` (live — auto-deploys from `integration`)
+- **Staging:** `fidpha-staging.fly.dev` (planned, after supervisor approval)
+- **Production:** `wininpharma.fly.dev` (planned, after supervisor approval)
+
+Each environment has its own Doppler config (`dev` / `stg` / `prd`), Neon DB branch, Upstash Redis DB, and Sentry environment tag. Same Dockerfile deploys to all three — only env vars differ.
+
+### 10.4 REPO REVIEWER (Claude routine)
+
+Automatic PR reviewer that posts a verdict comment + emails findings. Triggers on PRs opened/synchronized that target `develop` or `main`. Doesn't fire on PRs to `integration` (out of scope).
+
+### 10.5 Legacy: Merging to Main (via GitHub PR)
 
 Never merge locally. Always use a GitHub Pull Request:
 
 ```
 git push origin develop
 → Open PR on GitHub (develop → main)
+→ CI runs (lint + unit + e2e), branch protection enforces green
 → REPO REVIEWER routine fires (automated security + bug scan)
 → Read the review report
 → Click "Merge pull request" on GitHub
 ```
-
-The **REPO REVIEWER** is a Claude Code routine that automatically reviews every PR diff for security vulnerabilities and bugs, then posts a verdict comment on the PR.
 
 ### 10.3 Updating PythonAnywhere
 
@@ -534,10 +600,14 @@ FIDPHA/                             ← git root (manage.py is here)
 ├── locale/fr/LC_MESSAGES/          ← French translations (.po source + .mo compiled)
 ├── static/                         ← global static (admin.css, admin JS)
 ├── templates/
+│   ├── 404.html                    ← branded standalone error page (handler404)
 │   ├── registration/               ← password reset templates
 │   └── react/                      ← SPA shell templates (index.html, staff_index.html)
-├── tests/
-│   └── e2e/                        ← 22 Playwright E2E tests (pytest tests/e2e/ -v, local only)
+├── tests-suite/                    ← all tests live here
+│   ├── unit/                       ← 199 unit tests
+│   └── e2e/                        ← 72 Playwright E2E tests across 14 files
+├── Dockerfile.test                 ← local-only test runner image (matches CI)
+├── docker-compose.test.yml         ← postgres + redis + tests sidecars
 └── frontend/                       ← React SPA (feature/react-ui branch only)
     ├── src/
     │   ├── api/client.js           ← fetch wrapper (session + CSRF)
@@ -561,6 +631,8 @@ FIDPHA/                             ← git root (manage.py is here)
 <a name="français"></a>
 
 # WinInPharma — Plateforme de Fidélisation des Pharmacies
+
+[![CI](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml/badge.svg)](https://github.com/khalidbrx-Q/FIDPHA/actions/workflows/ci.yml)
 
 ## Table des Matières
 
@@ -599,7 +671,7 @@ Les pharmacies soumettent leurs ventes quotidiennes via une API. Chaque vente es
 | i18n Français | Portail disponible en français (bascule FR/EN) |
 | Piste d'audit | Chaque action staff enregistrée via Django LogEntry ; visible sur le tableau de bord |
 | Import CSV / Excel | Import en masse de produits et de produits de contrats par fichier |
-| Tests automatisés | 313 tests unitaires + 22 tests E2E Playwright couvrant tous les flux principaux |
+| Tests automatisés | 199 tests unitaires + 72 tests E2E Playwright couvrant tous les flux principaux (Tiers 1–3 livrés) ; exécuteur Docker local qui reproduit la CI |
 
 ---
 
@@ -635,7 +707,7 @@ La plateforme comporte trois couches orientées utilisateur :
 | Concern | Choix |
 |---|---|
 | Backend | Python 3.12, Django 5.2 |
-| Base de données | SQLite (dev) — évolutif |
+| Base de données | Bascule trois voies via `DB_BACKEND` dans `.env` : `sqlite` (défaut) · `local` (PostgreSQL localhost) · `neon` (Neon cloud, Londres) |
 | API REST | Django REST Framework (adoption partielle — pas de viewsets/routers) |
 | Authentification | django-allauth (Google OAuth + email/mot de passe) |
 | Thème admin | django-unfold (inactif — remplacé par le panneau de contrôle) |
@@ -643,7 +715,14 @@ La plateforme comporte trois couches orientées utilisateur :
 | CSS | `portal.css` unique partagé portail et panneau de contrôle |
 | Email | Gmail SMTP — `EmailMultiAlternatives` (HTML + texte) |
 | i18n | Django i18n + GNU gettext, `locale/fr/` |
-| Déploiement | PythonAnywhere + GitHub (workflow par PR) |
+| WSGI production | **Gunicorn** workers + **WhiteNoise** fichiers statiques (sur `feature/production-hardening`) |
+| Cache & sessions | **Redis (Upstash)** via `django-redis`, sessions `cached_db` ; fallback LocMemCache si pas de `REDIS_URL` |
+| Suivi des erreurs | **Sentry** (`sentry-sdk[django]`) ; capture auto des exceptions ; activé par `SENTRY_DSN` |
+| Logs | JSON structurés en prod (`python-json-logger`), plain-text verbose en DEBUG ; namespace `wininpharma.*` |
+| Secrets | Double mode : **Doppler** cloud (`doppler run -- <cmd>`) ou `.env` local — les deux fonctionnent |
+| Health probe | `GET /health/` — vérifie db + cache + migrations |
+| Conteneurisation | **Dockerfile** + `.dockerignore` + **docker-compose.yml** (build multi-stage, image runtime ~150 MB, utilisateur non-root, HEALTHCHECK sur `/health/` ; compose pour dev local avec postgres/redis optionnels commentés) — sur `feature/deployment-automation` |
+| Déploiement | PythonAnywhere + GitHub (workflow par PR) ; futur : Railway via image Docker |
 | React SPA | Vite 6 + React 18 + shadcn/ui + Tailwind (en cours, `feature/react-ui`) |
 
 ---
@@ -678,10 +757,38 @@ Créer un fichier `.env` dans `FIDPHA/` (même dossier que `manage.py`) :
 ```
 SECRET_KEY=votre-secret-key
 DEBUG=True
+ALLOWED_HOSTS=*,localhost,127.0.0.1
+
+# Base de données : sqlite | local | neon
+DB_BACKEND=sqlite
+
+# PostgreSQL local (utilisé quand DB_BACKEND=local)
+LOCAL_DB_NAME=wininpharma_db
+LOCAL_DB_USER=votre_utilisateur_pg
+LOCAL_DB_PASSWORD=votre_mot_de_passe_pg
+LOCAL_DB_HOST=localhost
+LOCAL_DB_PORT=5432
+
+# Neon cloud PostgreSQL (utilisé quand DB_BACKEND=neon)
+NEON_DB_NAME=neondb
+NEON_DB_USER=neondb_owner
+NEON_DB_PASSWORD=votre_mot_de_passe_neon
+NEON_DB_HOST=votre-projet.eu-west-2.aws.neon.tech
+NEON_DB_PORT=5432
+
+# Email
 EMAIL_HOST_USER=votre@gmail.com
 EMAIL_HOST_PASSWORD=votre-mot-de-passe-application
 DEFAULT_FROM_EMAIL=WinInPharma <votre@gmail.com>
+
+# Optionnel — durcissement production (laisser vide pour désactiver)
+SENTRY_DSN=                         # suivi des erreurs ; renseigner le DSN Sentry
+SENTRY_ENVIRONMENT=dev              # tag des événements : dev / staging / production
+REDIS_URL=                          # rediss://... — active le cache Redis + sessions cached_db
+LOG_LEVEL=INFO                      # DEBUG / INFO / WARNING / ERROR
 ```
+
+> **Gestion des secrets :** toutes les variables ci-dessus peuvent aussi être servies par [Doppler](https://doppler.com) au lieu de `.env`. Après `doppler setup` dans le repo, exécuter toute commande avec `doppler run -- <cmd>` pour injecter les secrets depuis le cloud. `.env` reste le fallback local si Doppler n'est pas utilisé.
 
 ### 4.4 Initialiser la Base de Données
 
@@ -693,9 +800,16 @@ python manage.py runserver
 ```
 
 **Lancer les tests :**
+
+Les tests vivent dans le repo à `tests-suite/`. Le `pytest.ini` pointe vers cet emplacement.
+
 ```bash
-python manage.py test api fidpha sales control   # 313 tests unitaires
-pytest tests/e2e/ -v                            # 22 tests E2E Playwright (local uniquement, nécessite un navigateur)
+pytest                                          # tous les tests (unit + e2e)
+pytest --ignore=tests-suite/e2e                 # tests unitaires uniquement (199)
+pytest tests-suite/e2e/                         # e2e uniquement (72 tests Playwright, nécessite navigateur)
+
+# Exécuteur Docker local (mêmes Postgres / Redis / Python / Playwright que la CI)
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
 ```
 
 Visitez `http://127.0.0.1:8000` — vous serez redirigé vers `/portal/login/`.
@@ -938,26 +1052,48 @@ Les permissions du staff sont gérées via les groupes Django (appelés "Rôles"
 
 ### 10.1 Stratégie de Branches
 
-| Branche | Rôle |
-|---|---|
-| `main` | Production — déployée sur PythonAnywhere |
-| `develop` | Développement backend actif |
-| `feature/react-ui` | SPA React (en pause — non mergée sur main) |
-| `feature/improvements` | Polish UI, améliorations SystemConfig, agent code-reviewer |
+| Branche | Rôle | Protégée ? | Déploiement auto |
+|---|---|---|---|
+| `main` | Production | ✅ requiert CI vert | (futur) `wininpharma.fly.dev` |
+| `develop` | Staging / préprod | ✅ requiert CI vert | (futur) `fidpha-staging.fly.dev` + PythonAnywhere (legacy) |
+| `integration` | Intégration / dev staging long-running | — | **`fidpha-dev.fly.dev`** (en service) |
+| `feature/*` | Travail actif | — | — |
 
-### 10.2 Merger sur Main (via GitHub PR)
+### 10.2 Pipeline CI/CD
+
+À chaque push, `.github/workflows/ci.yml` exécute 4 jobs :
+
+1. **Lint (ruff)** — vérification style + bugs probables
+2. **Tests unitaires (pytest)** — 199 tests contre Postgres + Redis éphémères
+3. **Tests E2E (Playwright)** — 72 tests navigateur contre les mêmes conteneurs
+4. **Deploy (flyctl)** — uniquement sur push vers `integration` : build + deploy sur `fidpha-dev`
+
+Les règles de protection sur `develop` et `main` bloquent les merges tant que les 3 jobs de test ne sont pas verts.
+
+### 10.3 Hébergement Cloud (Fly.io)
+
+- **Dev** : `fidpha-dev.fly.dev` (en service — auto-deploy depuis `integration`)
+- **Staging** : `fidpha-staging.fly.dev` (prévu, après accord de l'encadrant)
+- **Production** : `wininpharma.fly.dev` (prévu, après accord de l'encadrant)
+
+Chaque environnement a sa propre config Doppler (`dev` / `stg` / `prd`), branche Neon, base Upstash Redis, et tag d'environnement Sentry. Même Dockerfile pour les trois — seules les variables d'environnement diffèrent.
+
+### 10.4 REPO REVIEWER (routine Claude)
+
+Reviewer automatique de PR qui publie un commentaire de verdict + email des findings. Déclenché sur les PRs ouvertes/synchronisées ciblant `develop` ou `main`. Ne se déclenche pas sur les PRs vers `integration` (hors périmètre).
+
+### 10.5 Legacy : Merger sur Main (via GitHub PR)
 
 Ne jamais merger localement. Toujours passer par une Pull Request GitHub :
 
 ```
 git push origin develop
 → Ouvrir une PR sur GitHub (develop → main)
-→ La routine REPO REVIEWER se déclenche (analyse automatique de sécurité + bugs)
+→ CI s'exécute (lint + unit + e2e), la protection de branche impose le vert
+→ La routine REPO REVIEWER se déclenche (analyse auto sécurité + bugs)
 → Lire le rapport de revue
 → Cliquer "Merge pull request" sur GitHub
 ```
-
-Le **REPO REVIEWER** est une routine Claude Code qui analyse automatiquement chaque diff de PR pour détecter les vulnérabilités de sécurité et les bugs, puis publie un commentaire de verdict sur la PR.
 
 ### 10.3 Mettre à Jour PythonAnywhere
 
@@ -1073,10 +1209,14 @@ FIDPHA/                             ← racine git (manage.py est ici)
 ├── locale/fr/LC_MESSAGES/          ← traductions françaises (.po source + .mo compilé)
 ├── static/                         ← statiques globaux (admin.css, JS admin)
 ├── templates/
+│   ├── 404.html                    ← page d'erreur autonome stylisée (handler404)
 │   ├── registration/               ← templates réinitialisation mot de passe
 │   └── react/                      ← templates shell SPA (index.html, staff_index.html)
-├── tests/
-│   └── e2e/                        ← 22 tests E2E Playwright (pytest tests/e2e/ -v, local uniquement)
+├── tests-suite/                    ← tous les tests vivent ici
+│   ├── unit/                       ← 199 tests unitaires
+│   └── e2e/                        ← 72 tests E2E Playwright répartis sur 14 fichiers
+├── Dockerfile.test                 ← image d'exécuteur de tests locale (reproduit la CI)
+├── docker-compose.test.yml         ← sidecars postgres + redis + tests
 └── frontend/                       ← SPA React (branche feature/react-ui uniquement)
     ├── src/
     │   ├── api/client.js           ← wrapper fetch (session + CSRF)

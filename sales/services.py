@@ -21,20 +21,16 @@ Date validation rules:
   - sale_datetime date must be BEFORE today (no same-day or future sales)
 """
 
-import datetime
-
+from django.apps import apps
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
-
-from django.apps import apps
-
-_BATCH_LIMIT_CACHE_TTL = 30   # seconds — batch limit cached to avoid DB hit per submission
 
 from fidpha.models import Contract, Contract_Product
 from fidpha.services import get_active_contract
 from sales.models import Sale, SaleImport
 
+_BATCH_LIMIT_CACHE_TTL = 30   # seconds — batch limit cached to avoid DB hit per submission
 MAX_BATCH_SIZE = 50000  # fallback default — overridden at runtime by SystemConfig.max_batch_size
 
 
@@ -161,7 +157,7 @@ def submit_sales_batch(
 
             elif row_key in seen_keys:
                 rejection_reason = (
-                    f"Duplicate row within batch: same product and sale_datetime already accepted"
+                    "Duplicate row within batch: same product and sale_datetime already accepted"
                 )
 
             elif sale_date >= today:

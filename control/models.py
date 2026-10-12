@@ -50,6 +50,9 @@ class SystemConfig(models.Model):
 
     class Meta:
         db_table = "SystemConfig"
+        permissions = [
+            ("view_analytics", "Can view the analytics dashboard"),
+        ]
 
     @classmethod
     def get(cls):

@@ -1,0 +1,39 @@
+# fly.toml app configuration file generated for fidpha-dev on 2026-05-23T02:02:29+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'fidpha-dev'
+primary_region = 'cdg'
+
+# `fly ssh console` lands you in a Django shell inside the running container.
+# /app is the WORKDIR set by our Dockerfile (Phase 2.1).
+console_command = '/app/manage.py shell'
+
+[build]
+
+[deploy]
+  # Run by Fly on every deploy, BEFORE the new version becomes live.
+  # If this fails, the deploy aborts and the old version keeps serving.
+  release_command = 'python manage.py migrate --noinput'
+
+[env]
+  PORT = '8000'
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  # Free-tier friendly: machine stops when idle, restarts on next request.
+  # First request after idle has a ~3-5s cold start; subsequent requests are fast.
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpus = 1
+  memory_mb = 1024
+
+# Static files are served by WhiteNoise (configured in Phase 1) — already
+# compressed + hashed. Fly's [[statics]] block would be redundant.

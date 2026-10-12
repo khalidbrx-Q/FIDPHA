@@ -1,0 +1,136 @@
+# =============================================================================
+# WinInPharma — Local development with Docker Compose
+# =============================================================================
+# This file describes the local dev stack. It's NOT used in production —
+# Railway / Render / AWS will use the Dockerfile directly. Compose is just
+# a developer convenience that wraps `docker build` + `docker run`.
+#
+# Common commands:
+#   docker compose up                 → build (if needed) + start everything
+#   docker compose up -d              → same, but in background
+#   docker compose down               → stop and clean up containers + network
+#   docker compose logs -f web        → tail logs of the web service
+#   docker compose exec web bash      → open a shell in the web container
+#   docker compose ps                 → status of all services
+#   docker compose build              → rebuild the web image (after Dockerfile changes)
+#
+# With Doppler secrets instead of .env:
+#   doppler run --mount .env.doppler --mount-format docker -- docker compose up
+#
+# Note: modern Docker Compose (v2+) doesn't need a `version:` field at the top.
+# =============================================================================
+
+services:
+
+  # ─── Django app (the only mandatory service) ────────────────────────────
+  web:
+    # build: uses the Dockerfile in the current directory.
+    # context = the build context (same as `docker build .`)
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # Friendly name shown in `docker ps`. Without this, compose auto-generates
+    # names like "fidpha001-web-1". Matching our manual docker run name keeps
+    # consistency between the two workflows.
+    container_name: wininpharma-dev
+
+    # Map host port 8000 → container port 8000. Same as `-p 8000:8000`.
+    ports:
+      - "8000:8000"
+
+    # Inject env vars from .env. Compose reads this file automatically —
+    # no need for an explicit --env-file flag.
+    env_file:
+      - .env
+
+    # If the container crashes or you reboot Windows, restart automatically.
+    # "unless-stopped" means it won't start back up if YOU explicitly stopped it.
+    restart: unless-stopped
+
+    # Uncomment the depends_on block below if you enable the local postgres/redis
+    # services. It tells compose to wait for them to be healthy before starting
+    # web. (Note: this requires healthchecks on the postgres/redis services too.)
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
+    #   redis:
+    #     condition: service_healthy
+
+
+  # =========================================================================
+  # OPTIONAL: full offline stack
+  # =========================================================================
+  # Uncomment the postgres + redis blocks below + the `volumes:` section at
+  # the bottom to run a fully self-contained dev environment (no Upstash /
+  # Neon required). Useful when:
+  #   - You have no internet (plane, train, bad WiFi)
+  #   - You're testing destructive operations and don't want to touch Neon
+  #   - You want to load test without hitting Upstash's free-tier limits
+  #
+  # When enabling these, update your .env:
+  #   DB_BACKEND=local
+  #   LOCAL_DB_HOST=postgres            ← compose service name, NOT "localhost"
+  #   LOCAL_DB_PORT=5432
+  #   LOCAL_DB_NAME=wininpharma_db
+  #   LOCAL_DB_USER=admin
+  #   LOCAL_DB_PASSWORD=adminadmin1234
+  #   REDIS_URL=redis://redis:6379      ← note redis:// (no TLS), service name "redis"
+  #
+  # And uncomment the depends_on block in the web service above.
+  # =========================================================================
+
+  # ─── Local PostgreSQL ───────────────────────────────────────────────────
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: wininpharma-postgres
+  #   environment:
+  #     POSTGRES_DB: wininpharma_db
+  #     POSTGRES_USER: admin
+  #     POSTGRES_PASSWORD: adminadmin1234
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     # Persist data on the host so it survives `docker compose down`.
+  #     # Without a volume, the database would vanish on every restart.
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U admin -d wininpharma_db"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
+  # ─── Local Redis ────────────────────────────────────────────────────────
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: wininpharma-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     # Optional — Redis can be ephemeral, but a volume preserves cache
+  #     # between restarts (useful for sessions during dev).
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
+
+# =============================================================================
+# Volumes (host-managed storage that survives container restarts)
+# =============================================================================
+# Uncomment this section when you enable the postgres / redis services above.
+# Volumes are named — Docker manages them in its internal storage area,
+# separate from the container filesystem.
+#
+# Inspect with:
+#   docker volume ls                      → list volumes
+#   docker volume inspect wininpharma_postgres_data
+#   docker volume rm wininpharma_postgres_data   → delete (after `down`)
+# =============================================================================
+# volumes:
+#   postgres_data:
+#   redis_data:

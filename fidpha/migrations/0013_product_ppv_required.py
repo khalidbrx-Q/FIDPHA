@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     operations = [
         # Any product with NULL ppv gets 0.00 as a safe fallback before the constraint is applied.
         migrations.RunSQL(
-            "UPDATE Product SET ppv = 0.00 WHERE ppv IS NULL",
+            'UPDATE "Product" SET ppv = 0.00 WHERE ppv IS NULL',
             reverse_sql=migrations.RunSQL.noop,
         ),
         migrations.AlterField(

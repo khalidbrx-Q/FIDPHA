@@ -15,7 +15,15 @@ Django pharmacy loyalty platform (PFE internship). Pharmacies push their daily s
 
 Verified from `FIDPHA001/settings.py`:
 
-- **Django 5.2** · **Python 3.x** · **SQLite** (`db.sqlite3`, dev only).
+- **Django 5.2** · **Python 3.x** · **Three-way DB backend** toggled by `DB_BACKEND` in `.env`: `sqlite` (default, local `db.sqlite3`), `local` (PostgreSQL on localhost, `wininpharma_db`), `neon` (Neon cloud PostgreSQL, AWS eu-west-2 London). `psycopg2-binary` required for PostgreSQL backends.
+- **WSGI server**: **Gunicorn** (`gunicorn.conf.py` — workers=(2×CPU)+1, sync class, 30s timeout, max-requests=1000+jitter, stdout logging). `runserver` still works locally for dev.
+- **Static files**: **WhiteNoise** middleware right after `SecurityMiddleware`. `CompressedManifestStaticFilesStorage` — compressed (gzip/brotli) + hashed filenames for unbreakable caching. In `DEBUG=True` mode it transparently lets `runserver` serve statics.
+- **Cache & sessions**: Redis (Upstash) when `REDIS_URL` is set — `django_redis.cache.RedisCache` + `cached_db` sessions (Redis-fast reads, DB-durable writes). Falls back to `LocMemCache` + DB sessions when `REDIS_URL` is empty.
+- **Error tracking**: **Sentry** (`sentry-sdk[django]`) initialized in `settings.py` when `SENTRY_DSN` is set. Auto-captures all unhandled exceptions via `DjangoIntegration`. `traces_sample_rate=1.0` in DEBUG, `0.1` in production. `send_default_pii=False` (GDPR-safe).
+- **Logging**: structured via `python-json-logger`. `LOGGING` dict in `settings.py`. Two formatters — `verbose` (human-readable, DEBUG mode) and `json` (production). Loggers under `wininpharma.*` namespace (e.g. `wininpharma.health`, `wininpharma.api`).
+- **Secrets management**: dual-mode. **Doppler** (cloud, project `fidpha`, config `dev`) via `doppler run -- <cmd>` — secrets injected as env vars. Falls back to local `.env` (gitignored) when Doppler isn't used. `python-decouple` reads from env first, then `.env`.
+- **Containerization** (on `feature/deployment-automation`): multi-stage `Dockerfile` at the repo root. Stage 1 (builder) = `python:3.12-slim` + build-essential + libpq-dev, builds `/opt/venv` with all pip deps. Stage 2 (runtime) = `python:3.12-slim` + libpq5 + curl + gettext, copies the venv from builder, runs as non-root `app` user (uid 1000), `collectstatic` at build time, `EXPOSE 8000`, `HEALTHCHECK` against `/health/` every 30s, `CMD` = `gunicorn FIDPHA001.wsgi:application -c gunicorn.conf.py`. Final image ~150 MB. `.dockerignore` excludes secrets/`.venv`/`frontend/`/`db.sqlite3`/`.git`/etc. Tested locally with `--env-file .env` and Neon + Upstash + Sentry — full cloud-services stack from a local Linux container.
+- **`docker-compose.yml`** (local dev only): declarative wrapper around `docker run`. Defines the `web` service (builds from Dockerfile + maps port 8000 + reads .env + restart=unless-stopped). Includes commented-out `postgres:16-alpine` + `redis:7-alpine` services with named volumes + healthchecks for full offline mode (uncomment and switch `.env` to `DB_BACKEND=local`, `LOCAL_DB_HOST=postgres`, `REDIS_URL=redis://redis:6379`). Production hosting (Railway/Render) reads the Dockerfile directly — compose is NOT used in production.
 - **DRF** — partially adopted: `APIView`, `Response`, `BaseAuthentication`, `BasePermission`, throttling, `URLPathVersioning`, serializers (used in `/api/portal/` and `/api/staff/` only). No viewsets, routers, or browsable API in production.
 - **django-allauth** — Google OAuth active; Apple planned (deferred).
 - **django-unfold** — themes Django admin (admin still registered for fallback; URL is commented out).
@@ -34,22 +42,38 @@ Verified from `FIDPHA001/settings.py`:
 FIDPHA/                              ← repo root (git root) — manage.py is here
 ├── CLAUDE.md
 ├── ARCHITECTURE.md                  ← this file
+├── README.md
 ├── manage.py
 ├── db.sqlite3
 ├── requirements.txt
+├── requirements-dev.txt
+├── Dockerfile                       ← production runtime image (Gunicorn, multi-stage, ~150 MB)
+├── Dockerfile.test                  ← local test runner image (playwright/python:v1.59-noble + dev deps)
+├── docker-compose.yml               ← local app stack (web + optional postgres/redis sidecars)
+├── docker-compose.test.yml          ← local test stack (postgres + redis + tests runner)
+├── fly.toml                         ← Fly.io config for fidpha-dev
+├── gunicorn.conf.py
+├── ruff.toml
+├── pytest.ini
 ├── FIDPHA001/                       ← Django project package
 │   ├── settings.py
-│   ├── urls.py
-│   ├── test_runner.py
+│   ├── urls.py                      ← includes handler404 (templates/404.html) and handler403
+│   ├── health.py                    ← /health/ probe (db + cache + migrations)
 │   └── asgi.py / wsgi.py
 ├── fidpha/                          ← core: models, portal views, services, allauth adapters
 ├── api/                             ← REST API layer (token auth v1 + session auth portal/staff)
 ├── sales/                           ← ingestion + Sale/SaleImport models
 ├── control/                         ← staff control panel (CRUD + sales review + sync log)
-├── templates/registration/          ← password reset (project-level)
-├── templates/react/                 ← index.html + staff_index.html (SPA shells, served by Django)
+├── templates/                       ← project-level templates
+│   ├── 404.html                     ← branded standalone error page
+│   ├── registration/                ← password reset
+│   └── react/                       ← SPA shells served by Django
 ├── locale/fr/LC_MESSAGES/           ← French translations (.po source + .mo compiled)
 ├── static/                          ← admin.css, admin/*.js (django-unfold enhancements)
+├── tests-suite/                     ← pytest tests (unit + e2e)
+│   ├── conftest.py
+│   ├── unit/                        ← test_api / test_control / test_fidpha / test_sales
+│   └── e2e/                         ← 14 Playwright test files
 └── frontend/                        ← React SPA (Vite 6 + React 18), feature/react-ui only
     ├── src/
     │   ├── api/client.js            ← fetch wrapper (session + CSRF)
@@ -201,6 +225,7 @@ FIDPHA/                              ← repo root (git root) — manage.py is h
 | URL | Target |
 |---|---|
 | `/` | redirect → `/portal/login/` |
+| `/health/` | `FIDPHA001.health.health` — unauthenticated; returns `{db, cache, migrations}` status (200 ok / 503 degraded) |
 | `/admin/login/` | redirect → `/portal/login/` |
 | `/admin/logout/` | `fidpha_views.custom_logout` |
 | `/admin/welcome/` | `fidpha_views.admin_welcome` (OAuth post-login flash) |
@@ -219,6 +244,8 @@ FIDPHA/                              ← repo root (git root) — manage.py is h
 | `/app/` and `/app/<path>/` | `spa_view` → serves `templates/react/index.html` |
 | `/control-app/` and `/control-app/<path>/` | `staff_spa_view` → serves `templates/react/staff_index.html` |
 | `/control/` | `control.urls` |
+| _(any unknown path)_ | `handler404` (rendering `templates/404.html` with status 404) when `DEBUG=False`. Falls back to Django's technical debug page when `DEBUG=True`. |
+| _(PermissionDenied)_ | `handler403` (redirects to `/control/`). Not used by `@perm_required` — that decorator renders `control/403.html` directly. |
 
 ### 6.2 Portal (`fidpha/urls.py`, `app_name="fidpha"`)
 
@@ -307,7 +334,19 @@ Request/response shapes documented in docstrings on each view.
 2. Else read `user.profile.account`. If `account.pharmacy_portal == False` → reject.
 3. Else → `/portal/dashboard/`.
 
-### 7.5 Google OAuth (`fidpha/adapters.py`)
+### 7.5 Google OAuth — Fresh PostgreSQL DB Gotcha
+
+When setting up a fresh PostgreSQL database (`migrate` + `loaddata`), the `SocialApp` for Google is linked to `site id=2` (the local dev site) but `SITE_ID=1` in settings. allauth's `get_app()` looks up by `SITE_ID` and raises `DoesNotExist` on `/auth/google/login/`.
+
+**Fix — run once after `loaddata` on any new PG database:**
+```python
+from django.contrib.sites.models import Site
+from allauth.socialaccount.models import SocialApp
+app = SocialApp.objects.get(provider='google')
+app.sites.add(Site.objects.get(id=1))
+```
+
+### 7.6 Google OAuth (`fidpha/adapters.py`)
 
 `FIDPHASocialAccountAdapter.pre_social_login`:
 - Reads `email` from Google extra_data; missing → reject.
@@ -386,6 +425,7 @@ Per-row rejection reasons (in order):
 | control | 0002 | Alter SystemConfig.id → BigAutoField (Django 5.2 default) |
 | control | 0003 | **SystemConfig new fields** — `max_batch_size`, `ppv_tolerance_percent`, `rejection_rate_warn_threshold`, `rejection_rate_danger_threshold`, `api_token_rate_limit` |
 | control | 0004 | **SystemConfig default-off** — change all new field defaults to 0/None (disabled sentinel); RunPython resets existing singleton row |
+| fidpha | 0013 | **Product.ppv NOT NULL** — RunSQL backfills NULL ppv rows to 0.00 (quoted `"Product"` table name for PostgreSQL case-sensitivity); AlterField makes ppv required |
 
 ---
 
@@ -432,7 +472,8 @@ Per-row rejection reasons (in order):
 ## 11. Common Patterns (Implementation Quirks)
 
 - **PRG with session stash** for control forms: redirect on POST, hydrate from `request.session.pop("_<form>_<pk>")` on GET. See `accounts_create`, `contracts_edit`, `products_create`.
-- **Audit logging**: `_log(user, obj, flag, msg)` (`control/views.py:36`) writes Django `LogEntry`. Use on every create/edit/delete in control panel.
+- **Audit logging**: `_log(user, obj, flag, msg)` (`control/views.py`) writes Django `LogEntry`. Uses `log_actions()` (post-Django-5.1 API; `log_action()` was deprecated and is removed in Django 6). Use `_log()` on every create/edit/delete in the control panel.
+- **Dashboard activity filtering**: `recent_activity` on `/control/` is filtered by the viewer's `view_*` permissions to prevent information disclosure. Non-superusers only see LogEntry rows whose `content_type__app_label` + `content_type__model` matches a `view_<model>` permission they hold. Superusers see everything. Mirrors the sidebar visibility rules.
 - **TraceableMixin**: stamp `created_by` on creation, `modified_by` on edit, before save.
 - **CSV export**: `StreamingHttpResponse` + generator. Don't build CSV in memory. See `sales_export_csv`, `sync_log` export branch.
 - **Batch API endpoints**: return `{"items":[...], "total":..., "page":..., "pages":..., "has_prev":..., "has_next":...}`. Match shape.
@@ -445,42 +486,85 @@ Per-row rejection reasons (in order):
 
 ## 12. Settings / Security Notes
 
-Known dev-only shortcuts (intentional; surface but don't silently fix):
+### Hardening completed on `feature/production-hardening`
 
-- `settings.py:7` — SECRET_KEY hardcoded.
-- `settings.py:9` — `DEBUG = False` (the comment is misleading; the value matches the comment).
-- `settings.py:11` — `ALLOWED_HOSTS = ['*', 'khalidbrx.pythonanywhere.com']` (wildcard).
-- `settings.py:81-82` — Gmail SMTP password in plain text.
-- SQLite as primary DB (dev only).
+Phase 1 production hardening — 6 commits. Each is independent and reversible:
+
+- **Security headers** (`settings.py`): `SECURE_CONTENT_TYPE_NOSNIFF`, `SECURE_BROWSER_XSS_FILTER`, `SECURE_REFERRER_POLICY="same-origin"`, `X_FRAME_OPTIONS="DENY"`. HTTPS-gated set (`if not DEBUG`): `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS=31536000` (+ subdomains + preload), `SECURE_PROXY_SSL_HEADER`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`. CSP intentionally deferred until React migration (templates use inline `<script>` blocks).
+- **Production WSGI**: Gunicorn + WhiteNoise (`gunicorn.conf.py`, `WhiteNoiseMiddleware` after `SecurityMiddleware`, `STORAGES["staticfiles"]=CompressedManifestStaticFilesStorage`).
+- **Logging**: structured `LOGGING` dict in `settings.py`. `python-json-logger` JSON formatter in prod, verbose plain-text in DEBUG. `wininpharma.*` namespace.
+- **Health endpoint**: `/health/` checks db + cache + migrations. Unauthenticated, never cached.
+- **Sentry**: env-gated init in `settings.py` (`if SENTRY_DSN`). `DjangoIntegration`, `traces_sample_rate=1.0` in DEBUG / `0.1` in prod, `send_default_pii=False`.
+- **Redis (Upstash)**: env-gated CACHES + cached_db sessions (`if REDIS_URL`). Falls back to `LocMemCache` + DB sessions when empty. `KEY_PREFIX="wininpharma"`.
+- **Doppler**: cloud secret store, dual-mode with `.env`. Use `doppler run -- <cmd>` to inject from cloud; bare command reads local `.env`. Both work independently. No code changes — `python-decouple` reads env-var first.
+
+### Remaining known dev-only shortcuts (intentional; surface but don't silently fix)
+
+- `settings.py` — `SECRET_KEY` defaults to `django-insecure-...` literal (still warned by `manage.py check --deploy`). Will be replaced by Doppler-managed strong key for production deploys.
+- `settings.py` — `ALLOWED_HOSTS=*` (wildcard default). Restrict per-environment when deploying.
+- `DB_BACKEND` in `.env` controls the active database: `sqlite` (default), `local` (localhost PostgreSQL), `neon` (cloud). Testing server (PythonAnywhere) uses `sqlite`. Switch with one line — no code change needed.
 - `legacy_models.py` exists in `fidpha/`. **Inactive**, don't edit/import.
 
-Production hardening (when user requests): env-var secrets, restricted ALLOWED_HOSTS, swap DB engine, rotate SMTP password, add CSRF/HSTS settings.
+After Phase 1, `manage.py check --deploy` with `DEBUG=False` drops from **6 security warnings → 1** (only the SECRET_KEY warning remains).
 
 ---
 
 ## 13. Testing
 
+### Test suite location
+
+Tests live inside the Django repo at `tests-suite/`. Layout:
+
+```
+FIDPHA001/                    ← Django repo root
+├── manage.py
+├── pytest.ini                ← testpaths = tests-suite
+└── tests-suite/
+    ├── conftest.py           ← shared setup (DJANGO_ALLOW_ASYNC_UNSAFE for Playwright,
+    │                            autouse SystemConfig + cache reset per test)
+    ├── unit/
+    │   ├── __init__.py
+    │   ├── test_api.py
+    │   ├── test_control.py
+    │   ├── test_fidpha.py
+    │   └── test_sales.py
+    └── e2e/
+        ├── __init__.py
+        ├── conftest.py       ← Playwright + base_data fixtures
+        └── test_*.py         ← 14 files
+```
+
+> The suite was relocated outside the repo on 2026-05-17 to keep production deploys lean, then moved back on 2026-05-22 ahead of Phase 2.2 (GitHub Actions CI) so CI checkouts include it. Space saving wasn't worth the dual-repo coordination cost.
+
 ### Unit Tests
-- `FIDPHA001/test_runner.py` defines `LoggingTestRunner` — appends to `test_log.txt`.
-- Unit tests live in each app's `tests.py` (`api/`, `fidpha/`, `sales/`, `control/`) — 313 tests, all passing.
-- Run: `python manage.py test api fidpha sales control` (from `FIDPHA001/FIDPHA001/`)
+- 199 active tests, 2 intentionally skipped.
+- Run: `pytest --ignore=tests-suite/e2e` (from inside the repo)
+- Current baseline (verified 2026-05-25): **199 passed / 2 skipped / 0 failed** in ~3 min.
+- The 1 long-standing skip is `test_same_contract_two_concurrent_batches` — deferred because the test's "both batches succeed" assertion conflicts with the strictly-after `last_sale_datetime` rule when thread ordering reverses. Production behaviour is correct; the test needs a rewrite.
 
 ### E2E Tests (Playwright)
-- **Status: Done** — 22 tests across 8 files, all passing.
-- Framework: `pytest-playwright` + `pytest-django`. Lives at `tests/e2e/`.
-- `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `tests/e2e/conftest.py` (required for Playwright + Django live server).
-- Run: `pytest tests/e2e/ -v` (from `FIDPHA001/FIDPHA001/`)
+- **Status: Tiers 1–3 shipped** — 72 active tests across 14 files (40 original + 18 Tier 2 on 2026-05-25 + 14 Tier 3 on 2026-05-25). Tier 4 (~10 more, polish) planned. See the workspace-level `docs/e2e-coverage.html` for the full tiered plan.
+- Framework: `pytest-playwright` + `pytest-django`. Lives at `tests-suite/e2e/`.
+- `DJANGO_ALLOW_ASYNC_UNSAFE=true` set in `tests-suite/conftest.py` (required for Playwright + Django live server).
+- Run: `pytest tests-suite/e2e/` (from inside the repo)
+- **Local Docker runner**: `docker compose -f docker-compose.test.yml up --build --abort-on-container-exit` — same Postgres 16 / Redis 7 / Python 3.12 / Playwright 1.59 as CI. ~7 min after the one-time image pull.
 
 | File | Tests | What's covered |
 |---|---|---|
-| `test_auth.py` | 4 | Login redirect (staff + portal), wrong-password error, logout |
-| `test_portal.py` | 4 | Portal login → dashboard, stat cards, sales page, pharmacy name |
-| `test_sales_review.py` | 4 | Batch list loads, accept sale, reject sale, accepted row leaves pending queue |
-| `test_control_accounts.py` | 2 | Accounts list loads, create account → lands on detail page |
-| `test_control_products.py` | 2 | Products list loads, create product → redirects to list with row |
-| `test_control_contracts.py` | 2 | Contracts list loads, create contract → lands on detail page |
-| `test_control_settings.py` | 2 | System settings page loads, toggle auto-review persists to DB |
-| `test_control_tokens.py` | 2 | Tokens list loads, create token → plain value revealed in banner |
+| `test_auth.py` | 8 | Staff/portal login, wrong password. Tier 1: P21 logout clears session, A2 anon→portal bounced, A12+A13 password reset request+confirm. |
+| `test_portal.py` | 12 | Tier 0: portal login, dashboard cards, sales page, pharmacy name. Tier 1: P22 portal user → /control/ → bounced. Tier 2: P9 contracts page renders, P10 monthly chart visible, P11 chart drill-down by month (uses `ec.trigger('click', params)`). Tier 3: P3 year selector swaps chart labels, P13 edit email, P15 change password + re-login, P18 EN↔FR language switch. |
+| `test_sales_review.py` | 11 | Tier 0: batch list, accept/reject single sale, accepted row leaves pending. Tier 1: SR2 status filter, SR4 batch search, SR14 bulk accept, ⭐ X1 sales batch end-to-end (API → review UI). Tier 3: SR3 date range filter, SR19 CSV export download, SR9 PPV-mismatch anomaly badge. The 4 accept/reject tests use `page.expect_response()` (replaced flaky `wait_for_load_state('networkidle')`). |
+| `test_control_accounts.py` | 5 | Tier 0: list loads, create lands on detail. Tier 1: AC21 edit name, AC23 toggle auto-review. Tier 3: GAP12 per-account auto-review checkbox locked when global SystemConfig flag is off. |
+| `test_control_products.py` | 3 | Tier 0: list loads, create redirects. Tier 1: PR7 edit PPV. |
+| `test_control_contracts.py` | 8 | Tier 0: list loads, create lands on detail. Tier 1: CT13 edit title, CT17 add product via formset (`cp-` prefix), CT22 AJAX unlink, E1/E2/E3 constraint UI errors. |
+| `test_control_settings.py` | 6 | Tier 0: system settings page loads, toggle auto-review persists. Tier 3: S3 max_batch_size, S4 api_token_rate_limit, S5 ppv_tolerance_percent, S7 dirty-dot indicator. |
+| `test_control_tokens.py` | 5 | Tier 0: list loads, create token reveals plain value once. Tier 2: T6 revoke → API 401, T7 reactivate → API 200, T10 usage_count reflected in detail page. |
+| `test_control_users.py` | 4 | Tier 2: U6 staff create with role, U7 portal create with account link, U13 edit role updates groups, U14 deactivate user blocks login. |
+| `test_control_roles.py` | 2 | Tier 2: R3 create Group + RoleProfile, R4 `_EXCLUDED_APPS` hidden from permission picker. |
+| `test_control_dashboard.py` | 2 | Tier 2: D2 KPI cards show real counts, D3 Recent Activity widget lists CRUD events. |
+| `test_control_empty_states.py` | 2 | Tier 2: AC8 accounts list shows "No accounts yet" when empty, SR23 sales list shows `#blEmpty` when no batches. |
+| `test_modal_ux.py` | 2 | Tier 2: batch modal closes on X button + Escape key. |
+| `test_error_pages.py` | 2 | Tier 3: A21 unknown URL renders branded 404 template (handler404 + templates/404.html), A22 perm-denied view renders `control/403.html` with status 403. |
 
 **Gotchas for future test authoring:**
 - Sales list is a JS SPA — batches load via fetch into `#blRows`; sales table only appears inside a modal after clicking a batch row.
@@ -490,20 +574,86 @@ Production hardening (when user requests): env-var secrets, restricted ALLOWED_H
 - Language-switcher `[type=submit]` conflicts → always use `#submitBtn` for form submit buttons.
 - `UserProfile` has no auto-creation signal — `UserProfile.objects.create(...)` explicitly in fixtures.
 - `Contract.clean()` enforces one active contract per account — contract create tests need a fresh account.
+- **Visually-hidden form controls**: the `user_type` radios and `is_active` toggle (and the settings `*_enabled` toggles) sit inside styled labels with `opacity:0` inputs. `Locator.check()` fails on these. Use `evaluate("el => { el.checked = true; el.dispatchEvent(new Event('change', {bubbles:true})) }")` instead.
+- **ECharts click handlers**: `page.mouse.click()` cannot reliably hit SVG bars. Use `ec.trigger('click', params)` via `page.evaluate` — the chart instance is itself an `Eventful`, so calling `trigger` fires registered `on('click', fn)` handlers with the same params shape.
+- **AJAX response waiting**: prefer `page.expect_response(lambda r: <url match>)` over `wait_for_load_state('networkidle')` for any test that depends on a state mutation. `networkidle` is unreliable under XHR load and was the root cause of the original sales-review flake.
 
 ---
 
-## 14. Pending Work
+## 14. Deployment Pipeline
+
+### Branch topology
+
+```
+feature/* ──push──▶ integration ──PR──▶ develop ──PR──▶ main
+                       │                    │                │
+                       ▼                    ▼                ▼
+                  fidpha-dev          fidpha-staging    wininpharma
+                  (Fly.io, live)      (future)          (future)
+```
+
+`integration` is the merge/staging branch — pushes here trigger auto-deploy to `fidpha-dev`. `develop` and `main` are protected by GitHub branch rulesets that require 3 CI checks to pass before a PR can merge.
+
+### `.github/workflows/ci.yml` — four jobs
+
+| Job | Runs on | Time | Purpose |
+|---|---|---|---|
+| `lint` | every push, every PR to develop/main | ~30s | `ruff check .` |
+| `unit` | every push, every PR to develop/main | ~2 min | pytest on `tests-suite/unit/` against ephemeral postgres:16-alpine + redis:7-alpine service containers |
+| `e2e` | every push, every PR to develop/main | ~5–7 min | pytest on `tests-suite/e2e/` (Playwright Chromium) against the same service containers + Django live_server |
+| `deploy` | **push to `integration` only** | ~2 min | `flyctl deploy --remote-only` to `fidpha-dev`; `needs:` the other 3 jobs |
+
+Concurrency at the workflow level cancels old runs on rapid re-pushes; a separate `concurrency: deploy-fidpha-dev` group on the deploy job ensures only one deploy ever runs at a time.
+
+### Hosting — Fly.io
+
+- **App:** `fidpha-dev` in region `cdg` (Paris, closest to Neon's London region).
+- **Machines:** 2× `shared-cpu-1x@1GB` with `auto_stop_machines = 'stop'`. Idle machines sleep to free quota; wake on first incoming request (~3–5s cold start). Two machines enable zero-downtime deploys (one updates while the other serves).
+- **HTTPS:** Fly's edge handles TLS termination; the app receives plain HTTP from Fly's proxy. `SECURE_PROXY_SSL_HEADER` in settings.py is configured to trust `X-Forwarded-Proto`.
+- **release_command:** `python manage.py migrate --noinput` runs on a temporary machine before each deploy goes live. If migration fails, the deploy aborts and the previous version keeps serving.
+
+### Secrets — Doppler-Fly sync
+
+Source of truth for cloud secrets is **Doppler**. The Doppler-Fly sync integration pushes the `dev` config to the `fidpha-dev` Fly app automatically — secret changes propagate within seconds, and the affected machines auto-restart to pick up new values.
+
+Local development uses the `.env` file, independent of Doppler. The mapping is 1:1: one Doppler config per Fly app.
+
+### Environment matrix (planned)
+
+| Component | dev (current) | staging (future) | production (future) |
+|---|---|---|---|
+| Git branch | `integration` | `develop` | `main` |
+| Fly app | `fidpha-dev` | `fidpha-staging` | `wininpharma` |
+| Fly token (GH secret) | `FLY_API_TOKEN` | `FLY_API_TOKEN_STAGING` | `FLY_API_TOKEN_PROD` |
+| Doppler config | `dev` | `stg` | `prd` |
+| Neon DB | `neondb` (shared with local) | `neondb-staging` branch | `neondb-prod` branch |
+| Upstash Redis | shared DB #1 | DB #2 | DB #3 |
+| Sentry tag | `SENTRY_ENVIRONMENT=dev` | `SENTRY_ENVIRONMENT=staging` | `SENTRY_ENVIRONMENT=production` |
+
+Staging + prod are deferred until budget approval. The same Dockerfile + `fly.toml` pattern + `ci.yml` deploy-job template will be reused; only the app name, branch trigger, and token vary per environment.
+
+### REPO REVIEWER routines
+
+Two Claude routines (one per PR event — `opened` and `synchronize`), both with identical instructions. They fetch the PR diff, run a security + bug check tuned to the WinInPharma domain (PPV invariant, last_sale_datetime rule, one-active-contract-per-account, etc.), and post:
+- A PR comment with verdict (CLEAN / LOW_RISK / MEDIUM_RISK / HIGH_RISK) and a findings table
+- An email summary to `khalidbrx@icloud.com`
+
+Filtered by `Author = khalidbrx-Q` and `Base branch is one of: main, develop` — so feature → integration PRs don't fire a review (out of scope at that stage).
+
+---
+
+## 15. Pending Work
 
 - Apple OAuth provider.
 - Token detail page enhancements (usage chart; `APITokenUsageLog` model already in place).
 - `SystemConfig.ppv_tolerance_percent` enforcement — field is stored and configurable but the rejection check inside `submit_sales_batch` is still a no-op.
 - Sales Review UX backlog (remaining items).
 - React SPA (`feature/react-ui`) — portal and staff React UIs built, paused pending advisor approval to merge.
+- `fidpha-staging` + `wininpharma` (prod) Fly apps — deferred until supervisor approves the ~$10–25/mo budget for the 3-environment Fly.io setup.
 
 ---
 
-## 15. Key Files (file:line)
+## 16. Key Files (file:line)
 
 | Need | Location |
 |---|---|

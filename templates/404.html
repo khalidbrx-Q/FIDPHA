@@ -1,0 +1,119 @@
+{% load i18n static %}<!DOCTYPE html>
+{# Standalone — does NOT extend portal/base or control/base because most 404 #}
+{# hits come from anonymous users who don't have a session-bound layout. #}
+{# Dark theme tokens are declared inline as the default so the page still #}
+{# renders correctly if static files fail to load. When static does load, #}
+{# portal.js reads localStorage['fidpha-theme'] and overrides those tokens #}
+{# via inline styles on <html>, giving us the same light/dark toggle that #}
+{# the rest of the app uses. #}
+<html lang="{% get_current_language as LANGUAGE_CODE %}{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Page not found" %} · WinInPharma</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+    <style>
+        :root {
+            --sidebar-bg:    #0f172a;
+            --content-bg:    #0f172a;
+            --card-bg:       #1e293b;
+            --card-border:   #334155;
+            --text-primary:  #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent:        #1b679b;
+            --accent-hover:  #155a8a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--content-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(27, 103, 155, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        .icon-wrap .material-icons-round {
+            font-size: 36px;
+            color: var(--accent);
+        }
+        .code {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+        p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background 0.15s;
+        }
+        .btn:hover { background: var(--accent-hover); }
+        .btn .material-icons-round { font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon-wrap">
+            <span class="material-icons-round">search_off</span>
+        </div>
+        <div class="code">{% trans "Error 404" %}</div>
+        <h1>{% trans "Page not found" %}</h1>
+        <p>
+            {% trans "The page you're looking for doesn't exist or has been moved." %}
+        </p>
+        <a href="/" class="btn">
+            <span class="material-icons-round">home</span>
+            {% trans "Back to home" %}
+        </a>
+    </div>
+
+    {# Re-applies the user's saved light/dark preference by reading #}
+    {# localStorage['fidpha-theme'] and overriding the CSS variables above. #}
+    {# If static files 500, the inline :root values still give a usable dark page. #}
+    <script src="{% static 'fidpha/js/portal.js' %}"></script>
+</body>
+</html>

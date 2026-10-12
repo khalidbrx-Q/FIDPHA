@@ -1151,7 +1151,7 @@ function renderSalesTable() {
                 :`<div class="srt-row"><span class="srt-icon srt-icon-wait material-icons-round">hourglass_empty</span><span class="srt-txt" style="opacity:0.45;">{% trans "Awaiting review" %}</span></div>`) /* i18n-todo */
             +`</div>`;
         const ppvWarn=s.ppv_mismatch
-            ?`<span class="material-icons-round" title="{% trans "PPV mismatch" %} — {% trans "submitted" %}: ${s.ppv}, {% trans "contract" %}: ${s.contract_ppv}" style="font-size:13px;color:#f59e0b;vertical-align:middle;margin-left:3px;cursor:default;">warning</span>`:''  /* i18n-todo */;
+            ?`<span class="material-icons-round" title="{% trans "PPV mismatch" %} — {% trans "submitted PPV" %}: ${s.ppv}, {% trans "catalogue PU" %}: ${s.contract_ppv}" style="font-size:13px;color:#f59e0b;vertical-align:middle;margin-left:3px;cursor:default;">warning</span>`:''  /* i18n-todo */;
         const aBtn=s.status!=='accepted'?`<button class="ab ab-a" title="{% trans "Accept" %}" onclick="doAction(${s.pk},'accept',this)"><span class="material-icons-round">check</span></button>`:''  /* i18n-todo */;
         const rBtn=s.status!=='rejected'?`<button class="ab ab-r" title="{% trans "Reject" %}" onclick="doAction(${s.pk},'reject',this)"><span class="material-icons-round">close</span></button>`:''  /* i18n-todo */;
         return `<tr data-pk="${s.pk}" data-status="${s.status}" data-search="${escAttr(s.product.toLowerCase()+' '+s.ext_designation.toLowerCase())}" class="${hidden}">

@@ -260,7 +260,7 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
                 return format_html(
                     '<span style="background-color: rgba(245,158,11,0.15); color: #f59e0b; font-size: 0.75rem; padding: 2px 10px; border-radius: 20px; font-weight: 600;">⚠ Email Not Verified</span>'
                 )
-        except:
+        except Exception:
             return format_html('<span style="color: #888;">—</span>')
 
     email_verification_status.short_description = "Email Status"
@@ -282,16 +282,16 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
         try:
             from allauth.socialaccount.models import SocialAccount
             SocialAccount.objects.filter(user=obj).delete()
-        except:
+        except Exception:
             pass
         try:
             from allauth.account.models import EmailAddress
             EmailAddress.objects.filter(user=obj).delete()
-        except:
+        except Exception:
             pass
         try:
             obj.profile.delete()
-        except:
+        except Exception:
             pass
         obj.delete()
 
@@ -301,15 +301,15 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
         for user in queryset:
             try:
                 SocialAccount.objects.filter(user=user).delete()
-            except:
+            except Exception:
                 pass
             try:
                 EmailAddress.objects.filter(user=user).delete()
-            except:
+            except Exception:
                 pass
             try:
                 user.profile.delete()
-            except:
+            except Exception:
                 pass
             user.delete()
 
