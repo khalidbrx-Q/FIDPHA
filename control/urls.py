@@ -118,4 +118,6 @@ urlpatterns = [
     path("analytics/export/",              views.analytics_export_csv,    name="analytics_export_csv"),
     path("analytics/export-xlsx/",         views.analytics_export_xlsx,   name="analytics_export_xlsx"),
     path("analytics/product/<int:pk>/",    views.analytics_product_detail, name="analytics_product_detail"),
+    path("analytics/account/<int:pk>/contracts/", views.analytics_account_contracts, name="analytics_account_contracts"),
+    path("analytics/contract/<int:pk>/products/", views.analytics_contract_products, name="analytics_contract_products"),
 ]

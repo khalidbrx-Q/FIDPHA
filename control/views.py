@@ -2605,6 +2605,11 @@ def _analytics_filters(request):
     product_q     = (request.GET.get("product") or "").strip()
     account_id    = (request.GET.get("account") or "").strip()
     contract_id   = (request.GET.get("contract") or "").strip()
+    # Active-only toggle: when a specific contract is picked it's a no-op
+    # (that contract wins); otherwise narrows to Contract.STATUS_ACTIVE.
+    # Default = True (match staff expectation that "contracts" means live ones).
+    _ao = (request.GET.get("active_only") or "1").strip().lower()
+    active_only   = _ao in ("1", "true", "on", "yes")
     sort_mode     = (request.GET.get("sort") or "points").strip()
     if sort_mode not in ("points", "account"):
         sort_mode = "points"
@@ -2631,6 +2636,12 @@ def _analytics_filters(request):
     except (TypeError, ValueError):
         contract_id = ""
 
+    # Active-only narrows the queryset only when NO specific contract was
+    # picked (otherwise the explicit pick wins — supports the "look at this
+    # inactive contract on purpose" edge case).
+    if active_only and not contract_id:
+        qs = qs.filter(contract_product__contract__status=Contract.STATUS_ACTIVE)
+
     qs = qs.annotate(pts=Round(ExpressionWrapper(
         F("product_ppv") * F("quantity") * F("contract_product__points_per_unit"),
         output_field=FloatField(),
@@ -2642,6 +2653,7 @@ def _analytics_filters(request):
         "f_product":     product_q,
         "f_account":     account_id,
         "f_contract":    contract_id,
+        "f_active_only": active_only,
         "f_sort":        sort_mode,
     }
     return qs, ctx
@@ -2720,10 +2732,15 @@ def _compute_analytics(request):
         page = max(1, int(request.GET.get("page") or 1))
     except (TypeError, ValueError):
         page = 1
+    # Pagination: allowed sizes capped at 100 so one request can't drag back
+    # thousands of rows into the browser. Default is 25 — enough for a table
+    # that fits on screen without scrolling.
+    _ALLOWED_PAGE_SIZES = (10, 25, 50, 100)
     try:
-        page_size = min(500, max(10, int(request.GET.get("page_size") or 50)))
+        _ps = int(request.GET.get("page_size") or 25)
     except (TypeError, ValueError):
-        page_size = 50
+        _ps = 25
+    page_size = _ps if _ps in _ALLOWED_PAGE_SIZES else 25
 
     # Everything on this page is accepted-sales-only (that's what generates
     # points). scope_qs is kept as an alias so downstream aggregation code
@@ -2735,6 +2752,27 @@ def _compute_analytics(request):
     now = timezone.now()
     date_from = _parse_date(filt_ctx["f_date_from"])
     date_to   = _parse_date(filt_ctx["f_date_to"])
+
+    # Global time-nav offset shared by every time-aware chart (negative =
+    # years back). Only applied when no explicit date filter is set — explicit
+    # dates always win.
+    try:
+        time_offset = int(request.GET.get("time_offset") or 0)
+    except (TypeError, ValueError):
+        time_offset = 0
+
+    def _shift_year(dt, years):
+        """Shift a datetime back/forward by whole years, clamping Feb 29."""
+        try:
+            return dt.replace(year=dt.year + years)
+        except ValueError:
+            return dt.replace(year=dt.year + years, day=28)
+
+    month_now = now
+    heat_now  = now
+    if not date_from and not date_to and time_offset:
+        month_now = _shift_year(now, time_offset)
+        heat_now  = _shift_year(now, time_offset)
 
     # ── KPIs ────────────────────────────────────────────────────────────────
     total_points   = int(accepted_qs.aggregate(t=Sum("pts"))["t"] or 0)
@@ -2835,9 +2873,16 @@ def _compute_analytics(request):
         chart_submissions = [smap.get(k, 0) for k in timeline_keys]
     else:
         granularity = "month"
-        month_dates, timeline_keys, timeline_lbls, window_start = _month_window(date_from, date_to, now)
+        month_dates, timeline_keys, timeline_lbls, window_start = _month_window(date_from, date_to, month_now)
+        # Exclusive upper bound = first day of month AFTER the last one in the
+        # window. Used both to bound the query and to compute has_next.
+        _last_month = month_dates[-1]
+        if _last_month.month == 12:
+            window_end_excl = datetime(_last_month.year + 1, 1, 1, tzinfo=dt_tz.utc)
+        else:
+            window_end_excl = datetime(_last_month.year, _last_month.month + 1, 1, tzinfo=dt_tz.utc)
         monthly_qs = (
-            accepted_qs.filter(sale_datetime__gte=window_start)
+            accepted_qs.filter(sale_datetime__gte=window_start, sale_datetime__lt=window_end_excl)
             .annotate(bucket=TruncMonth("sale_datetime"))
             .values("bucket")
             .annotate(total_pts=Sum("pts"),
@@ -2848,13 +2893,22 @@ def _compute_analytics(request):
         chart_timeline_prods = [mmap.get(k, {}).get("unique_products") or 0 for k in timeline_keys]
 
         sub_qs = (
-            scope_qs.filter(sale_datetime__gte=window_start)
+            scope_qs.filter(sale_datetime__gte=window_start, sale_datetime__lt=window_end_excl)
             .annotate(bucket=TruncMonth("sale_datetime"))
             .values("bucket")
             .annotate(batches=Count("sale_import__batch_id", distinct=True))
         )
         submap = {r["bucket"].strftime("%Y-%m"): int(r["batches"] or 0) for r in sub_qs}
         chart_submissions = [submap.get(k, 0) for k in timeline_keys]
+
+    # Time-nav flags: are there any accepted sales (same scope filters) before
+    # the current monthly window / after the current monthly window?
+    if granularity == "month":
+        month_has_prev = accepted_qs.filter(sale_datetime__lt=window_start).exists()
+        month_has_next = (time_offset < 0) and \
+            accepted_qs.filter(sale_datetime__gte=window_end_excl).exists()
+    else:
+        month_has_prev = month_has_next = False
 
     # Cumulative points — running sum of chart_timeline_pts; same granularity.
     cumulative_pts = []
@@ -2893,16 +2947,41 @@ def _compute_analytics(request):
     }
 
     # ── Points per account ─────────────────────────────────────────────────
-    acct_rows = list(
-        accepted_qs.values("contract_product__contract__account_id",
-                           "contract_product__contract__account__code",
-                           "contract_product__contract__account__name")
-        .annotate(pts=Sum("pts")).order_by("-pts")[:20]
-    )
-    chart_acct_labels = [(r["contract_product__contract__account__name"]
-                          or r["contract_product__contract__account__code"] or "—") for r in acct_rows]
-    chart_acct_data   = [int(r["pts"] or 0) for r in acct_rows]
-    chart_acct_ids    = [r["contract_product__contract__account_id"] for r in acct_rows]
+    # Enumerate every account "in scope" (has at least one Contract that
+    # matches the active filters) and zero-fill the ones without accepted
+    # sales — so staff can see which accounts aren't earning instead of them
+    # vanishing from the chart. No top-N cap.
+    all_accts_qs = Account.objects.filter(contracts__isnull=False)
+    if filt_ctx["f_active_only"] and not filt_ctx["f_contract"]:
+        all_accts_qs = all_accts_qs.filter(contracts__status=Contract.STATUS_ACTIVE)
+    if filt_ctx["f_account"]:
+        try:
+            all_accts_qs = all_accts_qs.filter(pk=int(filt_ctx["f_account"]))
+        except ValueError:
+            pass
+    if filt_ctx["f_contract"]:
+        try:
+            all_accts_qs = all_accts_qs.filter(contracts__id=int(filt_ctx["f_contract"]))
+        except ValueError:
+            pass
+    if filt_ctx["f_product"]:
+        _pq = filt_ctx["f_product"]
+        all_accts_qs = all_accts_qs.filter(
+            Q(contracts__contract_product__product__designation__icontains=_pq)
+            | Q(contracts__contract_product__product__code__icontains=_pq)
+        )
+    all_accts_in_scope = list(all_accts_qs.distinct().values("id", "code", "name"))
+
+    pts_rows = (accepted_qs
+                .values("contract_product__contract__account_id")
+                .annotate(pts=Sum("pts")))
+    pts_map = {r["contract_product__contract__account_id"]: int(r["pts"] or 0) for r in pts_rows}
+
+    _acct_pairs = [(a, pts_map.get(a["id"], 0)) for a in all_accts_in_scope]
+    _acct_pairs.sort(key=lambda t: (-t[1], (t[0]["name"] or "").lower()))
+    chart_acct_labels = [(a["name"] or a["code"] or "—") for a, _ in _acct_pairs]
+    chart_acct_data   = [p for _, p in _acct_pairs]
+    chart_acct_ids    = [a["id"] for a, _ in _acct_pairs]
 
     # ── Daily heatmap — respects account/product/contract filters but applies
     # smart date logic:
@@ -2922,7 +3001,7 @@ def _compute_analytics(request):
             last_day = _cal.monthrange(date_to.year, date_to.month)[1]
             heatmap_end = date_to.replace(day=last_day)
     else:
-        heatmap_end  = now.date()
+        heatmap_end  = heat_now.date()
         heatmap_start = heatmap_end - timedelta(days=364)
 
     hm_qs = (accepted_qs
@@ -2930,6 +3009,11 @@ def _compute_analytics(request):
                      sale_datetime__date__lte=heatmap_end)
              .annotate(day=TruncDay("sale_datetime"))
              .values("day").annotate(pts=Sum("pts")))
+
+    # Time-nav flags for the heatmap / Points-Awarded group.
+    heat_has_prev = accepted_qs.filter(sale_datetime__date__lt=heatmap_start).exists()
+    heat_has_next = (time_offset < 0) and \
+        accepted_qs.filter(sale_datetime__date__gt=heatmap_end).exists()
     heatmap_data = [[r["day"].strftime("%Y-%m-%d"), int(r["pts"] or 0)] for r in hm_qs]
     heatmap_range = [heatmap_start.strftime("%Y-%m-%d"), heatmap_end.strftime("%Y-%m-%d")]
 
@@ -2982,49 +3066,98 @@ def _compute_analytics(request):
         awarded_vals.append(_cum)
         _d = _d + timedelta(days=1)
 
-    # ── Grouped breakdown ──────────────────────────────────────────────────
-    grouped_rows = list(
-        scope_qs.values(
-            "contract_product__contract__account_id",
-            "contract_product__contract__account__code",
-            "contract_product__contract__account__name",
-            "contract_product__product_id",
-            "contract_product__product__code",
-            "contract_product__product__designation",
-        ).annotate(total_qty=Sum("quantity"),
-                   avg_pu=Avg("product_ppv"),
-                   total_pts=Sum("pts"))
-    )
+    # ── Breakdown table (two modes: per-sale or grouped) ───────────────────
+    # Mode is chosen by the ?group= query param:
+    #   ""  / "none"             → per-sale rows (date, contract, product, qty, PU, points)
+    #   "account_product"        → one row per (account, product), summed
+    bd_group = (request.GET.get("group") or "none").strip().lower()
+    if bd_group not in ("none", "account_product"):
+        bd_group = "none"
 
-    def _sort_key(r):
-        if sort_mode == "account":
-            return ((r["contract_product__contract__account__name"] or "").lower(),
-                    (r["contract_product__product__designation"] or "").lower())
-        return (-int(r["total_pts"] or 0),
-                (r["contract_product__contract__account__name"] or "").lower())
-    grouped_rows.sort(key=_sort_key)
+    if bd_group == "account_product":
+        # Grouped by (account, contract, product) — the contract is part of
+        # the key because the same product under two different contracts can
+        # carry a different PU (frozen snapshot) and a different
+        # points_per_unit, so collapsing them would mix incomparable rows.
+        grouped_rows = list(
+            scope_qs.values(
+                "contract_product__contract__account_id",
+                "contract_product__contract__account__code",
+                "contract_product__contract__account__name",
+                "contract_product__contract_id",
+                "contract_product__contract__title",
+                "contract_product__product_id",
+                "contract_product__product__code",
+                "contract_product__product__designation",
+            ).annotate(total_qty=Sum("quantity"),
+                       avg_pu=Avg("product_ppv"),
+                       total_pts=Sum("pts"))
+        )
 
-    breakdown_all = [
-        {"account_id":   r["contract_product__contract__account_id"],
-         "account_code": r["contract_product__contract__account__code"] or "",
-         "account_name": r["contract_product__contract__account__name"] or "",
-         "product_id":   r["contract_product__product_id"],
-         "product_code": r["contract_product__product__code"] or "",
-         "product_name": r["contract_product__product__designation"] or "",
-         "total_qty":    int(r["total_qty"] or 0),
-         "avg_pu":       round(float(r["avg_pu"] or 0), 2),
-         "total_pts":    int(r["total_pts"] or 0)}
-        for r in grouped_rows
-    ]
+        def _sort_key(r):
+            if sort_mode == "account":
+                return ((r["contract_product__contract__account__name"] or "").lower(),
+                        (r["contract_product__contract__title"] or "").lower(),
+                        (r["contract_product__product__designation"] or "").lower())
+            return (-int(r["total_pts"] or 0),
+                    (r["contract_product__contract__account__name"] or "").lower())
+        grouped_rows.sort(key=_sort_key)
 
-    # Table-local search (over account_name OR product_name)
-    if tbl_q:
-        tbl_q_low = tbl_q.lower()
-        breakdown_all = [r for r in breakdown_all
-                         if tbl_q_low in r["account_name"].lower()
-                         or tbl_q_low in r["product_name"].lower()
-                         or tbl_q_low in r["account_code"].lower()
-                         or tbl_q_low in r["product_code"].lower()]
+        breakdown_all = [
+            {"account_code":   r["contract_product__contract__account__code"] or "",
+             "account_name":   r["contract_product__contract__account__name"] or "",
+             "contract_title": r["contract_product__contract__title"] or "",
+             "product_code":   r["contract_product__product__code"] or "",
+             "product_name":   r["contract_product__product__designation"] or "",
+             "total_qty":      int(r["total_qty"] or 0),
+             "avg_pu":         round(float(r["avg_pu"] or 0), 2),
+             "total_pts":      int(r["total_pts"] or 0)}
+            for r in grouped_rows
+        ]
+
+        if tbl_q:
+            tbl_q_low = tbl_q.lower()
+            breakdown_all = [r for r in breakdown_all
+                             if tbl_q_low in r["account_name"].lower()
+                             or tbl_q_low in r["product_name"].lower()
+                             or tbl_q_low in r["account_code"].lower()
+                             or tbl_q_low in r["product_code"].lower()
+                             or tbl_q_low in r["contract_title"].lower()]
+    else:
+        # Per-sale rows — newest first. Uses Sale.sale_datetime (pharmacy's
+        # actual sale time), not SaleImport.received_at.
+        per_sale_rows = scope_qs.select_related(
+            "contract_product__contract__account",
+            "contract_product__product",
+        ).order_by("-sale_datetime", "-pk")
+
+        if tbl_q:
+            tbl_q_low = tbl_q.lower()
+            per_sale_rows = per_sale_rows.filter(
+                Q(contract_product__product__designation__icontains=tbl_q_low)
+                | Q(contract_product__product__code__icontains=tbl_q_low)
+                | Q(contract_product__contract__account__name__icontains=tbl_q_low)
+                | Q(contract_product__contract__account__code__icontains=tbl_q_low)
+                | Q(contract_product__contract__title__icontains=tbl_q_low)
+            )
+
+        breakdown_all = [
+            {"sale_datetime": s.sale_datetime.strftime("%Y-%m-%d %H:%M"),
+             "account_code":  (s.contract_product.contract.account.code
+                               if s.contract_product and s.contract_product.contract else ""),
+             "account_name":  (s.contract_product.contract.account.name
+                               if s.contract_product and s.contract_product.contract else ""),
+             "contract_title": (s.contract_product.contract.title
+                                if s.contract_product and s.contract_product.contract else ""),
+             "product_code":  (s.contract_product.product.code
+                               if s.contract_product and s.contract_product.product else ""),
+             "product_name":  (s.contract_product.product.designation
+                               if s.contract_product and s.contract_product.product else ""),
+             "qty":           int(s.quantity or 0),
+             "pu":            round(float(s.product_ppv or 0), 2),
+             "pts":           int(s.pts or 0)}
+            for s in per_sale_rows
+        ]
 
     total_rows = len(breakdown_all)
     pages = max(1, (total_rows + page_size - 1) // page_size)
@@ -3083,7 +3216,15 @@ def _compute_analytics(request):
     contract_lookup = {c["id"]: c["title"] for c in all_contracts}
 
     from urllib.parse import urlencode
-    export_params = {k.replace("f_", ""): v for k, v in filt_ctx.items() if v and k != "f_sort"}
+    export_params = {k.replace("f_", ""): v for k, v in filt_ctx.items()
+                     if v and k not in ("f_sort", "f_active_only")}
+    # f_active_only defaults to True → only encode when explicitly off.
+    if filt_ctx.get("f_active_only") is False:
+        export_params["active_only"] = "0"
+    if bd_group != "none":
+        export_params["group"] = bd_group
+    if time_offset:
+        export_params["time_offset"] = str(time_offset)
     export_url = f"?{urlencode(export_params)}" if export_params else ""
 
     return {
@@ -3114,6 +3255,18 @@ def _compute_analytics(request):
         "heatmap_data":        heatmap_data,
         "heatmap_range":       heatmap_range,
         "heatmap_scope_label": heatmap_scope_label,
+        # Global time-nav state. The window-label strings are rendered
+        # client-side via the ISO keys/ranges to keep locale handling there.
+        # Both groups' has_prev/next are exposed so the UI can colour each
+        # arrow independently (they can differ slightly due to the heatmap's
+        # 365-day window vs the month chart's 12-month window).
+        "time_offset":         time_offset,
+        "month_has_prev":      month_has_prev,
+        "month_has_next":      month_has_next,
+        "heat_has_prev":       heat_has_prev,
+        "heat_has_next":       heat_has_next,
+        "month_window_from":   timeline_keys[0] if timeline_keys else "",
+        "month_window_to":     timeline_keys[-1] if timeline_keys else "",
         # Breakdown + pagination
         "breakdown":           breakdown,
         "breakdown_total":     total_rows,
@@ -3121,6 +3274,7 @@ def _compute_analytics(request):
         "breakdown_pages":     pages,
         "breakdown_page_size": page_size,
         "breakdown_q":         tbl_q,
+        "breakdown_group":     bd_group,
         "product_metric":      product_metric,
         # Dropdowns
         "all_accounts":        all_accounts,
@@ -3354,4 +3508,113 @@ def analytics_product_detail(request, pk):
         "month_pts":    month_pts,
         "month_qty":    month_qty,
         "top_accounts": top_accounts,
+    })
+
+
+@perm_required("control.view_analytics")
+def analytics_account_contracts(request, pk):
+    """
+    Drill payload for a single bar of the "Points per Account" chart.
+    Returns the same account's accepted-sale points broken down by contract,
+    respecting every active filter EXCEPT the account one (which is
+    overridden by `pk` here).
+    """
+    from django.db.models import Sum
+
+    account = get_object_or_404(Account, pk=pk)
+
+    # Rebuild the filter from the request but force this account. The helper
+    # reads account from GET too, so we strip it to avoid double application.
+    mutable = request.GET.copy()
+    mutable["account"] = str(pk)
+    request.GET = mutable
+    qs, _ = _analytics_filters(request)
+
+    # List every contract of this account that matches the current filter
+    # (status + product), then zero-fill those with no accepted sales so
+    # the staff sees which contracts aren't earning yet.
+    contracts_qs = Contract.objects.filter(account=account)
+    if request.GET.get("active_only", "1") in ("1", "true", "on", "yes") \
+            and not request.GET.get("contract"):
+        contracts_qs = contracts_qs.filter(status=Contract.STATUS_ACTIVE)
+    _pq = (request.GET.get("product") or "").strip()
+    if _pq:
+        contracts_qs = contracts_qs.filter(
+            Q(contract_product__product__designation__icontains=_pq)
+            | Q(contract_product__product__code__icontains=_pq)
+        )
+    contracts_in_scope = list(
+        contracts_qs.distinct()
+        .order_by("-start_date")
+        .values("id", "title", "status")
+    )
+
+    pts_rows = (qs.filter(status=Sale.STATUS_ACCEPTED)
+                .values("contract_product__contract_id")
+                .annotate(pts=Sum("pts")))
+    pts_map = {r["contract_product__contract_id"]: int(r["pts"] or 0) for r in pts_rows}
+
+    _pairs = [(c, pts_map.get(c["id"], 0)) for c in contracts_in_scope]
+    _pairs.sort(key=lambda t: (-t[1], (t[0]["title"] or "").lower()))
+    labels   = [c["title"] or "—" for c, _ in _pairs]
+    data     = [p for _, p in _pairs]
+    ids      = [c["id"] for c, _ in _pairs]
+    statuses = [c["status"] for c, _ in _pairs]
+    return JsonResponse({
+        "account_id":   account.pk,
+        "account_code": account.code,
+        "account_name": account.name,
+        "labels":       labels,
+        "data":         data,
+        "ids":          ids,
+        "statuses":     statuses,
+    })
+
+
+@perm_required("control.view_analytics")
+def analytics_contract_products(request, pk):
+    """
+    Second-level drill: a single contract's accepted-sale points broken down
+    by product. Respects every active filter EXCEPT contract (overridden by
+    `pk`). Mirrors analytics_account_contracts in shape.
+    """
+    from django.db.models import Sum
+
+    contract = get_object_or_404(Contract.objects.select_related("account"), pk=pk)
+
+    mutable = request.GET.copy()
+    mutable["contract"] = str(pk)
+    # Loosen the active-only lens — if the staff is drilling into a specific
+    # (possibly inactive) contract, the explicit pick wins over the toggle.
+    mutable["active_only"] = "0"
+    request.GET = mutable
+    qs, _ = _analytics_filters(request)
+
+    # List every Contract_Product on this contract (zero-fill those without
+    # accepted sales so staff see the full catalogue, not just the earners).
+    cps = list(
+        Contract_Product.objects.filter(contract=contract)
+        .select_related("product")
+        .order_by("product__designation")
+    )
+
+    pts_rows = (qs.filter(status=Sale.STATUS_ACCEPTED)
+                .values("contract_product__product_id")
+                .annotate(pts=Sum("pts")))
+    pts_map = {r["contract_product__product_id"]: int(r["pts"] or 0) for r in pts_rows}
+
+    _pairs = [(cp, pts_map.get(cp.product_id, 0)) for cp in cps]
+    _pairs.sort(key=lambda t: (-t[1], (t[0].product.designation or "").lower()))
+    labels = [cp.product.designation or "—" for cp, _ in _pairs]
+    data   = [p for _, p in _pairs]
+    ids    = [cp.product_id for cp, _ in _pairs]
+    codes  = [cp.product.code or "" for cp, _ in _pairs]
+    return JsonResponse({
+        "contract_id":    contract.pk,
+        "contract_title": contract.title,
+        "account_name":   contract.account.name if contract.account else "",
+        "labels":         labels,
+        "data":           data,
+        "ids":            ids,
+        "codes":          codes,
     })
