@@ -4377,3 +4377,119 @@ msgstr "Aucun compte trouvé avec cette adresse email."
 #: .\templates\registration\password_reset_form.html:51
 msgid "Send Reset Link"
 msgstr "Envoyer le lien de réinitialisation"
+
+#: .\control\templates\control\analytics.html
+msgid "Active only"
+msgstr "Actifs uniquement"
+
+#: .\control\templates\control\analytics.html
+msgid "Accepted sales breakdown"
+msgstr "Détail des ventes acceptées"
+
+#: .\control\templates\control\analytics.html
+msgid "By date"
+msgstr "Par date"
+
+#: .\control\templates\control\analytics.html
+msgid "Grouped"
+msgstr "Groupé"
+
+#: .\control\templates\control\analytics.html
+msgid "Breakdown mode"
+msgstr "Mode d'affichage"
+
+#: .\control\templates\control\analytics.html
+msgid "Total rows (filter-aware)"
+msgstr "Total de lignes (selon filtres)"
+
+#: .\control\templates\control\analytics.html
+msgid "Search account, product, contract…"
+msgstr "Chercher compte, produit, contrat…"
+
+#: .\control\templates\control\analytics.html
+msgid "No accepted sales in scope"
+msgstr "Aucune vente acceptée dans ce périmètre"
+
+#: .\control\templates\control\analytics.html
+msgid "Prev"
+msgstr "Préc."
+
+#: .\control\templates\control\analytics.html
+msgid "Next"
+msgstr "Suiv."
+
+#: .\control\templates\control\analytics.html
+msgid "Contract scope"
+msgstr "Portée des contrats"
+
+#: .\control\templates\control\analytics.html
+msgid "All active contracts"
+msgstr "Tous les contrats actifs"
+
+#: .\control\templates\control\analytics.html
+msgid "all (incl. inactive)"
+msgstr "tous (y compris inactifs)"
+
+#: .\control\templates\control\analytics.html
+msgid "Rows per page"
+msgstr "Lignes par page"
+
+#: .\control\templates\control\analytics.html
+msgid "Click a bar to drill into that account’s contracts"
+msgstr "Cliquez sur une barre pour voir les contrats de ce compte"
+
+#: .\control\templates\control\analytics.html
+msgid "Points per Product"
+msgstr "Points par produit"
+
+#: .\control\templates\control\analytics.html
+msgid "Back to accounts"
+msgstr "Retour aux comptes"
+
+#: .\control\templates\control\analytics.html
+msgid "Up one level"
+msgstr "Remonter d'un niveau"
+
+#: .\control\templates\control\analytics.html
+msgid "Previous window"
+msgstr "Fenêtre précédente"
+
+#: .\control\templates\control\analytics.html
+msgid "Next window"
+msgstr "Fenêtre suivante"
+
+#: .\control\templates\control\analytics.html
+msgid "All accounts, all contracts"
+msgstr "Tous les comptes, tous les contrats"
+
+#: .\control\templates\control\analytics.html
+msgid "A preset named"
+msgstr "Un préréglage nommé"
+
+#: .\control\templates\control\analytics.html
+msgid "already exists. Click again to replace it."
+msgstr "existe déjà. Cliquez à nouveau pour le remplacer."
+
+#: .\control\templates\control\analytics.html
+msgid "This filter set is already saved as"
+msgstr "Cet ensemble de filtres est déjà enregistré sous"
+
+#: .\control\templates\control\analytics.html
+msgid "Click again to rename it to"
+msgstr "Cliquez à nouveau pour le renommer en"
+
+#: .\control\templates\control\analytics.html
+msgid "Replace"
+msgstr "Remplacer"
+
+#: .\control\templates\control\analytics.html
+msgid "already exists. Clicking Replace will overwrite it."
+msgstr "existe déjà. Cliquer sur Remplacer l'écrasera."
+
+#: .\control\templates\control\analytics.html
+msgid "Clicking Rename will rename it to"
+msgstr "Cliquer sur Renommer le renommera en"
+
+#: .\control\templates\control\analytics.html
+msgid "This exact preset is already saved under this name — nothing to change."
+msgstr "Ce préréglage exact est déjà enregistré sous ce nom — rien à modifier."
