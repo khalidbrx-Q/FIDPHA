@@ -20,7 +20,7 @@
         .anl-row-scope { grid-template-columns: 1fr 1fr; }
     }
     .anl-fld { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-    .anl-fld label {
+    .anl-fld label, .anl-fld .anl-fld-label {
         font-size: 0.68rem; color: var(--text-secondary); font-weight: 600;
         letter-spacing: 0.3px; text-transform: uppercase;
     }
@@ -201,6 +201,88 @@
     .anl-prod-link { color: var(--accent); cursor: pointer; }
     .anl-prod-link:hover { text-decoration: underline; }
     .anl-pts { color: #22c55e; font-weight: 700; }
+
+    /* Breakdown-table row-count pill + mode toggle */
+    .anl-row-pill {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 24px; height: 20px; padding: 0 7px; border-radius: 10px;
+        background: var(--accent); color: #fff;
+        font-size: 0.72rem; font-weight: 700; font-variant-numeric: tabular-nums;
+    }
+    .anl-mode-toggle {
+        display: inline-flex; border: 1px solid var(--card-border); border-radius: 6px;
+        background: var(--content-bg); overflow: hidden;
+    }
+    .anl-mode-btn {
+        padding: 5px 10px; border: 0; background: transparent;
+        color: var(--text-secondary); font-size: 0.78rem; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 4px;
+    }
+    .anl-mode-btn + .anl-mode-btn { border-left: 1px solid var(--card-border); }
+    .anl-mode-btn:hover { color: var(--text-primary); background: var(--sidebar-hover); }
+    .anl-mode-btn.active {
+        background: var(--accent); color: #fff; font-weight: 600;
+    }
+
+    /* Active/All toggle beside the Contract label */
+    .anl-ao-toggle {
+        display: inline-flex; border: 1px solid var(--card-border); border-radius: 999px;
+        background: var(--content-bg); overflow: hidden;
+    }
+    .anl-ao-btn {
+        padding: 2px 10px; border: 0; background: transparent;
+        color: var(--text-secondary); font-size: 0.70rem; cursor: pointer;
+        line-height: 1.6;
+    }
+    .anl-ao-btn + .anl-ao-btn { border-left: 1px solid var(--card-border); }
+    .anl-ao-btn:hover { color: var(--text-primary); }
+    .anl-ao-btn.active {
+        background: var(--accent); color: #fff; font-weight: 600;
+    }
+    /* Contract combo visually/interactively locked while Active-only is on */
+    .anl-combo.locked { opacity: 0.55; pointer-events: none; }
+    .anl-combo.locked .anl-combo-input { cursor: not-allowed; }
+
+    /* Compact icon-only ghost button (drill chrome: Home + Up) */
+    .anl-icon-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; padding: 0;
+    }
+
+    /* Per-chart time navigation (hidden until renderTimeNav decides to show) */
+    .anl-time-nav {
+        display: none; align-items: center; gap: 2px;
+        font-size: 0.72rem; color: var(--text-secondary);
+    }
+    .anl-time-nav.visible { display: inline-flex; }
+    .anl-tn-arrow {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 22px; height: 22px; padding: 0;
+        background: transparent; border: 1px solid var(--card-border);
+        color: var(--text-secondary); border-radius: 4px; cursor: pointer;
+    }
+    .anl-tn-arrow:hover:not(:disabled) { color: var(--text-primary); border-color: var(--text-secondary); }
+    .anl-tn-arrow:disabled { opacity: 0.3; cursor: default; }
+    .anl-tn-arrow.has-data { color: #22c55e; border-color: rgba(34,197,94,0.4); }
+    .anl-tn-arrow.has-data:hover { background: rgba(34,197,94,0.08); }
+    .anl-tn-label {
+        padding: 0 6px; font-variant-numeric: tabular-nums;
+        min-width: 100px; text-align: center;
+    }
+
+    /* Breakdown card head: on narrow screens the mode toggle + search
+       should wrap below the title row instead of squeezing into one line. */
+    @media (max-width: 640px) {
+        #breakdownCard .chart-head { gap: 8px; }
+        #breakdownCard .chart-head > div:last-child {
+            width: 100%; justify-content: space-between;
+        }
+        #breakdownCard .anl-tbl-search {
+            flex: 1 1 auto; min-width: 0; width: auto !important;
+        }
+        /* Pagination controls stack their info on top of the buttons */
+        #breakdownCard #pgInfo { width: 100%; text-align: center; }
+    }
     .anl-code-chip {
         font-family: monospace; font-size: 0.76rem; color: var(--text-secondary);
         background: var(--content-bg); padding: 2px 6px; border-radius: 4px;
@@ -403,7 +485,21 @@
         </div>
 
         <div class="anl-fld">
-            <label>{% trans "Contract" %}</label>
+            <div class="anl-fld-head" style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                <span class="anl-fld-label">{% trans "Contract" %}</span>
+                <div class="anl-ao-toggle" role="group" aria-label="{% trans 'Contract scope' %}">
+                    <button type="button" class="anl-ao-btn {% if f_active_only %}active{% endif %}"
+                            data-ao="1" aria-pressed="{% if f_active_only %}true{% else %}false{% endif %}">
+                        {% trans "Active" %}
+                    </button>
+                    <button type="button" class="anl-ao-btn {% if not f_active_only %}active{% endif %}"
+                            data-ao="0" aria-pressed="{% if not f_active_only %}true{% else %}false{% endif %}">
+                        {% trans "All" %}
+                    </button>
+                </div>
+                <input type="hidden" id="fldActiveOnly" name="active_only"
+                       value="{% if f_active_only %}1{% else %}0{% endif %}" data-fire>
+            </div>
             <div class="anl-combo" data-combo="contract">
                 <input type="text" class="anl-combo-input" id="comboContractInput"
                        placeholder="{% trans 'All contracts' %}" autocomplete="off">
@@ -413,6 +509,7 @@
                     <div class="anl-combo-opt" data-value="" data-search="all contracts">{% trans "All contracts" %}</div>
                     {% for c in all_contracts %}
                     <div class="anl-combo-opt" data-value="{{ c.id }}" data-account="{{ c.account_id }}"
+                         data-status="{{ c.status }}"
                          data-search="{{ c.title|lower }} {{ c.account__code|default_if_none:''|lower }}"
                          data-label="{{ c.title }}">
                         <div style="display:flex; align-items:center; gap:6px;">
@@ -460,7 +557,12 @@
     <input type="hidden" name="sort"   id="fldSort"   value="{{ f_sort }}">
     <input type="hidden" name="metric" id="fldMetric" value="{{ product_metric }}">
     <input type="hidden" name="tbl_q"  id="fldTblQ"   value="{{ breakdown_q }}">
-    <input type="hidden" name="page"   id="fldPage"   value="{{ breakdown_page }}">
+    <input type="hidden" name="page"      id="fldPage"     value="{{ breakdown_page }}">
+    <input type="hidden" name="group"     id="fldGroup"    value="{{ breakdown_group }}">
+    <input type="hidden" name="page_size" id="fldPageSize" value="{{ breakdown_page_size }}">
+    <!-- Global time-nav offset (years back from today). Drives every
+         time-aware chart in sync. 0 = default window. -->
+    <input type="hidden" name="time_offset" id="fldTimeOffset" value="{{ time_offset }}">
 
 </div>
 </form>
@@ -577,6 +679,7 @@
             </div>
             <div class="anl-ctx-sub" data-ctx-sub data-ctx-scoped></div>
         </div>
+        <div class="anl-time-nav" data-tn-group="heat"></div>
     </div>
     <div id="awardedChart" style="height:240px; cursor:grab;"></div>
 </div>
@@ -592,8 +695,9 @@
             </div>
             <div class="anl-ctx-sub" data-ctx-sub data-ctx-scoped></div>
         </div>
+        <div class="anl-time-nav" data-tn-group="heat"></div>
     </div>
-    <div id="heatmapChart" style="height:200px; cursor:pointer;" title="{% trans 'Click a day to filter the dashboard to that date' %}"></div>
+    <div id="heatmapChart" style="height:200px; cursor:pointer;"></div>
 </div>
 
 <!-- CHART ROW 1 -->
@@ -605,9 +709,10 @@
                 <div class="card-title" id="timelineTitle">{% trans "Monthly Overview" %}</div>
                 <div class="anl-ctx-sub" data-ctx-sub></div>
             </div>
-            <button type="button" id="drillUpBtn" class="anl-btn-ghost" style="display:none; padding:3px 8px;">
-                <span class="material-icons-round" style="font-size:13px;">arrow_upward</span>
-                {% trans "Up" %}
+            <div class="anl-time-nav" data-tn-group="month"></div>
+            <button type="button" id="drillUpBtn" class="anl-btn-ghost anl-icon-btn"
+                    style="display:none;" title="{% trans 'Up one level' %}" aria-label="{% trans 'Up one level' %}">
+                <span class="material-icons-round" style="font-size:14px;">arrow_upward</span>
             </button>
         </div>
         <div id="monthlyChart" style="height:260px; cursor:pointer;" title="{% trans 'Click a month to zoom into its daily breakdown' %}"></div>
@@ -634,12 +739,21 @@
         <div class="card-header" style="flex-wrap:wrap;">
             <div class="card-header-icon"><span class="material-icons-round">leaderboard</span></div>
             <div style="flex:1; min-width:0;">
-                <div class="card-title">{% trans "Points per Account" %}</div>
+                <div class="card-title" id="acctChartTitle">{% trans "Points per Account" %}</div>
                 <div class="anl-ctx-sub" data-ctx-sub></div>
             </div>
-            <div style="font-size:0.78rem; color:var(--text-secondary);">{% trans "top 20" %}</div>
+            <button type="button" id="acctDrillHomeBtn" class="anl-btn-ghost anl-icon-btn"
+                    style="display:none;" title="{% trans 'Back to accounts' %}" aria-label="{% trans 'Back to accounts' %}">
+                <span class="material-icons-round" style="font-size:14px;">home</span>
+            </button>
+            <button type="button" id="acctDrillUpBtn" class="anl-btn-ghost anl-icon-btn"
+                    style="display:none;" title="{% trans 'Up one level' %}" aria-label="{% trans 'Up one level' %}">
+                <span class="material-icons-round" style="font-size:14px;">arrow_upward</span>
+            </button>
+            <div style="font-size:0.78rem; color:var(--text-secondary);" id="acctChartHint"></div>
         </div>
-        <div id="accountsChart" style="height:260px;"></div>
+        <div id="accountsChart" style="height:260px; cursor:pointer;"
+             title="{% trans 'Click a bar to drill into that account’s contracts' %}"></div>
     </div>
     <div class="card">
         <div class="card-header" style="flex-wrap:wrap;">
@@ -648,9 +762,10 @@
                 <div class="card-title">{% trans "Submission Frequency" %}</div>
                 <div class="anl-ctx-sub" data-ctx-sub></div>
             </div>
-            <button type="button" id="subDrillUpBtn" class="anl-btn-ghost" style="display:none; padding:3px 8px;">
-                <span class="material-icons-round" style="font-size:13px;">arrow_upward</span>
-                {% trans "Up" %}
+            <div class="anl-time-nav" data-tn-group="month"></div>
+            <button type="button" id="subDrillUpBtn" class="anl-btn-ghost anl-icon-btn"
+                    style="display:none;" title="{% trans 'Up one level' %}" aria-label="{% trans 'Up one level' %}">
+                <span class="material-icons-round" style="font-size:14px;">arrow_upward</span>
             </button>
             <div style="font-size:0.78rem; color:var(--text-secondary);">{% trans "batches/month" %}</div>
         </div>
@@ -658,6 +773,66 @@
     </div>
 </div>
 
+
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<!-- BREAKDOWN TABLE — accepted sales, per-sale OR grouped (account, product) -->
+<!-- ──────────────────────────────────────────────────────────────────────── -->
+<div class="card" style="margin-bottom:20px;" id="breakdownCard">
+    <div class="chart-head" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span class="material-icons-round" style="color:var(--accent);">table_chart</span>
+        <strong>{% trans "Accepted sales breakdown" %}</strong>
+        <span class="anl-row-pill" id="rowCountPill" title="{% trans 'Total rows (filter-aware)' %}">0</span>
+
+        <div style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <!-- Mode toggle -->
+            <div class="anl-mode-toggle" role="tablist" aria-label="{% trans 'Breakdown mode' %}">
+                <button type="button" class="anl-mode-btn active" data-bd-mode="none" role="tab" aria-selected="true">
+                    <span class="material-icons-round" style="font-size:14px; vertical-align:-2px;">event</span>
+                    {% trans "By date" %}
+                </button>
+                <button type="button" class="anl-mode-btn" data-bd-mode="account_product" role="tab" aria-selected="false">
+                    <span class="material-icons-round" style="font-size:14px; vertical-align:-2px;">groups</span>
+                    {% trans "Grouped" %}
+                </button>
+            </div>
+
+            <!-- In-table search -->
+            <input type="text" id="tblSearch" placeholder="{% trans 'Search account, product, contract…' %}"
+                   value="{{ breakdown_q }}" class="anl-tbl-search"
+                   style="padding:4px 10px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-primary); border-radius:6px; font-size:0.80rem; width:220px;">
+        </div>
+    </div>
+
+    <div class="anl-tbl-wrap" style="overflow-x:auto; margin-top:12px;">
+        <table class="anl-tbl" id="breakdownTbl" style="width:100%;">
+            <thead id="breakdownHead"><!-- Rendered by JS to switch columns on mode change --></thead>
+            <tbody id="breakdownBody"></tbody>
+        </table>
+        <div id="breakdownEmpty" style="display:none; padding:30px; text-align:center; color:var(--text-secondary);">
+            <span class="material-icons-round" style="font-size:32px; opacity:0.4;">inbox</span>
+            <div style="margin-top:6px;">{% trans "No accepted sales in scope" %}</div>
+        </div>
+    </div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; flex-wrap:wrap;">
+        <div id="pgInfo" style="font-size:0.80rem; color:var(--text-secondary);"></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <label style="font-size:0.74rem; color:var(--text-secondary);">
+                {% trans "Rows per page" %}
+                <select id="pgSize" name="page_size"
+                        style="margin-left:4px; padding:3px 6px; border:1px solid var(--card-border); background:var(--content-bg); color:var(--text-primary); border-radius:4px; font-size:0.78rem;">
+                    {% for n in "10,25,50,100"|cut:" "|slice:":"|slice:"0" %}{% endfor %}
+                    <option value="10"  {% if breakdown_page_size == 10 %}selected{% endif %}>10</option>
+                    <option value="25"  {% if breakdown_page_size == 25 %}selected{% endif %}>25</option>
+                    <option value="50"  {% if breakdown_page_size == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if breakdown_page_size == 100 %}selected{% endif %}>100</option>
+                </select>
+            </label>
+            <button type="button" id="pgPrev" class="anl-btn-ghost">‹ {% trans "Prev" %}</button>
+            <button type="button" id="pgNext" class="anl-btn-ghost">{% trans "Next" %} ›</button>
+        </div>
+    </div>
+</div>
 
 
 <!-- PRODUCT DETAIL MODAL -->
@@ -713,6 +888,29 @@
     {% trans "Page" as l6 %}{% trans "of" as l7 %}{% trans "total" as l8 %}
     {% trans "pending" as l9 %}{% trans "Link copied!" as l10 %}
     {% trans "Preset name:" as l11 %}
+    {% trans "Date" as l12 %}{% trans "Contract" as l13 %}{% trans "Product" as l14 %}
+    {% trans "Account" as l15 %}{% trans "Qty" as l16 %}{% trans "PU" as l17 %}
+    var LBL_DATE        = '{{ l12|escapejs }}';
+    var LBL_CONTRACT_SG = '{{ l13|escapejs }}';
+    var LBL_PRODUCT_SG  = '{{ l14|escapejs }}';
+    var LBL_ACCOUNT     = '{{ l15|escapejs }}';
+    var LBL_QTY         = '{{ l16|escapejs }}';
+    var LBL_PU          = '{{ l17|escapejs }}';
+    {% trans "Previous window" as l18 %}{% trans "Next window" as l19 %}
+    var LBL_TN_PREV = '{{ l18|escapejs }}';
+    var LBL_TN_NEXT = '{{ l19|escapejs }}';
+    {% trans "This exact preset is already saved under this name — nothing to change." as sp_noop %}
+    {% trans "A preset named" as sp_name_prefix %}
+    {% trans "already exists. Clicking Replace will overwrite it." as sp_name_suffix %}
+    {% trans "This filter set is already saved as" as sp_saved_as %}
+    {% trans "Clicking Rename will rename it to" as sp_rename_to %}
+    {% trans "This exact filter set is already saved as" as sp_saved_as_info %}
+    var SP_MSG_NOOP          = '{{ sp_noop|escapejs }}';
+    var SP_MSG_NAME_PREFIX   = '{{ sp_name_prefix|escapejs }}';
+    var SP_MSG_NAME_SUFFIX   = '{{ sp_name_suffix|escapejs }}';
+    var SP_MSG_SAVED_AS      = '{{ sp_saved_as|escapejs }}';
+    var SP_MSG_RENAME_TO     = '{{ sp_rename_to|escapejs }}';
+    var SP_MSG_SAVED_AS_INFO = '{{ sp_saved_as_info|escapejs }}';
     var LBL_POINTS    = '{{ l1|escapejs }}';
     var LBL_PRODUCTS  = '{{ l2|escapejs }}';
     var LBL_BATCHES   = '{{ l3|escapejs }}';
@@ -762,6 +960,14 @@
         breakdown_page:      {{ breakdown_page }},
         breakdown_pages:     {{ breakdown_pages }},
         breakdown_page_size: {{ breakdown_page_size }},
+        breakdown_group:     '{{ breakdown_group }}',
+        time_offset:         {{ time_offset }},
+        month_has_prev:      {% if month_has_prev %}true{% else %}false{% endif %},
+        month_has_next:      {% if month_has_next %}true{% else %}false{% endif %},
+        heat_has_prev:       {% if heat_has_prev %}true{% else %}false{% endif %},
+        heat_has_next:       {% if heat_has_next %}true{% else %}false{% endif %},
+        month_window_from:   '{{ month_window_from }}',
+        month_window_to:     '{{ month_window_to }}',
         kpi_total_points:    {{ kpi_total_points }},
         kpi_daily_avg:       {{ kpi_daily_avg }},
         kpi_avg_days:        {{ kpi_avg_days }},
@@ -876,15 +1082,71 @@
     }
 
     function renderAcct() {
-        var lbls = state.chart_acct_labels || [];
-        var data = state.chart_acct_data   || [];
+        // Three possible sources: no drill (aggregate), level-1 contract
+        // drill, or level-2 product drill. Picks whichever is on top.
+        var top = _acctTop();
+        var src = top || {
+            lbls: state.chart_acct_labels,
+            data: state.chart_acct_data,
+            level: 0
+        };
+        var lbls = src.lbls || [];
+        var data = src.data || [];
+        var barColor = src.level === 0 ? palette[2]
+                     : src.level === 1 ? palette[0]
+                     :                   palette[4];
+        // Vertical slider on the right side kicks in only when the list is
+        // long enough that bars would otherwise squash. The window shows the
+        // top N rows (sorted by points desc) by default; user can drag or
+        // wheel-scroll to reach the rest.
+        var VISIBLE = 12;
+        var needsZoom = lbls.length > VISIBLE;
+        var isMobile = window.innerWidth <= 640;
         var opt = data.length ? {
             tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
                        formatter: function (p) { var d = p[0]; return d.name + '<br/><b>' + (d.value || 0).toLocaleString() + '</b> ' + LBL_POINTS; } },
-            grid: { left: 110, right: 24, bottom: 24, top: 10 },
+            grid: {
+                left:   isMobile ? 72 : 110,
+                right:  needsZoom ? (isMobile ? 36 : 50) : 24,
+                bottom: 24, top: 10
+            },
             xAxis: { type: 'value', splitLine: { lineStyle: { color: gridLine } }, axisLabel: { color: labelColor, fontSize: 11 } },
-            yAxis: { type: 'category', data: lbls.slice().reverse(), axisLabel: { color: labelColor, fontSize: 11, width: 100, overflow: 'truncate' }, axisLine: { lineStyle: { color: axisLine } } },
-            series: [{ type: 'bar', data: data.slice().reverse(), itemStyle: { color: palette[2], borderRadius: [0,4,4,0] }, barMaxWidth: 18 }]
+            yAxis: { type: 'category', data: lbls.slice().reverse(), axisLabel: { color: labelColor, fontSize: 11, width: isMobile ? 64 : 100, overflow: 'truncate' }, axisLine: { lineStyle: { color: axisLine } } },
+            dataZoom: needsZoom ? [
+                { type: 'slider', yAxisIndex: 0, orient: 'vertical',
+                  right: isMobile ? 6 : 8, width: isMobile ? 12 : 18, top: 10, bottom: 24,
+                  startValue: Math.max(0, lbls.length - VISIBLE),
+                  endValue: lbls.length - 1,
+                  // Floor on the zoom window so bars never shrink to a smear;
+                  // dragging a handle past the floor slides the opposite handle
+                  // along, preserving the minimum span.
+                  minValueSpan: 4,
+                  // Disable brush-select — brushing a region smaller than
+                  // minValueSpan would otherwise bypass the floor.
+                  brushSelect: false,
+                  showDetail: false,
+                  showDataShadow: true,
+                  dataBackground: {
+                      areaStyle: { color: barColor, opacity: 0.35 },
+                      lineStyle: { color: barColor, opacity: 0.6, width: 1 }
+                  },
+                  selectedDataBackground: {
+                      areaStyle: { color: barColor, opacity: 0.75 },
+                      lineStyle: { color: barColor, opacity: 1, width: 1 }
+                  },
+                  borderColor: 'transparent',
+                  fillerColor: isDark ? 'rgba(27,103,155,0.35)' : 'rgba(27,103,155,0.25)',
+                  handleStyle: { color: palette[0] },
+                  moveHandleStyle: { color: palette[0] },
+                  textStyle: { color: labelColor } },
+                { type: 'inside', yAxisIndex: 0, orient: 'vertical',
+                  startValue: Math.max(0, lbls.length - VISIBLE),
+                  endValue: lbls.length - 1,
+                  minValueSpan: 4 }
+            ] : [],
+            series: [{ type: 'bar', data: data.slice().reverse(),
+                       itemStyle: { color: barColor, borderRadius: [0,4,4,0] },
+                       barMaxWidth: 18 }]
         } : Object.assign({ grid: { left: 110, right: 24, bottom: 24, top: 10 }, xAxis: { show: false }, yAxis: { show: false }, series: [] }, emptyOpt(LBL_NO_POINTS));
         acctChart.setOption(opt, true);
     }
@@ -1068,38 +1330,81 @@
     }
 
     function renderBreakdown() {
-        // Breakdown table removed from the layout; keep the function harmless.
-        if (!document.getElementById('breakdownBody')) return;
-        var body = document.getElementById('breakdownBody');
+        var head  = document.getElementById('breakdownHead');
+        var body  = document.getElementById('breakdownBody');
         var empty = document.getElementById('breakdownEmpty');
-        var pill = document.getElementById('rowCountPill');
-        var rows = state.breakdown || [];
+        var pill  = document.getElementById('rowCountPill');
+        if (!head || !body) return;
+
+        var mode  = state.breakdown_group || 'none';
+        var rows  = state.breakdown || [];
         pill.textContent = state.breakdown_total;
+
+        // Keep the mode toggle buttons visually in sync with state.
+        document.querySelectorAll('.anl-mode-btn').forEach(function (btn) {
+            var on = btn.dataset.bdMode === mode;
+            btn.classList.toggle('active', on);
+            btn.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+
+        if (mode === 'account_product') {
+            head.innerHTML =
+                '<tr>'
+                + '<th>' + LBL_ACCOUNT  + '</th>'
+                + '<th>' + LBL_CONTRACT_SG + '</th>'
+                + '<th>' + LBL_PRODUCT_SG + '</th>'
+                + '<th class="num">' + LBL_QTY + '</th>'
+                + '<th class="num">' + LBL_PU  + '</th>'
+                + '<th class="num">' + LBL_POINTS + '</th>'
+                + '</tr>';
+        } else {
+            head.innerHTML =
+                '<tr>'
+                + '<th>' + LBL_DATE     + '</th>'
+                + '<th>' + LBL_CONTRACT_SG + '</th>'
+                + '<th>' + LBL_PRODUCT_SG  + '</th>'
+                + '<th class="num">' + LBL_QTY    + '</th>'
+                + '<th class="num">' + LBL_PU     + '</th>'
+                + '<th class="num">' + LBL_POINTS + '</th>'
+                + '</tr>';
+        }
+
         if (!rows.length) {
-            body.innerHTML = ''; empty.style.display = '';
+            body.innerHTML = '';
+            empty.style.display = '';
         } else {
             empty.style.display = 'none';
-            body.innerHTML = rows.map(function (r) {
-                var accCode = r.account_code ? '<div style="font-size:0.74rem;color:var(--text-secondary);"><span class="anl-code-chip">' + esc(r.account_code) + '</span></div>' : '';
-                var prodCode = r.product_code ? '<div style="font-size:0.74rem;color:var(--text-secondary);"><span class="anl-code-chip">' + esc(r.product_code) + '</span></div>' : '';
-                return '<tr>'
-                    + '<td><div style="font-weight:600;">' + esc(r.account_name || '—') + '</div>' + accCode + '</td>'
-                    + '<td><div class="anl-prod-link" data-pid="' + r.product_id + '" style="font-weight:500;">' + esc(r.product_name) + '</div>' + prodCode + '</td>'
-                    + '<td class="num">' + r.total_qty + '</td>'
-                    + '<td class="num">' + r.avg_pu + '</td>'
-                    + '<td class="num"><span class="anl-pts">' + r.total_pts + '</span></td>'
-                    + '</tr>';
-            }).join('');
-            body.querySelectorAll('.anl-prod-link').forEach(function (el) {
-                el.addEventListener('click', function () { openProductModal(el.dataset.pid); });
-            });
+            if (mode === 'account_product') {
+                body.innerHTML = rows.map(function (r) {
+                    var accCode  = r.account_code  ? '<div style="font-size:0.74rem;color:var(--text-secondary);"><span class="anl-code-chip">' + esc(r.account_code) + '</span></div>' : '';
+                    var prodCode = r.product_code ? '<div style="font-size:0.74rem;color:var(--text-secondary);"><span class="anl-code-chip">' + esc(r.product_code) + '</span></div>' : '';
+                    return '<tr>'
+                        + '<td><div style="font-weight:600;">' + esc(r.account_name || '—') + '</div>' + accCode + '</td>'
+                        + '<td><div style="font-weight:500;">' + esc(r.contract_title || '—') + '</div></td>'
+                        + '<td><div style="font-weight:500;">' + esc(r.product_name) + '</div>' + prodCode + '</td>'
+                        + '<td class="num">' + r.total_qty + '</td>'
+                        + '<td class="num">' + Number(r.avg_pu || 0).toFixed(2) + '</td>'
+                        + '<td class="num"><span class="anl-pts">' + r.total_pts + '</span></td>'
+                        + '</tr>';
+                }).join('');
+            } else {
+                body.innerHTML = rows.map(function (r) {
+                    var accCode  = r.account_code  ? '<span class="anl-code-chip">' + esc(r.account_code) + '</span>' : '';
+                    var prodCode = r.product_code ? '<span class="anl-code-chip">' + esc(r.product_code) + '</span>' : '';
+                    return '<tr>'
+                        + '<td style="white-space:nowrap; font-variant-numeric:tabular-nums;">' + esc(r.sale_datetime) + '</td>'
+                        + '<td><div style="font-weight:500;">' + esc(r.contract_title || '—') + '</div>'
+                        + '<div style="font-size:0.74rem; color:var(--text-secondary);">' + esc(r.account_name || '') + ' ' + accCode + '</div></td>'
+                        + '<td><div style="font-weight:500;">' + esc(r.product_name) + '</div>'
+                        + '<div style="font-size:0.74rem; color:var(--text-secondary);">' + prodCode + '</div></td>'
+                        + '<td class="num">' + r.qty + '</td>'
+                        + '<td class="num">' + Number(r.pu || 0).toFixed(2) + '</td>'
+                        + '<td class="num"><span class="anl-pts">' + r.pts + '</span></td>'
+                        + '</tr>';
+                }).join('');
+            }
         }
-        document.querySelectorAll('.anl-sort-ind').forEach(function (el) {
-            el.textContent = (state.f_sort === el.dataset.for) ? ' ↓' : '';
-        });
-        document.querySelectorAll('.anl-tbl th.sortable').forEach(function (th) {
-            th.classList.toggle('sorted', th.dataset.sortcol === state.f_sort);
-        });
+
         document.getElementById('pgInfo').textContent =
             LBL_PAGE + ' ' + state.breakdown_page + ' ' + LBL_OF + ' ' + state.breakdown_pages
             + ' · ' + state.breakdown_total + ' ' + LBL_TOTAL;
@@ -1141,6 +1446,9 @@
         if (fd.get('date_to'))    chip('date_to',   labels.date_to,   fmtDateLong(fd.get('date_to')));
         if (fd.get('account'))    chip('account',   labels.account,   acctLookup[fd.get('account')] || fd.get('account'));
         if (fd.get('contract'))   chip('contract',  labels.contract,  contractLookup[fd.get('contract')] || fd.get('contract'));
+        // Toggle chip only when the non-default "All" is selected (so staff
+        // see the state at a glance and can also save/restore it in presets).
+        if (fd.get('active_only') === '0') chip('active_only', '{% trans "Contracts" %}', '{% trans "all (incl. inactive)" %}');
         if (fd.get('product'))    chip('product',   labels.product,   fd.get('product'));
         if (fd.get('tbl_q'))      chip('tbl_q',     labels.tbl_q,     fd.get('tbl_q'));
 
@@ -1157,6 +1465,14 @@
         bar.querySelectorAll('[data-chip]').forEach(function (el) {
             el.addEventListener('click', function () {
                 var key = el.dataset.chip;
+                // The active_only chip is a toggle, not a free-text filter —
+                // "clearing" it means reverting to the default (Active),
+                // which also re-locks the dropdown + may drop an inactive pick.
+                if (key === 'active_only') {
+                    var btn = document.querySelector('.anl-ao-btn[data-ao="1"]');
+                    if (btn) btn.click();
+                    return;
+                }
                 var input = _form.querySelector('[name="' + key + '"]');
                 if (input) {
                     input.value = '';
@@ -1180,6 +1496,29 @@
             monthIsDaily ? '{% trans "Daily Overview" %}' : '{% trans "Monthly Overview" %}';
         document.getElementById('drillUpBtn').style.display = monthDrilled ? 'inline-flex' : 'none';
         document.getElementById('subDrillUpBtn').style.display = _subDrill ? 'inline-flex' : 'none';
+
+        // Points-per-X drill chrome (3 levels)
+        var acctT = document.getElementById('acctChartTitle');
+        var acctH = document.getElementById('acctChartHint');
+        var acctUp   = document.getElementById('acctDrillUpBtn');
+        var acctHome = document.getElementById('acctDrillHomeBtn');
+        var top = _acctTop();
+        if (!top) {
+            acctT.textContent = '{% trans "Points per Account" %}';
+            acctH.textContent = '';
+            acctUp.style.display   = 'none';
+            acctHome.style.display = 'none';
+        } else if (top.level === 1) {
+            acctT.textContent = '{% trans "Points per Contract" %} — ' + (top.accountName || '');
+            acctH.textContent = '';
+            acctUp.style.display   = 'inline-flex';
+            acctHome.style.display = 'inline-flex';
+        } else { // level 2
+            acctT.textContent = '{% trans "Points per Product" %} — ' + (top.contractTitle || '');
+            acctH.textContent = '';
+            acctUp.style.display   = 'inline-flex';
+            acctHome.style.display = 'inline-flex';
+        }
     }
 
     // Readable "10 September 2026" style; honours the page's lang attribute.
@@ -1253,7 +1592,7 @@
             } else if (to) {
                 row('{% trans "Until" %}',  esc(fmtDateLong(to)));
             }
-            if (!rows.length) rows.push('<div class="row"><span class="lbl">{% trans "All accounts, all contracts, last 12 months" %}</span></div>');
+            if (!rows.length) rows.push('<div class="row"><span class="lbl">{% trans "All accounts, all contracts" %}</span></div>');
             return rows.join('');
         }
 
@@ -1286,7 +1625,74 @@
     function renderAll() {
         renderMonth(); renderProd(); renderAcct(); renderSub(); renderHeat();
         renderAwarded(); renderKPIs(); renderChips(); renderDrillState();
-        renderCtxSub(); renderScopeNote();
+        renderCtxSub(); renderScopeNote(); renderBreakdown(); renderTimeNav();
+    }
+
+    function renderTimeNav() {
+        // Hide every time-nav strip when the user has set an explicit date
+        // filter — the arrows only make sense for the auto-chosen window.
+        var hasDates = !!(state.f_date_from || state.f_date_to);
+        document.querySelectorAll('.anl-time-nav').forEach(function (el) {
+            var group = el.dataset.tnGroup; // 'month' or 'heat'
+            if (hasDates) {
+                el.classList.remove('visible');
+                el.innerHTML = '';
+                return;
+            }
+            var hasPrev = !!state[group + '_has_prev'];
+            var hasNext = !!state[group + '_has_next'];
+            var label = _tnLabel(group);
+            el.innerHTML =
+                '<button type="button" class="anl-tn-arrow'
+                + (hasPrev ? ' has-data' : '')
+                + '" data-tn-dir="prev"'
+                + (hasPrev ? '' : ' disabled')
+                + ' title="' + LBL_TN_PREV + '">'
+                + '<span class="material-icons-round" style="font-size:14px;">chevron_left</span>'
+                + '</button>'
+                + '<span class="anl-tn-label">' + esc(label) + '</span>'
+                + '<button type="button" class="anl-tn-arrow'
+                + (hasNext ? ' has-data' : '')
+                + '" data-tn-dir="next"'
+                + (hasNext ? '' : ' disabled')
+                + ' title="' + LBL_TN_NEXT + '">'
+                + '<span class="material-icons-round" style="font-size:14px;">chevron_right</span>'
+                + '</button>';
+            el.classList.add('visible');
+            // Wire click → bump the shared offset and refetch; every chart
+            // group shifts in lockstep (one global window).
+            el.querySelectorAll('[data-tn-dir]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    if (btn.disabled) return;
+                    var cur = parseInt(document.getElementById('fldTimeOffset').value, 10) || 0;
+                    var delta = btn.dataset.tnDir === 'prev' ? -1 : +1;
+                    document.getElementById('fldTimeOffset').value = String(cur + delta);
+                    document.getElementById('fldPage').value = 1;
+                    fireFilterChange(true);
+                });
+            });
+        });
+    }
+    function _tnLabel(group) {
+        try {
+            if (group === 'month') {
+                var k0 = state.month_window_from, k1 = state.month_window_to;
+                if (!k0 || !k1) return '';
+                var y0 = parseInt(k0.slice(0,4), 10), m0 = parseInt(k0.slice(5,7), 10) - 1;
+                var y1 = parseInt(k1.slice(0,4), 10), m1 = parseInt(k1.slice(5,7), 10) - 1;
+                var d0 = new Date(y0, m0, 1), d1 = new Date(y1, m1, 1);
+                return d0.toLocaleDateString(UI_LOCALE, { month: 'short', year: 'numeric' })
+                     + ' – '
+                     + d1.toLocaleDateString(UI_LOCALE, { month: 'short', year: 'numeric' });
+            } else {
+                var r = state.heatmap_range || [];
+                if (!r.length) return '';
+                var a = new Date(r[0] + 'T00:00:00'), b = new Date(r[1] + 'T00:00:00');
+                return a.toLocaleDateString(UI_LOCALE, { month: 'short', year: 'numeric' })
+                     + ' – '
+                     + b.toLocaleDateString(UI_LOCALE, { month: 'short', year: 'numeric' });
+            }
+        } catch (e) { return ''; }
     }
 
     renderAll();
@@ -1323,6 +1729,9 @@
 
     var fetchToken = 0;
     function doFetch() {
+        // Any main-filter change invalidates the account drill (its data was
+        // computed for the previous filter and would mislead now).
+        _acctDrill = [];
         var params = currentParams();
         var qs = params.toString();
         var newUrl = window.location.pathname + (qs ? '?' + qs : '');
@@ -1446,6 +1855,54 @@
         if (!_accountFilter) return true;
         return (opt.dataset.account || '') === _accountFilter;
     });
+
+    // ── Active-only toggle (Active | All segmented control) ──────────────
+    // When "Active" is selected, the Contract dropdown is locked (not
+    // clickable) and the backend narrows to Contract.STATUS_ACTIVE.
+    function applyActiveOnlyLock() {
+        var on = document.getElementById('fldActiveOnly').value === '1';
+        var wrap = document.querySelector('[data-combo="contract"]');
+        if (wrap) wrap.classList.toggle('locked', on);
+        var input = document.getElementById('comboContractInput');
+        if (input) {
+            input.placeholder = on
+                ? '{% trans "All active contracts" %}'
+                : '{% trans "All contracts" %}';
+        }
+    }
+    document.querySelectorAll('.anl-ao-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var v = btn.dataset.ao;  // "1" or "0"
+            var h = document.getElementById('fldActiveOnly');
+            if (h.value === v) return;
+            h.value = v;
+            document.querySelectorAll('.anl-ao-btn').forEach(function (b) {
+                var on = b.dataset.ao === v;
+                b.classList.toggle('active', on);
+                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
+            // Flipping to "Active" while the currently-picked contract is
+            // inactive would leave the dropdown pointing at a contract the
+            // filter has just excluded — clear it so the user isn't stuck
+            // on a locked dropdown showing an inactive pick.
+            if (v === '1') {
+                var ch = document.getElementById('fldContract');
+                if (ch.value) {
+                    var picked = document.querySelector(
+                        '#comboContractList .anl-combo-opt[data-value="' + CSS.escape(ch.value) + '"]');
+                    if (picked && picked.dataset.status === 'inactive') {
+                        ch.value = '';
+                        if (_combos.contract) _combos.contract.syncLabel();
+                    }
+                }
+            }
+            applyActiveOnlyLock();
+            // Fire the hidden input's change so the existing data-fire
+            // wiring picks it up (reset page, refetch).
+            h.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    });
+    applyActiveOnlyLock();
     // Product combo narrows by Account/Contract selection via preFilter:
     //   · placeholder always visible
     //   · if a contract is picked → show only products in that contract
@@ -1495,8 +1952,55 @@
         var isDebounced = el.hasAttribute('data-debounce');
         el.addEventListener(isDebounced ? 'input' : 'change', function () {
             document.getElementById('fldPage').value = 1;
+            // Main-filter change invalidates the time-nav offset (it only
+            // makes sense relative to the "no filter" default window).
+            document.getElementById('fldTimeOffset').value = '0';
             fireFilterChange(!isDebounced);
         });
+    });
+
+    // ── Breakdown table controls ─────────────────────────────────────────
+    document.querySelectorAll('.anl-mode-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var mode = btn.dataset.bdMode || 'none';
+            document.getElementById('fldGroup').value = (mode === 'none') ? '' : mode;
+            document.getElementById('fldPage').value = 1;
+            fireFilterChange(true);
+        });
+    });
+    (function () {
+        var s = document.getElementById('tblSearch');
+        if (!s) return;
+        var t = null;
+        s.addEventListener('input', function () {
+            clearTimeout(t);
+            t = setTimeout(function () {
+                document.getElementById('fldTblQ').value = s.value || '';
+                document.getElementById('fldPage').value = 1;
+                fireFilterChange(true);
+            }, 250);
+        });
+    })();
+    (function () {
+        var sel = document.getElementById('pgSize');
+        if (!sel) return;
+        sel.addEventListener('change', function () {
+            document.getElementById('fldPageSize').value = sel.value;
+            document.getElementById('fldPage').value = 1;
+            fireFilterChange(true);
+        });
+    })();
+    document.getElementById('pgPrev').addEventListener('click', function () {
+        var p = parseInt(document.getElementById('fldPage').value, 10) || 1;
+        if (p <= 1) return;
+        document.getElementById('fldPage').value = p - 1;
+        fireFilterChange(true);
+    });
+    document.getElementById('pgNext').addEventListener('click', function () {
+        var p = parseInt(document.getElementById('fldPage').value, 10) || 1;
+        if (p >= state.breakdown_pages) return;
+        document.getElementById('fldPage').value = p + 1;
+        fireFilterChange(true);
     });
 
     // Date pickers: enforce from ≤ to by cross-linking min/max
@@ -1584,6 +2088,11 @@
     // specific drill only updates that chart.
     var _monthDrill = null;
     var _subDrill   = null;
+    // Stack of drill frames for Points-per-Account. Empty = top (aggregate).
+    //   Frame 1: {level:1, accountId, accountName, lbls, data, ids:contractIds}
+    //   Frame 2: {level:2, contractId, contractTitle, lbls, data, ids:productIds}
+    var _acctDrill  = [];
+    function _acctTop() { return (_acctDrill && _acctDrill.length) ? _acctDrill[_acctDrill.length - 1] : null; }
     function _drillFetch(year, month, which) {
         var from = fmt(new Date(year, month, 1));
         var to   = fmt(new Date(year, month + 1, 0));
@@ -1617,6 +2126,54 @@
     }
     function monthChartDrillUp() { _monthDrill = null; renderMonth(); renderDrillState(); }
     function subChartDrillUp()   { _subDrill   = null; renderSub();   renderDrillState(); }
+    function acctChartDrillUp()  { _acctDrill.pop(); renderAcct(); renderDrillState(); }
+    function acctChartDrillHome(){ _acctDrill = []; renderAcct(); renderDrillState(); }
+
+    // Click a bar on the Points-per-X chart.
+    //   Level 0 (accounts)  → drill into that account's contracts
+    //   Level 1 (contracts) → drill into that contract's products
+    //   Level 2 (products)  → no further drill
+    acctChart.on('click', function (params) {
+        if (!params || params.componentType !== 'series') return;
+        var top = _acctTop();
+        var level = top ? top.level : 0;
+        if (level >= 2) return;
+
+        var ids  = top ? top.ids  : state.chart_acct_ids;
+        var lbls = top ? top.lbls : state.chart_acct_labels;
+        if (!ids || !ids.length) return;
+
+        // Bars are rendered reversed (slice().reverse()) — undo that.
+        var realIdx = (lbls.length - 1) - params.dataIndex;
+        var pk = ids[realIdx];
+        if (!pk) return;
+
+        var params2 = currentParams();
+        var url = (level === 0)
+            ? '{% url "control:analytics_account_contracts" 0 %}'.replace('/0/', '/' + pk + '/')
+            : '{% url "control:analytics_contract_products" 0 %}'.replace('/0/', '/' + pk + '/');
+
+        setStale(true);
+        fetch(url + '?' + params2.toString(),
+            { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+        ).then(function (r) { return r.json(); }).then(function (d) {
+            if (level === 0) {
+                _acctDrill.push({
+                    level: 1, lbls: d.labels, data: d.data, ids: d.ids,
+                    accountName: d.account_name, accountCode: d.account_code
+                });
+            } else {
+                _acctDrill.push({
+                    level: 2, lbls: d.labels, data: d.data, ids: d.ids,
+                    contractTitle: d.contract_title, accountName: d.account_name
+                });
+            }
+            renderAcct(); renderDrillState();
+            setStale(false);
+        }).catch(function () { setStale(false); });
+    });
+    document.getElementById('acctDrillUpBtn').addEventListener('click', acctChartDrillUp);
+    document.getElementById('acctDrillHomeBtn').addEventListener('click', acctChartDrillHome);
 
     function setFilterToMonth(year, month /* 0-indexed */) {
         var from = fmt(new Date(year, month, 1));
@@ -1772,6 +2329,10 @@
         var to   = fd.get('date_to');
         if (acc)  parts.push('<b>{% trans "Account" %}:</b> ' + esc(acctLookup[acc] || acc));
         if (con)  parts.push('<b>{% trans "Contract" %}:</b> ' + esc(contractLookup[con] || con));
+        // Only mention the toggle when it's set to "All" (the non-default).
+        if (fd.get('active_only') === '0') {
+            parts.push('<b>{% trans "Contracts" %}:</b> {% trans "all (incl. inactive)" %}');
+        }
         if (prod) parts.push('<b>{% trans "Product" %}:</b> ' + esc(prod));
         if (from && to) parts.push('<b>{% trans "Period" %}:</b> ' + esc(fmtDateLong(from)) + ' → ' + esc(fmtDateLong(to)));
         else if (from)  parts.push('<b>{% trans "From" %}:</b> ' + esc(fmtDateLong(from)));
@@ -1783,20 +2344,8 @@
         spInput.value = '';
         spSummary.innerHTML = currentFilterSummary();
         // If the current filter set is identical to an already-saved preset,
-        // warn up front — no need to make the user discover the collision by typing.
-        var presets = loadPresets();
-        var current = window.location.search || '';
-        var dup = null;
-        Object.keys(presets).some(function (n) { if (presets[n] === current) { dup = n; return true; } });
-        if (dup) {
-            spWarn.style.display = 'block';
-            {% trans "This exact filter set is already saved as" as infoMsg %}
-            spWarn.innerHTML = '<span class="material-icons-round" style="font-size:14px; vertical-align:-3px;">info</span> '
-                + '{{ infoMsg|escapejs }} <b>' + esc(dup) + '</b>.';
-        } else {
-            spWarn.style.display = 'none';
-        }
         spModal.classList.add('open');
+        updateSavePresetUI();          // compute initial button+warn state
         setTimeout(function () { spInput.focus(); }, 50);
     }
     function closeSaveModal() { spModal.classList.remove('open'); }
@@ -1806,48 +2355,89 @@
     document.getElementById('savePresetCancel').addEventListener('click', closeSaveModal);
     spModal.addEventListener('click', function (e) { if (e.target === spModal) closeSaveModal(); });
 
-    spInput.addEventListener('input', function () {
-        var name = spInput.value.trim();
-        var presets = loadPresets();
-        if (name && presets[name] !== undefined) {
-            spWarn.style.display = 'block';
-            spWarn.style.color = '#f59e0b';
-            {% trans "A preset with this name already exists. Saving will overwrite it." as warnMsg %}
-            spWarn.innerHTML = '<span class="material-icons-round" style="font-size:14px; vertical-align:-3px;">warning</span> '
-                + '{{ warnMsg|escapejs }}';
-        } else {
-            // If the modal was opened with a "same filter already saved" notice,
-            // leave it; otherwise hide.
-            if (spWarn.style.color !== 'rgb(96, 165, 250)' && spWarn.style.color !== '#60a5fa') {
-                // keep the "already saved as X" blue info if user hasn't typed anything new
-                var current = window.location.search || '';
-                var dup = null;
-                Object.keys(presets).some(function (n) { if (presets[n] === current) { dup = n; return true; } });
-                if (!name && dup) {
-                    spWarn.style.display = 'block';
-                    spWarn.style.color = '#60a5fa';
-                    {% trans "This exact filter set is already saved as" as infoMsg2 %}
-                    spWarn.innerHTML = '<span class="material-icons-round" style="font-size:14px; vertical-align:-3px;">info</span> '
-                        + '{{ infoMsg2|escapejs }} <b>' + esc(dup) + '</b>.';
-                } else {
-                    spWarn.style.display = 'none';
-                }
-            }
-        }
-    });
     spInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') { e.preventDefault(); document.getElementById('savePresetConfirm').click(); }
     });
 
-    document.getElementById('savePresetConfirm').addEventListener('click', function () {
-        var name = spInput.value.trim();
-        if (!name) { spInput.focus(); return; }
+    // The save button is reactive: its label (Save preset / Rename / Replace)
+    // and action are recomputed from the current input + preset state every
+    // time either changes. One click always does the right thing.
+    function _spDoSave(name, replaceName) {
         var presets = loadPresets();
+        if (replaceName && replaceName !== name) delete presets[replaceName];
         presets[name] = window.location.search || '';
         savePresets(presets);
         refreshPresetSelect();
         closeSaveModal();
-    });
+    }
+    function _spSetButton(mode, name, otherName) {
+        // mode ∈ 'save' | 'rename' | 'replace' | 'noop'
+        var btn = document.getElementById('savePresetConfirm');
+        var defaultLabel = '{% trans "Save preset" %}';
+        if (mode === 'save') {
+            btn.textContent = defaultLabel;
+            btn.disabled = !name;
+            btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = '';
+            btn.onclick = function () { if (name) _spDoSave(name); };
+        } else if (mode === 'rename') {
+            btn.textContent = '{% trans "Rename" %}';
+            btn.disabled = false;
+            btn.style.background = '#f59e0b'; btn.style.color = '#0f172a'; btn.style.borderColor = '#f59e0b';
+            btn.onclick = function () { _spDoSave(name, otherName); };
+        } else if (mode === 'replace') {
+            btn.textContent = '{% trans "Replace" %}';
+            btn.disabled = false;
+            btn.style.background = '#f59e0b'; btn.style.color = '#0f172a'; btn.style.borderColor = '#f59e0b';
+            btn.onclick = function () { _spDoSave(name); };
+        } else { // noop — already saved exactly as-is under this name
+            btn.textContent = defaultLabel;
+            btn.disabled = true;
+            btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = '';
+            btn.onclick = null;
+        }
+    }
+    function _spSetWarn(message, color) {
+        if (!message) { spWarn.style.display = 'none'; return; }
+        spWarn.style.display = 'block';
+        spWarn.style.color = color || '#f59e0b';
+        var icon = color === '#60a5fa' ? 'info' : 'warning';
+        spWarn.innerHTML = '<span class="material-icons-round" style="font-size:14px; vertical-align:-3px;">' + icon + '</span> ' + message;
+    }
+    function updateSavePresetUI() {
+        var name = spInput.value.trim();
+        var current = window.location.search || '';
+        var presets = loadPresets();
+        var dupName = null;
+        Object.keys(presets).some(function (n) { if (presets[n] === current) { dupName = n; return true; } });
+
+        // 1. Name matches an existing preset (regardless of filter set)
+        if (name && presets[name] !== undefined) {
+            if (presets[name] === current) {
+                _spSetWarn(SP_MSG_NOOP, '#60a5fa');
+                _spSetButton('noop');
+            } else {
+                _spSetWarn(SP_MSG_NAME_PREFIX + ' <b>' + esc(name) + '</b> ' + SP_MSG_NAME_SUFFIX);
+                _spSetButton('replace', name);
+            }
+            return;
+        }
+        // 2. No name collision but same filter set already saved under a different name
+        if (dupName) {
+            if (name) {
+                _spSetWarn(SP_MSG_SAVED_AS + ' <b>' + esc(dupName)
+                    + '</b>. ' + SP_MSG_RENAME_TO + ' <b>' + esc(name) + '</b>.');
+                _spSetButton('rename', name, dupName);
+            } else {
+                _spSetWarn(SP_MSG_SAVED_AS_INFO + ' <b>' + esc(dupName) + '</b>.', '#60a5fa');
+                _spSetButton('save', '');
+            }
+            return;
+        }
+        // 3. Clean save
+        _spSetWarn('');
+        _spSetButton('save', name);
+    }
+    spInput.addEventListener('input', updateSavePresetUI);
     renderPresetPanel();
 
     // ── Product detail modal ────────────────────────────────────────────
